@@ -10,6 +10,7 @@ import type { Place, Board, Org } from "@/types"
 
 const STEPS = [
   "Welcome",
+  "About you",
   "When did you start?",
   "Where did you first ride?",
   "What was your first board?",
@@ -137,7 +138,7 @@ function SearchSelect({
 
 export function OnboardingFlow() {
   const router = useRouter()
-  const { onboarding, setOnboardingField, setOnboardingStep, completeOnboarding, userEntities } = useLineageStore()
+  const { onboarding, setOnboardingField, setOnboardingStep, completeOnboarding, setProfileOverride, userEntities } = useLineageStore()
   const step = onboarding.step
 
   const allPlaces = [...PLACES, ...userEntities.places] as unknown as { id: string; [key: string]: unknown }[]
@@ -147,6 +148,12 @@ export function OnboardingFlow() {
   const next = () => {
     if (step < STEPS.length - 1) setOnboardingStep(step + 1)
     else {
+      if (onboarding.display_name?.trim()) {
+        setProfileOverride({
+          display_name: onboarding.display_name.trim(),
+          ...(onboarding.birth_year && { birth_year: onboarding.birth_year }),
+        })
+      }
       completeOnboarding()
       router.push("/timeline")
     }
@@ -157,7 +164,8 @@ export function OnboardingFlow() {
   }
 
   const canContinue = () => {
-    if (step === 1) return !!onboarding.start_year
+    if (step === 1) return !!onboarding.display_name?.trim()
+    if (step === 2) return !!onboarding.start_year
     return true
   }
 
@@ -198,6 +206,39 @@ export function OnboardingFlow() {
           )}
 
           {step === 1 && (
+            <div className="space-y-5">
+              <h2 className="text-xl font-bold text-white mb-1">First, who are you?</h2>
+              <p className="text-zinc-500 text-sm">This is how you'll appear on your profile and to other riders.</p>
+              <div>
+                <label className="text-xs font-medium text-zinc-400 uppercase tracking-widest mb-2 block">Your name</label>
+                <input
+                  autoFocus
+                  type="text"
+                  value={onboarding.display_name ?? ""}
+                  onChange={(e) => setOnboardingField("display_name", e.target.value)}
+                  placeholder="e.g. Alex Torres"
+                  className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-zinc-400 uppercase tracking-widest mb-2 block">Birth year <span className="text-zinc-600 normal-case font-normal">(optional)</span></label>
+                <input
+                  type="number"
+                  value={onboarding.birth_year ?? ""}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value)
+                    setOnboardingField("birth_year", isNaN(v) ? undefined : v)
+                  }}
+                  placeholder="e.g. 1990"
+                  min={1930}
+                  max={2015}
+                  className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
             <div>
               <h2 className="text-xl font-bold text-white mb-1">When did you start snowboarding?</h2>
               <p className="text-zinc-500 text-sm mb-2">Pick your first season — even an approximate year works.</p>
@@ -208,7 +249,7 @@ export function OnboardingFlow() {
             </div>
           )}
 
-          {step === 2 && (
+          {step === 3 && (
             <div>
               <h2 className="text-xl font-bold text-white mb-1">Where did you first ride?</h2>
               <p className="text-zinc-500 text-sm mb-2">The resort, hill, or zone where it all started.</p>
@@ -225,7 +266,7 @@ export function OnboardingFlow() {
             </div>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <div>
               <h2 className="text-xl font-bold text-white mb-1">What was your first board?</h2>
               <p className="text-zinc-500 text-sm mb-2">The gear that started the obsession.</p>
@@ -245,7 +286,7 @@ export function OnboardingFlow() {
             </div>
           )}
 
-          {step === 4 && (
+          {step === 5 && (
             <div>
               <h2 className="text-xl font-bold text-white mb-1">Who or what shaped your early riding?</h2>
               <p className="text-zinc-500 text-sm mb-2">Shops, crews, sponsors, or teams you were part of.</p>
@@ -263,7 +304,7 @@ export function OnboardingFlow() {
             </div>
           )}
 
-          {step === 5 && (
+          {step === 6 && (
             <div className="space-y-4">
               <h2 className="text-xl font-bold text-white mb-1">Your privacy, your call.</h2>
               <p className="text-zinc-400 text-sm leading-relaxed">

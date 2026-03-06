@@ -170,6 +170,8 @@ export interface TimelineEntry {
 
 export interface OnboardingState {
   step: number
+  display_name?: string
+  birth_year?: number
   start_year?: number
   first_place_id?: string
   first_board_id?: string

@@ -3,6 +3,8 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { useLineageStore } from "@/store/lineage-store"
+import { getPersonById } from "@/lib/mock-data"
 
 const NAV_ITEMS = [
   { href: "/timeline", label: "My Timeline" },
@@ -14,6 +16,10 @@ const NAV_ITEMS = [
 
 export function Nav() {
   const path = usePathname()
+  const { activePersonId, profileOverride } = useLineageStore()
+  const basePerson = getPersonById(activePersonId)
+  const displayName = profileOverride.display_name ?? basePerson?.display_name ?? ""
+  const initial = displayName[0]?.toUpperCase() ?? "?"
 
   return (
     <nav className="border-b border-[#2a2a2a] bg-[#0d0d0d] sticky top-0 z-50">
@@ -41,9 +47,11 @@ export function Nav() {
         </div>
 
         <div className="ml-auto flex items-center gap-3">
-          <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-semibold text-white">
-            J
-          </div>
+          <Link href={`/riders/${activePersonId}`}>
+            <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-semibold text-white hover:bg-blue-500 transition-colors">
+              {initial}
+            </div>
+          </Link>
         </div>
       </div>
     </nav>

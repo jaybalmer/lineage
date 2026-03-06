@@ -11,13 +11,14 @@ import { notFound } from "next/navigation"
 
 export default function RiderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { activePersonId } = useLineageStore()
+  const { activePersonId, profileOverride } = useLineageStore()
+  const isCurrentUser = id === activePersonId
 
-  const person = getPersonById(id)
-  if (!person) notFound()
+  const basePerson = getPersonById(id)
+  if (!basePerson) notFound()
+  const person = isCurrentUser ? { ...basePerson, ...profileOverride } : basePerson
 
   const personClaims = CLAIMS.filter((c) => c.subject_id === id)
-  const isCurrentUser = id === activePersonId
 
   const { sharedPlaces, sharedEvents } = isCurrentUser
     ? { sharedPlaces: [], sharedEvents: [] }

@@ -345,7 +345,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 // ─── Main Page (inner, reads search params) ───────────────────────────────────
 
 function ComparePageInner() {
-  const { sessionClaims, deletedClaimIds, claimOverrides, activePersonId } =
+  const { sessionClaims, deletedClaimIds, claimOverrides, activePersonId, profileOverride } =
     useLineageStore()
   const searchParams = useSearchParams()
 
@@ -354,7 +354,8 @@ function ComparePageInner() {
     [sessionClaims, deletedClaimIds, claimOverrides]
   )
 
-  const currentUser = PEOPLE.find((p) => p.id === activePersonId) ?? PEOPLE[0]
+  const baseCurrentUser = PEOPLE.find((p) => p.id === activePersonId) ?? PEOPLE[0]
+  const currentUser = { ...baseCurrentUser, ...profileOverride }
   const [personA, setPersonA] = useState<Person>(currentUser)
 
   // Pre-select Person B from ?b= query param
