@@ -7,7 +7,9 @@ import { PREDICATE_ICONS, PREDICATE_LABELS, formatDateRange } from "@/lib/utils"
 import { getEntityName } from "@/lib/mock-data"
 import { useLineageStore } from "@/store/lineage-store"
 import { EditClaimModal } from "@/components/ui/edit-claim-modal"
+import { EditEventModal } from "@/components/ui/edit-event-modal"
 import Link from "next/link"
+import type { Event } from "@/types"
 
 const PLACE_PREDICATES = ["rode_at", "worked_at", "competed_at"]
 const ORG_PREDICATES = ["sponsored_by", "part_of_team", "shot_by", "coached_by"]
@@ -25,6 +27,7 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
   const { userEntities, removeClaim } = useLineageStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [editingEvent, setEditingEvent] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const icon = PREDICATE_ICONS[claim.predicate] ?? "•"
@@ -39,9 +42,13 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
     ...userEntities.places,
     ...userEntities.boards,
     ...userEntities.orgs,
+    ...userEntities.events,
   ]
   const userEntity = allUserEntities.find((e) => e.id === claim.object_id)
   const isUnverified = userEntity?.community_status === "unverified"
+
+  // If the claim points to a user-created event, hold a reference for editing
+  const userEvent = userEntities.events.find((e) => e.id === claim.object_id) as Event | undefined
 
   // For user-created entities, build the name from what we have
   const entityName = userEntity
@@ -57,6 +64,12 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
           claim={claim}
           entityName={entityName}
           onClose={() => setEditing(false)}
+        />
+      )}
+      {editingEvent && userEvent && (
+        <EditEventModal
+          event={userEvent}
+          onClose={() => setEditingEvent(false)}
         />
       )}
 
@@ -129,8 +142,16 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
                               onClick={() => { setMenuOpen(false); setEditing(true) }}
                               className="w-full text-left px-4 py-2.5 text-xs text-zinc-300 hover:bg-[#222] hover:text-white transition-colors flex items-center gap-2"
                             >
-                              <span>✏️</span> Edit
+                              <span>✏️</span> Edit claim
                             </button>
+                            {userEvent && (
+                              <button
+                                onClick={() => { setMenuOpen(false); setEditingEvent(true) }}
+                                className="w-full text-left px-4 py-2.5 text-xs text-zinc-300 hover:bg-[#222] hover:text-white transition-colors flex items-center gap-2"
+                              >
+                                <span>📋</span> Edit event
+                              </button>
+                            )}
                             <button
                               onClick={() => setConfirmDelete(true)}
                               className="w-full text-left px-4 py-2.5 text-xs text-red-400 hover:bg-[#222] hover:text-red-300 transition-colors flex items-center gap-2"

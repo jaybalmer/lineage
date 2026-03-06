@@ -48,6 +48,7 @@ interface LineageStore {
   addUserBoard: (board: Board) => void
   addUserOrg: (org: Org) => void
   addUserEvent: (event: Event) => void
+  updateUserEvent: (id: string, updates: Partial<Event>) => void
   verifyEntity: (entityType: "place" | "board" | "org" | "event", id: string) => void
   loadDbEntities: () => void
 
@@ -196,6 +197,18 @@ export const useLineageStore = create<LineageStore>()(
             description: event.description ?? null,
             community_status: "unverified", added_by: get().activePersonId,
           }).then(({ error }) => { if (error) console.error("event insert:", error) })
+        }
+      },
+      updateUserEvent: (id, updates) => {
+        set((s) => ({
+          userEntities: {
+            ...s.userEntities,
+            events: s.userEntities.events.map((e) => e.id === id ? { ...e, ...updates } : e),
+          },
+        }))
+        if (isAuthUser(get().activePersonId)) {
+          supabase.from("events").update(updates).eq("id", id)
+            .then(({ error }) => { if (error) console.error("event update:", error) })
         }
       },
       verifyEntity: (entityType, id) =>
