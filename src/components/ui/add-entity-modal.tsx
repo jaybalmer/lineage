@@ -27,6 +27,10 @@ const EVENT_TYPES: { value: EventType; label: string }[] = [
   { value: "camp", label: "Camp" },
   { value: "gathering", label: "Gathering" },
 ]
+const MONTHS = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+]
 
 export function AddEntityModal({ entityType, initialName = "", onClose, onAdded }: AddEntityModalProps) {
   const { addUserPlace, addUserBoard, addUserOrg, addUserEvent, activePersonId } = useLineageStore()
@@ -49,15 +53,20 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
 
   // Event fields
   const [eventType, setEventType] = useState<EventType>("contest")
+  const [eventYear, setEventYear] = useState("")
+  const [eventMonth, setEventMonth] = useState("")   // "1"–"12" or ""
+  const [showExactDates, setShowExactDates] = useState(false)
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
-  const [description, setDescription] = useState("")
 
   const canSubmit = () => {
     if (entityType === "place") return name.trim().length > 0
     if (entityType === "board") return brand.trim().length > 0 && model.trim().length > 0
     if (entityType === "org") return name.trim().length > 0
-    if (entityType === "event") return name.trim().length > 0 && startDate.length > 0
+    if (entityType === "event") {
+      const y = parseInt(eventYear)
+      return name.trim().length > 0 && eventYear.length === 4 && y >= 1950 && y <= 2030
+    }
     return false
   }
 
@@ -99,13 +108,18 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
       onAdded(id)
     } else if (entityType === "event") {
       const id = generateId("event")
+      const year = parseInt(eventYear)
+      // Build start_date: year → year-month → full date (most specific wins)
+      let computedStart = eventYear
+      if (eventMonth) computedStart = `${eventYear}-${eventMonth.padStart(2, "0")}`
+      if (showExactDates && startDate) computedStart = startDate
       addUserEvent({
         id,
         name: name.trim(),
         event_type: eventType,
-        start_date: startDate,
-        end_date: endDate || startDate, // default end = start for single-day events
-        description: description.trim() || undefined,
+        year,
+        start_date: computedStart,
+        end_date: showExactDates && endDate ? endDate : undefined,
         community_status: "unverified",
         added_by: activePersonId,
       })
@@ -272,37 +286,67 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
                 </select>
               </Field>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Start date" required>
+                <Field label="Year" required>
                   <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => {
-                      setStartDate(e.target.value)
-                      // auto-set end date if not set
-                      if (!endDate) setEndDate(e.target.value)
-                    }}
+                    type="number"
+                    value={eventYear}
+                    onChange={(e) => setEventYear(e.target.value)}
+                    placeholder="e.g. 2004"
+                    min={1950}
+                    max={2030}
                     className={inputCls}
                   />
                 </Field>
-                <Field label="End date">
-                  <input
-                    type="date"
-                    value={endDate}
-                    min={startDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                <Field label="Month">
+                  <select
+                    value={eventMonth}
+                    onChange={(e) => setEventMonth(e.target.value)}
                     className={inputCls}
-                  />
+                  >
+                    <option value="">— optional —</option>
+                    {MONTHS.map((m, i) => (
+                      <option key={i + 1} value={String(i + 1)}>{m}</option>
+                    ))}
+                  </select>
                 </Field>
               </div>
-              <Field label="Description">
-                <input
-                  type="text"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Brief description (optional)"
-                  className={inputCls}
-                />
-              </Field>
+              <button
+                type="button"
+                onClick={() => setShowExactDates(!showExactDates)}
+                className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors text-left"
+              >
+                {showExactDates ? "− Remove specific dates" : "+ Add specific start / end dates"}
+              </button>
+              {showExactDates && (
+                <div className="grid grid-cols-2 gap-3">
+                  <Field label="Start date">
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => {
+                        setStartDate(e.target.value)
+                        if (!endDate) setEndDate(e.target.value)
+                        // sync year/month from picked date
+                        const d = new Date(e.target.value)
+                        if (!isNaN(d.getTime())) {
+                          setEventYear(String(d.getUTCFullYear()))
+                          setEventMonth(String(d.getUTCMonth() + 1))
+                        }
+                      }}
+                      className={inputCls}
+                    />
+                  </Field>
+                  <Field label="End date">
+                    <input
+                      type="date"
+                      value={endDate}
+                      min={startDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className={inputCls}
+                    />
+                  </Field>
+                </div>
+              )}
             </>
           )}
         </div>
