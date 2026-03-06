@@ -6,24 +6,20 @@ import { useLineageStore } from "@/store/lineage-store"
 
 const FEATURES = [
   {
-    icon: "🏔",
-    title: "Trace your riding history",
-    desc: "Map every resort, backcountry zone, and season. Build a personal record of where snowboarding took you.",
+    title: "Your riding history, mapped",
+    desc: "Every resort, backcountry zone, and season — logged and searchable. A personal record of where the sport took you.",
   },
   {
-    icon: "🤙",
-    title: "Find hidden connections",
-    desc: "Who else rode your mountain in 2004? Discover overlaps with other riders you never knew you had.",
+    title: "Who else was there",
+    desc: "Rode Baldface in 2004? Baker every January for a decade? Surface connections with other riders you never knew you shared.",
   },
   {
-    icon: "🏂",
-    title: "Document your gear lineage",
-    desc: "Every board you've owned, every sponsor, every team. The gear story is part of the riding story.",
+    title: "Boards, sponsors, crews",
+    desc: "The gear you rode, the brands you repped, the teams you were part of. All of it is part of the story.",
   },
   {
-    icon: "🔒",
-    title: "Private by default",
-    desc: "You control what's visible. Keep your lineage personal, share it with connections, or make it public.",
+    title: "Yours until you say otherwise",
+    desc: "Your lineage is private by default. Share it with connections, make it public, or keep it to yourself.",
   },
 ]
 
@@ -96,17 +92,14 @@ export default function Home() {
         <div className="border-t border-[#1e1e1e]" />
       </div>
 
-      {/* Feature grid */}
-      <div className="max-w-3xl mx-auto px-6 py-16">
-        <div className="grid sm:grid-cols-2 gap-5">
-          {FEATURES.map(({ icon, title, desc }) => (
-            <div
-              key={title}
-              className="bg-[#111] border border-[#1e1e1e] rounded-xl p-5 space-y-2"
-            >
-              <div className="text-2xl">{icon}</div>
-              <div className="font-semibold text-white text-sm">{title}</div>
-              <div className="text-zinc-500 text-xs leading-relaxed">{desc}</div>
+      {/* Feature list */}
+      <div className="max-w-3xl mx-auto px-6 py-12">
+        <div className="divide-y divide-[#1e1e1e]">
+          {FEATURES.map(({ title, desc }, i) => (
+            <div key={title} className="grid grid-cols-[2rem_1fr] sm:grid-cols-[2rem_11rem_1fr] gap-x-6 gap-y-1 py-6 items-baseline">
+              <span className="text-[11px] text-zinc-700 font-mono pt-px">{String(i + 1).padStart(2, "0")}</span>
+              <div className="text-sm font-semibold text-white leading-snug">{title}</div>
+              <div className="col-start-2 sm:col-start-3 text-zinc-500 text-sm leading-relaxed">{desc}</div>
             </div>
           ))}
         </div>
