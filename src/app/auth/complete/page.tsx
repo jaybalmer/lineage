@@ -57,11 +57,19 @@ export default function AuthCompletePage() {
         }
       }
 
-      // 3. Apply profile override and set real activePersonId
+      // 3. Read the saved profile back from DB so we always get canonical values
+      // (onboarding data may be empty if magic link opened on a different origin)
+      const { data: savedProfile } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single()
+
       store.setProfileOverride({
-        display_name: onboarding.display_name?.trim(),
-        birth_year: onboarding.birth_year,
-        riding_since: onboarding.start_year,
+        display_name: savedProfile?.display_name ?? onboarding.display_name?.trim(),
+        birth_year: savedProfile?.birth_year ?? onboarding.birth_year,
+        riding_since: savedProfile?.riding_since ?? onboarding.start_year,
+        privacy_level: (savedProfile?.privacy_level ?? "public") as "private" | "shared" | "public",
       })
       store.setActivePersonId(user.id)
       store.completeOnboarding()

@@ -7,7 +7,7 @@ import { useLineageStore, getAllClaims, isAuthUser } from "@/store/lineage-store
 import { getPersonById, PLACES } from "@/lib/mock-data"
 import { EditProfileModal } from "@/components/ui/edit-profile-modal"
 import { supabase } from "@/lib/supabase"
-import type { Claim } from "@/types"
+import type { Claim, PrivacyLevel } from "@/types"
 
 export default function TimelinePage() {
   const { activePersonId, sessionClaims, dbClaims, setDbClaims, deletedClaimIds, claimOverrides, profileOverride, ridingDays } = useLineageStore()
@@ -22,9 +22,31 @@ export default function TimelinePage() {
       ? { id: activePersonId, ...profileOverride } as typeof basePerson & typeof profileOverride
       : null
 
-  // Load DB claims on mount for authenticated users
+  // Load profile + DB claims on mount for authenticated users
   useEffect(() => {
     if (!isAuthUser(activePersonId)) return
+    const store = useLineageStore.getState()
+
+    // Load profile from DB so it always reflects what's in Supabase
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", activePersonId)
+      .single()
+      .then(({ data, error }) => {
+        if (!error && data) {
+          store.setProfileOverride({
+            display_name: data.display_name,
+            birth_year: data.birth_year ?? undefined,
+            riding_since: data.riding_since ?? undefined,
+            bio: data.bio ?? undefined,
+            home_resort_id: data.home_resort_id ?? undefined,
+            privacy_level: data.privacy_level as PrivacyLevel,
+          })
+        }
+      })
+
+    // Load claims from DB
     supabase
       .from("claims")
       .select("*")
@@ -33,7 +55,7 @@ export default function TimelinePage() {
         if (!error && data) setDbClaims(data as Claim[])
         if (error?.code === "PGRST301" || error?.message?.includes("JWT")) {
           // Session expired — fall back to mock user
-          useLineageStore.getState().setActivePersonId("u1")
+          store.setActivePersonId("u1")
         }
       })
   }, [activePersonId]) // eslint-disable-line react-hooks/exhaustive-deps

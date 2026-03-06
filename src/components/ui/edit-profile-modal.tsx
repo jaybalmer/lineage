@@ -1,7 +1,8 @@
 "use client"
 
 import { useState } from "react"
-import { useLineageStore } from "@/store/lineage-store"
+import { useLineageStore, isAuthUser } from "@/store/lineage-store"
+import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { PLACES } from "@/lib/mock-data"
 import type { Person, PrivacyLevel } from "@/types"
@@ -16,7 +17,7 @@ const currentYear = new Date().getFullYear()
 export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
   const { setProfileOverride, onboarding } = useLineageStore()
 
-  const [displayName, setDisplayName] = useState(person.display_name)
+  const [displayName, setDisplayName] = useState(person.display_name ?? "")
   const [birthYear, setBirthYear] = useState(person.birth_year ? String(person.birth_year) : "")
   const [ridingSince, setRidingSince] = useState(
     person.riding_since
@@ -27,20 +28,39 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
   )
   const [bio, setBio] = useState(person.bio ?? "")
   const [homeResortId, setHomeResortId] = useState(person.home_resort_id ?? "")
-  const [privacyLevel, setPrivacyLevel] = useState<PrivacyLevel>(person.privacy_level)
+  const [privacyLevel, setPrivacyLevel] = useState<PrivacyLevel>(person.privacy_level ?? "private")
 
   const canSave = displayName.trim().length > 0
 
   const handleSave = () => {
     if (!canSave) return
-    setProfileOverride({
+    const override = {
       display_name: displayName.trim(),
       birth_year: birthYear ? parseInt(birthYear) : undefined,
       riding_since: ridingSince ? parseInt(ridingSince) : undefined,
       bio: bio.trim() || undefined,
       home_resort_id: homeResortId || undefined,
       privacy_level: privacyLevel,
-    })
+    }
+    setProfileOverride(override)
+
+    // Persist to Supabase in background for real (non-mock) users
+    if (isAuthUser(person.id)) {
+      supabase.auth.getUser().then(({ data: { user } }) => {
+        if (user) {
+          supabase.from("profiles").upsert({
+            id: user.id,
+            display_name: override.display_name,
+            birth_year: override.birth_year ?? null,
+            riding_since: override.riding_since ?? null,
+            bio: override.bio ?? null,
+            home_resort_id: override.home_resort_id ?? null,
+            privacy_level: override.privacy_level ?? "private",
+          })
+        }
+      })
+    }
+
     onClose()
   }
 
