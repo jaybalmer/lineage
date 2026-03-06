@@ -267,26 +267,39 @@ export function OnboardingFlow() {
             <div className="space-y-4">
               <h2 className="text-xl font-bold text-white mb-1">Your privacy, your call.</h2>
               <p className="text-zinc-400 text-sm leading-relaxed">
-                Everything you just entered is <strong className="text-white">private by default</strong>.
-                You choose what to make visible to others — nothing is published without your opt-in.
+                Choose your default visibility for new timeline entries.
+                You can override this for any individual claim at any time.
               </p>
               <div className="mt-4 space-y-3">
                 {[
-                  { icon: "🔒", title: "Private", desc: "Only you can see this" },
-                  { icon: "👥", title: "Shared", desc: "Visible to people you invite" },
-                  { icon: "🌐", title: "Public", desc: "Anyone on Lineage can see this" },
-                ].map(({ icon, title, desc }) => (
-                  <div key={title} className="flex items-start gap-3 bg-[#141414] rounded-lg px-4 py-3 border border-[#2a2a2a]">
-                    <span className="text-lg">{icon}</span>
-                    <div>
-                      <div className="text-sm font-medium text-white">{title}</div>
-                      <div className="text-xs text-zinc-500">{desc}</div>
-                    </div>
-                  </div>
-                ))}
+                  { value: "private" as const, icon: "🔒", title: "Private", desc: "Only you can see this" },
+                  { value: "shared" as const, icon: "👥", title: "Shared", desc: "Visible to people you invite" },
+                  { value: "public" as const, icon: "🌐", title: "Public", desc: "Anyone on Lineage can see this" },
+                ].map(({ value, icon, title, desc }) => {
+                  const selected = (onboarding.privacy ?? "private") === value
+                  return (
+                    <button
+                      key={value}
+                      onClick={() => setOnboardingField("privacy", value)}
+                      className={cn(
+                        "w-full flex items-start gap-3 rounded-lg px-4 py-3 border text-left transition-all",
+                        selected
+                          ? "bg-blue-950/40 border-blue-600 ring-1 ring-blue-600/40"
+                          : "bg-[#141414] border-[#2a2a2a] hover:border-zinc-600"
+                      )}
+                    >
+                      <span className="text-lg">{icon}</span>
+                      <div>
+                        <div className={cn("text-sm font-medium", selected ? "text-blue-200" : "text-white")}>{title}</div>
+                        <div className="text-xs text-zinc-500">{desc}</div>
+                      </div>
+                      {selected && <span className="ml-auto text-blue-400 text-sm">✓</span>}
+                    </button>
+                  )
+                })}
               </div>
               <p className="text-xs text-zinc-600 mt-2">
-                You can change visibility for any claim at any time. Lineage follows PIPEDA privacy principles.
+                Lineage follows PIPEDA privacy principles. Nothing is shared without your opt-in.
               </p>
             </div>
           )}
