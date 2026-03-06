@@ -37,7 +37,7 @@ export default function Home() {
       {/* Hero */}
       <div className="max-w-3xl mx-auto px-6 pt-24 pb-16 text-center">
         <div className="flex items-center justify-center gap-3 mb-6">
-          <span className="text-blue-400 text-5xl">⬡</span>
+          <span className="text-blue-400 text-[6rem] leading-none">⬡</span>
           <div className="text-left">
             <div className="text-4xl font-bold text-white tracking-tight leading-none">Lineage</div>
             <div className="text-sm font-medium text-zinc-500 tracking-widest uppercase mt-1">Snowboarding</div>
