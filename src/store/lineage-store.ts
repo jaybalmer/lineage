@@ -49,6 +49,7 @@ interface LineageStore {
   addUserOrg: (org: Org) => void
   addUserEvent: (event: Event) => void
   verifyEntity: (entityType: "place" | "board" | "org" | "event", id: string) => void
+  loadDbEntities: () => void
 
   // Riding days
   ridingDays: RidingDay[]
@@ -154,34 +155,49 @@ export const useLineageStore = create<LineageStore>()(
       claimOverrides: {},
 
       userEntities: { places: [], boards: [], orgs: [], events: [] },
-      addUserPlace: (place) =>
-        set((s) => ({
-          userEntities: {
-            ...s.userEntities,
-            places: [...s.userEntities.places, { ...place, community_status: "unverified" }],
-          },
-        })),
-      addUserBoard: (board) =>
-        set((s) => ({
-          userEntities: {
-            ...s.userEntities,
-            boards: [...s.userEntities.boards, { ...board, community_status: "unverified" }],
-          },
-        })),
-      addUserOrg: (org) =>
-        set((s) => ({
-          userEntities: {
-            ...s.userEntities,
-            orgs: [...s.userEntities.orgs, { ...org, community_status: "unverified" }],
-          },
-        })),
-      addUserEvent: (event) =>
-        set((s) => ({
-          userEntities: {
-            ...s.userEntities,
-            events: [...s.userEntities.events, { ...event, community_status: "unverified" }],
-          },
-        })),
+      addUserPlace: (place) => {
+        const entity = { ...place, community_status: "unverified" as const }
+        set((s) => ({ userEntities: { ...s.userEntities, places: [...s.userEntities.places, entity] } }))
+        if (isAuthUser(get().activePersonId)) {
+          supabase.from("places").insert({
+            id: place.id, name: place.name, place_type: place.place_type,
+            region: place.region ?? null, country: place.country ?? null,
+            community_status: "unverified", added_by: get().activePersonId,
+          }).then(({ error }) => { if (error) console.error("place insert:", error) })
+        }
+      },
+      addUserBoard: (board) => {
+        const entity = { ...board, community_status: "unverified" as const }
+        set((s) => ({ userEntities: { ...s.userEntities, boards: [...s.userEntities.boards, entity] } }))
+        if (isAuthUser(get().activePersonId)) {
+          supabase.from("boards").insert({
+            id: board.id, brand: board.brand, model: board.model, model_year: board.model_year,
+            community_status: "unverified", added_by: get().activePersonId,
+          }).then(({ error }) => { if (error) console.error("board insert:", error) })
+        }
+      },
+      addUserOrg: (org) => {
+        const entity = { ...org, community_status: "unverified" as const }
+        set((s) => ({ userEntities: { ...s.userEntities, orgs: [...s.userEntities.orgs, entity] } }))
+        if (isAuthUser(get().activePersonId)) {
+          supabase.from("orgs").insert({
+            id: org.id, name: org.name, org_type: org.org_type,
+            community_status: "unverified", added_by: get().activePersonId,
+          }).then(({ error }) => { if (error) console.error("org insert:", error) })
+        }
+      },
+      addUserEvent: (event) => {
+        const entity = { ...event, community_status: "unverified" as const }
+        set((s) => ({ userEntities: { ...s.userEntities, events: [...s.userEntities.events, entity] } }))
+        if (isAuthUser(get().activePersonId)) {
+          supabase.from("events").insert({
+            id: event.id, name: event.name, event_type: event.event_type,
+            start_date: event.start_date, end_date: event.end_date ?? null,
+            description: event.description ?? null,
+            community_status: "unverified", added_by: get().activePersonId,
+          }).then(({ error }) => { if (error) console.error("event insert:", error) })
+        }
+      },
       verifyEntity: (entityType, id) =>
         set((s) => {
           const key = `${entityType}s` as keyof UserEntities
@@ -194,16 +210,55 @@ export const useLineageStore = create<LineageStore>()(
             },
           }
         }),
+      loadDbEntities: () => {
+        const { activePersonId } = get()
+        if (!isAuthUser(activePersonId)) return
+        // Load shared entity catalog (all user-contributed entities, visible to everyone)
+        Promise.all([
+          supabase.from("places").select("*"),
+          supabase.from("boards").select("*"),
+          supabase.from("orgs").select("*"),
+          supabase.from("events").select("*"),
+        ]).then(([placesRes, boardsRes, orgsRes, eventsRes]) => {
+          set({
+            userEntities: {
+              places: (placesRes.data ?? []) as Place[],
+              boards: (boardsRes.data ?? []) as Board[],
+              orgs: (orgsRes.data ?? []) as Org[],
+              events: (eventsRes.data ?? []) as Event[],
+            },
+          })
+        })
+        // Load this user's riding days
+        supabase.from("riding_days").select("*").eq("created_by", activePersonId)
+          .then(({ data, error }) => {
+            if (!error && data) set({ ridingDays: data as RidingDay[] })
+          })
+      },
 
       ridingDays: [],
-      addRidingDay: (day) =>
-        set((s) => ({ ridingDays: [...s.ridingDays, day] })),
-      removeRidingDay: (id) =>
-        set((s) => ({ ridingDays: s.ridingDays.filter((d) => d.id !== id) })),
-      updateRidingDay: (id, updates) =>
-        set((s) => ({
-          ridingDays: s.ridingDays.map((d) => d.id === id ? { ...d, ...updates } : d),
-        })),
+      addRidingDay: (day) => {
+        set((s) => ({ ridingDays: [...s.ridingDays, day] }))
+        if (isAuthUser(get().activePersonId)) {
+          supabase.from("riding_days").insert({
+            id: day.id, date: day.date, place_id: day.place_id,
+            rider_ids: day.rider_ids, note: day.note ?? null,
+            visibility: day.visibility, created_by: day.created_by,
+          }).then(({ error }) => { if (error) console.error("riding_day insert:", error) })
+        }
+      },
+      removeRidingDay: (id) => {
+        set((s) => ({ ridingDays: s.ridingDays.filter((d) => d.id !== id) }))
+        if (isAuthUser(get().activePersonId)) {
+          supabase.from("riding_days").delete().eq("id", id)
+        }
+      },
+      updateRidingDay: (id, updates) => {
+        set((s) => ({ ridingDays: s.ridingDays.map((d) => d.id === id ? { ...d, ...updates } : d) }))
+        if (isAuthUser(get().activePersonId)) {
+          supabase.from("riding_days").update(updates).eq("id", id)
+        }
+      },
 
       profileOverride: {},
       setProfileOverride: (updates) =>

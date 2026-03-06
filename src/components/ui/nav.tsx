@@ -1,9 +1,10 @@
 "use client"
 
+import { useEffect, useRef } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { useLineageStore } from "@/store/lineage-store"
+import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { getPersonById } from "@/lib/mock-data"
 
 const NAV_ITEMS = [
@@ -16,8 +17,17 @@ const NAV_ITEMS = [
 
 export function Nav() {
   const path = usePathname()
-  const { activePersonId, profileOverride } = useLineageStore()
+  const { activePersonId, profileOverride, loadDbEntities } = useLineageStore()
   const basePerson = getPersonById(activePersonId)
+  const loadedForId = useRef<string | null>(null)
+
+  // Load shared entity catalog + riding days once per auth session
+  useEffect(() => {
+    if (!isAuthUser(activePersonId)) return
+    if (loadedForId.current === activePersonId) return
+    loadedForId.current = activePersonId
+    loadDbEntities()
+  }, [activePersonId, loadDbEntities])
   const displayName = profileOverride.display_name ?? basePerson?.display_name ?? ""
   const initial = displayName[0]?.toUpperCase() ?? "?"
 
