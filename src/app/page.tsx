@@ -42,8 +42,8 @@ export default function Home() {
         </div>
 
         <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight mb-5">
-          The living graph of<br />
-          <span className="text-blue-400">snowboarding history</span>
+          The living timeline of<br />
+          <span className="text-blue-400">snowboarding</span>
         </h1>
 
         <p className="text-zinc-400 text-lg leading-relaxed max-w-xl mx-auto mb-10">
