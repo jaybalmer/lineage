@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore, getAllClaims } from "@/store/lineage-store"
 import { PEOPLE, getEntityName, getPlaceById } from "@/lib/mock-data"
+import { supabase } from "@/lib/supabase"
 import { computeConnectionSummary } from "@/lib/connection-summary"
 import { PREDICATE_ICONS, PREDICATE_LABELS, formatDateRange } from "@/lib/utils"
 import { cn } from "@/lib/utils"
@@ -345,32 +346,77 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 // ─── Main Page (inner, reads search params) ───────────────────────────────────
 
 function ComparePageInner() {
-  const { sessionClaims, deletedClaimIds, claimOverrides, activePersonId, profileOverride } =
+  const { sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId, profileOverride } =
     useLineageStore()
   const searchParams = useSearchParams()
 
-  const allClaims = useMemo(
-    () => getAllClaims(sessionClaims, deletedClaimIds, claimOverrides),
-    [sessionClaims, deletedClaimIds, claimOverrides]
+  // Real profiles from Supabase
+  const [realProfiles, setRealProfiles] = useState<Person[]>([])
+  useEffect(() => {
+    supabase
+      .from("profiles")
+      .select("id, display_name, birth_year, riding_since, privacy_level, bio, home_resort_id")
+      .eq("privacy_level", "public")
+      .then(({ data }) => {
+        if (data) {
+          setRealProfiles(data.map((p) => ({
+            id: p.id,
+            display_name: p.display_name,
+            birth_year: p.birth_year ?? undefined,
+            riding_since: p.riding_since ?? undefined,
+            privacy_level: p.privacy_level as "public",
+            bio: p.bio ?? undefined,
+            home_resort_id: p.home_resort_id ?? undefined,
+          }) as Person))
+        }
+      })
+  }, [])
+
+  // Merge mock people + real profiles (deduplicate by id)
+  const mockIds = useMemo(() => new Set(PEOPLE.map((p) => p.id)), [])
+  const allPeople = useMemo(
+    () => [...PEOPLE, ...realProfiles.filter((p) => !mockIds.has(p.id))],
+    [realProfiles, mockIds]
   )
 
-  const baseCurrentUser = PEOPLE.find((p) => p.id === activePersonId) ?? PEOPLE[0]
+  const allClaims = useMemo(
+    () => getAllClaims(sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId),
+    [sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId]
+  )
+
+  const baseCurrentUser = allPeople.find((p) => p.id === activePersonId) ?? PEOPLE[0]
   const currentUser = { ...baseCurrentUser, ...profileOverride }
   const [personA, setPersonA] = useState<Person>(currentUser)
 
   // Pre-select Person B from ?b= query param
   const bParam = searchParams.get("b")
-  const initialB = bParam ? (PEOPLE.find((p) => p.id === bParam) ?? null) : null
+  const initialB = bParam ? (allPeople.find((p) => p.id === bParam) ?? null) : null
   const [personB, setPersonB] = useState<Person | null>(initialB)
+
+  // DB claims for a real Person B
+  const [personBDbClaims, setPersonBDbClaims] = useState<Claim[]>([])
+  useEffect(() => {
+    if (!personB || mockIds.has(personB.id)) {
+      setPersonBDbClaims([])
+      return
+    }
+    supabase
+      .from("claims")
+      .select("*")
+      .eq("subject_id", personB.id)
+      .eq("visibility", "public")
+      .then(({ data }) => setPersonBDbClaims((data ?? []) as Claim[]))
+  }, [personB?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const claimsA = useMemo(
     () => allClaims.filter((c) => c.subject_id === personA.id),
     [allClaims, personA.id]
   )
-  const claimsB = useMemo(
-    () => (personB ? allClaims.filter((c) => c.subject_id === personB.id) : []),
-    [allClaims, personB]
-  )
+  const claimsB = useMemo(() => {
+    if (!personB) return []
+    if (mockIds.has(personB.id)) return allClaims.filter((c) => c.subject_id === personB.id)
+    return personBDbClaims
+  }, [allClaims, personB, personBDbClaims, mockIds])
 
   const summary = useMemo(
     () =>
@@ -405,7 +451,7 @@ function ComparePageInner() {
             value={personA}
             onChange={setPersonA}
             excludeId={personB?.id}
-            allPeople={PEOPLE}
+            allPeople={allPeople}
           />
           <div className="text-zinc-600 font-light text-xl mb-2.5 shrink-0">×</div>
           <PersonPicker
@@ -413,7 +459,7 @@ function ComparePageInner() {
             value={personB}
             onChange={setPersonB}
             excludeId={personA.id}
-            allPeople={PEOPLE}
+            allPeople={allPeople}
           />
         </div>
 
@@ -466,17 +512,19 @@ function ComparePageInner() {
                 )}
               </div>
 
-              {/* Invite prompt */}
-              <div className="px-5 py-3 bg-[#111] border-t border-[#1e1e1e] flex items-center justify-between">
-                <div className="text-xs text-zinc-500">
-                  <span className="text-zinc-400">{personB.display_name}</span> hasn't confirmed
-                  their side yet
+              {/* Invite prompt — hide if Person B is a real user with claims */}
+              {(mockIds.has(personB.id) || personBDbClaims.length === 0) && (
+                <div className="px-5 py-3 bg-[#111] border-t border-[#1e1e1e] flex items-center justify-between">
+                  <div className="text-xs text-zinc-500">
+                    <span className="text-zinc-400">{personB.display_name}</span> hasn&apos;t
+                    confirmed their side yet
+                  </div>
+                  <CopyButton
+                    text={`Hey ${personB.display_name}, check out our snowboarding connection on Lineage — ${personA.display_name} + ${personB.display_name}: ${summary.headline}\n\nAdd your timeline at lineage.app/compare`}
+                    label={`✉ Invite ${personB.display_name.split(" ")[0]}`}
+                  />
                 </div>
-                <CopyButton
-                  text={`Hey ${personB.display_name}, check out our snowboarding connection on Lineage — ${personA.display_name} + ${personB.display_name}: ${summary.headline}\n\nAdd your timeline at lineage.app/compare`}
-                  label={`✉ Invite ${personB.display_name.split(" ")[0]}`}
-                />
-              </div>
+              )}
             </div>
 
             {/* Side-by-side timeline */}

@@ -1,26 +1,48 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Nav } from "@/components/ui/nav"
 import { TimelineView } from "@/components/timeline/timeline-view"
-import { useLineageStore, getAllClaims } from "@/store/lineage-store"
+import { useLineageStore, getAllClaims, isAuthUser } from "@/store/lineage-store"
 import { getPersonById, PLACES } from "@/lib/mock-data"
 import { EditProfileModal } from "@/components/ui/edit-profile-modal"
+import { supabase } from "@/lib/supabase"
+import type { Claim } from "@/types"
 
 export default function TimelinePage() {
-  const { activePersonId, sessionClaims, deletedClaimIds, claimOverrides, profileOverride, ridingDays } = useLineageStore()
+  const { activePersonId, sessionClaims, dbClaims, setDbClaims, deletedClaimIds, claimOverrides, profileOverride, ridingDays } = useLineageStore()
   const myDays = ridingDays.filter((d) => d.created_by === activePersonId)
   const [editingProfile, setEditingProfile] = useState(false)
 
   const basePerson = getPersonById(activePersonId)
-  // Merge base person with any saved profile overrides
-  const person = basePerson ? { ...basePerson, ...profileOverride } : basePerson
+  // For real auth users, basePerson may be null (they're not in mock data)
+  const person = basePerson
+    ? { ...basePerson, ...profileOverride }
+    : Object.keys(profileOverride).length > 0
+      ? { id: activePersonId, ...profileOverride } as typeof basePerson & typeof profileOverride
+      : null
 
-  const allClaims = getAllClaims(sessionClaims, deletedClaimIds, claimOverrides)
+  // Load DB claims on mount for authenticated users
+  useEffect(() => {
+    if (!isAuthUser(activePersonId)) return
+    supabase
+      .from("claims")
+      .select("*")
+      .eq("subject_id", activePersonId)
+      .then(({ data, error }) => {
+        if (!error && data) setDbClaims(data as Claim[])
+        if (error?.code === "PGRST301" || error?.message?.includes("JWT")) {
+          // Session expired — fall back to mock user
+          useLineageStore.getState().setActivePersonId("u1")
+        }
+      })
+  }, [activePersonId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const allClaims = getAllClaims(sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId)
   const personClaims = allClaims.filter((c) => c.subject_id === activePersonId)
 
   const homeResort = person?.home_resort_id
-    ? PLACES.find((p) => p.id === person.home_resort_id)
+    ? PLACES.find((p) => p.id === (person as { home_resort_id?: string }).home_resort_id)
     : null
 
   return (

@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git)",
+      "Bash(npx create-next-app@latest . --typescript --tailwind --eslint --app --src-dir --import-alias \"@/*\" --no-git --force)",
+      "Bash(npm install zustand @radix-ui/react-dialog @radix-ui/react-select @radix-ui/react-slot @radix-ui/react-separator @radix-ui/react-progress class-variance-authority clsx tailwind-merge lucide-react)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(npm install)",
+      "Bash(lsof -ti :3000)",
+      "Bash(xargs kill -9)",
+      "Bash(git add package.json package-lock.json src/app/globals.css src/app/layout.tsx src/app/page.tsx src/app/boards/ src/app/compare/ src/app/connections/ src/app/events/ src/app/explore/ src/app/onboarding/ src/app/orgs/ src/app/places/ src/app/riders/ src/app/timeline/ src/components/ src/lib/ src/store/ src/types/)",
+      "Bash(git commit:*)",
+      "Bash(npm run build)",
+      "Bash(git add src/components/ui/add-claim-modal.tsx)",
+      "Bash(git push)",
+      "Bash(git add src/components/onboarding/onboarding-flow.tsx src/types/index.ts)"
+    ]
+  }
+}

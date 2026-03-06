@@ -6,6 +6,7 @@ import { useLineageStore } from "@/store/lineage-store"
 import { PLACES, BOARDS, ORGS } from "@/lib/mock-data"
 import { cn } from "@/lib/utils"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
+import { supabase } from "@/lib/supabase"
 import type { Place, Board, Org } from "@/types"
 
 const STEPS = [
@@ -16,6 +17,7 @@ const STEPS = [
   "What was your first board?",
   "Who shaped your early riding?",
   "Privacy",
+  "Save your lineage",
 ]
 
 function ProgressBar({ step, total }: { step: number; total: number }) {
@@ -140,22 +142,44 @@ export function OnboardingFlow() {
   const router = useRouter()
   const { onboarding, setOnboardingField, setOnboardingStep, completeOnboarding, setProfileOverride, userEntities } = useLineageStore()
   const step = onboarding.step
+  const [sending, setSending] = useState(false)
+  const [magicLinkSent, setMagicLinkSent] = useState(false)
+  const [sendError, setSendError] = useState<string | null>(null)
 
   const allPlaces = [...PLACES, ...userEntities.places] as unknown as { id: string; [key: string]: unknown }[]
   const allBoards = [...BOARDS, ...userEntities.boards] as unknown as { id: string; [key: string]: unknown }[]
   const allOrgs = [...ORGS, ...userEntities.orgs] as unknown as { id: string; [key: string]: unknown }[]
 
-  const next = () => {
-    if (step < STEPS.length - 1) setOnboardingStep(step + 1)
-    else {
-      if (onboarding.display_name?.trim()) {
-        setProfileOverride({
-          display_name: onboarding.display_name.trim(),
-          ...(onboarding.birth_year && { birth_year: onboarding.birth_year }),
-        })
+  const next = async () => {
+    if (step < STEPS.length - 1) {
+      setOnboardingStep(step + 1)
+    } else {
+      // Last step: send magic link
+      const email = onboarding.email?.trim()
+      if (!email) return
+      setSending(true)
+      setSendError(null)
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          shouldCreateUser: true,
+        },
+      })
+      setSending(false)
+      if (error) {
+        setSendError(error.message)
+      } else {
+        // Apply profile override locally so the "check your email" screen
+        // can show the user's name
+        if (onboarding.display_name?.trim()) {
+          setProfileOverride({
+            display_name: onboarding.display_name.trim(),
+            ...(onboarding.birth_year && { birth_year: onboarding.birth_year }),
+          })
+        }
+        setMagicLinkSent(true)
       }
-      completeOnboarding()
-      router.push("/timeline")
     }
   }
 
@@ -166,6 +190,10 @@ export function OnboardingFlow() {
   const canContinue = () => {
     if (step === 1) return !!onboarding.display_name?.trim()
     if (step === 2) return !!onboarding.start_year
+    if (step === STEPS.length - 1) {
+      const e = onboarding.email?.trim() ?? ""
+      return e.length > 0 && e.includes("@") && !sending && !magicLinkSent
+    }
     return true
   }
 
@@ -344,6 +372,57 @@ export function OnboardingFlow() {
               </p>
             </div>
           )}
+
+          {step === 7 && !magicLinkSent && (
+            <div className="space-y-5">
+              <h2 className="text-xl font-bold text-white">Save your lineage</h2>
+              <p className="text-zinc-400 text-sm leading-relaxed">
+                Enter your email to get a magic link — no password needed.
+                One click and your timeline is saved.
+              </p>
+              <div>
+                <label className="text-xs font-medium text-zinc-400 uppercase tracking-widest mb-2 block">
+                  Email address
+                </label>
+                <input
+                  autoFocus
+                  type="email"
+                  value={onboarding.email ?? ""}
+                  onChange={(e) => setOnboardingField("email", e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter" && canContinue()) next() }}
+                  placeholder="you@example.com"
+                  className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              {sendError && (
+                <p className="text-sm text-red-400">{sendError}</p>
+              )}
+              <p className="text-xs text-zinc-600">
+                We&apos;ll never share your email. Only used to restore your session.
+              </p>
+            </div>
+          )}
+
+          {step === 7 && magicLinkSent && (
+            <div className="space-y-4 text-center pt-8">
+              <div className="text-5xl">📬</div>
+              <h2 className="text-xl font-bold text-white">Check your email</h2>
+              <p className="text-zinc-400 text-sm leading-relaxed">
+                We sent a link to{" "}
+                <span className="text-white font-medium">{onboarding.email}</span>.
+                Click it to open your lineage.
+              </p>
+              <p className="text-xs text-zinc-600 pt-2">
+                Didn&apos;t get it?{" "}
+                <button
+                  onClick={() => setMagicLinkSent(false)}
+                  className="text-blue-400 hover:underline"
+                >
+                  Try again
+                </button>
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Navigation */}
@@ -352,7 +431,7 @@ export function OnboardingFlow() {
             onClick={back}
             className={cn(
               "text-sm text-zinc-500 hover:text-white transition-colors",
-              step === 0 && "invisible"
+              (step === 0 || magicLinkSent) && "invisible"
             )}
           >
             ← Back
@@ -367,7 +446,11 @@ export function OnboardingFlow() {
                 : "bg-[#1e1e1e] text-zinc-600 cursor-not-allowed"
             )}
           >
-            {step === STEPS.length - 1 ? "Build my lineage →" : step === 0 ? "Get started" : "Continue"}
+            {magicLinkSent
+              ? "Waiting for confirmation…"
+              : step === STEPS.length - 1
+              ? sending ? "Sending…" : "Send magic link →"
+              : step === 0 ? "Get started" : "Continue"}
           </button>
         </div>
       </div>

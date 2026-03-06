@@ -178,4 +178,5 @@ export interface OnboardingState {
   early_orgs: string[]
   crew_ids: string[]
   privacy?: "private" | "shared" | "public"
+  email?: string
 }
