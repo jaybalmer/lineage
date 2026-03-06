@@ -119,18 +119,20 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
     }
   }
 
-  const getEntityLabel = (item: Record<string, unknown>): string => {
+  const getEntityLabel = (item: unknown): string => {
+    const r = item as Record<string, unknown>
     if (entityType === "board") {
-      return `${item.brand} ${item.model} '${String(item.model_year).slice(2)}`
+      return `${r.brand} ${r.model} '${String(r.model_year).slice(2)}`
     }
-    if (entityType === "person") return String(item.display_name ?? "")
-    return String(item.name ?? "")
+    if (entityType === "person") return String(r.display_name ?? "")
+    return String(r.name ?? "")
   }
 
-  const getEventDateRange = (item: Record<string, unknown>): string | null => {
+  const getEventDateRange = (item: unknown): string | null => {
+    const r = item as Record<string, unknown>
     if (entityType !== "event") return null
-    const start = item.start_date as string | undefined
-    const end = item.end_date as string | undefined
+    const start = r.start_date as string | undefined
+    const end = r.end_date as string | undefined
     if (!start) return null
     const fmt = (d: string) => {
       const [y, m, day] = d.split("-")
@@ -145,13 +147,13 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
     : null
 
   const filteredEntities = getEntityList().filter((e) =>
-    getEntityLabel(e as Record<string, unknown>)
+    getEntityLabel(e)
       .toLowerCase()
       .includes(entityQuery.toLowerCase())
   )
 
   const selectedEntity = entityId
-    ? getEntityList().find((e) => (e as Record<string, unknown>).id === entityId) ?? null
+    ? getEntityList().find((e) => (e as unknown as Record<string, unknown>).id === entityId) ?? null
     : null
 
   const canSave = predicate !== null && entityId !== null && startYear.length === 4
@@ -258,15 +260,15 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-medium text-blue-200">
-                            {getEntityLabel(selectedEntity as Record<string, unknown>)}
+                            {getEntityLabel(selectedEntity)}
                           </span>
-                          {(selectedEntity as Record<string, unknown>).community_status === "unverified" && (
+                          {(selectedEntity as unknown as Record<string, unknown>).community_status === "unverified" && (
                             <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-400 border border-amber-800/40">◎ new</span>
                           )}
                         </div>
-                        {getEventDateRange(selectedEntity as Record<string, unknown>) && (
+                        {getEventDateRange(selectedEntity) && (
                           <div className="text-[11px] text-blue-400/70 mt-0.5">
-                            {getEventDateRange(selectedEntity as Record<string, unknown>)}
+                            {getEventDateRange(selectedEntity)}
                           </div>
                         )}
                       </div>
@@ -291,7 +293,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                     {entityQuery.length > 0 && (
                       <div className="mt-1.5 max-h-44 overflow-y-auto rounded-lg border border-[#2a2a2a] divide-y divide-[#1a1a1a]">
                         {filteredEntities.slice(0, 8).map((item) => {
-                          const e = item as Record<string, unknown>
+                          const e = item as unknown as Record<string, unknown>
                           const dateRange = getEventDateRange(e)
                           return (
                             <button
@@ -326,7 +328,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                     {entityQuery.length === 0 && (
                       <div className="mt-1.5 max-h-44 overflow-y-auto rounded-lg border border-[#2a2a2a] divide-y divide-[#1a1a1a]">
                         {getEntityList().slice(0, 8).map((item) => {
-                          const e = item as Record<string, unknown>
+                          const e = item as unknown as Record<string, unknown>
                           const dateRange = getEventDateRange(e)
                           return (
                             <button
