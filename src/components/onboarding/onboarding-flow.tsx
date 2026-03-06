@@ -140,11 +140,24 @@ function SearchSelect({
 
 export function OnboardingFlow() {
   const router = useRouter()
-  const { onboarding, setOnboardingField, setOnboardingStep, completeOnboarding, setProfileOverride, userEntities } = useLineageStore()
+  const { onboarding, setOnboardingField, setOnboardingStep, completeOnboarding, setProfileOverride, setActivePersonId, userEntities } = useLineageStore()
   const step = onboarding.step
   const [sending, setSending] = useState(false)
   const [magicLinkSent, setMagicLinkSent] = useState(false)
   const [sendError, setSendError] = useState<string | null>(null)
+
+  const devBypass = () => {
+    const devId = `dev-${Date.now().toString(36)}`
+    setProfileOverride({
+      display_name: onboarding.display_name?.trim() || "Dev User",
+      birth_year: onboarding.birth_year,
+      riding_since: onboarding.start_year,
+      privacy_level: onboarding.privacy ?? "private",
+    })
+    setActivePersonId(devId)
+    completeOnboarding()
+    router.replace("/timeline")
+  }
 
   const allPlaces = [...PLACES, ...userEntities.places] as unknown as { id: string; [key: string]: unknown }[]
   const allBoards = [...BOARDS, ...userEntities.boards] as unknown as { id: string; [key: string]: unknown }[]
@@ -400,6 +413,14 @@ export function OnboardingFlow() {
               <p className="text-xs text-zinc-600">
                 We&apos;ll never share your email. Only used to restore your session.
               </p>
+              {process.env.NODE_ENV === "development" && (
+                <button
+                  onClick={devBypass}
+                  className="w-full mt-2 px-4 py-2 rounded-lg text-xs text-amber-400 border border-amber-900/50 bg-amber-950/20 hover:bg-amber-950/40 transition-colors"
+                >
+                  ⚡ Skip email — dev only
+                </button>
+              )}
             </div>
           )}
 

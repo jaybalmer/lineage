@@ -7,8 +7,9 @@ import { CLAIMS } from "@/lib/mock-data"
 import { supabase } from "@/lib/supabase"
 
 // A real auth user has a UUID as their ID; mock people use short strings like "u1"
+// Dev bypass IDs start with "dev-" — treated as local session users, no Supabase sync
 export function isAuthUser(id: string): boolean {
-  return id.length > 8
+  return id.length > 8 && !id.startsWith("dev-")
 }
 
 type UserEntities = {
