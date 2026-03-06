@@ -39,6 +39,7 @@ export default function Home() {
         <div className="flex items-center justify-center gap-3 mb-6">
           <span className="text-blue-400 text-[6rem] leading-none">⬡</span>
           <div className="text-left">
+            <div className="h-[18px]" />{/* spacer matches SNOWBOARDING height so items-center lands on Lineage */}
             <div className="text-4xl font-bold text-white tracking-tight leading-none">Lineage</div>
             <div className="text-sm font-medium text-zinc-500 tracking-widest uppercase mt-1">Snowboarding</div>
           </div>
