@@ -17,9 +17,11 @@ function formatEventDate(start: string, end?: string): string {
   return `${startStr} – ${ed} ${months[em - 1]} ${ey}`
 }
 
+const EVENT_PREDICATES = ["competed_at", "spectated_at", "organized_at"] as const
+
 function AttendeeList({ eventId }: { eventId: string }) {
   const claims = CLAIMS.filter(
-    (c) => c.object_id === eventId && c.predicate === "competed_at"
+    (c) => c.object_id === eventId && EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number])
   )
   const riderIds = [...new Set(claims.map((c) => c.subject_id))]
 
@@ -52,7 +54,7 @@ function AttendeeList({ eventId }: { eventId: string }) {
 function InstanceRow({ event, highlight }: { event: Event; highlight?: boolean }) {
   const place = event.place_id ? getPlaceById(event.place_id) : null
   const attendeeCount = CLAIMS.filter(
-    (c) => c.object_id === event.id && c.predicate === "competed_at"
+    (c) => c.object_id === event.id && EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number])
   ).length
 
   return (
@@ -102,7 +104,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
       : []
     const place = instance.place_id ? getPlaceById(instance.place_id) : null
     const totalAttendees = CLAIMS.filter(
-      (c) => c.object_id === id && c.predicate === "competed_at"
+      (c) => c.object_id === id && EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number])
     ).length
 
     return (
@@ -162,7 +164,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
               <div className="space-y-2">
                 {seriesInstances.filter((e) => e.id !== id).map((e) => {
                   const count = CLAIMS.filter(
-                    (c) => c.object_id === e.id && c.predicate === "competed_at"
+                    (c) => c.object_id === e.id && EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number])
                   ).length
                   return (
                     <Link key={e.id} href={`/events/${e.id}`}>
@@ -193,7 +195,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
     CLAIMS
       .filter(
         (c) =>
-          c.predicate === "competed_at" &&
+          EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number]) &&
           seriesInstances.some((e) => e.id === c.object_id)
       )
       .map((c) => c.subject_id)

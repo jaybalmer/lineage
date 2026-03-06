@@ -15,7 +15,7 @@ const FILTER_PREDICATES: Record<Exclude<FilterType, "days">, string[]> = {
   gear: ["owned_board"],
   people: ["rode_with", "coached_by", "shot_by"],
   orgs: ["sponsored_by", "part_of_team"],
-  events: ["competed_at"],
+  events: ["competed_at", "spectated_at", "organized_at"],
 }
 
 type TimelineItem =

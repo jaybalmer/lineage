@@ -26,6 +26,8 @@ export const PREDICATE_LABELS: Record<Predicate, string> = {
   rode_with: "Rode with",
   shot_by: "Shot by",
   competed_at: "Competed at",
+  spectated_at: "Spectated at",
+  organized_at: "Organized",
   owned_board: "Rode",
   coached_by: "Coached by",
 }
@@ -52,6 +54,8 @@ export const PREDICATE_ICONS: Record<Predicate, string> = {
   rode_with: "🤙",
   shot_by: "📷",
   competed_at: "🏆",
+  spectated_at: "👀",
+  organized_at: "📋",
   owned_board: "🏂",
   coached_by: "🎓",
 }

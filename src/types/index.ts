@@ -14,6 +14,8 @@ export type Predicate =
   | "rode_with"
   | "shot_by"
   | "competed_at"
+  | "spectated_at"
+  | "organized_at"
   | "owned_board"
   | "coached_by"
 
