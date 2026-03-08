@@ -9,11 +9,11 @@ import { getPersonById } from "@/lib/mock-data"
 
 const NAV_ITEMS = [
   { href: "/profile", label: "Profile" },
+  { href: "/compare", label: "Compare" },
   { href: "/events", label: "Events" },
   { href: "/boards", label: "Boards" },
   { href: "/places", label: "Places" },
   { href: "/connections", label: "Connections" },
-  { href: "/compare", label: "Compare" },
 ]
 
 export function Nav() {
