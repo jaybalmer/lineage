@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/boards", label: "Boards" },
   { href: "/places", label: "Places" },
   { href: "/connections", label: "Connections" },
+  { href: "/compare", label: "Compare" },
 ]
 
 export function Nav() {
