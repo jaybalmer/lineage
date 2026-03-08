@@ -56,10 +56,10 @@ export default function Home() {
           {onboardingComplete ? (
             <>
               <Link
-                href="/timeline"
+                href="/profile"
                 className="w-full sm:w-auto px-8 py-3 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-500 transition-colors"
               >
-                My Timeline →
+                My Profile →
               </Link>
               <Link
                 href="/onboarding"
@@ -77,10 +77,10 @@ export default function Home() {
                 Start your lineage →
               </Link>
               <Link
-                href="/timeline"
+                href="/profile"
                 className="w-full sm:w-auto px-8 py-3 rounded-xl border border-[#2a2a2a] text-zinc-300 font-semibold text-sm hover:border-zinc-500 hover:text-white transition-colors"
               >
-                My Timeline
+                My Profile
               </Link>
             </>
           )}

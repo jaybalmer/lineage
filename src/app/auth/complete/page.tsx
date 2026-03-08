@@ -75,7 +75,7 @@ export default function AuthCompletePage() {
       store.completeOnboarding()
 
       setStatus("Done! Opening your lineage…")
-      router.replace("/timeline")
+      router.replace("/profile")
     }
 
     saveAndRedirect()
