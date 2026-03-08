@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Nav } from "@/components/ui/nav"
 import { FeedView } from "@/components/feed/feed-view"
+import { StartCard } from "@/components/feed/start-card"
 import { useLineageStore, getAllClaims, isAuthUser } from "@/store/lineage-store"
 import { getPersonById, PLACES } from "@/lib/mock-data"
 import { EditProfileModal } from "@/components/ui/edit-profile-modal"
@@ -130,6 +131,11 @@ export default function ProfilePage() {
             ))}
           </div>
         </div>
+
+        {/* Origin card */}
+        {person && (
+          <StartCard person={person} claims={personClaims} />
+        )}
 
         {/* Feed */}
         <FeedView
