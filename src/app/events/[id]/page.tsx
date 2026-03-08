@@ -208,7 +208,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
 
         {/* Breadcrumb */}
         <div className="text-xs text-zinc-600 mb-6">
-          <Link href="/explore" className="hover:text-zinc-400">Explore</Link>
+          <Link href="/events" className="hover:text-zinc-400">Events</Link>
           <span className="mx-2">/</span>
           <span className="text-zinc-400">{series!.name}</span>
         </div>

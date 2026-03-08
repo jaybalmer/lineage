@@ -30,9 +30,9 @@ function ConnectionCard({ personId, currentUserId }: { personId: string; current
           </Link>
           {dateRange && <div className="text-xs text-zinc-500">{dateRange}</div>}
         </div>
-        <Link href={`/compare?b=${personId}`} className="flex-shrink-0">
+        <Link href={`/connections/${personId}`} className="flex-shrink-0">
           <button className="px-2.5 py-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-[11px] text-zinc-400 hover:border-blue-700/50 hover:text-blue-300 hover:bg-blue-950/30 transition-all whitespace-nowrap">
-            Compare ⬡
+            View connection →
           </button>
         </Link>
       </div>

@@ -287,11 +287,11 @@ export default function OrgPage({ params }: { params: Promise<{ id: string }> })
             </div>
 
             <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4">
-              <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-2">Add to timeline</div>
+              <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-2">Add to profile</div>
               <p className="text-xs text-zinc-600 mb-3">Sponsored? Part of the team? Rode their gear?</p>
-              <Link href="/timeline">
+              <Link href="/profile">
                 <button className="w-full px-3 py-2 bg-blue-600 rounded-lg text-xs text-white font-medium hover:bg-blue-500 transition-colors">
-                  + Add to my timeline
+                  + Add to my profile
                 </button>
               </Link>
             </div>

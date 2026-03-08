@@ -8,11 +8,11 @@ import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { getPersonById } from "@/lib/mock-data"
 
 const NAV_ITEMS = [
-  { href: "/timeline", label: "My Timeline" },
-  { href: "/compare", label: "Compare" },
-  { href: "/connections", label: "Connections" },
+  { href: "/profile", label: "Profile" },
+  { href: "/events", label: "Events" },
+  { href: "/boards", label: "Boards" },
   { href: "/places", label: "Places" },
-  { href: "/explore", label: "Explore" },
+  { href: "/connections", label: "Connections" },
 ]
 
 export function Nav() {
@@ -46,7 +46,7 @@ export function Nav() {
               href={href}
               className={cn(
                 "px-3 py-1.5 rounded-md text-sm transition-colors",
-                path.startsWith(href)
+                (href === "/profile" ? path === "/profile" || path.startsWith("/profile/") : path.startsWith(href))
                   ? "bg-[#1e1e1e] text-white"
                   : "text-zinc-400 hover:text-white hover:bg-[#1a1a1a]"
               )}
@@ -57,7 +57,7 @@ export function Nav() {
         </div>
 
         <div className="ml-auto flex items-center gap-3">
-          <Link href={`/riders/${activePersonId}`}>
+          <Link href="/profile">
             <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-semibold text-white hover:bg-blue-500 transition-colors">
               {initial}
             </div>

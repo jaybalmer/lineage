@@ -50,9 +50,9 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
             <div className="flex-shrink-0 flex gap-2">
               {!isCurrentUser && (
                 <>
-                  <Link href={`/compare?b=${id}`}>
+                  <Link href={`/connections/${id}`}>
                     <button className="px-3 py-1.5 rounded-lg bg-blue-600 text-xs text-white font-medium hover:bg-blue-500 transition-all">
-                      Compare ⬡
+                      View connection →
                     </button>
                   </Link>
                   <button className="px-3 py-1.5 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-xs text-zinc-300 hover:border-zinc-500 hover:text-white transition-all">
