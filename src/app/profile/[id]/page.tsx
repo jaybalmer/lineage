@@ -98,14 +98,21 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
             {person.display_name[0]}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="flex items-baseline gap-3 flex-wrap">
+            <div className="flex items-start justify-between gap-3 flex-wrap">
               <h1 className="text-2xl font-bold text-white">{person.display_name}</h1>
               {!isCurrentUser && (
-                <Link href={`/connections/${id}`}>
-                  <button className="px-3 py-1.5 rounded-lg bg-blue-600 text-xs text-white font-medium hover:bg-blue-500 transition-all">
-                    View connection →
-                  </button>
-                </Link>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Link href={`/compare?b=${id}`}>
+                    <button className="px-3 py-1.5 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-xs text-zinc-300 hover:border-zinc-500 hover:text-white transition-all">
+                      Compare ⬡
+                    </button>
+                  </Link>
+                  <Link href={`/connections/${id}`}>
+                    <button className="px-3 py-1.5 rounded-lg bg-blue-600 text-xs text-white font-medium hover:bg-blue-500 transition-all">
+                      View connection →
+                    </button>
+                  </Link>
+                </div>
               )}
             </div>
             <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500 flex-wrap">

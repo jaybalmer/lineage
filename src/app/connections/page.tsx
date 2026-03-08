@@ -30,11 +30,18 @@ function ConnectionCard({ personId, currentUserId }: { personId: string; current
           </Link>
           {dateRange && <div className="text-xs text-zinc-500">{dateRange}</div>}
         </div>
-        <Link href={`/connections/${personId}`} className="flex-shrink-0">
-          <button className="px-2.5 py-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-[11px] text-zinc-400 hover:border-blue-700/50 hover:text-blue-300 hover:bg-blue-950/30 transition-all whitespace-nowrap">
-            View connection →
-          </button>
-        </Link>
+        <div className="flex gap-1.5 flex-shrink-0">
+          <Link href={`/compare?b=${personId}`}>
+            <button className="px-2.5 py-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-[11px] text-zinc-400 hover:border-zinc-500 hover:text-white transition-all whitespace-nowrap">
+              Compare ⬡
+            </button>
+          </Link>
+          <Link href={`/connections/${personId}`}>
+            <button className="px-2.5 py-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-[11px] text-zinc-400 hover:border-blue-700/50 hover:text-blue-300 hover:bg-blue-950/30 transition-all whitespace-nowrap">
+              View connection →
+            </button>
+          </Link>
+        </div>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-1.5">
