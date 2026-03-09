@@ -3,7 +3,7 @@
 import { useState } from "react"
 import type { RidingDay } from "@/types"
 import { useLineageStore } from "@/store/lineage-store"
-import { PLACES, PEOPLE } from "@/lib/mock-data"
+import { PLACES, PEOPLE, placeSlug } from "@/lib/mock-data"
 import Link from "next/link"
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
@@ -47,7 +47,7 @@ export function DayCard({ day, isOwn }: { day: RidingDay; isOwn?: boolean }) {
               <span className="text-sm">🏔</span>
               {place ? (
                 <Link
-                  href={`/places/${place.id}`}
+                  href={`/places/${placeSlug(place)}`}
                   className="font-medium text-white hover:text-emerald-400 transition-colors text-sm"
                 >
                   {place.name}

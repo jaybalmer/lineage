@@ -1,4 +1,4 @@
-import type { Person, Place, Org, Board, Event, Claim, Source, EventSeries } from "@/types"
+import type { Person, Place, Org, Board, Event, Claim, Source, EventSeries, EntityType } from "@/types"
 
 // ─── Places ──────────────────────────────────────────────────────────────────
 
@@ -427,4 +427,72 @@ export function getSharedContext(personAId: string, personBId: string) {
   }
 
   return { sharedPlaces, sharedEvents, sharedOrgs }
+}
+
+// ─── Slug utilities ───────────────────────────────────────────────────────────
+
+function slugify(str: string): string {
+  return str.trim().replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/g, "")
+}
+
+export function boardSlug(board: Board): string {
+  return `${slugify(board.brand)}_${slugify(board.model)}_${board.model_year}`
+}
+
+export function placeSlug(place: Place): string {
+  return slugify(place.name)
+}
+
+export function orgSlug(org: Org): string {
+  return slugify(org.name)
+}
+
+export function eventSlug(event: Event): string {
+  return slugify(event.name)
+}
+
+export function seriesSlug(series: EventSeries): string {
+  return slugify(series.name)
+}
+
+export function getBoardBySlug(slug: string): Board | undefined {
+  return BOARDS.find((b) => boardSlug(b) === slug)
+}
+
+export function getPlaceBySlug(slug: string): Place | undefined {
+  return PLACES.find((p) => placeSlug(p) === slug)
+}
+
+export function getOrgBySlug(slug: string): Org | undefined {
+  return ORGS.find((o) => orgSlug(o) === slug)
+}
+
+export function getEventBySlug(slug: string): Event | undefined {
+  return EVENTS.find((e) => eventSlug(e) === slug)
+}
+
+export function getSeriesBySlug(slug: string): EventSeries | undefined {
+  return EVENT_SERIES.find((s) => seriesSlug(s) === slug)
+}
+
+/** Returns the canonical slug-based URL for any entity. Falls back to id-based URL for user-created entities. */
+export function getEntityHref(id: string, type: EntityType): string {
+  if (type === "place") {
+    const place = getPlaceById(id)
+    return place ? `/places/${placeSlug(place)}` : `/places/${id}`
+  }
+  if (type === "board") {
+    const board = getBoardById(id)
+    return board ? `/boards/${boardSlug(board)}` : `/boards/${id}`
+  }
+  if (type === "org") {
+    const org = getOrgById(id)
+    return org ? `/orgs/${orgSlug(org)}` : `/orgs/${id}`
+  }
+  if (type === "event") {
+    const event = getEventById(id)
+    return event ? `/events/${eventSlug(event)}` : `/events/${id}`
+  }
+  if (type === "person") return `/riders/${id}`
+  return "#"
 }

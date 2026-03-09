@@ -4,23 +4,24 @@ import { use } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
-import { BOARDS, CLAIMS, ORGS, getPersonById } from "@/lib/mock-data"
+import { BOARDS, CLAIMS, ORGS, getPersonById, getBoardBySlug, boardSlug, orgSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 
 export default function BoardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const board = BOARDS.find((b) => b.id === id)
+  // Accept both slug (Burton_Custom_2003) and legacy id (b1)
+  const board = BOARDS.find((b) => b.id === id) ?? getBoardBySlug(id)
   if (!board) notFound()
 
   // Riders who owned this board
   const ownedClaims = CLAIMS.filter(
-    (c) => c.object_id === id && c.predicate === "owned_board"
+    (c) => c.object_id === board.id && c.predicate === "owned_board"
   )
   const riderIds = [...new Set(ownedClaims.map((c) => c.subject_id))]
 
   // Other models by same brand
   const samesBrand = BOARDS.filter(
-    (b) => b.brand === board.brand && b.id !== id
+    (b) => b.brand === board.brand && b.id !== board.id
   ).sort((a, b) => b.model_year - a.model_year)
 
   // Find org for this brand
@@ -42,7 +43,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
           <span className="mx-2">/</span>
           {brandOrg ? (
             <>
-              <Link href={`/orgs/${brandOrg.id}`} className="hover:text-zinc-400">{board.brand}</Link>
+              <Link href={`/orgs/${orgSlug(brandOrg)}`} className="hover:text-zinc-400">{board.brand}</Link>
               <span className="mx-2">/</span>
             </>
           ) : (
@@ -143,7 +144,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             {brandOrg && (
               <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4">
                 <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">Brand</div>
-                <Link href={`/orgs/${brandOrg.id}`}>
+                <Link href={`/orgs/${orgSlug(brandOrg)}`}>
                   <div className="flex items-center gap-2 hover:text-blue-300 transition-colors">
                     <div className="w-7 h-7 rounded bg-[#1e1e1e] border border-[#2a2a2a] flex items-center justify-center text-xs font-bold text-zinc-500">
                       {brandOrg.name[0]}
@@ -171,7 +172,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                       (c) => c.object_id === b.id && c.predicate === "owned_board"
                     ).length
                     return (
-                      <Link key={b.id} href={`/boards/${b.id}`}>
+                      <Link key={b.id} href={`/boards/${boardSlug(b)}`}>
                         <div className="flex items-center justify-between py-1.5 hover:text-blue-300 transition-colors group">
                           <div>
                             <div className="text-sm text-white group-hover:text-blue-300">{b.model}</div>

@@ -43,6 +43,7 @@ export interface Place {
   lat?: number
   lon?: number
   website?: string
+  image_url?: string
   community_status?: CommunityStatus
   added_by?: string
 }
@@ -96,6 +97,7 @@ export interface Event {
   year?: number        // numeric year for quick lookups
   external_ref?: string
   description?: string
+  image_url?: string
   community_status?: CommunityStatus
   added_by?: string
 }

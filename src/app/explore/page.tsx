@@ -1,7 +1,7 @@
 "use client"
 
 import { Nav } from "@/components/ui/nav"
-import { PEOPLE, PLACES, ORGS, BOARDS, EVENTS, EVENT_SERIES, CLAIMS } from "@/lib/mock-data"
+import { PEOPLE, PLACES, ORGS, BOARDS, EVENTS, EVENT_SERIES, CLAIMS, placeSlug, orgSlug, boardSlug, seriesSlug } from "@/lib/mock-data"
 import Link from "next/link"
 import { useState } from "react"
 
@@ -68,7 +68,7 @@ export default function ExplorePage() {
         {!query && (
           <div className="grid grid-cols-2 gap-4 mb-8">
             {mostConnectedPlace && (
-              <Link href={`/places/${mostConnectedPlace.place.id}`}>
+              <Link href={`/places/${placeSlug(mostConnectedPlace.place)}`}>
                 <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4 hover:border-[#333] transition-all">
                   <div className="text-xs text-zinc-600 mb-1">Most ridden</div>
                   <div className="font-semibold text-white">{mostConnectedPlace.place.name}</div>
@@ -117,7 +117,7 @@ export default function ExplorePage() {
                 <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">Places</div>
                 <div className="grid grid-cols-2 gap-2">
                   {filteredPlaces.map((p) => (
-                    <Link key={p.id} href={`/places/${p.id}`}>
+                    <Link key={p.id} href={`/places/${placeSlug(p)}`}>
                       <div className="flex items-center gap-3 p-3 bg-[#111] border border-[#1e1e1e] rounded-lg hover:border-[#333] transition-all">
                         <span className="text-lg">🏔</span>
                         <div>
@@ -136,7 +136,7 @@ export default function ExplorePage() {
                 <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">Brands</div>
                 <div className="grid grid-cols-2 gap-2">
                   {filteredOrgs.map((o) => (
-                    <Link key={o.id} href={`/orgs/${o.id}`}>
+                    <Link key={o.id} href={`/orgs/${orgSlug(o)}`}>
                       <div className="flex items-center gap-3 p-3 bg-[#111] border border-[#1e1e1e] rounded-lg hover:border-[#333] transition-all">
                         <div className="w-8 h-8 rounded bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300">{o.name[0]}</div>
                         <div>
@@ -155,7 +155,7 @@ export default function ExplorePage() {
                 <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">Boards</div>
                 <div className="grid grid-cols-2 gap-2">
                   {filteredBoards.map((b) => (
-                    <Link key={b.id} href={`/boards/${b.id}`}>
+                    <Link key={b.id} href={`/boards/${boardSlug(b)}`}>
                       <div className="flex items-center gap-3 p-3 bg-[#111] border border-[#1e1e1e] rounded-lg hover:border-[#333] transition-all">
                         <span className="text-lg">🏂</span>
                         <div>
@@ -176,7 +176,7 @@ export default function ExplorePage() {
                   {filteredEvents.map((s) => {
                     const instanceCount = EVENTS.filter((e) => e.series_id === s.id).length
                     return (
-                      <Link key={s.id} href={`/events/${s.id}`}>
+                      <Link key={s.id} href={`/events/${seriesSlug(s)}`}>
                         <div className="flex items-center gap-3 p-3 bg-[#111] border border-[#1e1e1e] rounded-lg hover:border-[#333] transition-all">
                           <span className="text-lg">🏆</span>
                           <div>
@@ -230,7 +230,7 @@ export default function ExplorePage() {
                 {ORGS.filter((o) => o.brand_category).map((o) => {
                   const riderCount = [...new Set(CLAIMS.filter((c) => c.object_id === o.id && (c.predicate === "sponsored_by" || c.predicate === "part_of_team")).map((c) => c.subject_id))].length
                   return (
-                    <Link key={o.id} href={`/orgs/${o.id}`}>
+                    <Link key={o.id} href={`/orgs/${orgSlug(o)}`}>
                       <div className="flex items-center gap-3 p-3 bg-[#111] border border-[#1e1e1e] rounded-lg hover:border-[#333] transition-all">
                         <div className="w-8 h-8 rounded bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300 flex-shrink-0">{o.name[0]}</div>
                         <div className="min-w-0">

@@ -4,7 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import type { RidingDay } from "@/types"
 import { useLineageStore } from "@/store/lineage-store"
-import { PLACES, PEOPLE } from "@/lib/mock-data"
+import { PLACES, PEOPLE, placeSlug } from "@/lib/mock-data"
 import { EntityChip } from "@/components/feed/entity-chip"
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
@@ -43,7 +43,7 @@ export function DayPostCard({ day, isOwn }: { day: RidingDay; isOwn?: boolean })
           {/* Headline */}
           <p className="text-base font-semibold text-white mb-2">
             {place ? (
-              <Link href={`/places/${place.id}`} className="hover:text-emerald-400 transition-colors">
+              <Link href={`/places/${placeSlug(place)}`} className="hover:text-emerald-400 transition-colors">
                 Rode {place.name}
               </Link>
             ) : (

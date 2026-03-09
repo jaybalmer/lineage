@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { useLineageStore } from "@/store/lineage-store"
-import { getEntityName, getBoardById, getPlaceById } from "@/lib/mock-data"
+import { getEntityName, getBoardById, getPlaceById, boardSlug, placeSlug } from "@/lib/mock-data"
 import type { Person, Claim } from "@/types"
 
 interface StartCardProps {
@@ -76,7 +76,7 @@ export function StartCard({ person, claims }: StartCardProps) {
               {boardName && firstBoardClaim && (
                 <div className="flex items-center gap-2.5">
                   <span className="text-[10px] text-zinc-600 w-[72px] shrink-0 leading-none">First board</span>
-                  <Link href={`/boards/${firstBoardClaim.object_id}`}>
+                  <Link href={boardDetail ? `/boards/${boardSlug(boardDetail)}` : `/boards/${firstBoardClaim.object_id}`}>
                     <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-zinc-300 hover:border-zinc-500 hover:text-white transition-all">
                       🏂 {boardName}
                       {boardDetail && (
@@ -91,7 +91,7 @@ export function StartCard({ person, claims }: StartCardProps) {
               {placeName && firstPlaceClaim && (
                 <div className="flex items-center gap-2.5">
                   <span className="text-[10px] text-zinc-600 w-[72px] shrink-0 leading-none">First mountain</span>
-                  <Link href={`/places/${firstPlaceClaim.object_id}`}>
+                  <Link href={(() => { const p = getPlaceById(firstPlaceClaim.object_id); return p ? `/places/${placeSlug(p)}` : `/places/${firstPlaceClaim.object_id}` })()}>
                     <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-zinc-300 hover:border-zinc-500 hover:text-white transition-all">
                       🏔 {placeName}
                     </span>

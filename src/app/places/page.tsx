@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Nav } from "@/components/ui/nav"
-import { PLACES, CLAIMS } from "@/lib/mock-data"
+import { PLACES, CLAIMS, placeSlug } from "@/lib/mock-data"
 import Link from "next/link"
 import type { Place } from "@/types"
 
@@ -26,7 +26,7 @@ function PlaceCard({ place }: { place: Place }) {
   )].sort()
 
   return (
-    <Link href={`/places/${place.id}`}>
+    <Link href={`/places/${placeSlug(place)}`}>
       <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4 hover:border-[#333] transition-all cursor-pointer group h-full">
         <div className="flex items-start justify-between mb-3">
           <span className="text-2xl">{PLACE_TYPE_ICONS[place.place_type] ?? "📍"}</span>

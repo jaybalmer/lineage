@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { Nav } from "@/components/ui/nav"
-import { BOARDS, CLAIMS, getPersonById } from "@/lib/mock-data"
+import { BOARDS, CLAIMS, getPersonById, boardSlug } from "@/lib/mock-data"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import type { Board } from "@/types"
@@ -63,7 +63,7 @@ function BoardCard({ board }: { board: Board }) {
   const riderIds = getRiderIds(board.id)
 
   return (
-    <Link href={`/boards/${board.id}`}>
+    <Link href={`/boards/${boardSlug(board)}`}>
       <div className="bg-[#111] border border-[#1e1e1e] border-l-2 border-l-emerald-700 rounded-xl p-4 hover:border-[#2a2a2a] transition-colors">
         <div className="flex items-center gap-3">
           <span className="text-xl shrink-0">🏂</span>

@@ -2,7 +2,7 @@
 
 import { use } from "react"
 import { Nav } from "@/components/ui/nav"
-import { PLACES, CLAIMS, PEOPLE, getPersonById } from "@/lib/mock-data"
+import { PLACES, CLAIMS, PEOPLE, getPersonById, getPlaceBySlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 import Link from "next/link"
 import { notFound } from "next/navigation"
@@ -11,11 +11,12 @@ const DECADE_RANGE = Array.from({ length: 4 }, (_, i) => `${(199 + i) * 10}s`)
 
 export default function PlacePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const place = PLACES.find((p) => p.id === id)
+  // Accept both slug (Whistler_Blackcomb) and legacy id (p1)
+  const place = PLACES.find((p) => p.id === id) ?? getPlaceBySlug(id)
   if (!place) notFound()
 
-  const rideClaims = CLAIMS.filter((c) => c.object_id === id && c.predicate === "rode_at")
-  const workClaims = CLAIMS.filter((c) => c.object_id === id && c.predicate === "worked_at")
+  const rideClaims = CLAIMS.filter((c) => c.object_id === place.id && c.predicate === "rode_at")
+  const workClaims = CLAIMS.filter((c) => c.object_id === place.id && c.predicate === "worked_at")
 
   const riderIds = [...new Set(rideClaims.map((c) => c.subject_id))]
   const staffIds = [...new Set(workClaims.map((c) => c.subject_id))]

@@ -4,7 +4,7 @@ import { use } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
-import { ORGS, BOARDS, CLAIMS, getPersonById, PEOPLE } from "@/lib/mock-data"
+import { ORGS, BOARDS, CLAIMS, getPersonById, PEOPLE, getOrgBySlug, boardSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 
 const ORG_TYPE_LABEL: Record<string, string> = {
@@ -27,20 +27,21 @@ const BRAND_CAT_LABEL: Record<string, string> = {
 
 export default function OrgPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const org = ORGS.find((o) => o.id === id)
+  // Accept both slug (Burton_Snowboards) and legacy id (o1)
+  const org = ORGS.find((o) => o.id === id) ?? getOrgBySlug(id)
   if (!org) notFound()
 
   // People sponsored by this org
   const sponsorClaims = CLAIMS.filter(
-    (c) => c.object_id === id && c.predicate === "sponsored_by"
+    (c) => c.object_id === org.id && c.predicate === "sponsored_by"
   )
   // People who worked at this org
   const workClaims = CLAIMS.filter(
-    (c) => c.object_id === id && c.predicate === "worked_at"
+    (c) => c.object_id === org.id && c.predicate === "worked_at"
   )
   // Team members
   const teamClaims = CLAIMS.filter(
-    (c) => c.object_id === id && c.predicate === "part_of_team"
+    (c) => c.object_id === org.id && c.predicate === "part_of_team"
   )
 
   // Board models by this brand
@@ -75,7 +76,7 @@ export default function OrgPage({ params }: { params: Promise<{ id: string }> })
 
         {/* Breadcrumb */}
         <div className="text-xs text-zinc-600 mb-6">
-          <Link href="/explore" className="hover:text-zinc-400">Explore</Link>
+          <Link href="/boards" className="hover:text-zinc-400">Boards</Link>
           <span className="mx-2">/</span>
           <span className="text-zinc-400">{org.name}</span>
         </div>
@@ -212,7 +213,7 @@ export default function OrgPage({ params }: { params: Promise<{ id: string }> })
                   {orgBoards.map((board) => {
                     const ownerCount = boardOwnerClaims.filter((c) => c.object_id === board.id).length
                     return (
-                      <Link key={board.id} href={`/boards/${board.id}`}>
+                      <Link key={board.id} href={`/boards/${boardSlug(board)}`}>
                         <div className="flex items-start gap-3 px-3 py-2.5 bg-[#111] border border-[#1e1e1e] rounded-lg hover:border-[#2a2a2a] transition-all group">
                           <div className="text-base">🏂</div>
                           <div className="min-w-0">

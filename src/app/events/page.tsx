@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { Nav } from "@/components/ui/nav"
-import { EVENTS, EVENT_SERIES, CLAIMS, getPersonById, getPlaceById } from "@/lib/mock-data"
+import { EVENTS, EVENT_SERIES, CLAIMS, getPersonById, getPlaceById, eventSlug, seriesSlug } from "@/lib/mock-data"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import type { Event, EventType, EventSeries } from "@/types"
@@ -85,7 +85,7 @@ function EventCard({ event }: { event: Event }) {
   const accent = ACCENT[event.event_type] ?? "border-l-zinc-600"
 
   return (
-    <Link href={`/events/${event.id}`}>
+    <Link href={`/events/${eventSlug(event)}`}>
       <div
         className={cn(
           "bg-[#111] border border-[#1e1e1e] border-l-2 rounded-xl p-4 hover:border-[#2a2a2a] transition-colors",
@@ -129,7 +129,7 @@ function SeriesCard({ series }: { series: EventSeries }) {
   ).size
 
   return (
-    <Link href={`/events/${series.id}`}>
+    <Link href={`/events/${seriesSlug(series)}`}>
       <div className="bg-[#111] border border-[#1e1e1e] border-l-2 border-l-amber-700 rounded-xl p-4 hover:border-[#2a2a2a] transition-colors">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
@@ -229,7 +229,7 @@ export default function EventsPage() {
             {/* All events grouped under their series */}
             {seriesGroups.map(({ series, events }) => (
               <div key={series.id}>
-                <Link href={`/events/${series.id}`}>
+                <Link href={`/events/${seriesSlug(series)}`}>
                   <div className="flex items-center gap-3 mb-3 group">
                     <h2 className="text-sm font-semibold text-zinc-400 group-hover:text-white transition-colors">
                       {series.name}

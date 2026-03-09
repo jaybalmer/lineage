@@ -4,7 +4,7 @@ import { use } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
-import { EVENTS, EVENT_SERIES, CLAIMS, getPersonById, getPlaceById } from "@/lib/mock-data"
+import { EVENTS, EVENT_SERIES, CLAIMS, getPersonById, getPlaceById, getEventBySlug, getSeriesBySlug, placeSlug, seriesSlug, eventSlug } from "@/lib/mock-data"
 import type { Event } from "@/types"
 
 function formatEventDate(start: string, end?: string): string {
@@ -86,9 +86,9 @@ function InstanceRow({ event, highlight }: { event: Event; highlight?: boolean }
 export default function EventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
 
-  // Check if it's a series or an instance
-  const series = EVENT_SERIES.find((s) => s.id === id)
-  const instance = EVENTS.find((e) => e.id === id)
+  // Check if it's a series or an instance — accept both id and slug
+  const series = EVENT_SERIES.find((s) => s.id === id) ?? getSeriesBySlug(id)
+  const instance = series ? undefined : (EVENTS.find((e) => e.id === id) ?? getEventBySlug(id))
 
   if (!series && !instance) notFound()
 
@@ -104,7 +104,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
       : []
     const place = instance.place_id ? getPlaceById(instance.place_id) : null
     const totalAttendees = CLAIMS.filter(
-      (c) => c.object_id === id && EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number])
+      (c) => c.object_id === instance.id && EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number])
     ).length
 
     return (
@@ -115,7 +115,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
           <div className="text-xs text-zinc-600 mb-6">
             {parentSeries ? (
               <>
-                <Link href={`/events/${parentSeries.id}`} className="hover:text-zinc-400">{parentSeries.name}</Link>
+                <Link href={`/events/${seriesSlug(parentSeries)}`} className="hover:text-zinc-400">{parentSeries.name}</Link>
                 <span className="mx-2">/</span>
               </>
             ) : null}
@@ -130,7 +130,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
             </div>
             <h1 className="text-2xl font-bold text-white">{instance.name}</h1>
             {place && (
-              <Link href={`/places/${place.id}`}>
+              <Link href={`/places/${placeSlug(place)}`}>
                 <p className="text-zinc-400 text-sm mt-1 hover:text-blue-300 transition-colors">
                   🏔 {place.name}
                 </p>
@@ -151,7 +151,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
           <section className="mb-8">
             <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3">Attendees</h2>
             <div className="bg-[#0e0e0e] border border-[#1e1e1e] rounded-xl p-4">
-              <AttendeeList eventId={id} />
+              <AttendeeList eventId={instance.id} />
             </div>
           </section>
 
@@ -162,12 +162,12 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
                 Other years — {parentSeries?.name}
               </h2>
               <div className="space-y-2">
-                {seriesInstances.filter((e) => e.id !== id).map((e) => {
+                {seriesInstances.filter((e) => e.id !== instance.id).map((e) => {
                   const count = CLAIMS.filter(
                     (c) => c.object_id === e.id && EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number])
                   ).length
                   return (
-                    <Link key={e.id} href={`/events/${e.id}`}>
+                    <Link key={e.id} href={`/events/${eventSlug(e)}`}>
                       <div className="flex items-center justify-between px-4 py-2.5 bg-[#0e0e0e] border border-[#1e1e1e] rounded-lg hover:border-[#2a2a2a] transition-all">
                         <div>
                           <div className="text-sm text-white">{e.name}</div>
@@ -187,7 +187,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
   }
 
   // Series view
-  const seriesInstances = EVENTS.filter((e) => e.series_id === id).sort(
+  const seriesInstances = EVENTS.filter((e) => e.series_id === series!.id).sort(
     (a, b) => (b.year ?? 0) - (a.year ?? 0)
   )
   const place = series!.place_id ? getPlaceById(series!.place_id) : null
@@ -221,7 +221,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
           </div>
           <h1 className="text-2xl font-bold text-white">{series!.name}</h1>
           {place && (
-            <Link href={`/places/${place.id}`}>
+            <Link href={`/places/${placeSlug(place)}`}>
               <p className="text-zinc-400 text-sm mt-1 hover:text-blue-300 transition-colors">
                 🏔 {place.name}
               </p>
