@@ -10,6 +10,7 @@ import { getPersonById } from "@/lib/mock-data"
 const NAV_ITEMS = [
   { href: "/profile", label: "Profile" },
   { href: "/compare", label: "Compare" },
+  { href: "/riders", label: "People" },
   { href: "/events", label: "Events" },
   { href: "/boards", label: "Boards" },
   { href: "/places", label: "Places" },
