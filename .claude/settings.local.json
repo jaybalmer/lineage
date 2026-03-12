@@ -13,7 +13,27 @@
       "Bash(npm run build)",
       "Bash(git add src/components/ui/add-claim-modal.tsx)",
       "Bash(git push)",
-      "Bash(git add src/components/onboarding/onboarding-flow.tsx src/types/index.ts)"
+      "Bash(git add src/components/onboarding/onboarding-flow.tsx src/types/index.ts)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(git add src/app/timeline/page.tsx src/app/auth/complete/page.tsx src/components/ui/edit-profile-modal.tsx)",
+      "Bash(grep -n \"competed_at\" /Users/jaybalmer/lineage/src/app/events/[id]/page.tsx)",
+      "Bash(ls /Users/jaybalmer/lineage/src/app/connections/[id]/)",
+      "Bash(git -C /Users/jaybalmer/lineage status)",
+      "Bash(git -C /Users/jaybalmer/lineage diff --stat HEAD)",
+      "Bash(git -C /Users/jaybalmer/lineage add src/app/boards/page.tsx \"src/app/connections/[id]/\" src/app/events/page.tsx src/app/profile/ src/components/feed/ src/app/boards/[id]/page.tsx src/app/connections/page.tsx src/app/events/[id]/page.tsx src/app/orgs/[id]/page.tsx src/app/riders/[id]/page.tsx src/app/timeline/page.tsx src/components/ui/nav.tsx)",
+      "Bash(git add src/app/boards/page.tsx src/app/events/page.tsx src/app/profile/ src/components/feed/ src/app/connections/page.tsx src/app/events/[id]/page.tsx src/app/orgs/[id]/page.tsx src/app/riders/[id]/page.tsx src/app/timeline/page.tsx src/components/ui/nav.tsx)",
+      "Bash(git add src/app/boards/page.tsx src/app/events/page.tsx src/app/profile/ src/components/feed/ src/app/connections/page.tsx src/app/orgs/[id]/page.tsx src/app/riders/[id]/page.tsx src/app/timeline/page.tsx src/components/ui/nav.tsx)",
+      "Bash(git add \"src/app/boards/[id]/page.tsx\" \"src/app/events/[id]/page.tsx\" \"src/app/connections/[id]/\")",
+      "Bash(git add -A src/app/boards/ src/app/events/ src/app/profile/ src/app/connections/ src/app/orgs/ src/app/riders/ src/app/timeline/ src/components/)",
+      "Bash(git -C:*)",
+      "Bash(grep -n \"timeline\\\\|profile\" /Users/jaybalmer/lineage/src/app/places/[id]/page.tsx)",
+      "Bash(grep -n \"timeline\" /Users/jaybalmer/lineage/src/app/riders/[id]/page.tsx)",
+      "Bash(sed -n '150,165p' /Users/jaybalmer/lineage/src/app/places/[id]/page.tsx)",
+      "Bash(head -10 /Users/jaybalmer/lineage/src/app/places/[id]/page.tsx)",
+      "Bash(grep -r \"supabase\" /Users/jaybalmer/lineage/.env*)",
+      "Bash(git add src/app/boards/ src/app/events/ src/app/explore/ src/app/orgs/ src/app/places/ src/components/feed/ src/components/timeline/day-card.tsx src/lib/mock-data.ts src/types/index.ts)",
+      "Bash(lsof -i -P -n)",
+      "Bash(lsof -i :3000 -t)"
     ]
   }
 }

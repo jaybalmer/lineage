@@ -21,6 +21,8 @@ const PREDICATE_ENTITY_TYPE: Record<Predicate, EntityType> = {
   shot_by: "person",
   coached_by: "person",
   owned_board: "board",
+  organized: "event",
+  located_at: "place",
 }
 
 type PredicateGroup = {

@@ -30,6 +30,8 @@ export const PREDICATE_LABELS: Record<Predicate, string> = {
   organized_at: "Organized",
   owned_board: "Rode",
   coached_by: "Coached by",
+  organized: "Organized",
+  located_at: "Located at",
 }
 
 export const CONFIDENCE_LABELS: Record<ConfidenceLevel, string> = {
@@ -58,4 +60,6 @@ export const PREDICATE_ICONS: Record<Predicate, string> = {
   organized_at: "📋",
   owned_board: "🏂",
   coached_by: "🎓",
+  organized: "🎪",
+  located_at: "📍",
 }

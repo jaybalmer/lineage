@@ -3,9 +3,10 @@
 import { useState } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
+import { getPersonById } from "@/lib/mock-data"
 import type { PlaceType, OrgType, EventType } from "@/types"
 
-type AddEntityType = "place" | "board" | "org" | "event"
+type AddEntityType = "place" | "board" | "org" | "event" | "person"
 
 interface AddEntityModalProps {
   entityType: AddEntityType
@@ -33,7 +34,12 @@ const MONTHS = [
 ]
 
 export function AddEntityModal({ entityType, initialName = "", onClose, onAdded }: AddEntityModalProps) {
-  const { addUserPlace, addUserBoard, addUserOrg, addUserEvent, activePersonId } = useLineageStore()
+  const { addUserPlace, addUserBoard, addUserOrg, addUserEvent, addUserPerson, activePersonId, profileOverride } = useLineageStore()
+
+  // Resolve the current user's display name for attribution
+  // Check PEOPLE mock data first, then profile override, then generic fallback
+  const currentPerson = getPersonById(activePersonId)
+  const addingAsName = currentPerson?.display_name ?? profileOverride.display_name ?? "you"
 
   // Shared
   const [name, setName] = useState(initialName)
@@ -42,6 +48,9 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
   const [placeType, setPlaceType] = useState<PlaceType>("resort")
   const [region, setRegion] = useState("")
   const [country, setCountry] = useState("")
+  const [placeWebsite, setPlaceWebsite] = useState("")
+  const [placeDescription, setPlaceDescription] = useState("")
+  const [firstSnowboardYear, setFirstSnowboardYear] = useState("")
 
   // Board fields
   const [brand, setBrand] = useState(initialName)
@@ -50,19 +59,29 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
 
   // Org fields
   const [orgType, setOrgType] = useState<OrgType>("shop")
+  const [orgCountry, setOrgCountry] = useState("")
+  const [foundedYear, setFoundedYear] = useState("")
+  const [website, setWebsite] = useState("")
+  const [description, setDescription] = useState("")
 
   // Event fields
   const [eventType, setEventType] = useState<EventType>("contest")
   const [eventYear, setEventYear] = useState("")
-  const [eventMonth, setEventMonth] = useState("")   // "1"–"12" or ""
+  const [eventMonth, setEventMonth] = useState("")
   const [showExactDates, setShowExactDates] = useState(false)
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
+
+  // Person fields
+  const [displayName, setDisplayName] = useState(initialName)
+  const [ridingSince, setRidingSince] = useState("")
+  const [bio, setBio] = useState("")
 
   const canSubmit = () => {
     if (entityType === "place") return name.trim().length > 0
     if (entityType === "board") return brand.trim().length > 0 && model.trim().length > 0
     if (entityType === "org") return name.trim().length > 0
+    if (entityType === "person") return displayName.trim().length > 0
     if (entityType === "event") {
       const y = parseInt(eventYear)
       return name.trim().length > 0 && eventYear.length === 4 && y >= 1950 && y <= 2030
@@ -81,6 +100,9 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
         place_type: placeType,
         region: region.trim() || undefined,
         country: country.trim() || undefined,
+        website: placeWebsite.trim() || undefined,
+        description: placeDescription.trim() || undefined,
+        first_snowboard_year: firstSnowboardYear ? parseInt(firstSnowboardYear) : undefined,
         community_status: "unverified",
         added_by: activePersonId,
       })
@@ -102,6 +124,10 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
         id,
         name: name.trim(),
         org_type: orgType,
+        description: description.trim() || undefined,
+        country: orgCountry.trim() || undefined,
+        founded_year: foundedYear ? parseInt(foundedYear) : undefined,
+        website: website.trim() || undefined,
         community_status: "unverified",
         added_by: activePersonId,
       })
@@ -109,7 +135,6 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
     } else if (entityType === "event") {
       const id = generateId("event")
       const year = parseInt(eventYear)
-      // Build start_date: year → year-month → full date (most specific wins)
       let computedStart = eventYear
       if (eventMonth) computedStart = `${eventYear}-${eventMonth.padStart(2, "0")}`
       if (showExactDates && startDate) computedStart = startDate
@@ -124,21 +149,27 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
         added_by: activePersonId,
       })
       onAdded(id)
+    } else if (entityType === "person") {
+      const id = generateId("rider")
+      addUserPerson({
+        id,
+        display_name: displayName.trim(),
+        riding_since: ridingSince ? parseInt(ridingSince) : undefined,
+        bio: bio.trim() || undefined,
+        privacy_level: "public",
+        community_status: "unverified",
+        added_by: activePersonId,
+      })
+      onAdded(id)
     }
   }
 
   const titles: Record<AddEntityType, string> = {
     place: "Add a new place",
     board: "Add a new board",
-    org: "Add a shop, brand, or team",
+    org: "Add a brand, shop, or team",
     event: "Add a new event",
-  }
-
-  const subtitles: Record<AddEntityType, string> = {
-    place: "It'll be marked as unverified until the community confirms it.",
-    board: "It'll be marked as unverified until the community confirms it.",
-    org: "It'll be marked as unverified until the community confirms it.",
-    event: "It'll be marked as unverified until the community confirms it.",
+    person: "Add a rider",
   }
 
   return (
@@ -151,7 +182,9 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
         {/* Header */}
         <div className="mb-5">
           <h2 className="text-lg font-bold text-white">{titles[entityType]}</h2>
-          <p className="text-xs text-zinc-500 mt-1">{subtitles[entityType]}</p>
+          <p className="text-xs text-zinc-500 mt-1">
+            Will be added as unverified — the community can confirm it.
+          </p>
         </div>
 
         {/* Fields */}
@@ -199,6 +232,35 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
                   />
                 </Field>
               </div>
+              <Field label="First snowboard year">
+                <input
+                  type="number"
+                  value={firstSnowboardYear}
+                  onChange={(e) => setFirstSnowboardYear(e.target.value)}
+                  placeholder="e.g. 1985"
+                  min={1950}
+                  max={new Date().getFullYear()}
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Website">
+                <input
+                  type="text"
+                  value={placeWebsite}
+                  onChange={(e) => setPlaceWebsite(e.target.value)}
+                  placeholder="https://..."
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Description">
+                <textarea
+                  value={placeDescription}
+                  onChange={(e) => setPlaceDescription(e.target.value)}
+                  placeholder="Brief description of this place…"
+                  rows={2}
+                  className={cn(inputCls, "resize-none")}
+                />
+              </Field>
             </>
           )}
 
@@ -255,9 +317,49 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
                   className={inputCls}
                 >
                   {ORG_TYPES.map((t) => (
-                    <option key={t} value={t}>{t}</option>
+                    <option key={t} value={t}>{t.replace("-", " ")}</option>
                   ))}
                 </select>
+              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Founded year">
+                  <input
+                    type="number"
+                    value={foundedYear}
+                    onChange={(e) => setFoundedYear(e.target.value)}
+                    placeholder="e.g. 1995"
+                    min={1900}
+                    max={2030}
+                    className={inputCls}
+                  />
+                </Field>
+                <Field label="Country">
+                  <input
+                    type="text"
+                    value={orgCountry}
+                    onChange={(e) => setOrgCountry(e.target.value)}
+                    placeholder="e.g. CA"
+                    className={inputCls}
+                  />
+                </Field>
+              </div>
+              <Field label="Website">
+                <input
+                  type="text"
+                  value={website}
+                  onChange={(e) => setWebsite(e.target.value)}
+                  placeholder="https://..."
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Description">
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Brief description of this brand or org…"
+                  rows={2}
+                  className={cn(inputCls, "resize-none")}
+                />
               </Field>
             </>
           )}
@@ -326,7 +428,6 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
                       onChange={(e) => {
                         setStartDate(e.target.value)
                         if (!endDate) setEndDate(e.target.value)
-                        // sync year/month from picked date
                         const d = new Date(e.target.value)
                         if (!isNaN(d.getTime())) {
                           setEventYear(String(d.getUTCFullYear()))
@@ -349,16 +450,56 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
               )}
             </>
           )}
+
+          {entityType === "person" && (
+            <>
+              <Field label="Full name" required>
+                <input
+                  autoFocus
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  placeholder="e.g. Jake Burton"
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Riding since">
+                <input
+                  type="number"
+                  value={ridingSince}
+                  onChange={(e) => setRidingSince(e.target.value)}
+                  placeholder="e.g. 1995"
+                  min={1950}
+                  max={new Date().getFullYear()}
+                  className={inputCls}
+                />
+              </Field>
+              <Field label="Bio">
+                <textarea
+                  value={bio}
+                  onChange={(e) => setBio(e.target.value)}
+                  placeholder="Brief note about this rider…"
+                  rows={2}
+                  className={cn(inputCls, "resize-none")}
+                />
+              </Field>
+            </>
+          )}
         </div>
 
-        {/* Unverified notice */}
-        <div className="mt-4 flex items-center gap-2 px-3 py-2 bg-amber-950/30 border border-amber-800/30 rounded-lg">
-          <span className="text-amber-400 text-xs">◎</span>
-          <span className="text-xs text-amber-300/70">Will be added as <strong className="text-amber-300">unverified</strong> — others can confirm it</span>
+        {/* Author attribution */}
+        <div className="mt-4 flex items-center gap-2 px-3 py-2 bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg">
+          <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[9px] font-bold text-white shrink-0">
+            {addingAsName[0]}
+          </div>
+          <span className="text-xs text-zinc-500">
+            Adding as <span className="text-zinc-300">{addingAsName}</span>
+            <span className="text-zinc-700"> · marked unverified until confirmed</span>
+          </span>
         </div>
 
         {/* Actions */}
-        <div className="flex gap-3 mt-5">
+        <div className="flex gap-3 mt-4">
           <button
             onClick={onClose}
             className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-white border border-[#2a2a2a] hover:border-zinc-600 transition-all"
@@ -375,7 +516,7 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
                 : "bg-[#1e1e1e] text-zinc-600 cursor-not-allowed"
             )}
           >
-            Add to my lineage
+            Add to graph
           </button>
         </div>
       </div>

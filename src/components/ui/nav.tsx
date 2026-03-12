@@ -13,6 +13,7 @@ const NAV_ITEMS = [
   { href: "/riders", label: "People" },
   { href: "/events", label: "Events" },
   { href: "/boards", label: "Boards" },
+  { href: "/brands", label: "Brands" },
   { href: "/places", label: "Places" },
   { href: "/connections", label: "Connections" },
 ]

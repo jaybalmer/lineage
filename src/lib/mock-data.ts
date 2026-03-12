@@ -4,10 +4,10 @@ import type { Person, Place, Org, Board, Event, Claim, Source, EventSeries, Enti
 
 export const PLACES: Place[] = [
   // BC Canada
-  { id: "p1",  name: "Whistler Blackcomb",       place_type: "resort", osm_id: "265662",   wikidata_qid: "Q935235",  region: "Sea-to-Sky",          country: "CA", lat: 50.1163, lon: -122.9574, website: "https://www.whistlerblackcomb.com" },
-  { id: "p2",  name: "Mt. Seymour",               place_type: "resort", osm_id: "1234567",                            region: "North Shore",         country: "CA", lat: 49.3717, lon: -122.9451 },
+  { id: "p1",  name: "Whistler Blackcomb",       place_type: "resort", osm_id: "265662",   wikidata_qid: "Q935235",  region: "Sea-to-Sky",          country: "CA", lat: 50.1163, lon: -122.9574, website: "https://www.whistlerblackcomb.com", first_snowboard_year: 1987, description: "The largest ski resort in North America, built on the unceded territory of the Squamish and Lil'wat nations. Whistler Mountain opened in 1966, Blackcomb in 1980. Snowboards were first permitted in the late 1980s and the mountain became one of the defining venues of West Coast snowboarding culture." },
+  { id: "p2",  name: "Mt. Seymour",               place_type: "resort", osm_id: "1234567",                            region: "North Shore",         country: "CA", lat: 49.3717, lon: -122.9451, first_snowboard_year: 1984, description: "A community mountain on the North Shore of Vancouver, Mt. Seymour has been a proving ground for generations of local riders. Its accessible location made it a critical incubator for the early Vancouver snowboard scene in the 1980s." },
   { id: "p3",  name: "Sun Peaks Resort",          place_type: "resort", osm_id: "2345678",                            region: "Thompson-Okanagan",   country: "CA", lat: 50.8827, lon: -119.8805 },
-  { id: "p4",  name: "Revelstoke Mountain Resort",place_type: "resort", osm_id: "3456789",                            region: "Kootenays",           country: "CA", lat: 51.0549, lon: -118.1697 },
+  { id: "p4",  name: "Revelstoke Mountain Resort",place_type: "resort", osm_id: "3456789",                            region: "Kootenays",           country: "CA", lat: 51.0549, lon: -118.1697, first_snowboard_year: 2007, description: "Opened in December 2007, Revelstoke was built from the ground up with snowboarding in mind. Home to North America's greatest verified vertical drop (1,713m) and a legendary backcountry scene, it quickly became a destination resort for expert riders worldwide." },
   { id: "p5",  name: "Powder King Mountain Resort",place_type: "resort",                                              region: "Northern BC",         country: "CA", lat: 55.3500, lon: -122.5500 },
   { id: "p6",  name: "Panorama Mountain Resort",  place_type: "resort",                                              region: "East Kootenays",      country: "CA", lat: 50.4603, lon: -116.2358 },
   { id: "p17", name: "Big White Ski Resort",       place_type: "resort",                                              region: "Okanagan",            country: "CA", lat: 49.7180, lon: -118.9314 },
@@ -20,7 +20,7 @@ export const PLACES: Place[] = [
   { id: "p24", name: "Banff Sunshine Village",     place_type: "resort",                                              region: "Alberta",             country: "CA", lat: 51.0887, lon: -115.7677 },
   { id: "p25", name: "Lake Louise Ski Resort",     place_type: "resort",                                              region: "Alberta",             country: "CA", lat: 51.4254, lon: -116.1773 },
   // Washington / Pacific NW
-  { id: "p26", name: "Mt. Baker Ski Area",         place_type: "resort",                                              region: "Washington",          country: "US", lat: 48.8586, lon: -121.6726, website: "https://www.mtbaker.us" },
+  { id: "p26", name: "Mt. Baker Ski Area",         place_type: "resort",                                              region: "Washington",          country: "US", lat: 48.8586, lon: -121.6726, website: "https://www.mtbaker.us", first_snowboard_year: 1982, description: "One of the first ski resorts in North America to welcome snowboarders, Mt. Baker opened its gates to snowboards in 1982. Home of the legendary Legendary Banked Slalom — one of snowboarding's oldest and most respected contests, held annually since 1985." },
   { id: "p27", name: "Stevens Pass",               place_type: "resort",                                              region: "Washington",          country: "US", lat: 47.7440, lon: -121.0876 },
   { id: "p28", name: "Crystal Mountain",           place_type: "resort",                                              region: "Washington",          country: "US", lat: 46.9279, lon: -121.4744 },
   { id: "p29", name: "Mt. Hood Meadows",           place_type: "resort",                                              region: "Oregon",              country: "US", lat: 45.3313, lon: -121.6648 },
@@ -40,6 +40,9 @@ export const PLACES: Place[] = [
   { id: "p8",  name: "Edge Control Snowboards",    place_type: "shop",                                                region: "North Shore",         country: "CA" },
   { id: "p9",  name: "Showcase Snowboards",        place_type: "shop",                                                region: "Whistler",            country: "CA" },
   { id: "p10", name: "The Board Room",             place_type: "shop",                                                region: "Seattle",             country: "US" },
+  // Westbeach retail locations
+  { id: "pw1", name: "Westbeach Vancouver",        place_type: "shop",                                                region: "Vancouver",           country: "CA", lat: 49.2820, lon: -123.1200 },
+  { id: "pw2", name: "Westbeach Whistler Village", place_type: "shop",                                                region: "Whistler",            country: "CA", lat: 50.1152, lon: -122.9551 },
 ]
 
 // ─── Event Series ─────────────────────────────────────────────────────────────
@@ -80,39 +83,44 @@ export const EVENTS: Event[] = [
   { id: "e4",  name: "Revelstoke Film Shoot '10",event_type: "film-shoot",start_date: "2010-02-01", end_date: "2010-02-10", place_id: "p4", series_id: "es5", year: 2010 },
   { id: "e50", name: "Revelstoke Film Shoot '13",event_type: "film-shoot",start_date: "2013-01-28", end_date: "2013-02-05", place_id: "p4", series_id: "es5", year: 2013 },
   { id: "e51", name: "Revelstoke Film Shoot '16",event_type: "film-shoot",start_date: "2016-02-10", end_date: "2016-02-18", place_id: "p4", series_id: "es5", year: 2016 },
+  // Westbeach events
+  { id: "ew1", name: "Westbeach Cup '96",         event_type: "contest",   start_date: "1996-03-08", end_date: "1996-03-08", place_id: "p1", year: 1996, description: "Annual BC snowboarding contest hosted by Westbeach at Whistler." },
+  { id: "ew2", name: "Westbeach Cup '98",         event_type: "contest",   start_date: "1998-03-05", end_date: "1998-03-06", place_id: "p1", year: 1998, description: "Third edition of the Westbeach Cup — riders' choice format with cash prizes." },
+  { id: "ew3", name: "Westbeach Style Session '04",event_type: "film-shoot",start_date: "2004-01-15", end_date: "2004-01-22", place_id: "p4", year: 2004, description: "Westbeach film project shot in the Kootenays. Featured the brand's team in early-season deep snow." },
 ]
 
 // ─── Orgs ─────────────────────────────────────────────────────────────────────
 
 export const ORGS: Org[] = [
-  // Boards
-  { id: "o1",  name: "Burton Snowboards",        org_type: "brand", brand_category: "board_brand",  wikidata_qid: "Q4988186", founded_year: 1977, country: "US", website: "https://www.burton.com" },
-  { id: "o2",  name: "Capita Snowboards",        org_type: "brand", brand_category: "board_brand",  founded_year: 2000, country: "US", website: "https://www.capitasnowboarding.com" },
-  { id: "o3",  name: "Lib Tech",                 org_type: "brand", brand_category: "board_brand",  wikidata_qid: "Q6545648", founded_year: 1977, country: "US" },
-  { id: "o4",  name: "Rome SDS",                 org_type: "brand", brand_category: "board_brand",  founded_year: 2001, country: "US" },
-  { id: "o8",  name: "Never Summer Industries",  org_type: "brand", brand_category: "board_brand",  founded_year: 1991, country: "US" },
-  { id: "o9",  name: "Gnu Snowboards",           org_type: "brand", brand_category: "board_brand",  founded_year: 1987, country: "US" },
-  { id: "o10", name: "Salomon Snowboards",        org_type: "brand", brand_category: "board_brand",  founded_year: 1979, country: "FR" },
-  { id: "o11", name: "Jones Snowboards",          org_type: "brand", brand_category: "board_brand",  founded_year: 2009, country: "US" },
-  { id: "o12", name: "Arbor Snowboards",          org_type: "brand", brand_category: "board_brand",  founded_year: 1995, country: "US" },
-  { id: "o13", name: "Sims Snowboards",           org_type: "brand", brand_category: "board_brand",  founded_year: 1977, country: "US" },
+  // Board brands
+  { id: "o1",  name: "Burton Snowboards",        org_type: "brand", brand_category: "board_brand",  wikidata_qid: "Q4988186", founded_year: 1977, country: "US", website: "https://www.burton.com",         description: "The world's leading snowboard company, founded by Jake Burton Carpenter in Vermont. Instrumental in growing snowboarding from a fringe sport to a global phenomenon." },
+  { id: "o2",  name: "Capita Snowboards",        org_type: "brand", brand_category: "board_brand",  founded_year: 2000, country: "US", website: "https://www.capitasnowboarding.com", description: "Independent snowboard brand out of Seattle, WA. Home of the World's Smartest Snowboard Factory (WS²F) in Austria. Known for technical freestyle shapes and sustainable manufacturing." },
+  { id: "o3",  name: "Lib Tech",                 org_type: "brand", brand_category: "board_brand",  wikidata_qid: "Q6545648", founded_year: 1977, country: "US",                              description: "Mervin-manufactured brand pioneering Magne-Traction edges and Banana Technology rocker profiles. Mike Olson's lab in Sequim, WA has been engineering the future of snowboarding for decades." },
+  { id: "o4",  name: "Rome SDS",                 org_type: "brand", brand_category: "board_brand",  founded_year: 2001, country: "US",                                                        description: "Rider-owned brand based in Waterbury, VT. SDS stands for Snowboard Design Syndicate — built around a team of riders who shape each season's line." },
+  { id: "o8",  name: "Never Summer Industries",  org_type: "brand", brand_category: "board_brand",  founded_year: 1991, country: "US",                                                        description: "Denver-made since 1991. Never Summer manufactures every board in Colorado, keeping quality control entirely in-house. Known for rockered camber hybrid profiles." },
+  { id: "o9",  name: "Gnu Snowboards",           org_type: "brand", brand_category: "board_brand",  founded_year: 1987, country: "US",                                                        description: "Sister brand to Lib Tech under the Mervin umbrella. Known for eccentric shapes and eco-responsible manufacturing out of the Pacific Northwest." },
+  { id: "o10", name: "Salomon Snowboards",        org_type: "brand", brand_category: "board_brand",  founded_year: 1979, country: "FR",                                                        description: "French alpine heritage brand with a deep snowboard pedigree. The Salomon team has long been a staple of progressive freeride and park riding." },
+  { id: "o11", name: "Jones Snowboards",          org_type: "brand", brand_category: "board_brand",  founded_year: 2009, country: "US",                                                        description: "Founded by pro snowboarder Jeremy Jones, the brand is focused on high-performance backcountry boards and sustainability. HQ in Truckee, CA." },
+  { id: "o12", name: "Arbor Snowboards",          org_type: "brand", brand_category: "board_brand",  founded_year: 1995, country: "US",                                                        description: "Venice Beach-born brand focused on sustainable materials and timeless graphics. Known for using reclaimed wood and FSC-certified topsheets." },
+  { id: "o13", name: "Sims Snowboards",           org_type: "brand", brand_category: "board_brand",  founded_year: 1977, country: "US",                                                        description: "One of the original snowboard companies, founded by Tom Sims. A cornerstone of snowboarding's early history and the halfpipe movement." },
   { id: "o14", name: "Ride Snowboards",           org_type: "brand", brand_category: "board_brand",  founded_year: 1992, country: "US" },
   { id: "o15", name: "K2 Snowboarding",           org_type: "brand", brand_category: "board_brand",  founded_year: 1987, country: "US" },
-  { id: "o16", name: "Bataleon Snowboards",       org_type: "brand", brand_category: "board_brand",  founded_year: 2005, country: "NL" },
+  { id: "o16", name: "Bataleon Snowboards",       org_type: "brand", brand_category: "board_brand",  founded_year: 2005, country: "NL",                                                        description: "Amsterdam-based brand known for inventing Triple Base Technology (TBT) — a 3D board base that eliminates edge catch and transforms how boards ride." },
   { id: "o17", name: "YES. Snowboards",           org_type: "brand", brand_category: "board_brand",  founded_year: 2009, country: "CH" },
-  // Outerwear
-  { id: "o18", name: "Volcom",                    org_type: "brand", brand_category: "outerwear",    founded_year: 1991, country: "US" },
+  // Outerwear & apparel
+  { id: "o25", name: "Westbeach",                 org_type: "brand", brand_category: "outerwear",    founded_year: 1982, country: "CA", website: "https://www.westbeach.com",               description: "Vancouver-born outerwear brand with deep roots in BC snowboarding culture. One of Canada's original snow brands, known for functional and stylish gear since the early '80s." },
+  { id: "o18", name: "Volcom",                    org_type: "brand", brand_category: "outerwear",    founded_year: 1991, country: "US",                                                        description: "Stone Snowboarding roots run deep. Costa Mesa-founded brand that blends skate, surf, and snow culture with a distinctly irreverent edge." },
   { id: "o19", name: "Oakley",                    org_type: "brand", brand_category: "outerwear",    founded_year: 1975, country: "US" },
   { id: "o20", name: "Quiksilver / Roxy",         org_type: "brand", brand_category: "outerwear",    founded_year: 1969, country: "AU" },
-  { id: "o21", name: "Airblaster",                org_type: "brand", brand_category: "outerwear",    founded_year: 2003, country: "US" },
+  { id: "o21", name: "Airblaster",                org_type: "brand", brand_category: "outerwear",    founded_year: 2003, country: "US",                                                        description: "Portland-based outerwear brand founded by pro snowboarder Jesse Grandkoski. Known for the Human Suit base layer and a no-nonsense approach to functional snow gear." },
   // Media
-  { id: "o5",  name: "Snowboard Canada",          org_type: "magazine", brand_category: "media",     founded_year: 1989, country: "CA" },
+  { id: "o5",  name: "Snowboard Canada",          org_type: "magazine", brand_category: "media",     founded_year: 1989, country: "CA",                                                        description: "The definitive Canadian snowboard magazine. Documenting BC and Canadian riding culture since 1989." },
   { id: "o22", name: "Transworld Snowboarding",   org_type: "magazine", brand_category: "media",     founded_year: 1987, country: "US" },
   { id: "o23", name: "Snowboarder Magazine",      org_type: "magazine", brand_category: "media",     founded_year: 1988, country: "US" },
-  // Teams
-  { id: "o6",  name: "Whistler Freeski/Snowboard Club", org_type: "team",   country: "CA" },
-  { id: "o7",  name: "Local Shred Collective",    org_type: "team",          region: "Vancouver" } as Org & { region: string },
-  { id: "o24", name: "North Shore Shred Club",    org_type: "team",          country: "CA" },
+  // Teams & collectives
+  { id: "o6",  name: "Whistler Freeski/Snowboard Club", org_type: "team", country: "CA" },
+  { id: "o7",  name: "Local Shred Collective",    org_type: "team",  region: "Vancouver" },
+  { id: "o24", name: "North Shore Shred Club",    org_type: "team",  country: "CA" },
 ]
 
 // ─── Boards ──────────────────────────────────────────────────────────────────
@@ -333,6 +341,13 @@ export const CLAIMS: Claim[] = [
   { id: "c125", subject_id: "u8", subject_type: "person", predicate: "worked_at",    object_id: "o5",  object_type: "org",   start_date: "2010-01-01",                          confidence: "self-reported", visibility: "public", asserted_by: "u8", created_at: "2026-03-01" },
   { id: "c126", subject_id: "u8", subject_type: "person", predicate: "sponsored_by", object_id: "o10", object_type: "org",   start_date: "2011-01-01", end_date: "2016-12-31",  confidence: "documented",    visibility: "public", asserted_by: "u8", created_at: "2026-03-01" },
   { id: "c127", subject_id: "u8", subject_type: "person", predicate: "owned_board",  object_id: "b7",  object_type: "board", start_date: "2018-01-01",                          confidence: "self-reported", visibility: "public", asserted_by: "u8", created_at: "2026-03-01" },
+
+  // ── Westbeach org claims ───────────────────────────────────────────────────
+  { id: "c_wb1", subject_id: "o25", subject_type: "org", predicate: "organized",   object_id: "ew1", object_type: "event", start_date: "1996-03-08", confidence: "documented",    visibility: "public", asserted_by: "u1", created_at: "2026-03-01" },
+  { id: "c_wb2", subject_id: "o25", subject_type: "org", predicate: "organized",   object_id: "ew2", object_type: "event", start_date: "1998-03-05", confidence: "documented",    visibility: "public", asserted_by: "u1", created_at: "2026-03-01" },
+  { id: "c_wb3", subject_id: "o25", subject_type: "org", predicate: "organized",   object_id: "ew3", object_type: "event", start_date: "2004-01-15", confidence: "corroborated",  visibility: "public", asserted_by: "u1", created_at: "2026-03-01" },
+  { id: "c_wb4", subject_id: "o25", subject_type: "org", predicate: "located_at",  object_id: "pw1", object_type: "place", start_date: "1988-01-01", end_date: "2015-12-31",      confidence: "corroborated",  visibility: "public", asserted_by: "u1", created_at: "2026-03-01", note: "Flagship Vancouver retail location on Robson St." },
+  { id: "c_wb5", subject_id: "o25", subject_type: "org", predicate: "located_at",  object_id: "pw2", object_type: "place", start_date: "1995-01-01", end_date: "2008-12-31",      confidence: "self-reported", visibility: "public", asserted_by: "u1", created_at: "2026-03-01", note: "Whistler Village store, open seasonally." },
 ]
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -487,7 +502,7 @@ export function getEntityHref(id: string, type: EntityType): string {
   }
   if (type === "org") {
     const org = getOrgById(id)
-    return org ? `/orgs/${orgSlug(org)}` : `/orgs/${id}`
+    return org ? `/brands/${orgSlug(org)}` : `/brands/${id}`
   }
   if (type === "event") {
     const event = getEventById(id)

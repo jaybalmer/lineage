@@ -2,20 +2,14 @@
 
 import { useState, useMemo } from "react"
 import { Nav } from "@/components/ui/nav"
-import { BOARDS, CLAIMS, getPersonById, boardSlug } from "@/lib/mock-data"
+import { BOARDS, CLAIMS, ORGS, getPersonById, boardSlug, orgSlug } from "@/lib/mock-data"
+import { AddEntityModal } from "@/components/ui/add-entity-modal"
+import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import type { Board } from "@/types"
 
-type ShapeFilter = "all" | "twin" | "directional" | "powder" | "directional-twin"
-
-const SHAPE_FILTERS: { value: ShapeFilter; label: string }[] = [
-  { value: "all", label: "All" },
-  { value: "twin", label: "Twin" },
-  { value: "directional", label: "Directional" },
-  { value: "powder", label: "Powder" },
-  { value: "directional-twin", label: "Directional-twin" },
-]
+type MainTab = "all" | "brands" | "models"
 
 function getRiderIds(boardId: string): string[] {
   return [
@@ -61,6 +55,8 @@ function AvatarStack({ riderIds }: { riderIds: string[] }) {
 
 function BoardCard({ board }: { board: Board }) {
   const riderIds = getRiderIds(board.id)
+  const addedByPerson = board.added_by ? getPersonById(board.added_by) : null
+  const isUnverified = board.community_status === "unverified"
 
   return (
     <Link href={`/boards/${boardSlug(board)}`}>
@@ -79,54 +75,155 @@ function BoardCard({ board }: { board: Board }) {
                 </span>
               )}
             </div>
-          </div>
-          {riderIds.length > 0 && (
-            <div className="shrink-0 flex flex-col items-end gap-1">
-              <AvatarStack riderIds={riderIds} />
-              <div className="text-[10px] text-zinc-600">
-                {riderIds.length} rider{riderIds.length !== 1 ? "s" : ""}
+            {isUnverified && addedByPerson && (
+              <div className="flex items-center gap-1 mt-1 text-[10px] text-zinc-700">
+                <div className="w-3 h-3 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold">
+                  {addedByPerson.display_name[0]}
+                </div>
+                Added by {addedByPerson.display_name}
               </div>
-            </div>
-          )}
+            )}
+          </div>
+          <div className="shrink-0 flex flex-col items-end gap-1">
+            {isUnverified && (
+              <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5">unverified</span>
+            )}
+            {riderIds.length > 0 && (
+              <>
+                <AvatarStack riderIds={riderIds} />
+                <div className="text-[10px] text-zinc-600">
+                  {riderIds.length} rider{riderIds.length !== 1 ? "s" : ""}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </Link>
   )
 }
 
+function SectionDivider({ label, count, unit = "board", href }: { label: string; count: number; unit?: string; href?: string }) {
+  const nameEl = href ? (
+    <Link href={href} className="text-sm font-semibold text-zinc-300 hover:text-blue-400 transition-colors">
+      {label}
+    </Link>
+  ) : (
+    <span className="text-sm font-semibold text-zinc-300">{label}</span>
+  )
+
+  return (
+    <div className="flex items-center gap-3 mb-3">
+      <div className="w-7 h-7 rounded bg-[#1e1e1e] border border-[#2a2a2a] flex items-center justify-center text-xs font-bold text-zinc-500 shrink-0">
+        {label[0]}
+      </div>
+      {nameEl}
+      <div className="flex-1 h-px bg-[#1e1e1e]" />
+      <span className="text-[10px] text-zinc-600">
+        {count} {unit}{count !== 1 ? "s" : ""}
+      </span>
+    </div>
+  )
+}
+
+function DecadeDivider({ label }: { label: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-xs font-semibold text-zinc-600 uppercase tracking-widest shrink-0">{label}</span>
+      <div className="flex-1 h-px bg-[#1e1e1e]" />
+    </div>
+  )
+}
+
 export default function BoardsPage() {
-  const [filter, setFilter] = useState<ShapeFilter>("all")
+  const [mainTab, setMainTab] = useState<MainTab>("all")
+  const [addOpen, setAddOpen] = useState(false)
+  const { userEntities } = useLineageStore()
 
-  const filteredBoards = useMemo(
-    () => (filter === "all" ? BOARDS : BOARDS.filter((b) => b.shape === filter)),
-    [filter]
-  )
+  const allBoards = [...BOARDS, ...(userEntities.boards ?? [])]
 
-  const brands = useMemo(
-    () => [...new Set(filteredBoards.map((b) => b.brand))].sort(),
-    [filteredBoards]
-  )
+  // ── All tab: decade groups ────────────────────────────────────────────────
+  const decadeGroups = useMemo(() => {
+    const byDecade = new Map<number, Board[]>()
+    allBoards.forEach((b) => {
+      const decade = Math.floor(b.model_year / 10) * 10
+      if (!byDecade.has(decade)) byDecade.set(decade, [])
+      byDecade.get(decade)!.push(b)
+    })
+    return [...byDecade.entries()]
+      .sort(([a], [b]) => b - a)
+      .map(([decade, boards]) => ({
+        label: `${decade}s`,
+        boards: [...boards].sort((a, b) => b.model_year - a.model_year),
+      }))
+  }, [allBoards])
+
+  // ── Brands tab: grouped by brand, alphabetical ────────────────────────────
+  const brandGroups = useMemo(() => {
+    const byBrand = new Map<string, Board[]>()
+    allBoards.forEach((b) => {
+      if (!byBrand.has(b.brand)) byBrand.set(b.brand, [])
+      byBrand.get(b.brand)!.push(b)
+    })
+    return [...byBrand.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([brand, boards]) => ({
+        brand,
+        boards: [...boards].sort((a, b) => b.model_year - a.model_year),
+      }))
+  }, [allBoards])
+
+  // ── Models tab: grouped by model name, alphabetical ───────────────────────
+  const modelGroups = useMemo(() => {
+    const byModel = new Map<string, Board[]>()
+    allBoards.forEach((b) => {
+      if (!byModel.has(b.model)) byModel.set(b.model, [])
+      byModel.get(b.model)!.push(b)
+    })
+    return [...byModel.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([model, boards]) => ({
+        model,
+        boards: [...boards].sort((a, b) => b.model_year - a.model_year),
+      }))
+  }, [allBoards])
+
+  const isEmpty = allBoards.length === 0
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
       <Nav />
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <div className="mb-6">
-          <h1 className="text-xl font-bold text-white">Boards</h1>
-          <p className="text-sm text-zinc-500 mt-1">The shapes that shaped the scene</p>
+
+        {/* Header */}
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold text-white">Boards</h1>
+            <p className="text-sm text-zinc-500 mt-1">The shapes that shaped the scene</p>
+          </div>
+          <button
+            onClick={() => setAddOpen(true)}
+            className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-white hover:bg-blue-500 transition-all"
+          >
+            + Add board
+          </button>
         </div>
 
-        {/* Shape filter chips */}
-        <div className="flex flex-wrap gap-2 mb-8">
-          {SHAPE_FILTERS.map(({ value, label }) => (
+        {/* Tab bar */}
+        <div className="flex gap-1 bg-[#111] border border-[#1e1e1e] rounded-lg p-1 mb-6 w-fit">
+          {([
+            { key: "all" as MainTab, label: "All" },
+            { key: "brands" as MainTab, label: "Brands" },
+            { key: "models" as MainTab, label: "Models" },
+          ]).map(({ key, label }) => (
             <button
-              key={value}
-              onClick={() => setFilter(value)}
+              key={key}
+              onClick={() => setMainTab(key)}
               className={cn(
-                "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
-                filter === value
-                  ? "bg-white text-black border-white"
-                  : "bg-transparent text-zinc-500 border-[#2a2a2a] hover:border-zinc-500 hover:text-zinc-300"
+                "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                mainTab === key
+                  ? "bg-[#2a2a2a] text-white"
+                  : "text-zinc-500 hover:text-zinc-300"
               )}
             >
               {label}
@@ -134,41 +231,78 @@ export default function BoardsPage() {
           ))}
         </div>
 
-        {/* Brand groups */}
-        <div className="space-y-8">
-          {brands.length === 0 ? (
-            <div className="text-sm text-zinc-600 text-center py-12 border border-dashed border-[#2a2a2a] rounded-xl">
-              No boards found for this filter
-            </div>
-          ) : (
-            brands.map((brand) => {
-              const brandBoards = filteredBoards
-                .filter((b) => b.brand === brand)
-                .sort((a, b) => b.model_year - a.model_year)
-
-              return (
-                <div key={brand}>
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-7 h-7 rounded bg-[#1e1e1e] border border-[#2a2a2a] flex items-center justify-center text-xs font-bold text-zinc-500 shrink-0">
-                      {brand[0]}
+        {isEmpty ? (
+          <div className="text-sm text-zinc-600 text-center py-12 border border-dashed border-[#2a2a2a] rounded-xl">
+            No boards found.{" "}
+            <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
+          </div>
+        ) : (
+          <>
+            {/* ── All tab: by decade ── */}
+            {mainTab === "all" && (
+              <div className="space-y-8">
+                {decadeGroups.map(({ label, boards }) => (
+                  <div key={label}>
+                    <DecadeDivider label={label} />
+                    <div className="space-y-2 mt-3">
+                      {boards.map((board) => (
+                        <BoardCard key={board.id} board={board} />
+                      ))}
                     </div>
-                    <h2 className="text-sm font-semibold text-zinc-300">{brand}</h2>
-                    <div className="flex-1 h-px bg-[#1e1e1e]" />
-                    <span className="text-[10px] text-zinc-600">
-                      {brandBoards.length} model{brandBoards.length !== 1 ? "s" : ""}
-                    </span>
                   </div>
-                  <div className="space-y-2">
-                    {brandBoards.map((board) => (
-                      <BoardCard key={board.id} board={board} />
-                    ))}
+                ))}
+              </div>
+            )}
+
+            {/* ── Brands tab: by brand alphabetically ── */}
+            {mainTab === "brands" && (
+              <div className="space-y-8">
+                {brandGroups.map(({ brand, boards }) => {
+                  const org = ORGS.find((o) =>
+                    o.name.toLowerCase() === brand.toLowerCase() ||
+                    o.name.toLowerCase().startsWith(brand.toLowerCase() + " ")
+                  )
+                  const href = org ? `/brands/${orgSlug(org)}` : undefined
+                  return (
+                    <div key={brand}>
+                      <SectionDivider label={brand} count={boards.length} unit="model" href={href} />
+                      <div className="space-y-2">
+                        {boards.map((board) => (
+                          <BoardCard key={board.id} board={board} />
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* ── Models tab: by model name alphabetically ── */}
+            {mainTab === "models" && (
+              <div className="space-y-8">
+                {modelGroups.map(({ model, boards }) => (
+                  <div key={model}>
+                    <SectionDivider label={model} count={boards.length} />
+                    <div className="space-y-2">
+                      {boards.map((board) => (
+                        <BoardCard key={board.id} board={board} />
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )
-            })
-          )}
-        </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
+
+      {addOpen && (
+        <AddEntityModal
+          entityType="board"
+          onClose={() => setAddOpen(false)}
+          onAdded={() => setAddOpen(false)}
+        />
+      )}
     </div>
   )
 }

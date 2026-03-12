@@ -18,6 +18,8 @@ export type Predicate =
   | "organized_at"
   | "owned_board"
   | "coached_by"
+  | "organized"
+  | "located_at"
 
 export interface Person {
   id: string
@@ -30,6 +32,8 @@ export interface Person {
   avatar_url?: string
   home_resort_id?: string
   is_current_user?: boolean
+  community_status?: CommunityStatus
+  added_by?: string
 }
 
 export interface Place {
@@ -44,6 +48,8 @@ export interface Place {
   lon?: number
   website?: string
   image_url?: string
+  description?: string
+  first_snowboard_year?: number
   community_status?: CommunityStatus
   added_by?: string
 }
@@ -55,9 +61,11 @@ export interface Org {
   name: string
   org_type: OrgType
   brand_category?: BrandCategory
+  description?: string
   wikidata_qid?: string
   founded_year?: number
   country?: string
+  region?: string
   website?: string
   logo_url?: string
   community_status?: CommunityStatus

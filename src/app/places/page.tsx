@@ -2,7 +2,9 @@
 
 import { useState } from "react"
 import { Nav } from "@/components/ui/nav"
-import { PLACES, CLAIMS, placeSlug } from "@/lib/mock-data"
+import { PLACES, CLAIMS, placeSlug, getPersonById } from "@/lib/mock-data"
+import { AddEntityModal } from "@/components/ui/add-entity-modal"
+import { useLineageStore } from "@/store/lineage-store"
 import Link from "next/link"
 import type { Place } from "@/types"
 
@@ -25,14 +27,22 @@ function PlaceCard({ place }: { place: Place }) {
       .map((c) => `${Math.floor(parseInt(c.start_date!.slice(0, 4)) / 10) * 10}s`)
   )].sort()
 
+  const addedByPerson = place.added_by ? getPersonById(place.added_by) : null
+  const isUnverified = place.community_status === "unverified"
+
   return (
     <Link href={`/places/${placeSlug(place)}`}>
-      <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4 hover:border-[#333] transition-all cursor-pointer group h-full">
+      <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4 hover:border-[#333] transition-all cursor-pointer group h-full flex flex-col">
         <div className="flex items-start justify-between mb-3">
           <span className="text-2xl">{PLACE_TYPE_ICONS[place.place_type] ?? "📍"}</span>
-          {place.osm_id && (
-            <span className="text-[10px] text-zinc-700 font-mono">OSM ✓</span>
-          )}
+          <div className="flex items-center gap-1.5">
+            {isUnverified && (
+              <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5">unverified</span>
+            )}
+            {place.osm_id && (
+              <span className="text-[10px] text-zinc-700 font-mono">OSM ✓</span>
+            )}
+          </div>
         </div>
         <div className="font-semibold text-white text-sm group-hover:text-blue-300 transition-colors">
           {place.name}
@@ -53,6 +63,14 @@ function PlaceCard({ place }: { place: Place }) {
             ))}
           </div>
         )}
+        {isUnverified && addedByPerson && (
+          <div className="mt-auto pt-2 flex items-center gap-1 text-[10px] text-zinc-700">
+            <div className="w-3 h-3 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold">
+              {addedByPerson.display_name[0]}
+            </div>
+            Added by {addedByPerson.display_name}
+          </div>
+        )}
       </div>
     </Link>
   )
@@ -61,8 +79,12 @@ function PlaceCard({ place }: { place: Place }) {
 export default function PlacesPage() {
   const [query, setQuery] = useState("")
   const [typeFilter, setTypeFilter] = useState<string>("all")
+  const [addOpen, setAddOpen] = useState(false)
+  const { userEntities } = useLineageStore()
 
-  const filtered = PLACES.filter((p) => {
+  const allPlaces = [...PLACES, ...(userEntities.places ?? [])]
+
+  const filtered = allPlaces.filter((p) => {
     const matchesQuery = p.name.toLowerCase().includes(query.toLowerCase()) ||
       (p.region ?? "").toLowerCase().includes(query.toLowerCase())
     const matchesType = typeFilter === "all" || p.place_type === typeFilter
@@ -78,7 +100,10 @@ export default function PlacesPage() {
             <h1 className="text-xl font-bold text-white">Places</h1>
             <p className="text-sm text-zinc-500 mt-1">Resorts, shops, and zones in the lineage</p>
           </div>
-          <button className="px-4 py-2 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-sm text-zinc-300 hover:border-zinc-500 hover:text-white transition-all">
+          <button
+            onClick={() => setAddOpen(true)}
+            className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-white hover:bg-blue-500 transition-all"
+          >
             + Add place
           </button>
         </div>
@@ -115,11 +140,20 @@ export default function PlacesPage() {
           ))}
           {filtered.length === 0 && (
             <div className="col-span-full text-center text-zinc-600 py-12 text-sm">
-              No places found. Try a different search.
+              No places found.{" "}
+              <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
             </div>
           )}
         </div>
       </div>
+
+      {addOpen && (
+        <AddEntityModal
+          entityType="place"
+          onClose={() => setAddOpen(false)}
+          onAdded={() => setAddOpen(false)}
+        />
+      )}
     </div>
   )
 }

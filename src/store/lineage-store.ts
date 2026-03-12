@@ -17,6 +17,7 @@ type UserEntities = {
   boards: Board[]
   orgs: Org[]
   events: Event[]
+  people: Person[]
 }
 
 interface LineageStore {
@@ -48,8 +49,9 @@ interface LineageStore {
   addUserBoard: (board: Board) => void
   addUserOrg: (org: Org) => void
   addUserEvent: (event: Event) => void
+  addUserPerson: (person: Person) => void
   updateUserEvent: (id: string, updates: Partial<Event>) => void
-  verifyEntity: (entityType: "place" | "board" | "org" | "event", id: string) => void
+  verifyEntity: (entityType: "place" | "board" | "org" | "event" | "person", id: string) => void
   loadDbEntities: () => void
 
   // Riding days
@@ -155,7 +157,7 @@ export const useLineageStore = create<LineageStore>()(
       deletedClaimIds: [],
       claimOverrides: {},
 
-      userEntities: { places: [], boards: [], orgs: [], events: [] },
+      userEntities: { places: [], boards: [], orgs: [], events: [], people: [] },
       addUserPlace: (place) => {
         const entity = { ...place, community_status: "unverified" as const }
         set((s) => ({ userEntities: { ...s.userEntities, places: [...s.userEntities.places, entity] } }))
@@ -163,6 +165,9 @@ export const useLineageStore = create<LineageStore>()(
           supabase.from("places").insert({
             id: place.id, name: place.name, place_type: place.place_type,
             region: place.region ?? null, country: place.country ?? null,
+            website: place.website ?? null,
+            description: place.description ?? null,
+            first_snowboard_year: place.first_snowboard_year ?? null,
             community_status: "unverified", added_by: get().activePersonId,
           }).then(({ error }) => { if (error) console.error("place insert:", error) })
         }
@@ -199,6 +204,18 @@ export const useLineageStore = create<LineageStore>()(
           }).then(({ error }) => { if (error) console.error("event insert:", error) })
         }
       },
+      addUserPerson: (person) => {
+        const entity = { ...person, community_status: "unverified" as const }
+        set((s) => ({ userEntities: { ...s.userEntities, people: [...s.userEntities.people, entity] } }))
+        if (isAuthUser(get().activePersonId)) {
+          supabase.from("people").insert({
+            id: person.id, display_name: person.display_name,
+            riding_since: person.riding_since ?? null,
+            bio: person.bio ?? null,
+            community_status: "unverified", added_by: get().activePersonId,
+          }).then(({ error }) => { if (error) console.error("person insert:", error) })
+        }
+      },
       updateUserEvent: (id, updates) => {
         set((s) => ({
           userEntities: {
@@ -213,7 +230,7 @@ export const useLineageStore = create<LineageStore>()(
       },
       verifyEntity: (entityType, id) =>
         set((s) => {
-          const key = `${entityType}s` as keyof UserEntities
+          const key = (entityType === "person" ? "people" : `${entityType}s`) as keyof UserEntities
           return {
             userEntities: {
               ...s.userEntities,
@@ -239,6 +256,7 @@ export const useLineageStore = create<LineageStore>()(
               boards: (boardsRes.data ?? []) as Board[],
               orgs: (orgsRes.data ?? []) as Org[],
               events: (eventsRes.data ?? []) as Event[],
+              people: [],
             },
           })
         })
