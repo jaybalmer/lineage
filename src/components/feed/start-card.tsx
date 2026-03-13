@@ -66,7 +66,7 @@ export function StartCard({ person, claims }: StartCardProps) {
       <div className="flex items-start gap-3">
         <span className="text-lg shrink-0 mt-0.5">🏂</span>
         <div className="min-w-0 flex-1">
-          <div className="text-[10px] text-zinc-600 uppercase tracking-widest mb-1">Origin</div>
+          <div className="text-[10px] text-muted uppercase tracking-widest mb-1">Origin</div>
           <div className="font-semibold text-foreground text-sm leading-snug">
             Started snowboarding in {person.riding_since}
           </div>
@@ -75,12 +75,12 @@ export function StartCard({ person, claims }: StartCardProps) {
             <div className="mt-3 space-y-2">
               {boardName && firstBoardClaim && (
                 <div className="flex items-center gap-2.5">
-                  <span className="text-[10px] text-zinc-600 w-[72px] shrink-0 leading-none">First board</span>
+                  <span className="text-[10px] text-muted w-[72px] shrink-0 leading-none">First board</span>
                   <Link href={boardDetail ? `/boards/${boardSlug(boardDetail)}` : `/boards/${firstBoardClaim.object_id}`}>
-                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-surface-hover border border-border-default rounded-lg text-zinc-300 hover:border-zinc-500 hover:text-foreground transition-all">
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-surface-hover border border-border-default rounded-lg text-muted hover:border-border-default hover:text-foreground transition-all">
                       🏂 {boardName}
                       {boardDetail && (
-                        <span className="text-zinc-600">
+                        <span className="text-muted">
                           &nbsp;&apos;{String(boardDetail.model_year).slice(2)}
                         </span>
                       )}
@@ -90,9 +90,9 @@ export function StartCard({ person, claims }: StartCardProps) {
               )}
               {placeName && firstPlaceClaim && (
                 <div className="flex items-center gap-2.5">
-                  <span className="text-[10px] text-zinc-600 w-[72px] shrink-0 leading-none">First mountain</span>
+                  <span className="text-[10px] text-muted w-[72px] shrink-0 leading-none">First mountain</span>
                   <Link href={(() => { const p = getPlaceById(firstPlaceClaim.object_id); return p ? `/places/${placeSlug(p)}` : `/places/${firstPlaceClaim.object_id}` })()}>
-                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-surface-hover border border-border-default rounded-lg text-zinc-300 hover:border-zinc-500 hover:text-foreground transition-all">
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-surface-hover border border-border-default rounded-lg text-muted hover:border-border-default hover:text-foreground transition-all">
                       🏔 {placeName}
                     </span>
                   </Link>
@@ -102,7 +102,7 @@ export function StartCard({ person, claims }: StartCardProps) {
           )}
 
           {!boardName && !placeName && (
-            <p className="text-xs text-zinc-600 mt-2">
+            <p className="text-xs text-muted mt-2">
               Add your first board and mountain to complete your origin story.
             </p>
           )}

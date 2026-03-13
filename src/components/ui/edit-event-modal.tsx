@@ -24,7 +24,7 @@ const inputCls =
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs text-zinc-500 mb-1.5">
+      <label className="block text-xs text-muted mb-1.5">
         {label}{required && <span className="text-blue-500 ml-0.5">*</span>}
       </label>
       {children}
@@ -135,7 +135,7 @@ export function EditEventModal({ event, onClose }: EditEventModalProps) {
           <button
             type="button"
             onClick={() => setShowExactDates(!showExactDates)}
-            className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors text-left"
+            className="text-xs text-muted hover:text-foreground transition-colors text-left"
           >
             {showExactDates ? "− Remove specific dates" : "+ Add specific start / end dates"}
           </button>
@@ -173,7 +173,7 @@ export function EditEventModal({ event, onClose }: EditEventModalProps) {
         <div className="flex gap-3 mt-5">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-foreground border border-border-default hover:border-zinc-600 transition-all"
+            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-muted hover:text-foreground border border-border-default hover:border-border-default transition-all"
           >
             Cancel
           </button>
@@ -184,7 +184,7 @@ export function EditEventModal({ event, onClose }: EditEventModalProps) {
               "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
               canSubmit()
                 ? "bg-blue-600 text-white hover:bg-blue-500"
-                : "bg-surface-active text-zinc-600 cursor-not-allowed"
+                : "bg-surface-active text-muted cursor-not-allowed"
             )}
           >
             Save

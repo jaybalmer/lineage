@@ -61,20 +61,20 @@ export function DayPostCard({ day, isOwn }: { day: RidingDay; isOwn?: boolean })
 
           {/* Note */}
           {day.note && (
-            <p className="text-sm text-zinc-400 leading-relaxed">{day.note}</p>
+            <p className="text-sm text-muted leading-relaxed">{day.note}</p>
           )}
         </div>
 
         {/* Controls */}
         <div className="flex items-center gap-2 flex-shrink-0">
           {day.visibility === "private" && (
-            <span className="text-xs text-zinc-700" title="Private">🔒</span>
+            <span className="text-xs text-muted" title="Private">🔒</span>
           )}
           {isOwn && (
             <div className="relative">
               <button
                 onClick={() => { setMenuOpen((o) => !o); setConfirmDelete(false) }}
-                className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-zinc-600 hover:text-foreground hover:bg-surface-hover transition-all text-sm"
+                className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-muted hover:text-foreground hover:bg-surface-hover transition-all text-sm"
                 title="Options"
               >
                 ⋯
@@ -92,11 +92,11 @@ export function DayPostCard({ day, isOwn }: { day: RidingDay; isOwn?: boolean })
                       </button>
                     ) : (
                       <div className="px-3 py-3">
-                        <p className="text-xs text-zinc-400 mb-2">Remove this day?</p>
+                        <p className="text-xs text-muted mb-2">Remove this day?</p>
                         <div className="flex gap-2">
                           <button
                             onClick={() => setConfirmDelete(false)}
-                            className="flex-1 px-2 py-1.5 text-xs rounded border border-border-default text-zinc-500 hover:text-foreground transition-colors"
+                            className="flex-1 px-2 py-1.5 text-xs rounded border border-border-default text-muted hover:text-foreground transition-colors"
                           >
                             Cancel
                           </button>

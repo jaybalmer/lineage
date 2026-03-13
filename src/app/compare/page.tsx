@@ -54,11 +54,11 @@ function PersonPicker({
 
   return (
     <div className="relative flex-1 min-w-0">
-      <div className="text-[10px] text-zinc-600 uppercase tracking-wider mb-1">{label}</div>
+      <div className="text-[10px] text-muted uppercase tracking-wider mb-1">{label}</div>
       {value ? (
         <button
           onClick={() => setOpen(true)}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 bg-surface border border-border-default rounded-xl text-left hover:border-zinc-600 transition-colors group"
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 bg-surface border border-border-default rounded-xl text-left hover:border-border-default transition-colors group"
         >
           <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-foreground shrink-0">
             {initials(value.display_name)}
@@ -66,17 +66,17 @@ function PersonPicker({
           <div className="min-w-0">
             <div className="text-sm font-medium text-foreground truncate">{value.display_name}</div>
             {value.birth_year && (
-              <div className="text-[11px] text-zinc-500">b. {value.birth_year}</div>
+              <div className="text-[11px] text-muted">b. {value.birth_year}</div>
             )}
           </div>
-          <span className="ml-auto text-[10px] text-zinc-600 group-hover:text-zinc-400 shrink-0">
+          <span className="ml-auto text-[10px] text-muted group-hover:text-foreground shrink-0">
             change
           </span>
         </button>
       ) : (
         <button
           onClick={() => setOpen(true)}
-          className="w-full px-3 py-2.5 bg-surface border border-dashed border-border-default rounded-xl text-sm text-zinc-600 text-left hover:border-zinc-500 hover:text-zinc-400 transition-colors"
+          className="w-full px-3 py-2.5 bg-surface border border-dashed border-border-default rounded-xl text-sm text-muted text-left hover:border-border-default hover:text-foreground transition-colors"
         >
           Search for a rider…
         </button>
@@ -97,7 +97,7 @@ function PersonPicker({
             </div>
             <div className="max-h-56 overflow-y-auto">
               {results.length === 0 ? (
-                <div className="px-3 py-5 text-sm text-zinc-600 text-center">No riders found</div>
+                <div className="px-3 py-5 text-sm text-muted text-center">No riders found</div>
               ) : (
                 results.map((p) => (
                   <button
@@ -114,7 +114,7 @@ function PersonPicker({
                     </div>
                     <div>
                       <div className="text-sm text-foreground">{p.display_name}</div>
-                      <div className="text-[11px] text-zinc-600">
+                      <div className="text-[11px] text-muted">
                         {p.birth_year ? `b. ${p.birth_year}` : ""}
                         {p.home_resort_id
                           ? ` · ${getPlaceById(p.home_resort_id)?.name ?? ""}`
@@ -156,10 +156,10 @@ function CompactClaimRow({
     >
       <span className="text-xs mt-0.5 shrink-0">{icon}</span>
       <div className="min-w-0 flex-1">
-        <div className={cn("text-xs truncate", shared ? "text-blue-200" : "text-zinc-300")}>
+        <div className={cn("text-xs truncate", shared ? "text-blue-200" : "text-muted")}>
           {entityName}
         </div>
-        <div className="text-[10px] text-zinc-600">{years}</div>
+        <div className="text-[10px] text-muted">{years}</div>
       </div>
       {shared && <span className="text-[8px] text-blue-500 shrink-0 mt-1">●</span>}
     </div>
@@ -242,7 +242,7 @@ function SideBySideTimeline({
           if (rowA.length === 0 && rowB.length === 0) return null
           return (
             <div key={decade}>
-              <div className="text-[10px] text-zinc-600 uppercase tracking-widest mb-1.5 font-mono">
+              <div className="text-[10px] text-muted uppercase tracking-widest mb-1.5 font-mono">
                 {decade}s
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -290,7 +290,7 @@ function StrengthBadge({ strength, score }: { strength: string; score: number })
     strong: "bg-emerald-950 text-emerald-300 border-emerald-800/50",
     medium: "bg-blue-950 text-blue-300 border-blue-800/50",
     light: "bg-amber-950 text-amber-300 border-amber-800/50",
-    none: "bg-zinc-900 text-zinc-400 border-zinc-700/50",
+    none: "bg-zinc-900 text-muted border-zinc-700/50",
   }
   const dots = {
     strong: "●●●",
@@ -335,7 +335,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
         "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
         copied
           ? "bg-emerald-950 text-emerald-300 border-emerald-700"
-          : "bg-surface-active text-zinc-300 border-border-default hover:border-zinc-500 hover:text-foreground"
+          : "bg-surface-active text-muted border-border-default hover:border-border-default hover:text-foreground"
       )}
     >
       {copied ? "✓ Copied" : label}
@@ -439,7 +439,7 @@ function ComparePageInner() {
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-lg font-semibold text-foreground">Compare riders</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">
+          <p className="text-sm text-muted mt-0.5">
             Find overlapping history between two riders
           </p>
         </div>
@@ -453,7 +453,7 @@ function ComparePageInner() {
             excludeId={personB?.id}
             allPeople={allPeople}
           />
-          <div className="text-zinc-600 font-light text-xl mb-2.5 shrink-0">×</div>
+          <div className="text-muted font-light text-xl mb-2.5 shrink-0">×</div>
           <PersonPicker
             label="Rider B"
             value={personB}
@@ -467,7 +467,7 @@ function ComparePageInner() {
         {!personB && (
           <div className="border border-dashed border-border-default rounded-xl py-12 text-center">
             <div className="text-3xl mb-2">⬡</div>
-            <div className="text-sm text-zinc-500">Select a second rider to see their overlap</div>
+            <div className="text-sm text-muted">Select a second rider to see their overlap</div>
           </div>
         )}
 
@@ -486,9 +486,9 @@ function ComparePageInner() {
                 </h2>
 
                 {summary.facts.length === 0 ? (
-                  <div className="py-4 text-sm text-zinc-500">
+                  <div className="py-4 text-sm text-muted">
                     No timeline overlaps found yet.{" "}
-                    <span className="text-zinc-400">
+                    <span className="text-muted">
                       Invite {personB.display_name} to add more of their history.
                     </span>
                   </div>
@@ -497,7 +497,7 @@ function ComparePageInner() {
                     {summary.bullets.slice(0, 7).map((bullet, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
                         <span className="text-blue-500 mt-0.5 shrink-0">•</span>
-                        <span className="text-zinc-300">{bullet}</span>
+                        <span className="text-muted">{bullet}</span>
                       </li>
                     ))}
                   </ul>
@@ -515,8 +515,8 @@ function ComparePageInner() {
               {/* Invite prompt — hide if Person B is a real user with claims */}
               {(mockIds.has(personB.id) || personBDbClaims.length === 0) && (
                 <div className="px-5 py-3 bg-surface border-t border-border-default flex items-center justify-between">
-                  <div className="text-xs text-zinc-500">
-                    <span className="text-zinc-400">{personB.display_name}</span> hasn&apos;t
+                  <div className="text-xs text-muted">
+                    <span className="text-muted">{personB.display_name}</span> hasn&apos;t
                     confirmed their side yet
                   </div>
                   <CopyButton
@@ -529,11 +529,11 @@ function ComparePageInner() {
 
             {/* Side-by-side timeline */}
             <div className="border border-border-default rounded-xl p-5">
-              <div className="text-xs text-zinc-600 uppercase tracking-wider mb-4 font-mono">
+              <div className="text-xs text-muted uppercase tracking-wider mb-4 font-mono">
                 Timeline comparison
               </div>
               {claimsA.length === 0 && claimsB.length === 0 ? (
-                <div className="text-sm text-zinc-600 text-center py-6">
+                <div className="text-sm text-muted text-center py-6">
                   No timeline entries found for either rider
                 </div>
               ) : (
@@ -549,7 +549,7 @@ function ComparePageInner() {
 
             {/* Overlap legend */}
             {summary.facts.length > 0 && (
-              <div className="flex items-center gap-2 text-xs text-zinc-600">
+              <div className="flex items-center gap-2 text-xs text-muted">
                 <div className="w-3 h-3 rounded bg-blue-950/60 border border-blue-700/40" />
                 <span>Shared entries highlighted in both timelines</span>
               </div>

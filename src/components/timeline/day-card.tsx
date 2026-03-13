@@ -41,7 +41,7 @@ export function DayCard({ day, isOwn }: { day: RidingDay; isOwn?: boolean }) {
             {/* Date + place */}
             <div className="flex items-baseline gap-2 flex-wrap">
               <span className="text-[10px] text-emerald-700 font-semibold uppercase tracking-widest">{weekday}</span>
-              <span className="text-xs text-zinc-500">{display}</span>
+              <span className="text-xs text-muted">{display}</span>
             </div>
             <div className="mt-1 flex items-center gap-1.5">
               <span className="text-sm">🏔</span>
@@ -53,24 +53,24 @@ export function DayCard({ day, isOwn }: { day: RidingDay; isOwn?: boolean }) {
                   {place.name}
                 </Link>
               ) : (
-                <span className="font-medium text-zinc-400 text-sm">Unknown place</span>
+                <span className="font-medium text-muted text-sm">Unknown place</span>
               )}
             </div>
 
             {/* Riders */}
             {riders.length > 0 && (
               <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                <span className="text-[11px] text-zinc-600">with</span>
+                <span className="text-[11px] text-muted">with</span>
                 {riders.map((r, i) => (
                   <span key={r.id}>
                     <Link
                       href={`/riders/${r.id}`}
-                      className="text-[11px] text-zinc-400 hover:text-foreground transition-colors"
+                      className="text-[11px] text-muted hover:text-foreground transition-colors"
                     >
                       {r.display_name}
                     </Link>
                     {i < riders.length - 1 && (
-                      <span className="text-zinc-700">, </span>
+                      <span className="text-muted">, </span>
                     )}
                   </span>
                 ))}
@@ -79,21 +79,21 @@ export function DayCard({ day, isOwn }: { day: RidingDay; isOwn?: boolean }) {
 
             {/* Note */}
             {day.note && (
-              <p className="mt-2 text-xs text-zinc-500 leading-relaxed">{day.note}</p>
+              <p className="mt-2 text-xs text-muted leading-relaxed">{day.note}</p>
             )}
           </div>
 
           {/* Controls */}
           <div className="flex items-center gap-2 flex-shrink-0">
             {day.visibility === "private" && (
-              <span className="text-xs text-zinc-700" title="Private">🔒</span>
+              <span className="text-xs text-muted" title="Private">🔒</span>
             )}
 
             {isOwn && (
               <div className="relative">
                 <button
                   onClick={() => { setMenuOpen((o) => !o); setConfirmDelete(false) }}
-                  className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-zinc-600 hover:text-foreground hover:bg-border-default transition-all text-sm"
+                  className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-muted hover:text-foreground hover:bg-border-default transition-all text-sm"
                   title="Options"
                 >
                   ⋯
@@ -112,11 +112,11 @@ export function DayCard({ day, isOwn }: { day: RidingDay; isOwn?: boolean }) {
                         </button>
                       ) : (
                         <div className="px-3 py-3">
-                          <p className="text-xs text-zinc-400 mb-2">Remove this day?</p>
+                          <p className="text-xs text-muted mb-2">Remove this day?</p>
                           <div className="flex gap-2">
                             <button
                               onClick={() => setConfirmDelete(false)}
-                              className="flex-1 px-2 py-1.5 text-xs rounded border border-border-default text-zinc-500 hover:text-foreground transition-colors"
+                              className="flex-1 px-2 py-1.5 text-xs rounded border border-border-default text-muted hover:text-foreground transition-colors"
                             >
                               Cancel
                             </button>

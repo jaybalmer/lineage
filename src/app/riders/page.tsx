@@ -31,23 +31,23 @@ function RiderRow({ person, isMe }: { person: Person; isMe: boolean }) {
               {person.display_name}
             </span>
             {isMe && (
-              <span className="text-[10px] text-zinc-600 border border-border-default rounded px-1.5 py-0.5">you</span>
+              <span className="text-[10px] text-muted border border-border-default rounded px-1.5 py-0.5">you</span>
             )}
             {isUnverified && (
               <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5">unverified</span>
             )}
             {person.riding_since && (
-              <span className="text-[11px] text-zinc-600">riding since {person.riding_since}</span>
+              <span className="text-[11px] text-muted">riding since {person.riding_since}</span>
             )}
           </div>
           {person.bio && (
-            <p className="text-xs text-zinc-500 mt-0.5 truncate">{person.bio}</p>
+            <p className="text-xs text-muted mt-0.5 truncate">{person.bio}</p>
           )}
           {homeResort && (
-            <p className="text-[11px] text-zinc-700 mt-0.5">🏔 {homeResort.name}</p>
+            <p className="text-[11px] text-muted mt-0.5">🏔 {homeResort.name}</p>
           )}
           {isUnverified && addedByPerson && (
-            <div className="flex items-center gap-1 mt-1 text-[10px] text-zinc-700">
+            <div className="flex items-center gap-1 mt-1 text-[10px] text-muted">
               <div className="w-3 h-3 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold">
                 {addedByPerson.display_name[0]}
               </div>
@@ -61,11 +61,11 @@ function RiderRow({ person, isMe }: { person: Person; isMe: boolean }) {
           {claimCount > 0 && (
             <>
               <div className="text-xs font-semibold text-foreground">{claimCount}</div>
-              <div className="text-[10px] text-zinc-600">claim{claimCount !== 1 ? "s" : ""}</div>
+              <div className="text-[10px] text-muted">claim{claimCount !== 1 ? "s" : ""}</div>
             </>
           )}
           {placeCount > 0 && (
-            <div className="text-[10px] text-zinc-700 mt-0.5">{placeCount} place{placeCount !== 1 ? "s" : ""}</div>
+            <div className="text-[10px] text-muted mt-0.5">{placeCount} place{placeCount !== 1 ? "s" : ""}</div>
           )}
         </div>
       </div>
@@ -96,7 +96,7 @@ export default function PeoplePage() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground">People</h1>
-            <p className="text-sm text-zinc-500 mt-1">Riders who&apos;ve added their lineage</p>
+            <p className="text-sm text-muted mt-1">Riders who&apos;ve added their lineage</p>
           </div>
           <button
             onClick={() => setAddOpen(true)}
@@ -108,7 +108,7 @@ export default function PeoplePage() {
 
         {/* Search */}
         <div className="relative mb-6">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 text-sm">⌕</span>
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">⌕</span>
           <input
             type="text"
             value={query}
@@ -121,7 +121,7 @@ export default function PeoplePage() {
         {/* Rider list */}
         <div className="space-y-2">
           {filtered.length === 0 && (
-            <div className="text-sm text-zinc-600 text-center py-12 border border-dashed border-border-default rounded-xl">
+            <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
               No riders found.{" "}
               <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
             </div>

@@ -109,7 +109,7 @@ export function TimelineView({
       <div className="mb-6 flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-bold text-foreground">{personName}&apos;s Lineage</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">
+          <p className="text-sm text-muted mt-0.5">
             {claims.length} claims · {days.length} day{days.length !== 1 ? "s" : ""} · timeline
           </p>
         </div>
@@ -144,12 +144,12 @@ export function TimelineView({
                   ? isDaysChip
                     ? "bg-emerald-700 border-emerald-700 text-foreground"
                     : "bg-blue-600 border-blue-600 text-foreground"
-                  : "border-border-default text-zinc-400 hover:border-zinc-600 hover:text-foreground"
+                  : "border-border-default text-muted hover:border-border-default hover:text-foreground"
               }`}
             >
               {isDaysChip && "☀️ "}{FILTER_LABELS[f]}
               {isDaysChip && days.length > 0 && (
-                <span className={`ml-1.5 px-1 rounded text-[10px] ${filter === f ? "bg-emerald-600" : "bg-border-default text-zinc-500"}`}>
+                <span className={`ml-1.5 px-1 rounded text-[10px] ${filter === f ? "bg-emerald-600" : "bg-border-default text-muted"}`}>
                   {days.length}
                 </span>
               )}
@@ -160,7 +160,7 @@ export function TimelineView({
 
       {/* Timeline grouped by decade */}
       {decades.length === 0 && (
-        <div className="text-center text-zinc-600 py-16">
+        <div className="text-center text-muted py-16">
           <div className="text-3xl mb-3">🏂</div>
           <div className="text-sm">
             {filter === "days"
@@ -172,7 +172,7 @@ export function TimelineView({
 
       {decades.map((decade) => (
         <div key={decade} className="mb-8">
-          <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-4 flex items-center gap-3">
+          <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-4 flex items-center gap-3">
             <span>{decade}</span>
             <div className="flex-1 h-px bg-surface-active" />
             <span>{grouped[decade].length} entries</span>

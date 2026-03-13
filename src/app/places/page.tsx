@@ -42,7 +42,7 @@ function PlaceCard({ place }: { place: Place }) {
               <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5">unverified</span>
             )}
             {place.osm_id && (
-              <span className="text-[10px] text-zinc-700 font-mono">OSM ✓</span>
+              <span className="text-[10px] text-muted font-mono">OSM ✓</span>
             )}
           </div>
         </div>
@@ -50,23 +50,23 @@ function PlaceCard({ place }: { place: Place }) {
           {place.name}
         </div>
         {place.region && (
-          <div className="text-xs text-zinc-500 mt-0.5">{place.region}{place.country ? `, ${place.country}` : ""}</div>
+          <div className="text-xs text-muted mt-0.5">{place.region}{place.country ? `, ${place.country}` : ""}</div>
         )}
-        <div className="mt-3 flex items-center gap-3 text-xs text-zinc-600">
+        <div className="mt-3 flex items-center gap-3 text-xs text-muted">
           {riderCount > 0 && <span>{riderCount} rider{riderCount !== 1 ? "s" : ""}</span>}
           {decades.length > 0 && <span>{decades[0]}–{decades[decades.length - 1]}</span>}
         </div>
         {decades.length > 0 && (
           <div className="mt-2 flex gap-1 flex-wrap">
             {decades.map((d) => (
-              <span key={d} className="text-[10px] px-1.5 py-0.5 bg-surface-hover border border-border-default rounded text-zinc-500">
+              <span key={d} className="text-[10px] px-1.5 py-0.5 bg-surface-hover border border-border-default rounded text-muted">
                 {d}
               </span>
             ))}
           </div>
         )}
         {isUnverified && addedByPerson && (
-          <div className="mt-auto pt-2 flex items-center gap-1 text-[10px] text-zinc-700">
+          <div className="mt-auto pt-2 flex items-center gap-1 text-[10px] text-muted">
             <div className="w-3 h-3 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold">
               {addedByPerson.display_name[0]}
             </div>
@@ -100,7 +100,7 @@ export default function PlacesPage() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground">Places</h1>
-            <p className="text-sm text-zinc-500 mt-1">Resorts, shops, and zones in the lineage</p>
+            <p className="text-sm text-muted mt-1">Resorts, shops, and zones in the lineage</p>
           </div>
           <button
             onClick={() => setAddOpen(true)}
@@ -127,7 +127,7 @@ export default function PlacesPage() {
                 className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all capitalize ${
                   typeFilter === t
                     ? "bg-blue-600 border-blue-600 text-foreground"
-                    : "border-border-default text-zinc-400 hover:border-zinc-600 hover:text-foreground"
+                    : "border-border-default text-muted hover:border-border-default hover:text-foreground"
                 }`}
               >
                 {t}
@@ -141,7 +141,7 @@ export default function PlacesPage() {
             <PlaceCard key={place.id} place={place} />
           ))}
           {filtered.length === 0 && (
-            <div className="col-span-full text-center text-zinc-600 py-12 text-sm">
+            <div className="col-span-full text-center text-muted py-12 text-sm">
               No places found.{" "}
               <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
             </div>

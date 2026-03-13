@@ -35,7 +35,7 @@ function AvatarStack({ riderIds }: { riderIds: string[] }) {
       {extra > 0 && (
         <div
           style={{ marginLeft: -6 }}
-          className="w-5 h-5 rounded-full bg-border-default border border-border-default flex items-center justify-center text-[8px] text-zinc-400"
+          className="w-5 h-5 rounded-full bg-border-default border border-border-default flex items-center justify-center text-[8px] text-muted"
         >
           +{extra}
         </div>
@@ -61,16 +61,16 @@ function BoardCard({ board }: { board: Board }) {
             <div className="font-medium text-foreground text-sm leading-snug">
               {board.brand} {board.model}
             </div>
-            <div className="text-xs text-zinc-500 mt-0.5">
+            <div className="text-xs text-muted mt-0.5">
               &apos;{String(board.model_year).slice(2)}
               {board.shape && (
-                <span className="text-zinc-700 capitalize">
+                <span className="text-muted capitalize">
                   {" "}· {board.shape.replace("-", " ")}
                 </span>
               )}
             </div>
             {isUnverified && addedByPerson && (
-              <div className="flex items-center gap-1 mt-1 text-[10px] text-zinc-700">
+              <div className="flex items-center gap-1 mt-1 text-[10px] text-muted">
                 <div className="w-3 h-3 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold">
                   {addedByPerson.display_name[0]}
                 </div>
@@ -85,7 +85,7 @@ function BoardCard({ board }: { board: Board }) {
             {riderIds.length > 0 && (
               <>
                 <AvatarStack riderIds={riderIds} />
-                <div className="text-[10px] text-zinc-600">
+                <div className="text-[10px] text-muted">
                   {riderIds.length} rider{riderIds.length !== 1 ? "s" : ""}
                 </div>
               </>
@@ -99,21 +99,21 @@ function BoardCard({ board }: { board: Board }) {
 
 function SectionDivider({ label, count, unit = "board", href }: { label: string; count: number; unit?: string; href?: string }) {
   const nameEl = href ? (
-    <Link href={href} className="text-sm font-semibold text-zinc-300 hover:text-blue-400 transition-colors">
+    <Link href={href} className="text-sm font-semibold text-muted hover:text-blue-400 transition-colors">
       {label}
     </Link>
   ) : (
-    <span className="text-sm font-semibold text-zinc-300">{label}</span>
+    <span className="text-sm font-semibold text-muted">{label}</span>
   )
 
   return (
     <div className="flex items-center gap-3 mb-3">
-      <div className="w-7 h-7 rounded bg-surface-active border border-border-default flex items-center justify-center text-xs font-bold text-zinc-500 shrink-0">
+      <div className="w-7 h-7 rounded bg-surface-active border border-border-default flex items-center justify-center text-xs font-bold text-muted shrink-0">
         {label[0]}
       </div>
       {nameEl}
       <div className="flex-1 h-px bg-surface-active" />
-      <span className="text-[10px] text-zinc-600">
+      <span className="text-[10px] text-muted">
         {count} {unit}{count !== 1 ? "s" : ""}
       </span>
     </div>
@@ -123,7 +123,7 @@ function SectionDivider({ label, count, unit = "board", href }: { label: string;
 function DecadeDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-xs font-semibold text-zinc-600 uppercase tracking-widest shrink-0">{label}</span>
+      <span className="text-xs font-semibold text-muted uppercase tracking-widest shrink-0">{label}</span>
       <div className="flex-1 h-px bg-surface-active" />
     </div>
   )
@@ -193,7 +193,7 @@ export default function BoardsPage() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground">Boards</h1>
-            <p className="text-sm text-zinc-500 mt-1">The shapes that shaped the scene</p>
+            <p className="text-sm text-muted mt-1">The shapes that shaped the scene</p>
           </div>
           <button
             onClick={() => setAddOpen(true)}
@@ -217,7 +217,7 @@ export default function BoardsPage() {
                 "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
                 mainTab === key
                   ? "bg-surface-active text-foreground"
-                  : "text-zinc-500 hover:text-zinc-300"
+                  : "text-muted hover:text-foreground"
               )}
             >
               {label}
@@ -226,7 +226,7 @@ export default function BoardsPage() {
         </div>
 
         {isEmpty ? (
-          <div className="text-sm text-zinc-600 text-center py-12 border border-dashed border-border-default rounded-xl">
+          <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
             No boards found.{" "}
             <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
           </div>

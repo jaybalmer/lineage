@@ -66,7 +66,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
     return (
       <div className="min-h-screen bg-background">
         <Nav />
-        <div className="max-w-3xl mx-auto px-4 py-16 text-center text-zinc-600">Loading…</div>
+        <div className="max-w-3xl mx-auto px-4 py-16 text-center text-muted">Loading…</div>
       </div>
     )
   }
@@ -86,10 +86,10 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
       <div className="max-w-3xl mx-auto px-4 py-10">
 
         {/* Breadcrumb */}
-        <div className="text-xs text-zinc-600 mb-6">
-          <Link href="/connections" className="hover:text-zinc-400">Connections</Link>
+        <div className="text-xs text-muted mb-6">
+          <Link href="/connections" className="hover:text-foreground">Connections</Link>
           <span className="mx-2">/</span>
-          <span className="text-zinc-400">{person.display_name}</span>
+          <span className="text-muted">{person.display_name}</span>
         </div>
 
         {/* Profile header */}
@@ -103,7 +103,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
               {!isCurrentUser && (
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <Link href={`/compare?b=${id}`}>
-                    <button className="px-3 py-1.5 rounded-lg bg-surface-hover border border-border-default text-xs text-zinc-300 hover:border-zinc-500 hover:text-foreground transition-all">
+                    <button className="px-3 py-1.5 rounded-lg bg-surface-hover border border-border-default text-xs text-muted hover:border-border-default hover:text-foreground transition-all">
                       Compare ⬡
                     </button>
                   </Link>
@@ -115,12 +115,12 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               )}
             </div>
-            <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500 flex-wrap">
+            <div className="flex items-center gap-3 mt-1 text-xs text-muted flex-wrap">
               {person.birth_year && <span>b. {person.birth_year}</span>}
               {person.riding_since && <span>Riding since {person.riding_since}</span>}
             </div>
             {person.bio && (
-              <p className="text-sm text-zinc-400 mt-2 leading-relaxed">{person.bio}</p>
+              <p className="text-sm text-muted mt-2 leading-relaxed">{person.bio}</p>
             )}
           </div>
         </div>
@@ -135,7 +135,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
           ].map(({ label, value }) => (
             <div key={label} className="text-center">
               <div className="text-lg font-bold text-foreground">{value}</div>
-              <div className="text-[11px] text-zinc-600">{label}</div>
+              <div className="text-[11px] text-muted">{label}</div>
             </div>
           ))}
         </div>

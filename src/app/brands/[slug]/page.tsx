@@ -110,7 +110,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
         <div className="relative w-full max-w-md bg-surface border border-border-default rounded-2xl p-8 shadow-2xl text-center">
           <div className="text-3xl mb-3">✓</div>
           <div className="text-foreground font-semibold text-lg mb-1">Claim added</div>
-          <p className="text-zinc-500 text-sm mb-5">
+          <p className="text-muted text-sm mb-5">
             This claim is unverified and visible to the community. It can be corroborated or challenged by others.
           </p>
           <button
@@ -133,8 +133,8 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
       <div className="relative w-full max-w-md bg-surface border border-border-default rounded-2xl p-6 shadow-2xl">
         <div className="mb-5">
           <div className="text-lg font-semibold text-foreground mb-1">Add a claim</div>
-          <p className="text-xs text-zinc-500">
-            Connect something to <span className="text-zinc-300">{org.name}</span>.
+          <p className="text-xs text-muted">
+            Connect something to <span className="text-muted">{org.name}</span>.
             Unverified claims are visible to the community.
           </p>
         </div>
@@ -142,7 +142,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
         <div className="space-y-4">
           {/* Mode selector */}
           <div>
-            <label className="block text-xs text-zinc-500 mb-2">What are you connecting?</label>
+            <label className="block text-xs text-muted mb-2">What are you connecting?</label>
             <div className="flex gap-2">
               {([
                 { key: "person" as ClaimMode, label: "A rider" },
@@ -156,7 +156,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
                     "flex-1 px-3 py-2 rounded-lg border text-xs transition-all",
                     mode === key
                       ? "border-blue-500 bg-blue-950/40 text-blue-200"
-                      : "border-border-default text-zinc-400 hover:border-zinc-600 hover:text-foreground"
+                      : "border-border-default text-muted hover:border-border-default hover:text-foreground"
                   )}
                 >
                   {label}
@@ -168,7 +168,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
           {/* Predicate (only shown when mode has multiple options) */}
           {mode === "person" && (
             <div>
-              <label className="block text-xs text-zinc-500 mb-2">Relationship</label>
+              <label className="block text-xs text-muted mb-2">Relationship</label>
               <div className="space-y-1.5">
                 {PEOPLE_PREDICATES.map((opt) => (
                   <button
@@ -178,7 +178,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
                       "w-full text-left px-3 py-2.5 rounded-lg border text-xs transition-all",
                       predicate === opt.value
                         ? "border-blue-500 bg-blue-950/40 text-blue-200"
-                        : "border-border-default text-zinc-400 hover:border-zinc-600 hover:text-foreground"
+                        : "border-border-default text-muted hover:border-border-default hover:text-foreground"
                     )}
                   >
                     <div className="font-medium">{opt.label}</div>
@@ -192,7 +192,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
           {/* Entity picker */}
           {mode === "person" && (
             <div>
-              <label className="block text-xs text-zinc-500 mb-1.5">Who is this about?</label>
+              <label className="block text-xs text-muted mb-1.5">Who is this about?</label>
               <select
                 value={personId}
                 onChange={(e) => setPersonId(e.target.value)}
@@ -208,7 +208,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
 
           {mode === "event" && (
             <div>
-              <label className="block text-xs text-zinc-500 mb-1.5">Which event?</label>
+              <label className="block text-xs text-muted mb-1.5">Which event?</label>
               <select
                 value={eventId}
                 onChange={(e) => setEventId(e.target.value)}
@@ -224,7 +224,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
 
           {mode === "place" && (
             <div>
-              <label className="block text-xs text-zinc-500 mb-1.5">Which location?</label>
+              <label className="block text-xs text-muted mb-1.5">Which location?</label>
               <select
                 value={placeId}
                 onChange={(e) => setPlaceId(e.target.value)}
@@ -241,7 +241,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
           {/* Date range */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs text-zinc-500 mb-1.5">
+              <label className="block text-xs text-muted mb-1.5">
                 {mode === "event" ? "Year" : "Start year"}
               </label>
               <input
@@ -256,7 +256,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
             </div>
             {mode !== "event" && (
               <div>
-                <label className="block text-xs text-zinc-500 mb-1.5">End year <span className="text-zinc-700">(optional)</span></label>
+                <label className="block text-xs text-muted mb-1.5">End year <span className="text-muted">(optional)</span></label>
                 <input
                   type="number"
                   value={endYear}
@@ -272,7 +272,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
 
           {/* Note */}
           <div>
-            <label className="block text-xs text-zinc-500 mb-1.5">Note <span className="text-zinc-700">(optional)</span></label>
+            <label className="block text-xs text-muted mb-1.5">Note <span className="text-muted">(optional)</span></label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -284,7 +284,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
 
           {/* Confidence */}
           <div>
-            <label className="block text-xs text-zinc-500 mb-2">How sure are you?</label>
+            <label className="block text-xs text-muted mb-2">How sure are you?</label>
             <div className="flex gap-2">
               {(["self-reported", "corroborated", "documented"] as ConfidenceLevel[]).map((c) => (
                 <button
@@ -294,7 +294,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
                     "flex-1 px-2 py-2 rounded-lg border text-[11px] transition-all capitalize",
                     confidence === c
                       ? "border-blue-500 bg-blue-950/40 text-blue-200"
-                      : "border-border-default text-zinc-400 hover:border-zinc-600"
+                      : "border-border-default text-muted hover:border-border-default"
                   )}
                 >
                   {c.replace("-", " ")}
@@ -307,7 +307,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
         <div className="flex gap-3 mt-5">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-foreground border border-border-default hover:border-zinc-600 transition-all"
+            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-muted hover:text-foreground border border-border-default hover:border-border-default transition-all"
           >
             Cancel
           </button>
@@ -318,14 +318,14 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
               "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
               canSubmit
                 ? "bg-blue-600 text-white hover:bg-blue-500"
-                : "bg-surface-active text-zinc-600 cursor-not-allowed"
+                : "bg-surface-active text-muted cursor-not-allowed"
             )}
           >
             Add claim
           </button>
         </div>
 
-        <p className="text-[10px] text-zinc-700 mt-3 text-center">
+        <p className="text-[10px] text-muted mt-3 text-center">
           Claims are unverified until corroborated. Anyone can add or dispute them.
         </p>
       </div>
@@ -342,7 +342,7 @@ const PREDICATE_LABEL: Record<string, string> = {
 }
 
 const CONFIDENCE_COLORS: Record<string, string> = {
-  "self-reported": "text-zinc-600",
+  "self-reported": "text-muted",
   "corroborated":  "text-blue-500",
   "documented":    "text-emerald-500",
   "partner-verified": "text-violet-400",
@@ -461,10 +461,10 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
       <div className="max-w-5xl mx-auto px-4 py-8">
 
         {/* Breadcrumb */}
-        <div className="text-xs text-zinc-600 mb-6">
-          <Link href="/brands" className="hover:text-zinc-400 transition-colors">Brands</Link>
+        <div className="text-xs text-muted mb-6">
+          <Link href="/brands" className="hover:text-foreground transition-colors">Brands</Link>
           <span className="mx-2">/</span>
-          <span className="text-zinc-400">{org.name}</span>
+          <span className="text-muted">{org.name}</span>
         </div>
 
         {/* Header */}
@@ -500,17 +500,17 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
             {/* Name + meta */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs text-zinc-600 uppercase tracking-widest">{typeLabel}</span>
+                <span className="text-xs text-muted uppercase tracking-widest">{typeLabel}</span>
                 {org.founded_year && (
-                  <span className="text-xs text-zinc-700">· est. {org.founded_year}</span>
+                  <span className="text-xs text-muted">· est. {org.founded_year}</span>
                 )}
                 {org.country && (
-                  <span className="text-xs text-zinc-700">· {org.country}</span>
+                  <span className="text-xs text-muted">· {org.country}</span>
                 )}
               </div>
               <h1 className="text-2xl font-bold text-foreground">{org.name}</h1>
               {org.description && (
-                <p className="text-sm text-zinc-400 mt-2 leading-relaxed max-w-2xl">{org.description}</p>
+                <p className="text-sm text-muted mt-2 leading-relaxed max-w-2xl">{org.description}</p>
               )}
               {org.website && (
                 <a
@@ -525,7 +525,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
             </div>
 
             {/* Edit button (community editable) */}
-            <button className="shrink-0 px-3 py-1.5 rounded-lg text-xs text-zinc-500 border border-border-default hover:border-zinc-600 hover:text-foreground transition-all">
+            <button className="shrink-0 px-3 py-1.5 rounded-lg text-xs text-muted border border-border-default hover:border-border-default hover:text-foreground transition-all">
               Edit
             </button>
           </div>
@@ -535,7 +535,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
             {uniqueRiderIds.length > 0 && (
               <div>
                 <div className="font-bold text-foreground text-xl">{uniqueRiderIds.length}</div>
-                <div className="text-zinc-600 text-xs">connected riders</div>
+                <div className="text-muted text-xs">connected riders</div>
               </div>
             )}
             {orgBoards.length > 0 && (
@@ -543,7 +543,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                 <div className="w-px bg-border-default" />
                 <div>
                   <div className="font-bold text-foreground text-xl">{orgBoards.length}</div>
-                  <div className="text-zinc-600 text-xs">board models</div>
+                  <div className="text-muted text-xs">board models</div>
                 </div>
               </>
             )}
@@ -552,7 +552,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                 <div className="w-px bg-border-default" />
                 <div>
                   <div className="font-bold text-foreground text-xl">{organizedClaims.length}</div>
-                  <div className="text-zinc-600 text-xs">events organized</div>
+                  <div className="text-muted text-xs">events organized</div>
                 </div>
               </>
             )}
@@ -561,7 +561,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                 <div className="w-px bg-border-default" />
                 <div>
                   <div className="font-bold text-foreground text-xl">{locatedAtClaims.length}</div>
-                  <div className="text-zinc-600 text-xs">locations</div>
+                  <div className="text-muted text-xs">locations</div>
                 </div>
               </>
             )}
@@ -579,12 +579,12 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                   "px-3 py-1.5 rounded-md text-sm transition-colors",
                   tab === key
                     ? "bg-surface-active text-foreground"
-                    : "text-zinc-500 hover:text-foreground hover:bg-surface-hover"
+                    : "text-muted hover:text-foreground hover:bg-surface-hover"
                 )}
               >
                 {label}
                 {count !== undefined && count > 0 && (
-                  <span className="ml-1.5 text-[11px] text-zinc-600">{count}</span>
+                  <span className="ml-1.5 text-[11px] text-muted">{count}</span>
                 )}
               </button>
             ))}
@@ -608,7 +608,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
               <div className="space-y-8">
                 {hasNoContent ? (
                   <div className="py-16 text-center">
-                    <p className="text-zinc-600 text-sm mb-4">No claims yet for this brand.</p>
+                    <p className="text-muted text-sm mb-4">No claims yet for this brand.</p>
                     <button
                       onClick={() => setAddOpen(true)}
                       className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors"
@@ -620,7 +620,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                   <div key={label}>
                     {/* Decade divider */}
                     <div className="flex items-center gap-3 mb-3">
-                      <span className="text-xs font-semibold text-zinc-600 uppercase tracking-widest shrink-0">{label}</span>
+                      <span className="text-xs font-semibold text-muted uppercase tracking-widest shrink-0">{label}</span>
                       <div className="flex-1 h-px bg-surface-active" />
                     </div>
                     <div className="space-y-2">
@@ -629,7 +629,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                           const person = catalog.people.find((p) => p.id === item.claim.subject_id)
                           if (!person) return null
                           const relLabel = PREDICATE_LABEL[item.claim.predicate] ?? item.claim.predicate
-                          const confColor = CONFIDENCE_COLORS[item.claim.confidence] ?? "text-zinc-600"
+                          const confColor = CONFIDENCE_COLORS[item.claim.confidence] ?? "text-muted"
                           return (
                             <div key={item.claim.id} className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all">
                               <Link href={`/riders/${person.id}`} className="shrink-0">
@@ -642,10 +642,10 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                                   <Link href={`/riders/${person.id}`} className="text-sm font-medium text-foreground hover:text-blue-300 transition-colors">
                                     {person.display_name}
                                   </Link>
-                                  <span className="text-xs text-zinc-600">{relLabel}</span>
+                                  <span className="text-xs text-muted">{relLabel}</span>
                                 </div>
                                 {(item.claim.start_date || item.claim.end_date) && (
-                                  <span className="text-xs text-zinc-600">{formatDateRange(item.claim.start_date, item.claim.end_date)}</span>
+                                  <span className="text-xs text-muted">{formatDateRange(item.claim.start_date, item.claim.end_date)}</span>
                                 )}
                               </div>
                               <span className={cn("text-[11px] shrink-0", confColor)}>
@@ -665,10 +665,10 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                                   <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">
                                     {item.board.brand} {item.board.model}
                                   </div>
-                                  <div className="text-xs text-zinc-600 mt-0.5">
+                                  <div className="text-xs text-muted mt-0.5">
                                     &apos;{String(item.board.model_year).slice(2)}
-                                    {item.board.shape && <span className="text-zinc-700 capitalize"> · {item.board.shape.replace("-", " ")}</span>}
-                                    {ownerCount > 0 && <span className="text-zinc-700"> · {ownerCount} rider{ownerCount !== 1 ? "s" : ""}</span>}
+                                    {item.board.shape && <span className="text-muted capitalize"> · {item.board.shape.replace("-", " ")}</span>}
+                                    {ownerCount > 0 && <span className="text-muted"> · {ownerCount} rider{ownerCount !== 1 ? "s" : ""}</span>}
                                   </div>
                                 </div>
                               </div>
@@ -678,7 +678,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
 
                         if (item.kind === "event") {
                           const accentColor = EVENT_TYPE_COLOR[item.event.event_type] ?? "border-l-zinc-600"
-                          const confColor = CONFIDENCE_COLORS[item.claim.confidence] ?? "text-zinc-600"
+                          const confColor = CONFIDENCE_COLORS[item.claim.confidence] ?? "text-muted"
                           return (
                             <Link key={item.claim.id} href={`/events/${item.event.id}`}>
                               <div className={cn(
@@ -690,7 +690,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">{item.event.name}</div>
-                                  <div className="text-xs text-zinc-600 capitalize mt-0.5">{item.event.event_type.replace("-", " ")}</div>
+                                  <div className="text-xs text-muted capitalize mt-0.5">{item.event.event_type.replace("-", " ")}</div>
                                 </div>
                                 <span className={cn("text-[11px] shrink-0", confColor)}>
                                   {item.claim.confidence === "self-reported" ? "unverified" : item.claim.confidence}
@@ -701,16 +701,16 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                         }
 
                         if (item.kind === "place") {
-                          const confColor = CONFIDENCE_COLORS[item.claim.confidence] ?? "text-zinc-600"
+                          const confColor = CONFIDENCE_COLORS[item.claim.confidence] ?? "text-muted"
                           return (
                             <div key={item.claim.id} className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 border-l-blue-800 rounded-xl">
                               <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">📍</div>
                               <div className="flex-1 min-w-0">
                                 <div className="text-sm font-medium text-foreground">{item.place.name}</div>
-                                <div className="text-xs text-zinc-600 mt-0.5">
+                                <div className="text-xs text-muted mt-0.5">
                                   {[item.place.region, item.place.country].filter(Boolean).join(" · ")}
                                   {(item.claim.start_date || item.claim.end_date) && (
-                                    <span className="text-zinc-700"> · {formatDateRange(item.claim.start_date, item.claim.end_date)}</span>
+                                    <span className="text-muted"> · {formatDateRange(item.claim.start_date, item.claim.end_date)}</span>
                                   )}
                                 </div>
                               </div>
@@ -733,14 +733,14 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
             {tab === "people" && (
               <div className="space-y-2">
                 {peopleClaims.length === 0 ? (
-                  <div className="py-12 text-center text-zinc-600 text-sm">
+                  <div className="py-12 text-center text-muted text-sm">
                     No people claims yet. <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
                   </div>
                 ) : peopleClaims.map((claim) => {
                   const person = catalog.people.find((p) => p.id === claim.subject_id)
                   if (!person) return null
                   const relLabel = PREDICATE_LABEL[claim.predicate] ?? claim.predicate
-                  const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-zinc-600"
+                  const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-muted"
                   return (
                     <div key={claim.id} className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all">
                       <Link href={`/riders/${person.id}`} className="shrink-0">
@@ -753,14 +753,14 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                           <Link href={`/riders/${person.id}`} className="text-sm font-medium text-foreground hover:text-blue-300 transition-colors">
                             {person.display_name}
                           </Link>
-                          <span className="text-xs text-zinc-600">{relLabel}</span>
+                          <span className="text-xs text-muted">{relLabel}</span>
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
                           {(claim.start_date || claim.end_date) && (
-                            <span className="text-xs text-zinc-600">{formatDateRange(claim.start_date, claim.end_date)}</span>
+                            <span className="text-xs text-muted">{formatDateRange(claim.start_date, claim.end_date)}</span>
                           )}
                           {claim.note && (
-                            <span className="text-xs text-zinc-700 truncate max-w-[200px]">{claim.note}</span>
+                            <span className="text-xs text-muted truncate max-w-[200px]">{claim.note}</span>
                           )}
                         </div>
                       </div>
@@ -777,7 +777,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
             {tab === "boards" && (
               <div>
                 {orgBoards.length === 0 ? (
-                  <div className="py-12 text-center text-zinc-600 text-sm">No board models found for this brand.</div>
+                  <div className="py-12 text-center text-muted text-sm">No board models found for this brand.</div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
                     {orgBoards.map((board) => {
@@ -797,11 +797,11 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                             </div>
                             <div className="min-w-0">
                               <div className="text-sm text-foreground group-hover:text-blue-300 transition-colors leading-tight">{board.model}</div>
-                              <div className="text-[11px] text-zinc-600 mt-0.5">
+                              <div className="text-[11px] text-muted mt-0.5">
                                 &apos;{String(board.model_year).slice(2)} · {board.shape ?? "–"}
                               </div>
                               {ownerCount > 0 && (
-                                <div className="text-[10px] text-zinc-700 mt-0.5">{ownerCount} rider{ownerCount !== 1 ? "s" : ""}</div>
+                                <div className="text-[10px] text-muted mt-0.5">{ownerCount} rider{ownerCount !== 1 ? "s" : ""}</div>
                               )}
                             </div>
                           </div>
@@ -817,14 +817,14 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
             {tab === "events" && (
               <div className="space-y-2">
                 {organizedClaims.length === 0 ? (
-                  <div className="py-12 text-center text-zinc-600 text-sm">
+                  <div className="py-12 text-center text-muted text-sm">
                     No events yet. <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
                   </div>
                 ) : organizedClaims.map((claim) => {
                   const event = catalog.events.find((e) => e.id === claim.object_id)
                   if (!event) return null
                   const accentColor = EVENT_TYPE_COLOR[event.event_type] ?? "border-l-zinc-600"
-                  const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-zinc-600"
+                  const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-muted"
                   return (
                     <Link key={claim.id} href={`/events/${event.id}`}>
                       <div className={cn(
@@ -837,10 +837,10 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">{event.name}</div>
                           <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs text-zinc-600 capitalize">{event.event_type.replace("-", " ")}</span>
-                            {event.year && <span className="text-xs text-zinc-700">· {event.year}</span>}
+                            <span className="text-xs text-muted capitalize">{event.event_type.replace("-", " ")}</span>
+                            {event.year && <span className="text-xs text-muted">· {event.year}</span>}
                           </div>
-                          {claim.note && <div className="text-[11px] text-zinc-700 mt-1 truncate">{claim.note}</div>}
+                          {claim.note && <div className="text-[11px] text-muted mt-1 truncate">{claim.note}</div>}
                         </div>
                         <span className={cn("text-[11px] shrink-0", confColor)}>
                           {claim.confidence === "self-reported" ? "unverified" : claim.confidence}
@@ -856,27 +856,27 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
             {tab === "places" && (
               <div className="space-y-2">
                 {locatedAtClaims.length === 0 ? (
-                  <div className="py-12 text-center text-zinc-600 text-sm">
+                  <div className="py-12 text-center text-muted text-sm">
                     No store locations yet. <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
                   </div>
                 ) : locatedAtClaims.map((claim) => {
                   const place = catalog.places.find((p) => p.id === claim.object_id)
                   if (!place) return null
-                  const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-zinc-600"
+                  const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-muted"
                   return (
                     <div key={claim.id} className="flex items-start gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 border-l-blue-800 rounded-xl">
                       <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">📍</div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-foreground">{place.name}</div>
                         <div className="flex items-center gap-2 mt-0.5">
-                          {place.region && <span className="text-xs text-zinc-600">{place.region}</span>}
-                          {place.country && <span className="text-xs text-zinc-700">· {place.country}</span>}
+                          {place.region && <span className="text-xs text-muted">{place.region}</span>}
+                          {place.country && <span className="text-xs text-muted">· {place.country}</span>}
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
                           {(claim.start_date || claim.end_date) && (
-                            <span className="text-xs text-zinc-600">{formatDateRange(claim.start_date, claim.end_date)}</span>
+                            <span className="text-xs text-muted">{formatDateRange(claim.start_date, claim.end_date)}</span>
                           )}
-                          {claim.note && <span className="text-xs text-zinc-700 truncate max-w-[300px]">{claim.note}</span>}
+                          {claim.note && <span className="text-xs text-muted truncate max-w-[300px]">{claim.note}</span>}
                         </div>
                       </div>
                       <span className={cn("text-[11px] shrink-0", confColor)}>
@@ -894,33 +894,33 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
           <div className="space-y-4">
             {/* Quick facts */}
             <div className="bg-surface border border-border-default rounded-xl p-4">
-              <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">About</div>
+              <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">About</div>
               <div className="space-y-2 text-sm">
                 {org.founded_year && (
                   <div className="flex justify-between">
-                    <span className="text-zinc-600">Founded</span>
-                    <span className="text-zinc-300">{org.founded_year}</span>
+                    <span className="text-muted">Founded</span>
+                    <span className="text-muted">{org.founded_year}</span>
                   </div>
                 )}
                 {org.country && (
                   <div className="flex justify-between">
-                    <span className="text-zinc-600">Country</span>
-                    <span className="text-zinc-300">{org.country}</span>
+                    <span className="text-muted">Country</span>
+                    <span className="text-muted">{org.country}</span>
                   </div>
                 )}
                 {org.region && (
                   <div className="flex justify-between">
-                    <span className="text-zinc-600">Region</span>
-                    <span className="text-zinc-300">{org.region}</span>
+                    <span className="text-muted">Region</span>
+                    <span className="text-muted">{org.region}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-zinc-600">Type</span>
-                  <span className="text-zinc-300">{typeLabel}</span>
+                  <span className="text-muted">Type</span>
+                  <span className="text-muted">{typeLabel}</span>
                 </div>
                 {org.website && (
                   <div className="flex justify-between items-center">
-                    <span className="text-zinc-600">Website</span>
+                    <span className="text-muted">Website</span>
                     <a
                       href={org.website}
                       target="_blank"
@@ -937,7 +937,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
             {/* Riders who owned boards */}
             {boardOwnerClaims.length > 0 && (
               <div className="bg-surface border border-border-default rounded-xl p-4">
-                <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">
+                <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">
                   Riders who owned {org.name.split(" ")[0]} boards
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -946,7 +946,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                     if (!person) return null
                     return (
                       <Link key={rid} href={`/riders/${rid}`}>
-                        <div className="flex items-center gap-1 px-2 py-1 bg-background border border-border-default rounded-full text-xs text-zinc-400 hover:text-foreground hover:border-zinc-600 transition-all">
+                        <div className="flex items-center gap-1 px-2 py-1 bg-background border border-border-default rounded-full text-xs text-muted hover:text-foreground hover:border-border-default transition-all">
                           <span className="w-4 h-4 rounded-full bg-zinc-800 flex items-center justify-center text-[9px] font-bold">
                             {person.display_name[0]}
                           </span>
@@ -961,13 +961,13 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
 
             {/* Community note */}
             <div className="bg-bg-nav border border-border-default rounded-xl p-4">
-              <div className="text-xs font-semibold text-zinc-700 uppercase tracking-widest mb-2">Community profile</div>
-              <p className="text-xs text-zinc-700 leading-relaxed">
+              <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">Community profile</div>
+              <p className="text-xs text-muted leading-relaxed">
                 This brand profile is open for anyone to contribute. Claims are unverified until corroborated by multiple sources.
               </p>
               <button
                 onClick={() => setAddOpen(true)}
-                className="mt-3 w-full px-3 py-2 bg-surface-hover border border-border-default rounded-lg text-xs text-zinc-400 hover:text-foreground hover:border-zinc-600 transition-all"
+                className="mt-3 w-full px-3 py-2 bg-surface-hover border border-border-default rounded-lg text-xs text-muted hover:text-foreground hover:border-border-default transition-all"
               >
                 + Add a claim
               </button>

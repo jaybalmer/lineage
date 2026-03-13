@@ -62,7 +62,7 @@ function AvatarStack({ riderIds }: { riderIds: string[] }) {
       {extra > 0 && (
         <div
           style={{ marginLeft: -6 }}
-          className="w-5 h-5 rounded-full bg-border-default border border-border-default flex items-center justify-center text-[8px] text-zinc-400"
+          className="w-5 h-5 rounded-full bg-border-default border border-border-default flex items-center justify-center text-[8px] text-muted"
         >
           +{extra}
         </div>
@@ -92,7 +92,7 @@ function EventCard({ event }: { event: Event }) {
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] text-zinc-600 uppercase tracking-widest">
+              <span className="text-[10px] text-muted uppercase tracking-widest">
                 {TYPE_LABEL[event.event_type]}
               </span>
               {isUnverified && (
@@ -100,12 +100,12 @@ function EventCard({ event }: { event: Event }) {
               )}
             </div>
             <div className="font-medium text-foreground text-sm leading-snug">{event.name}</div>
-            <div className="text-xs text-zinc-500 mt-1">
+            <div className="text-xs text-muted mt-1">
               {event.year}
-              {place && <span className="text-zinc-700"> · {place.name}</span>}
+              {place && <span className="text-muted"> · {place.name}</span>}
             </div>
             {isUnverified && addedByPerson && (
-              <div className="flex items-center gap-1 mt-1 text-[10px] text-zinc-700">
+              <div className="flex items-center gap-1 mt-1 text-[10px] text-muted">
                 <div className="w-3 h-3 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold">
                   {addedByPerson.display_name[0]}
                 </div>
@@ -116,7 +116,7 @@ function EventCard({ event }: { event: Event }) {
           {riderIds.length > 0 && (
             <div className="shrink-0 flex flex-col items-end gap-1">
               <AvatarStack riderIds={riderIds} />
-              <div className="text-[10px] text-zinc-600">
+              <div className="text-[10px] text-muted">
                 {riderIds.length} rider{riderIds.length !== 1 ? "s" : ""}
               </div>
             </div>
@@ -145,20 +145,20 @@ function SeriesCard({ series, filteredEventCount }: { series: EventSeries; filte
       <div className="bg-surface border border-border-default border-l-2 border-l-amber-700 rounded-xl p-4 hover:border-border-default transition-colors">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="text-[10px] text-zinc-600 uppercase tracking-widest mb-1">
+            <div className="text-[10px] text-muted uppercase tracking-widest mb-1">
               Event series · {series.frequency}
             </div>
             <div className="font-medium text-foreground text-sm leading-snug">{series.name}</div>
-            <div className="text-xs text-zinc-500 mt-1">
+            <div className="text-xs text-muted mt-1">
               {series.start_year && <span>Since {series.start_year}</span>}
-              {place && <span className="text-zinc-700"> · {place.name}</span>}
+              {place && <span className="text-muted"> · {place.name}</span>}
             </div>
           </div>
           <div className="shrink-0 text-right">
             <div className="text-base font-bold text-foreground">{filteredEventCount}</div>
-            <div className="text-[10px] text-zinc-600">edition{filteredEventCount !== 1 ? "s" : ""}</div>
+            <div className="text-[10px] text-muted">edition{filteredEventCount !== 1 ? "s" : ""}</div>
             {totalRiders > 0 && (
-              <div className="text-[10px] text-zinc-600 mt-0.5">{totalRiders} riders</div>
+              <div className="text-[10px] text-muted mt-0.5">{totalRiders} riders</div>
             )}
           </div>
         </div>
@@ -171,7 +171,7 @@ function SeriesCard({ series, filteredEventCount }: { series: EventSeries; filte
 function SectionDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-3">
-      <span className="text-xs font-semibold text-zinc-600 uppercase tracking-widest shrink-0">{label}</span>
+      <span className="text-xs font-semibold text-muted uppercase tracking-widest shrink-0">{label}</span>
       <div className="flex-1 h-px bg-surface-active" />
     </div>
   )
@@ -234,7 +234,7 @@ export default function EventsPage() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground">Events</h1>
-            <p className="text-sm text-zinc-500 mt-1">Contests, trips, film shoots, and gatherings</p>
+            <p className="text-sm text-muted mt-1">Contests, trips, film shoots, and gatherings</p>
           </div>
           <button
             onClick={() => setAddOpen(true)}
@@ -259,7 +259,7 @@ export default function EventsPage() {
                   "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
                   mainTab === key
                     ? "bg-surface-active text-foreground"
-                    : "text-zinc-500 hover:text-zinc-300"
+                    : "text-muted hover:text-foreground"
                 )}
               >
                 {label}
@@ -277,7 +277,7 @@ export default function EventsPage() {
                   "px-3 py-1 rounded-full text-xs font-medium border transition-all",
                   typeFilter === value
                     ? "bg-white text-black border-white"
-                    : "bg-transparent text-zinc-500 border-border-default hover:border-zinc-500 hover:text-zinc-300"
+                    : "bg-transparent text-muted border-border-default hover:border-border-default hover:text-foreground"
                 )}
               >
                 {label}
@@ -290,7 +290,7 @@ export default function EventsPage() {
         {mainTab === "all" && (
           <div className="space-y-8">
             {isEmpty ? (
-              <div className="text-sm text-zinc-600 text-center py-12 border border-dashed border-border-default rounded-xl">
+              <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
                 No events found.{" "}
                 <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
               </div>
@@ -313,7 +313,7 @@ export default function EventsPage() {
         {mainTab === "series" && (
           <div className="space-y-8">
             {isEmpty ? (
-              <div className="text-sm text-zinc-600 text-center py-12 border border-dashed border-border-default rounded-xl">
+              <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
                 No events found for this filter.
               </div>
             ) : (

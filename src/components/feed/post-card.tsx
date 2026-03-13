@@ -367,7 +367,7 @@ function EntityBlock({ claim, entityName, href, isOwn }: EntityBlockProps) {
     if (type === "place")  return { label: (place?.place_type ?? "Place"), cls: "text-blue-700" }
     if (type === "event")  return { label: (event?.event_type?.replace(/-/g, " ") ?? "Event"), cls: "text-amber-700" }
     if (type === "person") return { label: "Rider", cls: "text-violet-700" }
-    return { label: (org?.org_type ?? "Org"), cls: "text-zinc-500" }
+    return { label: (org?.org_type ?? "Org"), cls: "text-muted" }
   })()
 
   return (
@@ -385,7 +385,7 @@ function EntityBlock({ claim, entityName, href, isOwn }: EntityBlockProps) {
               </p>
             </Link>
             {subtitle && (
-              <p className="text-xs text-zinc-500 mt-0.5 capitalize">{subtitle}</p>
+              <p className="text-xs text-muted mt-0.5 capitalize">{subtitle}</p>
             )}
           </div>
           <span className={cn("text-[10px] uppercase tracking-widest font-medium shrink-0 capitalize mt-0.5", badge.cls)}>
@@ -404,7 +404,7 @@ function EntityBlock({ claim, entityName, href, isOwn }: EntityBlockProps) {
         />
       ) : isOwn ? (
         <div className="w-14 h-14 rounded-lg border border-dashed border-border-default flex items-center justify-center flex-shrink-0">
-          <span className="text-[10px] text-zinc-700 text-center leading-tight">Add<br />photo</span>
+          <span className="text-[10px] text-muted text-center leading-tight">Add<br />photo</span>
         </div>
       ) : null}
     </div>
@@ -477,16 +477,16 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap min-w-0">
             {/* Predicate pill */}
-            <span className="text-[10px] uppercase tracking-widest font-semibold text-zinc-600 bg-surface-hover border border-border-default rounded px-1.5 py-0.5">
+            <span className="text-[10px] uppercase tracking-widest font-semibold text-muted bg-surface-hover border border-border-default rounded px-1.5 py-0.5">
               {predicateLabel}
             </span>
             {dateRange && (
-              <span className="text-xs text-zinc-400">{dateRange}</span>
+              <span className="text-xs text-muted">{dateRange}</span>
             )}
             <ConfidenceBadge level={claim.confidence} />
             {isUnverified && <UnverifiedBadge />}
             {claim.sources && claim.sources.length > 0 && (
-              <span className="text-[10px] text-zinc-600 flex items-center gap-1">
+              <span className="text-[10px] text-muted flex items-center gap-1">
                 📎 {claim.sources.length} source{claim.sources.length > 1 ? "s" : ""}
               </span>
             )}
@@ -495,17 +495,17 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
           {/* Right: privacy + menu */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {claim.visibility === "private" && (
-              <span className="text-xs text-zinc-700" title="Private">🔒</span>
+              <span className="text-xs text-muted" title="Private">🔒</span>
             )}
             {claim.visibility === "shared" && (
-              <span className="text-xs text-zinc-600" title="Shared">👥</span>
+              <span className="text-xs text-muted" title="Shared">👥</span>
             )}
 
             {isOwn && (
               <div className="relative">
                 <button
                   onClick={() => { setMenuOpen((o) => !o); setConfirmDelete(false) }}
-                  className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-zinc-600 hover:text-foreground hover:bg-border-default transition-all text-sm"
+                  className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-muted hover:text-foreground hover:bg-border-default transition-all text-sm"
                   title="Options"
                 >
                   ⋯
@@ -519,14 +519,14 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
                         <>
                           <button
                             onClick={() => { setMenuOpen(false); setEditing(true) }}
-                            className="w-full text-left px-4 py-2.5 text-xs text-zinc-300 hover:bg-surface-active hover:text-foreground transition-colors flex items-center gap-2"
+                            className="w-full text-left px-4 py-2.5 text-xs text-muted hover:bg-surface-active hover:text-foreground transition-colors flex items-center gap-2"
                           >
                             <span>✏️</span> Edit claim
                           </button>
                           {userEvent && (
                             <button
                               onClick={() => { setMenuOpen(false); setEditingEvent(true) }}
-                              className="w-full text-left px-4 py-2.5 text-xs text-zinc-300 hover:bg-surface-active hover:text-foreground transition-colors flex items-center gap-2"
+                              className="w-full text-left px-4 py-2.5 text-xs text-muted hover:bg-surface-active hover:text-foreground transition-colors flex items-center gap-2"
                             >
                               <span>📋</span> Edit event
                             </button>
@@ -540,11 +540,11 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
                         </>
                       ) : (
                         <div className="px-3 py-3">
-                          <p className="text-xs text-zinc-400 mb-2">Remove this claim?</p>
+                          <p className="text-xs text-muted mb-2">Remove this claim?</p>
                           <div className="flex gap-2">
                             <button
                               onClick={() => setConfirmDelete(false)}
-                              className="flex-1 px-2 py-1.5 text-xs rounded border border-border-default text-zinc-500 hover:text-foreground transition-colors"
+                              className="flex-1 px-2 py-1.5 text-xs rounded border border-border-default text-muted hover:text-foreground transition-colors"
                             >
                               Cancel
                             </button>
@@ -567,14 +567,14 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
 
         {/* Expanded: note + sources */}
         {expanded && claim.note && (
-          <p className="mt-3 text-sm text-zinc-400 leading-relaxed border-t border-border-default pt-3">
+          <p className="mt-3 text-sm text-muted leading-relaxed border-t border-border-default pt-3">
             {claim.note}
           </p>
         )}
         {expanded && claim.sources && claim.sources.length > 0 && (
           <div className="mt-2 space-y-1">
             {claim.sources.map((s) => (
-              <div key={s.id} className="text-xs text-zinc-500">
+              <div key={s.id} className="text-xs text-muted">
                 {s.url ? (
                   <a href={s.url} target="_blank" rel="noopener noreferrer" className="hover:text-blue-400 transition-colors">
                     📎 {s.citation}
@@ -593,21 +593,21 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
             <button
               disabled
               title="Coming soon"
-              className="flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-400 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-1 text-xs text-muted hover:text-foreground disabled:cursor-not-allowed transition-colors"
             >
               ✓ Verify
             </button>
             <button
               disabled
               title="Coming soon"
-              className="flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-400 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-1 text-xs text-muted hover:text-foreground disabled:cursor-not-allowed transition-colors"
             >
               ? Challenge
             </button>
             <button
               disabled
               title="Coming soon"
-              className="flex items-center gap-1 text-xs text-zinc-600 hover:text-zinc-400 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center gap-1 text-xs text-muted hover:text-foreground disabled:cursor-not-allowed transition-colors"
             >
               ♥ Save
             </button>
@@ -615,7 +615,7 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
           {hasExtra && (
             <button
               onClick={() => setExpanded((e) => !e)}
-              className="text-[11px] text-zinc-600 hover:text-zinc-400 transition-colors ml-auto"
+              className="text-[11px] text-muted hover:text-foreground transition-colors ml-auto"
             >
               {expanded ? "Show less" : "Show more"}
             </button>

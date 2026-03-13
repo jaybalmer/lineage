@@ -26,7 +26,7 @@ function AttendeeList({ eventId }: { eventId: string }) {
   const riderIds = [...new Set(claims.map((c) => c.subject_id))]
 
   if (riderIds.length === 0) {
-    return <div className="text-xs text-zinc-700 italic py-2">No attendees documented</div>
+    return <div className="text-xs text-muted italic py-2">No attendees documented</div>
   }
 
   return (
@@ -36,11 +36,11 @@ function AttendeeList({ eventId }: { eventId: string }) {
         if (!person) return null
         return (
           <Link key={rid} href={`/riders/${rid}`}>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-surface border border-border-default rounded-full hover:border-zinc-600 transition-all group">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-surface border border-border-default rounded-full hover:border-border-default transition-all group">
               <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[9px] font-bold text-foreground shrink-0">
                 {person.display_name[0]}
               </div>
-              <span className="text-xs text-zinc-400 group-hover:text-foreground transition-colors">
+              <span className="text-xs text-muted group-hover:text-foreground transition-colors">
                 {person.display_name}
               </span>
             </div>
@@ -66,14 +66,14 @@ function InstanceRow({ event, highlight }: { event: Event; highlight?: boolean }
       <div className="px-4 py-3 border-b border-border-default flex items-center justify-between">
         <div>
           <div className="text-sm font-semibold text-foreground">{event.name}</div>
-          <div className="text-xs text-zinc-500 mt-0.5">
+          <div className="text-xs text-muted mt-0.5">
             {formatEventDate(event.start_date, event.end_date)}
-            {place && <span className="text-zinc-700"> · {place.name}</span>}
+            {place && <span className="text-muted"> · {place.name}</span>}
           </div>
         </div>
         <div className="text-right shrink-0">
           <div className="text-lg font-bold text-foreground">{attendeeCount}</div>
-          <div className="text-[10px] text-zinc-600">rider{attendeeCount !== 1 ? "s" : ""}</div>
+          <div className="text-[10px] text-muted">rider{attendeeCount !== 1 ? "s" : ""}</div>
         </div>
       </div>
       <div className="px-4 py-3">
@@ -112,44 +112,44 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
         <Nav />
         <div className="max-w-3xl mx-auto px-4 py-8">
           {/* Breadcrumb */}
-          <div className="text-xs text-zinc-600 mb-6">
+          <div className="text-xs text-muted mb-6">
             {parentSeries ? (
               <>
-                <Link href={`/events/${seriesSlug(parentSeries)}`} className="hover:text-zinc-400">{parentSeries.name}</Link>
+                <Link href={`/events/${seriesSlug(parentSeries)}`} className="hover:text-foreground">{parentSeries.name}</Link>
                 <span className="mx-2">/</span>
               </>
             ) : null}
-            <span className="text-zinc-400">{instance.name}</span>
+            <span className="text-muted">{instance.name}</span>
           </div>
 
           {/* Header */}
           <div className="bg-surface border border-border-default rounded-xl p-6 mb-6">
-            <div className="text-xs text-zinc-600 uppercase tracking-widest mb-1 flex items-center gap-2">
+            <div className="text-xs text-muted uppercase tracking-widest mb-1 flex items-center gap-2">
               <span>{instance.event_type}</span>
-              {instance.year && <span className="text-zinc-700">· {instance.year}</span>}
+              {instance.year && <span className="text-muted">· {instance.year}</span>}
             </div>
             <h1 className="text-2xl font-bold text-foreground">{instance.name}</h1>
             {place && (
               <Link href={`/places/${placeSlug(place)}`}>
-                <p className="text-zinc-400 text-sm mt-1 hover:text-blue-300 transition-colors">
+                <p className="text-muted text-sm mt-1 hover:text-blue-300 transition-colors">
                   🏔 {place.name}
                 </p>
               </Link>
             )}
-            <p className="text-zinc-600 text-sm mt-0.5">
+            <p className="text-muted text-sm mt-0.5">
               {formatEventDate(instance.start_date, instance.end_date)}
             </p>
             <div className="mt-4 flex gap-6">
               <div>
                 <div className="font-bold text-foreground text-xl">{totalAttendees}</div>
-                <div className="text-zinc-600 text-xs">documented riders</div>
+                <div className="text-muted text-xs">documented riders</div>
               </div>
             </div>
           </div>
 
           {/* Attendees */}
           <section className="mb-8">
-            <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3">Attendees</h2>
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Attendees</h2>
             <div className="bg-background border border-border-default rounded-xl p-4">
               <AttendeeList eventId={instance.id} />
             </div>
@@ -158,7 +158,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
           {/* Other years in series */}
           {seriesInstances.length > 1 && (
             <section>
-              <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3">
+              <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">
                 Other years — {parentSeries?.name}
               </h2>
               <div className="space-y-2">
@@ -171,9 +171,9 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
                       <div className="flex items-center justify-between px-4 py-2.5 bg-background border border-border-default rounded-lg hover:border-border-default transition-all">
                         <div>
                           <div className="text-sm text-foreground">{e.name}</div>
-                          <div className="text-xs text-zinc-600">{formatEventDate(e.start_date, e.end_date)}</div>
+                          <div className="text-xs text-muted">{formatEventDate(e.start_date, e.end_date)}</div>
                         </div>
-                        <div className="text-xs text-zinc-600">{count} rider{count !== 1 ? "s" : ""}</div>
+                        <div className="text-xs text-muted">{count} rider{count !== 1 ? "s" : ""}</div>
                       </div>
                     </Link>
                   )
@@ -207,46 +207,46 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
       <div className="max-w-3xl mx-auto px-4 py-8">
 
         {/* Breadcrumb */}
-        <div className="text-xs text-zinc-600 mb-6">
-          <Link href="/events" className="hover:text-zinc-400">Events</Link>
+        <div className="text-xs text-muted mb-6">
+          <Link href="/events" className="hover:text-foreground">Events</Link>
           <span className="mx-2">/</span>
-          <span className="text-zinc-400">{series!.name}</span>
+          <span className="text-muted">{series!.name}</span>
         </div>
 
         {/* Header */}
         <div className="bg-surface border border-border-default rounded-xl p-6 mb-6">
           <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs text-zinc-600 uppercase tracking-widest">Event Series</span>
-            <span className="text-xs text-zinc-700">· {series!.frequency}</span>
+            <span className="text-xs text-muted uppercase tracking-widest">Event Series</span>
+            <span className="text-xs text-muted">· {series!.frequency}</span>
           </div>
           <h1 className="text-2xl font-bold text-foreground">{series!.name}</h1>
           {place && (
             <Link href={`/places/${placeSlug(place)}`}>
-              <p className="text-zinc-400 text-sm mt-1 hover:text-blue-300 transition-colors">
+              <p className="text-muted text-sm mt-1 hover:text-blue-300 transition-colors">
                 🏔 {place.name}
               </p>
             </Link>
           )}
           {series!.description && (
-            <p className="text-zinc-500 text-sm mt-2 leading-relaxed">{series!.description}</p>
+            <p className="text-muted text-sm mt-2 leading-relaxed">{series!.description}</p>
           )}
 
           <div className="mt-5 flex gap-6">
             <div>
               <div className="font-bold text-foreground text-xl">{seriesInstances.length}</div>
-              <div className="text-zinc-600 text-xs">documented years</div>
+              <div className="text-muted text-xs">documented years</div>
             </div>
             <div className="w-px bg-border-default" />
             <div>
               <div className="font-bold text-foreground text-xl">{totalAttendees}</div>
-              <div className="text-zinc-600 text-xs">unique riders</div>
+              <div className="text-muted text-xs">unique riders</div>
             </div>
             {series!.start_year && (
               <>
                 <div className="w-px bg-border-default" />
                 <div>
                   <div className="font-bold text-foreground text-base">{series!.start_year}</div>
-                  <div className="text-zinc-600 text-xs">since</div>
+                  <div className="text-muted text-xs">since</div>
                 </div>
               </>
             )}
@@ -255,12 +255,12 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
 
         {/* Instances by year */}
         {seriesInstances.length === 0 ? (
-          <div className="text-sm text-zinc-600 py-8 text-center border border-dashed border-border-default rounded-xl">
+          <div className="text-sm text-muted py-8 text-center border border-dashed border-border-default rounded-xl">
             No instances documented yet for this series.
           </div>
         ) : (
           <div className="space-y-4">
-            <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest">Editions by year</h2>
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">Editions by year</h2>
             {seriesInstances.map((event) => (
               <InstanceRow key={event.id} event={event} />
             ))}

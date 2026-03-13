@@ -182,7 +182,7 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
         {/* Header */}
         <div className="mb-5">
           <h2 className="text-lg font-bold text-foreground">{titles[entityType]}</h2>
-          <p className="text-xs text-zinc-500 mt-1">
+          <p className="text-xs text-muted mt-1">
             Will be added as unverified — the community can confirm it.
           </p>
         </div>
@@ -415,7 +415,7 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
               <button
                 type="button"
                 onClick={() => setShowExactDates(!showExactDates)}
-                className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors text-left"
+                className="text-xs text-muted hover:text-foreground transition-colors text-left"
               >
                 {showExactDates ? "− Remove specific dates" : "+ Add specific start / end dates"}
               </button>
@@ -492,9 +492,9 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
           <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[9px] font-bold text-foreground shrink-0">
             {addingAsName[0]}
           </div>
-          <span className="text-xs text-zinc-500">
-            Adding as <span className="text-zinc-300">{addingAsName}</span>
-            <span className="text-zinc-700"> · marked unverified until confirmed</span>
+          <span className="text-xs text-muted">
+            Adding as <span className="text-muted">{addingAsName}</span>
+            <span className="text-muted"> · marked unverified until confirmed</span>
           </span>
         </div>
 
@@ -502,7 +502,7 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
         <div className="flex gap-3 mt-4">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-foreground border border-border-default hover:border-zinc-600 transition-all"
+            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-muted hover:text-foreground border border-border-default hover:border-border-default transition-all"
           >
             Cancel
           </button>
@@ -513,7 +513,7 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
               "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
               canSubmit()
                 ? "bg-blue-600 text-white hover:bg-blue-500"
-                : "bg-surface-active text-zinc-600 cursor-not-allowed"
+                : "bg-surface-active text-muted cursor-not-allowed"
             )}
           >
             Add to graph
@@ -530,7 +530,7 @@ const inputCls =
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs text-zinc-500 mb-1.5">
+      <label className="block text-xs text-muted mb-1.5">
         {label}{required && <span className="text-blue-500 ml-0.5">*</span>}
       </label>
       {children}

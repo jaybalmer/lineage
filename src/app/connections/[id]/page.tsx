@@ -64,7 +64,7 @@ export default function ConnectionPage({ params }: { params: Promise<{ id: strin
     return (
       <div className="min-h-screen bg-background">
         <Nav />
-        <div className="max-w-3xl mx-auto px-4 py-16 text-center text-zinc-600">Loading…</div>
+        <div className="max-w-3xl mx-auto px-4 py-16 text-center text-muted">Loading…</div>
       </div>
     )
   }
@@ -91,12 +91,12 @@ export default function ConnectionPage({ params }: { params: Promise<{ id: strin
       <Nav />
       <div className="max-w-3xl mx-auto px-4 py-10">
         {/* Breadcrumb */}
-        <div className="text-xs text-zinc-600 mb-6">
-          <Link href="/connections" className="hover:text-zinc-400">
+        <div className="text-xs text-muted mb-6">
+          <Link href="/connections" className="hover:text-foreground">
             Connections
           </Link>
           <span className="mx-2">/</span>
-          <span className="text-zinc-400">{personB.display_name}</span>
+          <span className="text-muted">{personB.display_name}</span>
         </div>
 
         <ConnectionThread

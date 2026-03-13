@@ -37,7 +37,7 @@ export default function Home() {
           <div className="text-left">
             <div className="h-[18px]" />{/* spacer matches SNOWBOARDING height so items-center lands on Lineage */}
             <div className="text-4xl font-bold text-foreground tracking-tight leading-none">Lineage</div>
-            <div className="text-sm font-medium text-zinc-500 tracking-widest uppercase mt-1">Snowboarding</div>
+            <div className="text-sm font-medium text-muted tracking-widest uppercase mt-1">Snowboarding</div>
           </div>
         </div>
 
@@ -46,7 +46,7 @@ export default function Home() {
           <span className="text-blue-400">snowboarding history</span>
         </h1>
 
-        <p className="text-zinc-400 text-lg leading-relaxed max-w-xl mx-auto mb-10">
+        <p className="text-muted text-lg leading-relaxed max-w-xl mx-auto mb-10">
           Built by riders, for riders. Track where you&apos;ve been, who you rode with,
           and what shaped your riding — then discover how your story connects to everyone else&apos;s.
         </p>
@@ -63,7 +63,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/onboarding"
-                className="w-full sm:w-auto px-8 py-3 rounded-xl border border-border-default text-zinc-300 font-semibold text-sm hover:border-zinc-500 hover:text-foreground transition-colors"
+                className="w-full sm:w-auto px-8 py-3 rounded-xl border border-border-default text-muted font-semibold text-sm hover:border-border-default hover:text-foreground transition-colors"
               >
                 New Rider
               </Link>
@@ -78,7 +78,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/profile"
-                className="w-full sm:w-auto px-8 py-3 rounded-xl border border-border-default text-zinc-300 font-semibold text-sm hover:border-zinc-500 hover:text-foreground transition-colors"
+                className="w-full sm:w-auto px-8 py-3 rounded-xl border border-border-default text-muted font-semibold text-sm hover:border-border-default hover:text-foreground transition-colors"
               >
                 My Profile
               </Link>
@@ -97,9 +97,9 @@ export default function Home() {
         <div className="divide-y divide-[#1e1e1e]">
           {FEATURES.map(({ title, desc }, i) => (
             <div key={title} className="grid grid-cols-[2rem_1fr] sm:grid-cols-[2rem_11rem_1fr] gap-x-6 gap-y-1 py-6 items-baseline">
-              <span className="text-[11px] text-zinc-700 font-mono pt-px">{String(i + 1).padStart(2, "0")}</span>
+              <span className="text-[11px] text-muted font-mono pt-px">{String(i + 1).padStart(2, "0")}</span>
               <div className="text-sm font-semibold text-foreground leading-snug">{title}</div>
-              <div className="col-start-2 sm:col-start-3 text-zinc-500 text-sm leading-relaxed">{desc}</div>
+              <div className="col-start-2 sm:col-start-3 text-muted text-sm leading-relaxed">{desc}</div>
             </div>
           ))}
         </div>
@@ -107,7 +107,7 @@ export default function Home() {
 
       {/* Footer line */}
       <div className="text-center pb-16">
-        <p className="text-zinc-700 text-xs">
+        <p className="text-muted text-xs">
           Snowboarding has 40 years of history — let&apos;s map it.
         </p>
       </div>

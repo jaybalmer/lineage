@@ -27,7 +27,7 @@ function StrengthBadge({ strength, score }: { strength: string; score: number })
     strong: "bg-emerald-950 text-emerald-300 border-emerald-800/50",
     medium: "bg-blue-950 text-blue-300 border-blue-800/50",
     light: "bg-amber-950 text-amber-300 border-amber-800/50",
-    none: "bg-zinc-900 text-zinc-400 border-zinc-700/50",
+    none: "bg-zinc-900 text-muted border-zinc-700/50",
   }
   const dots: Record<string, string> = {
     strong: "●●●",
@@ -80,13 +80,13 @@ export function ConnectionThread({ personA, personB, claimsA, claimsB }: Connect
         </div>
 
         {/* Headline */}
-        <p className="text-sm text-zinc-300 leading-relaxed">{summary.headline}</p>
+        <p className="text-sm text-muted leading-relaxed">{summary.headline}</p>
       </div>
 
       {/* Shared moments */}
       {summary.facts.length > 0 ? (
         <div className="mb-8">
-          <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">
+          <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">
             Shared moments
           </div>
           <div className="space-y-2">
@@ -106,8 +106,8 @@ export function ConnectionThread({ personA, personB, claimsA, claimsB }: Connect
         </div>
       ) : (
         <div className="mb-8 py-8 text-center border border-dashed border-border-default rounded-xl">
-          <div className="text-sm text-zinc-500">No documented overlaps yet</div>
-          <div className="text-xs text-zinc-600 mt-1">
+          <div className="text-sm text-muted">No documented overlaps yet</div>
+          <div className="text-xs text-muted mt-1">
             Add more history to both profiles to uncover shared moments
           </div>
         </div>
@@ -115,7 +115,7 @@ export function ConnectionThread({ personA, personB, claimsA, claimsB }: Connect
 
       {/* Other rider's feed */}
       <div>
-        <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-4 flex items-center gap-3">
+        <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-4 flex items-center gap-3">
           <span>{personB.display_name}&apos;s history</span>
           <div className="flex-1 h-px bg-surface-active" />
         </div>

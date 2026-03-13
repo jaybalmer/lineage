@@ -207,17 +207,17 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
           {/* Header */}
           <div className="px-6 pt-5 pb-4 border-b border-border-default flex-shrink-0">
             <h2 className="text-base font-bold text-foreground">Add to your lineage</h2>
-            <p className="text-xs text-zinc-500 mt-0.5">Build your snowboarding history, one claim at a time</p>
+            <p className="text-xs text-muted mt-0.5">Build your snowboarding history, one claim at a time</p>
           </div>
 
           <div className="overflow-y-auto flex-1 px-6 py-4 space-y-5">
             {/* Section 1: Predicate */}
             <div>
-              <div className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3">What happened?</div>
+              <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">What happened?</div>
               <div className="space-y-2">
                 {PREDICATE_GROUPS.map((group) => (
                   <div key={group.label}>
-                    <div className="text-[10px] text-zinc-700 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                    <div className="text-[10px] text-muted uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
                       <span>{group.icon}</span> {group.label}
                     </div>
                     <div className="flex flex-wrap gap-1.5">
@@ -233,7 +233,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                             "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all flex items-center gap-1.5",
                             predicate === p
                               ? "border-blue-500 bg-blue-950/50 text-blue-200"
-                              : "border-border-default text-zinc-400 hover:border-zinc-600 hover:text-foreground"
+                              : "border-border-default text-muted hover:border-border-default hover:text-foreground"
                           )}
                         >
                           <span>{PREDICATE_ICONS[p]}</span>
@@ -249,7 +249,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
             {/* Section 2: Entity search */}
             {predicate && (
               <div>
-                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3">
+                <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">
                   {entityType === "place" && "Which place?"}
                   {entityType === "person" && "Which rider?"}
                   {entityType === "board" && "Which board?"}
@@ -279,7 +279,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                     </div>
                     <button
                       onClick={() => { setEntityId(null); setEntityQuery("") }}
-                      className="text-xs text-zinc-600 hover:text-foreground transition-colors flex-shrink-0 ml-2"
+                      className="text-xs text-muted hover:text-foreground transition-colors flex-shrink-0 ml-2"
                     >
                       change
                     </button>
@@ -303,11 +303,11 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                             <button
                               key={String(e.id)}
                               onClick={() => { setEntityId(String(e.id)); setEntityQuery("") }}
-                              className="w-full text-left px-3 py-2.5 text-sm text-zinc-300 hover:bg-surface-hover transition-colors flex items-center justify-between gap-2"
+                              className="w-full text-left px-3 py-2.5 text-sm text-muted hover:bg-surface-hover transition-colors flex items-center justify-between gap-2"
                             >
                               <div>
                                 <div>{getEntityLabel(e)}</div>
-                                {dateRange && <div className="text-[11px] text-zinc-600 mt-0.5">{dateRange}</div>}
+                                {dateRange && <div className="text-[11px] text-muted mt-0.5">{dateRange}</div>}
                               </div>
                               {e.community_status === "unverified" && (
                                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-400 border border-amber-800/40 flex-shrink-0">◎ new</span>
@@ -325,7 +325,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                           </button>
                         )}
                         {filteredEntities.length === 0 && !currentGroup?.addEntityType && (
-                          <div className="px-3 py-2.5 text-xs text-zinc-600">No results</div>
+                          <div className="px-3 py-2.5 text-xs text-muted">No results</div>
                         )}
                       </div>
                     )}
@@ -338,10 +338,10 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                             <button
                               key={String(e.id)}
                               onClick={() => { setEntityId(String(e.id)); setEntityQuery("") }}
-                              className="w-full text-left px-3 py-2.5 text-sm text-zinc-300 hover:bg-surface-hover transition-colors"
+                              className="w-full text-left px-3 py-2.5 text-sm text-muted hover:bg-surface-hover transition-colors"
                             >
                               <div>{getEntityLabel(e)}</div>
-                              {dateRange && <div className="text-[11px] text-zinc-600 mt-0.5">{dateRange}</div>}
+                              {dateRange && <div className="text-[11px] text-muted mt-0.5">{dateRange}</div>}
                             </button>
                           )
                         })}
@@ -364,10 +364,10 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
             {/* Section 3: When */}
             {predicate && entityId && (
               <div>
-                <div className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3">When?</div>
+                <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">When?</div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-xs text-zinc-600 mb-1.5">Start year <span className="text-blue-500">*</span></label>
+                    <label className="block text-xs text-muted mb-1.5">Start year <span className="text-blue-500">*</span></label>
                     <input
                       autoFocus
                       type="number"
@@ -380,7 +380,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                     />
                   </div>
                   <div>
-                    <label className="block text-xs text-zinc-600 mb-1.5">End year <span className="text-zinc-700">(optional)</span></label>
+                    <label className="block text-xs text-muted mb-1.5">End year <span className="text-muted">(optional)</span></label>
                     <input
                       type="number"
                       value={endYear}
@@ -400,7 +400,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
               <div>
                 <button
                   onClick={() => setShowDetails((v) => !v)}
-                  className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors flex items-center gap-1"
+                  className="text-xs text-muted hover:text-foreground transition-colors flex items-center gap-1"
                 >
                   <span>{showDetails ? "▾" : "▸"}</span>
                   {showDetails ? "Hide details" : "Add confidence, visibility & note"}
@@ -410,7 +410,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                   <div className="mt-3 space-y-4">
                     {/* Confidence */}
                     <div>
-                      <label className="block text-xs text-zinc-600 mb-2">Confidence</label>
+                      <label className="block text-xs text-muted mb-2">Confidence</label>
                       <div className="grid grid-cols-2 gap-1.5">
                         {(["self-reported", "corroborated", "documented", "partner-verified"] as ConfidenceLevel[]).map((c) => (
                           <button
@@ -420,7 +420,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                               "text-left px-3 py-2 rounded-lg border text-xs transition-all",
                               confidence === c
                                 ? "border-blue-500 bg-blue-950/40 text-blue-200"
-                                : "border-border-default text-zinc-500 hover:border-zinc-600 hover:text-foreground"
+                                : "border-border-default text-muted hover:border-border-default hover:text-foreground"
                             )}
                           >
                             {c.replace("-", " ")}
@@ -431,7 +431,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
 
                     {/* Visibility */}
                     <div>
-                      <label className="block text-xs text-zinc-600 mb-2">Visibility</label>
+                      <label className="block text-xs text-muted mb-2">Visibility</label>
                       <div className="flex gap-2">
                         {([
                           { v: "private", icon: "🔒" },
@@ -445,7 +445,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                               "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-xs transition-all",
                               visibility === v
                                 ? "border-blue-500 bg-blue-950/40 text-blue-200"
-                                : "border-border-default text-zinc-500 hover:border-zinc-600 hover:text-foreground"
+                                : "border-border-default text-muted hover:border-border-default hover:text-foreground"
                             )}
                           >
                             <span>{icon}</span> {v}
@@ -456,7 +456,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
 
                     {/* Note */}
                     <div>
-                      <label className="block text-xs text-zinc-600 mb-1.5">Note <span className="text-zinc-700">(optional)</span></label>
+                      <label className="block text-xs text-muted mb-1.5">Note <span className="text-muted">(optional)</span></label>
                       <textarea
                         value={note}
                         onChange={(e) => setNote(e.target.value)}
@@ -475,7 +475,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
           <div className="px-6 py-4 border-t border-border-default flex gap-3 flex-shrink-0">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-foreground border border-border-default hover:border-zinc-600 transition-all"
+              className="flex-1 px-4 py-2.5 rounded-lg text-sm text-muted hover:text-foreground border border-border-default hover:border-border-default transition-all"
             >
               Cancel
             </button>
@@ -486,7 +486,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                 "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
                 canSave
                   ? "bg-blue-600 text-white hover:bg-blue-500"
-                  : "bg-surface-active text-zinc-600 cursor-not-allowed"
+                  : "bg-surface-active text-muted cursor-not-allowed"
               )}
             >
               Add to lineage

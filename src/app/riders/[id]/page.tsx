@@ -30,10 +30,10 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
       <div className="max-w-5xl mx-auto px-4 py-8">
 
         {/* Breadcrumb */}
-        <div className="text-xs text-zinc-600 mb-6">
-          <Link href="/connections" className="hover:text-zinc-400">Connections</Link>
+        <div className="text-xs text-muted mb-6">
+          <Link href="/connections" className="hover:text-foreground">Connections</Link>
           <span className="mx-2">/</span>
-          <span className="text-zinc-400">{person.display_name}</span>
+          <span className="text-muted">{person.display_name}</span>
         </div>
 
         {/* Profile header */}
@@ -44,14 +44,14 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
             </div>
             <div className="flex-1">
               <h1 className="text-xl font-bold text-foreground">{person.display_name}</h1>
-              {person.birth_year && <p className="text-zinc-500 text-sm">b. {person.birth_year}</p>}
-              {person.bio && <p className="text-zinc-400 text-sm mt-2 leading-relaxed">{person.bio}</p>}
+              {person.birth_year && <p className="text-muted text-sm">b. {person.birth_year}</p>}
+              {person.bio && <p className="text-muted text-sm mt-2 leading-relaxed">{person.bio}</p>}
             </div>
             <div className="flex-shrink-0 flex gap-2">
               {!isCurrentUser && (
                 <>
                   <Link href={`/compare?b=${id}`}>
-                    <button className="px-3 py-1.5 rounded-lg bg-surface-hover border border-border-default text-xs text-zinc-300 hover:border-zinc-500 hover:text-foreground transition-all">
+                    <button className="px-3 py-1.5 rounded-lg bg-surface-hover border border-border-default text-xs text-muted hover:border-border-default hover:text-foreground transition-all">
                       Compare ⬡
                     </button>
                   </Link>
@@ -60,7 +60,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                       View connection →
                     </button>
                   </Link>
-                  <button className="px-3 py-1.5 rounded-lg bg-surface-hover border border-border-default text-xs text-zinc-300 hover:border-zinc-500 hover:text-foreground transition-all">
+                  <button className="px-3 py-1.5 rounded-lg bg-surface-hover border border-border-default text-xs text-muted hover:border-border-default hover:text-foreground transition-all">
                     Request verification
                   </button>
                 </>
@@ -94,7 +94,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
           {/* Sidebar */}
           <div className="space-y-4">
             <div className="bg-surface border border-border-default rounded-xl p-4 space-y-3">
-              <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest">Stats</div>
+              <div className="text-xs font-semibold text-muted uppercase tracking-widest">Stats</div>
               {[
                 { label: "Claims", value: personClaims.length },
                 { label: "Places", value: personClaims.filter((c) => c.predicate === "rode_at").length },
@@ -102,7 +102,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                 { label: "Connections", value: personClaims.filter((c) => c.predicate === "rode_with").length },
               ].map(({ label, value }) => (
                 <div key={label} className="flex justify-between text-sm">
-                  <span className="text-zinc-500">{label}</span>
+                  <span className="text-muted">{label}</span>
                   <span className="font-semibold text-foreground">{value}</span>
                 </div>
               ))}
@@ -111,11 +111,11 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
             {/* Sponsors */}
             {personClaims.filter((c) => c.predicate === "sponsored_by").length > 0 && (
               <div className="bg-surface border border-border-default rounded-xl p-4">
-                <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">Sponsors</div>
+                <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Sponsors</div>
                 {personClaims.filter((c) => c.predicate === "sponsored_by").map((c) => (
                   <div key={c.id} className="text-sm py-1">
                     <span className="text-foreground">{getEntityName(c.object_id, c.object_type)}</span>
-                    <span className="text-zinc-600 text-xs ml-2">{formatDateRange(c.start_date, c.end_date)}</span>
+                    <span className="text-muted text-xs ml-2">{formatDateRange(c.start_date, c.end_date)}</span>
                   </div>
                 ))}
               </div>

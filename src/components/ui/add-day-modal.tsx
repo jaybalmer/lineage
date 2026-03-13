@@ -70,13 +70,13 @@ export function AddDayModal({ onClose }: AddDayModalProps) {
         {/* Header */}
         <div className="px-6 pt-5 pb-4 border-b border-border-default flex-shrink-0">
           <h2 className="text-base font-bold text-foreground">☀️ Log a riding day</h2>
-          <p className="text-xs text-zinc-500 mt-0.5">Record when, where, and who</p>
+          <p className="text-xs text-muted mt-0.5">Record when, where, and who</p>
         </div>
 
         <div className="overflow-y-auto flex-1 px-6 py-4 space-y-5">
           {/* Date */}
           <div>
-            <label className="block text-xs text-zinc-500 mb-1.5">
+            <label className="block text-xs text-muted mb-1.5">
               Date <span className="text-blue-500">*</span>
             </label>
             <input
@@ -90,7 +90,7 @@ export function AddDayModal({ onClose }: AddDayModalProps) {
 
           {/* Place */}
           <div>
-            <label className="block text-xs text-zinc-500 mb-1.5">
+            <label className="block text-xs text-muted mb-1.5">
               Where? <span className="text-blue-500">*</span>
             </label>
             {selectedPlace ? (
@@ -101,7 +101,7 @@ export function AddDayModal({ onClose }: AddDayModalProps) {
                 </div>
                 <button
                   onClick={() => { setPlaceId(null); setPlaceQuery("") }}
-                  className="text-xs text-zinc-600 hover:text-foreground transition-colors"
+                  className="text-xs text-muted hover:text-foreground transition-colors"
                 >
                   change
                 </button>
@@ -121,7 +121,7 @@ export function AddDayModal({ onClose }: AddDayModalProps) {
                     <button
                       key={p.id}
                       onClick={() => { setPlaceId(p.id); setPlaceQuery("") }}
-                      className="w-full text-left px-3 py-2.5 text-sm text-zinc-300 hover:bg-surface-hover transition-colors flex items-center justify-between"
+                      className="w-full text-left px-3 py-2.5 text-sm text-muted hover:bg-surface-hover transition-colors flex items-center justify-between"
                     >
                       <span>{p.name}</span>
                       {p.community_status === "unverified" && (
@@ -130,7 +130,7 @@ export function AddDayModal({ onClose }: AddDayModalProps) {
                     </button>
                   ))}
                   {filteredPlaces.length === 0 && (
-                    <div className="px-3 py-2.5 text-xs text-zinc-600">No matches</div>
+                    <div className="px-3 py-2.5 text-xs text-muted">No matches</div>
                   )}
                 </div>
               </div>
@@ -139,7 +139,7 @@ export function AddDayModal({ onClose }: AddDayModalProps) {
 
           {/* Who were you riding with? */}
           <div>
-            <label className="block text-xs text-zinc-500 mb-2">Who were you riding with?</label>
+            <label className="block text-xs text-muted mb-2">Who were you riding with?</label>
             <div className="flex flex-wrap gap-2">
               {otherRiders.map((rider) => {
                 const selected = riderIds.includes(rider.id)
@@ -151,12 +151,12 @@ export function AddDayModal({ onClose }: AddDayModalProps) {
                       "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
                       selected
                         ? "border-blue-500 bg-blue-950/50 text-blue-200"
-                        : "border-border-default text-zinc-400 hover:border-zinc-600 hover:text-foreground"
+                        : "border-border-default text-muted hover:border-border-default hover:text-foreground"
                     )}
                   >
                     <span className={cn(
                       "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold",
-                      selected ? "bg-blue-600 text-foreground" : "bg-border-default text-zinc-500"
+                      selected ? "bg-blue-600 text-foreground" : "bg-border-default text-muted"
                     )}>
                       {rider.display_name[0]}
                     </span>
@@ -166,7 +166,7 @@ export function AddDayModal({ onClose }: AddDayModalProps) {
               })}
             </div>
             {riderIds.length > 0 && (
-              <p className="text-[11px] text-zinc-600 mt-2">
+              <p className="text-[11px] text-muted mt-2">
                 {riderIds.length} rider{riderIds.length > 1 ? "s" : ""} tagged
               </p>
             )}
@@ -174,7 +174,7 @@ export function AddDayModal({ onClose }: AddDayModalProps) {
 
           {/* Note */}
           <div>
-            <label className="block text-xs text-zinc-500 mb-1.5">Note <span className="text-zinc-700">(optional)</span></label>
+            <label className="block text-xs text-muted mb-1.5">Note <span className="text-muted">(optional)</span></label>
             <textarea
               value={note}
               onChange={(e) => setNote(e.target.value)}
@@ -186,7 +186,7 @@ export function AddDayModal({ onClose }: AddDayModalProps) {
 
           {/* Visibility */}
           <div>
-            <label className="block text-xs text-zinc-500 mb-2">Visibility</label>
+            <label className="block text-xs text-muted mb-2">Visibility</label>
             <div className="flex gap-2">
               {([
                 { v: "private", icon: "🔒", label: "Private" },
@@ -200,7 +200,7 @@ export function AddDayModal({ onClose }: AddDayModalProps) {
                     "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-xs transition-all",
                     visibility === v
                       ? "border-blue-500 bg-blue-950/40 text-blue-200"
-                      : "border-border-default text-zinc-500 hover:border-zinc-600 hover:text-foreground"
+                      : "border-border-default text-muted hover:border-border-default hover:text-foreground"
                   )}
                 >
                   <span>{icon}</span> {label}
@@ -214,7 +214,7 @@ export function AddDayModal({ onClose }: AddDayModalProps) {
         <div className="px-6 py-4 border-t border-border-default flex gap-3 flex-shrink-0">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-foreground border border-border-default hover:border-zinc-600 transition-all"
+            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-muted hover:text-foreground border border-border-default hover:border-border-default transition-all"
           >
             Cancel
           </button>
@@ -225,7 +225,7 @@ export function AddDayModal({ onClose }: AddDayModalProps) {
               "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
               canSave
                 ? "bg-emerald-700 text-white hover:bg-emerald-600"
-                : "bg-surface-active text-zinc-600 cursor-not-allowed"
+                : "bg-surface-active text-muted cursor-not-allowed"
             )}
           >
             Log this day

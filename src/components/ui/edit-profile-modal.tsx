@@ -74,7 +74,7 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
         {/* Header */}
         <div className="px-6 pt-5 pb-4 border-b border-border-default flex-shrink-0">
           <h2 className="text-base font-bold text-foreground">Edit profile</h2>
-          <p className="text-xs text-zinc-500 mt-0.5">Your details are private by default</p>
+          <p className="text-xs text-muted mt-0.5">Your details are private by default</p>
         </div>
 
         {/* Avatar preview */}
@@ -84,7 +84,7 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
           </div>
           <div>
             <div className="text-sm font-semibold text-foreground">{displayName.trim() || "—"}</div>
-            <div className="text-xs text-zinc-500 mt-0.5">
+            <div className="text-xs text-muted mt-0.5">
               {birthYear && `b. ${birthYear}`}
               {birthYear && ridingSince && " · "}
               {ridingSince && `riding since ${ridingSince}`}
@@ -167,7 +167,7 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
                     "flex-1 flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-lg border text-xs transition-all",
                     privacyLevel === v
                       ? "border-blue-500 bg-blue-950/40 text-blue-200"
-                      : "border-border-default text-zinc-500 hover:border-zinc-600 hover:text-foreground"
+                      : "border-border-default text-muted hover:border-border-default hover:text-foreground"
                   )}
                 >
                   <span className="text-base">{icon}</span>
@@ -183,7 +183,7 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
         <div className="px-6 py-4 border-t border-border-default flex gap-3 flex-shrink-0">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-foreground border border-border-default hover:border-zinc-600 transition-all"
+            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-muted hover:text-foreground border border-border-default hover:border-border-default transition-all"
           >
             Cancel
           </button>
@@ -194,7 +194,7 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
               "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
               canSave
                 ? "bg-blue-600 text-white hover:bg-blue-500"
-                : "bg-surface-active text-zinc-600 cursor-not-allowed"
+                : "bg-surface-active text-muted cursor-not-allowed"
             )}
           >
             Save profile
@@ -211,7 +211,7 @@ const inputCls =
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-xs text-zinc-500 mb-1.5">
+      <label className="block text-xs text-muted mb-1.5">
         {label}{required && <span className="text-blue-500 ml-0.5">*</span>}
       </label>
       {children}

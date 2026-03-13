@@ -38,21 +38,21 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       <div className="max-w-5xl mx-auto px-4 py-8">
 
         {/* Breadcrumb */}
-        <div className="text-xs text-zinc-600 mb-6">
-          <Link href="/boards" className="hover:text-zinc-400">Boards</Link>
+        <div className="text-xs text-muted mb-6">
+          <Link href="/boards" className="hover:text-foreground">Boards</Link>
           <span className="mx-2">/</span>
           {brandOrg ? (
             <>
-              <Link href={`/orgs/${orgSlug(brandOrg)}`} className="hover:text-zinc-400">{board.brand}</Link>
+              <Link href={`/orgs/${orgSlug(brandOrg)}`} className="hover:text-foreground">{board.brand}</Link>
               <span className="mx-2">/</span>
             </>
           ) : (
             <>
-              <span className="text-zinc-600">{board.brand}</span>
+              <span className="text-muted">{board.brand}</span>
               <span className="mx-2">/</span>
             </>
           )}
-          <span className="text-zinc-400">{board.model}</span>
+          <span className="text-muted">{board.model}</span>
         </div>
 
         {/* Header */}
@@ -60,15 +60,15 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs text-zinc-600 uppercase tracking-widest">Snowboard</span>
+                <span className="text-xs text-muted uppercase tracking-widest">Snowboard</span>
                 {board.shape && (
-                  <span className="text-xs text-zinc-700">· {board.shape}</span>
+                  <span className="text-xs text-muted">· {board.shape}</span>
                 )}
               </div>
               <h1 className="text-2xl font-bold text-foreground">
                 {board.brand} {board.model}
               </h1>
-              <p className="text-zinc-500 text-sm mt-1">{board.model_year}</p>
+              <p className="text-muted text-sm mt-1">{board.model_year}</p>
             </div>
             <div className="text-4xl shrink-0">🏂</div>
           </div>
@@ -76,14 +76,14 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
           <div className="mt-5 flex gap-6">
             <div>
               <div className="font-bold text-foreground text-xl">{riderIds.length}</div>
-              <div className="text-zinc-600 text-xs">riders</div>
+              <div className="text-muted text-xs">riders</div>
             </div>
             {board.shape && (
               <>
                 <div className="w-px bg-border-default" />
                 <div>
                   <div className="font-bold text-foreground text-base capitalize">{board.shape.replace("-", " ")}</div>
-                  <div className="text-zinc-600 text-xs">shape</div>
+                  <div className="text-muted text-xs">shape</div>
                 </div>
               </>
             )}
@@ -93,11 +93,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         <div className="grid grid-cols-1 md:grid-cols-[1fr_240px] gap-6">
           {/* Riders list */}
           <div>
-            <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-widest mb-3">
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">
               Riders who owned this board
             </h2>
             {riderIds.length === 0 ? (
-              <div className="text-sm text-zinc-600 py-8 text-center border border-dashed border-border-default rounded-xl">
+              <div className="text-sm text-muted py-8 text-center border border-dashed border-border-default rounded-xl">
                 No riders documented yet.
               </div>
             ) : (
@@ -117,11 +117,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                             {person.display_name}
                           </div>
                           {person.birth_year && (
-                            <div className="text-xs text-zinc-600">b. {person.birth_year}</div>
+                            <div className="text-xs text-muted">b. {person.birth_year}</div>
                           )}
                         </div>
                         {claim && (
-                          <div className="text-xs text-zinc-500 shrink-0">
+                          <div className="text-xs text-muted shrink-0">
                             {formatDateRange(claim.start_date, claim.end_date)}
                           </div>
                         )}
@@ -143,16 +143,16 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             {/* Brand link */}
             {brandOrg && (
               <div className="bg-surface border border-border-default rounded-xl p-4">
-                <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">Brand</div>
+                <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Brand</div>
                 <Link href={`/orgs/${orgSlug(brandOrg)}`}>
                   <div className="flex items-center gap-2 hover:text-blue-300 transition-colors">
-                    <div className="w-7 h-7 rounded bg-surface-active border border-border-default flex items-center justify-center text-xs font-bold text-zinc-500">
+                    <div className="w-7 h-7 rounded bg-surface-active border border-border-default flex items-center justify-center text-xs font-bold text-muted">
                       {brandOrg.name[0]}
                     </div>
                     <div>
                       <div className="text-sm text-foreground">{brandOrg.name}</div>
                       {brandOrg.founded_year && (
-                        <div className="text-[11px] text-zinc-600">est. {brandOrg.founded_year}</div>
+                        <div className="text-[11px] text-muted">est. {brandOrg.founded_year}</div>
                       )}
                     </div>
                   </div>
@@ -163,7 +163,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             {/* Other models */}
             {samesBrand.length > 0 && (
               <div className="bg-surface border border-border-default rounded-xl p-4">
-                <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">
+                <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">
                   Other {board.brand} models
                 </div>
                 <div className="space-y-2">
@@ -176,10 +176,10 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                         <div className="flex items-center justify-between py-1.5 hover:text-blue-300 transition-colors group">
                           <div>
                             <div className="text-sm text-foreground group-hover:text-blue-300">{b.model}</div>
-                            <div className="text-[11px] text-zinc-600">'{String(b.model_year).slice(2)}</div>
+                            <div className="text-[11px] text-muted">'{String(b.model_year).slice(2)}</div>
                           </div>
                           {ownerCount > 0 && (
-                            <div className="text-[10px] text-zinc-600">{ownerCount} rider{ownerCount !== 1 ? "s" : ""}</div>
+                            <div className="text-[10px] text-muted">{ownerCount} rider{ownerCount !== 1 ? "s" : ""}</div>
                           )}
                         </div>
                       </Link>
@@ -190,8 +190,8 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             )}
 
             <div className="bg-surface border border-border-default rounded-xl p-4">
-              <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-2">Add to profile</div>
-              <p className="text-xs text-zinc-600 mb-3">Did you ride this board?</p>
+              <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">Add to profile</div>
+              <p className="text-xs text-muted mb-3">Did you ride this board?</p>
               <Link href="/profile">
                 <button className="w-full px-3 py-2 bg-blue-600 rounded-lg text-xs text-foreground font-medium hover:bg-blue-500 transition-colors">
                   + Add to my profile

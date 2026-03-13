@@ -91,23 +91,23 @@ export default function ProfilePage() {
                 <h1 className="text-2xl font-bold text-foreground">{person?.display_name ?? "Your profile"}</h1>
                 <button
                   onClick={() => setEditingProfile(true)}
-                  className="text-xs text-zinc-600 hover:text-zinc-300 transition-colors px-2 py-1 rounded hover:bg-surface-active"
+                  className="text-xs text-muted hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-surface-active"
                 >
                   Edit
                 </button>
               </div>
-              <div className="flex items-center gap-3 mt-1 text-xs text-zinc-500 flex-wrap">
+              <div className="flex items-center gap-3 mt-1 text-xs text-muted flex-wrap">
                 {person?.birth_year && <span>b. {person.birth_year}</span>}
                 {person?.riding_since && <span>Riding since {person.riding_since}</span>}
                 {homeResort && <span>🏔 {homeResort.name}</span>}
               </div>
               {person?.bio && (
-                <p className="text-sm text-zinc-400 mt-2 leading-relaxed max-w-lg">{person.bio}</p>
+                <p className="text-sm text-muted mt-2 leading-relaxed max-w-lg">{person.bio}</p>
               )}
               {!person?.bio && (
                 <button
                   onClick={() => setEditingProfile(true)}
-                  className="mt-2 text-xs text-zinc-700 hover:text-zinc-500 transition-colors"
+                  className="mt-2 text-xs text-muted hover:text-muted transition-colors"
                 >
                   + Add a bio
                 </button>
@@ -126,7 +126,7 @@ export default function ProfilePage() {
             ].map(({ label, value }) => (
               <div key={label} className="text-center">
                 <div className="text-lg font-bold text-foreground">{value}</div>
-                <div className="text-[11px] text-zinc-600">{label}</div>
+                <div className="text-[11px] text-muted">{label}</div>
               </div>
             ))}
           </div>

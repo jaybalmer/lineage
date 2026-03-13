@@ -83,7 +83,7 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-zinc-500">{label}</span>
+                <span className="text-xs text-muted">{label}</span>
                 {isLinked ? (
                   <Link
                     href={href}
@@ -97,27 +97,27 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
               </div>
 
               <div className="mt-1 flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-zinc-500">{dateRange}</span>
+                <span className="text-xs text-muted">{dateRange}</span>
                 <ConfidenceBadge level={claim.confidence} />
                 {isUnverified && <UnverifiedBadge />}
                 {claim.sources && claim.sources.length > 0 && (
-                  <span className="text-[10px] text-zinc-600 flex items-center gap-1">
+                  <span className="text-[10px] text-muted flex items-center gap-1">
                     📎 {claim.sources.length} source{claim.sources.length > 1 ? "s" : ""}
                   </span>
                 )}
               </div>
 
               {claim.note && (
-                <p className="mt-2 text-xs text-zinc-500 leading-relaxed">{claim.note}</p>
+                <p className="mt-2 text-xs text-muted leading-relaxed">{claim.note}</p>
               )}
             </div>
 
             <div className="flex items-center gap-2 flex-shrink-0">
               {claim.visibility === "private" && (
-                <span className="text-xs text-zinc-700" title="Private">🔒</span>
+                <span className="text-xs text-muted" title="Private">🔒</span>
               )}
               {claim.visibility === "shared" && (
-                <span className="text-xs text-zinc-600" title="Shared">👥</span>
+                <span className="text-xs text-muted" title="Shared">👥</span>
               )}
 
               {/* Edit/delete menu — only shown on own timeline */}
@@ -125,7 +125,7 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
                 <div className="relative">
                   <button
                     onClick={() => { setMenuOpen((o) => !o); setConfirmDelete(false) }}
-                    className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-zinc-600 hover:text-foreground hover:bg-border-default transition-all text-sm"
+                    className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-muted hover:text-foreground hover:bg-border-default transition-all text-sm"
                     title="Options"
                   >
                     ⋯
@@ -140,14 +140,14 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
                           <>
                             <button
                               onClick={() => { setMenuOpen(false); setEditing(true) }}
-                              className="w-full text-left px-4 py-2.5 text-xs text-zinc-300 hover:bg-surface-active hover:text-foreground transition-colors flex items-center gap-2"
+                              className="w-full text-left px-4 py-2.5 text-xs text-muted hover:bg-surface-active hover:text-foreground transition-colors flex items-center gap-2"
                             >
                               <span>✏️</span> Edit claim
                             </button>
                             {userEvent && (
                               <button
                                 onClick={() => { setMenuOpen(false); setEditingEvent(true) }}
-                                className="w-full text-left px-4 py-2.5 text-xs text-zinc-300 hover:bg-surface-active hover:text-foreground transition-colors flex items-center gap-2"
+                                className="w-full text-left px-4 py-2.5 text-xs text-muted hover:bg-surface-active hover:text-foreground transition-colors flex items-center gap-2"
                               >
                                 <span>📋</span> Edit event
                               </button>
@@ -161,11 +161,11 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
                           </>
                         ) : (
                           <div className="px-3 py-3">
-                            <p className="text-xs text-zinc-400 mb-2">Remove this claim?</p>
+                            <p className="text-xs text-muted mb-2">Remove this claim?</p>
                             <div className="flex gap-2">
                               <button
                                 onClick={() => setConfirmDelete(false)}
-                                className="flex-1 px-2 py-1.5 text-xs rounded border border-border-default text-zinc-500 hover:text-foreground transition-colors"
+                                className="flex-1 px-2 py-1.5 text-xs rounded border border-border-default text-muted hover:text-foreground transition-colors"
                               >
                                 Cancel
                               </button>

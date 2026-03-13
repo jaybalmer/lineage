@@ -48,7 +48,7 @@ function YearPicker({ value, onChange }: { value?: number; onChange: (y: number)
             "py-2 rounded-lg text-sm font-medium border transition-all",
             value === y
               ? "border-blue-500 bg-blue-950 text-blue-200"
-              : "border-border-default bg-surface text-zinc-400 hover:border-zinc-600 hover:text-foreground"
+              : "border-border-default bg-surface text-muted hover:border-border-default hover:text-foreground"
           )}
         >
           {y}
@@ -112,7 +112,7 @@ function SearchSelect({
               "w-full text-left px-4 py-3 text-sm transition-colors flex items-center gap-2",
               value === getId(item)
                 ? "bg-blue-950 text-blue-200"
-                : "text-zinc-300 hover:bg-surface-hover"
+                : "text-muted hover:bg-surface-hover"
             )}
           >
             <span className="flex-1">{getLabel(item)}</span>
@@ -131,7 +131,7 @@ function SearchSelect({
           </button>
         )}
         {filtered.length === 0 && !query.trim() && (
-          <div className="px-4 py-3 text-sm text-zinc-600">No results — you can add this later</div>
+          <div className="px-4 py-3 text-sm text-muted">No results — you can add this later</div>
         )}
       </div>
     </div>
@@ -227,7 +227,7 @@ export function OnboardingFlow() {
           {step === 0 && (
             <div className="space-y-4">
               <h1 className="text-2xl font-bold text-foreground">Build your snowboarding lineage.</h1>
-              <p className="text-zinc-400 leading-relaxed">
+              <p className="text-muted leading-relaxed">
                 Lineage is a living graph of snowboarding history — built by riders, for riders.
                 Start by adding your own timeline: where you rode, who you rode with, and what shaped your riding.
               </p>
@@ -238,7 +238,7 @@ export function OnboardingFlow() {
                   "🏂  Document your gear lineage over the years",
                   "🔒  Private by default — you control what's visible",
                 ].map((item) => (
-                  <div key={item} className="flex gap-3 text-sm text-zinc-300 bg-surface rounded-lg px-4 py-3 border border-border-default">
+                  <div key={item} className="flex gap-3 text-sm text-muted bg-surface rounded-lg px-4 py-3 border border-border-default">
                     {item}
                   </div>
                 ))}
@@ -249,9 +249,9 @@ export function OnboardingFlow() {
           {step === 1 && (
             <div className="space-y-5">
               <h2 className="text-xl font-bold text-foreground mb-1">First, who are you?</h2>
-              <p className="text-zinc-500 text-sm">This is how you'll appear on your profile and to other riders.</p>
+              <p className="text-muted text-sm">This is how you'll appear on your profile and to other riders.</p>
               <div>
-                <label className="text-xs font-medium text-zinc-400 uppercase tracking-widest mb-2 block">Your name</label>
+                <label className="text-xs font-medium text-muted uppercase tracking-widest mb-2 block">Your name</label>
                 <input
                   autoFocus
                   type="text"
@@ -262,7 +262,7 @@ export function OnboardingFlow() {
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-zinc-400 uppercase tracking-widest mb-2 block">Birth year <span className="text-zinc-600 normal-case font-normal">(optional)</span></label>
+                <label className="text-xs font-medium text-muted uppercase tracking-widest mb-2 block">Birth year <span className="text-muted normal-case font-normal">(optional)</span></label>
                 <input
                   type="number"
                   value={onboarding.birth_year ?? ""}
@@ -282,7 +282,7 @@ export function OnboardingFlow() {
           {step === 2 && (
             <div>
               <h2 className="text-xl font-bold text-foreground mb-1">When did you start snowboarding?</h2>
-              <p className="text-zinc-500 text-sm mb-2">Pick your first season — even an approximate year works.</p>
+              <p className="text-muted text-sm mb-2">Pick your first season — even an approximate year works.</p>
               <YearPicker
                 value={onboarding.start_year}
                 onChange={(y) => setOnboardingField("start_year", y)}
@@ -293,7 +293,7 @@ export function OnboardingFlow() {
           {step === 3 && (
             <div>
               <h2 className="text-xl font-bold text-foreground mb-1">Where did you first ride?</h2>
-              <p className="text-zinc-500 text-sm mb-2">The resort, hill, or zone where it all started.</p>
+              <p className="text-muted text-sm mb-2">The resort, hill, or zone where it all started.</p>
               <SearchSelect
                 items={allPlaces}
                 value={onboarding.first_place_id}
@@ -310,7 +310,7 @@ export function OnboardingFlow() {
           {step === 4 && (
             <div>
               <h2 className="text-xl font-bold text-foreground mb-1">What was your first board?</h2>
-              <p className="text-zinc-500 text-sm mb-2">The gear that started the obsession.</p>
+              <p className="text-muted text-sm mb-2">The gear that started the obsession.</p>
               <SearchSelect
                 items={allBoards}
                 value={onboarding.first_board_id}
@@ -330,7 +330,7 @@ export function OnboardingFlow() {
           {step === 5 && (
             <div>
               <h2 className="text-xl font-bold text-foreground mb-1">Who or what shaped your early riding?</h2>
-              <p className="text-zinc-500 text-sm mb-2">Shops, crews, sponsors, or teams you were part of.</p>
+              <p className="text-muted text-sm mb-2">Shops, crews, sponsors, or teams you were part of.</p>
               <SearchSelect
                 items={allOrgs}
                 value={onboarding.early_orgs[0]}
@@ -341,14 +341,14 @@ export function OnboardingFlow() {
                 addEntityType="org"
                 addEntityLabel="shop/brand/team"
               />
-              <p className="text-xs text-zinc-600 mt-3">Optional — you can build this out on your timeline.</p>
+              <p className="text-xs text-muted mt-3">Optional — you can build this out on your timeline.</p>
             </div>
           )}
 
           {step === 6 && (
             <div className="space-y-4">
               <h2 className="text-xl font-bold text-foreground mb-1">Your privacy, your call.</h2>
-              <p className="text-zinc-400 text-sm leading-relaxed">
+              <p className="text-muted text-sm leading-relaxed">
                 Choose your default visibility for new timeline entries.
                 You can override this for any individual claim at any time.
               </p>
@@ -367,20 +367,20 @@ export function OnboardingFlow() {
                         "w-full flex items-start gap-3 rounded-lg px-4 py-3 border text-left transition-all",
                         selected
                           ? "bg-blue-950/40 border-blue-600 ring-1 ring-blue-600/40"
-                          : "bg-surface border-border-default hover:border-zinc-600"
+                          : "bg-surface border-border-default hover:border-border-default"
                       )}
                     >
                       <span className="text-lg">{icon}</span>
                       <div>
                         <div className={cn("text-sm font-medium", selected ? "text-blue-600" : "text-foreground")}>{title}</div>
-                        <div className="text-xs text-zinc-500">{desc}</div>
+                        <div className="text-xs text-muted">{desc}</div>
                       </div>
                       {selected && <span className="ml-auto text-blue-400 text-sm">✓</span>}
                     </button>
                   )
                 })}
               </div>
-              <p className="text-xs text-zinc-600 mt-2">
+              <p className="text-xs text-muted mt-2">
                 Lineage follows PIPEDA privacy principles. Nothing is shared without your opt-in.
               </p>
             </div>
@@ -389,12 +389,12 @@ export function OnboardingFlow() {
           {step === 7 && !magicLinkSent && (
             <div className="space-y-5">
               <h2 className="text-xl font-bold text-foreground">Save your lineage</h2>
-              <p className="text-zinc-400 text-sm leading-relaxed">
+              <p className="text-muted text-sm leading-relaxed">
                 Enter your email to get a magic link — no password needed.
                 One click and your timeline is saved.
               </p>
               <div>
-                <label className="text-xs font-medium text-zinc-400 uppercase tracking-widest mb-2 block">
+                <label className="text-xs font-medium text-muted uppercase tracking-widest mb-2 block">
                   Email address
                 </label>
                 <input
@@ -410,7 +410,7 @@ export function OnboardingFlow() {
               {sendError && (
                 <p className="text-sm text-red-400">{sendError}</p>
               )}
-              <p className="text-xs text-zinc-600">
+              <p className="text-xs text-muted">
                 We&apos;ll never share your email. Only used to restore your session.
               </p>
               {process.env.NODE_ENV === "development" && (
@@ -428,12 +428,12 @@ export function OnboardingFlow() {
             <div className="space-y-4 text-center pt-8">
               <div className="text-5xl">📬</div>
               <h2 className="text-xl font-bold text-foreground">Check your email</h2>
-              <p className="text-zinc-400 text-sm leading-relaxed">
+              <p className="text-muted text-sm leading-relaxed">
                 We sent a link to{" "}
                 <span className="text-foreground font-medium">{onboarding.email}</span>.
                 Click it to open your lineage.
               </p>
-              <p className="text-xs text-zinc-600 pt-2">
+              <p className="text-xs text-muted pt-2">
                 Didn&apos;t get it?{" "}
                 <button
                   onClick={() => setMagicLinkSent(false)}
@@ -451,7 +451,7 @@ export function OnboardingFlow() {
           <button
             onClick={back}
             className={cn(
-              "text-sm text-zinc-500 hover:text-foreground transition-colors",
+              "text-sm text-muted hover:text-foreground transition-colors",
               (step === 0 || magicLinkSent) && "invisible"
             )}
           >
@@ -464,7 +464,7 @@ export function OnboardingFlow() {
               "px-6 py-2.5 rounded-lg text-sm font-medium transition-all",
               canContinue()
                 ? "bg-blue-600 text-white hover:bg-blue-500"
-                : "bg-surface-active text-zinc-600 cursor-not-allowed"
+                : "bg-surface-active text-muted cursor-not-allowed"
             )}
           >
             {magicLinkSent
