@@ -15,7 +15,7 @@ const PRIMARY_NAV = [
 ]
 
 const SECONDARY_NAV = [
-  { href: "/riders", label: "People" },
+  { href: "/riders", label: "Riders" },
   { href: "/events", label: "Events" },
   { href: "/boards", label: "Boards" },
   { href: "/brands", label: "Brands" },

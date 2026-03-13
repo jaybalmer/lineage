@@ -6,7 +6,17 @@ import { PEOPLE, CLAIMS, getPlaceById, getPersonById } from "@/lib/mock-data"
 import { useLineageStore } from "@/store/lineage-store"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import Link from "next/link"
+import { cn } from "@/lib/utils"
 import type { Person } from "@/types"
+
+type SortTab = "all" | "origin" | "riders" | "resort"
+
+const SORT_TABS: { id: SortTab; label: string; title: string }[] = [
+  { id: "all",    label: "All",    title: "Sort by most claims" },
+  { id: "origin", label: "Origin", title: "Group by decade started" },
+  { id: "riders", label: "Riders", title: "Sort alphabetically" },
+  { id: "resort", label: "Resort", title: "Group by home resort" },
+]
 
 function RiderRow({ person, isMe }: { person: Person; isMe: boolean }) {
   const claimCount = CLAIMS.filter((c) => c.subject_id === person.id).length
@@ -18,7 +28,7 @@ function RiderRow({ person, isMe }: { person: Person; isMe: boolean }) {
 
   return (
     <Link href={href}>
-      <div className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all group">
+      <div className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default rounded-xl hover:bg-surface-hover transition-all group">
         {/* Avatar */}
         <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold text-foreground shrink-0">
           {person.display_name[0]}
@@ -27,7 +37,7 @@ function RiderRow({ person, isMe }: { person: Person; isMe: boolean }) {
         {/* Info */}
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="font-semibold text-foreground text-sm group-hover:text-blue-300 transition-colors">
+            <span className="font-semibold text-foreground text-sm group-hover:text-blue-400 transition-colors">
               {person.display_name}
             </span>
             {isMe && (
@@ -48,7 +58,7 @@ function RiderRow({ person, isMe }: { person: Person; isMe: boolean }) {
           )}
           {isUnverified && addedByPerson && (
             <div className="flex items-center gap-1 mt-1 text-[10px] text-muted">
-              <div className="w-3 h-3 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold">
+              <div className="w-3 h-3 rounded-full bg-surface-2 flex items-center justify-center text-[8px] font-bold text-foreground">
                 {addedByPerson.display_name[0]}
               </div>
               Added by {addedByPerson.display_name}
@@ -73,19 +83,105 @@ function RiderRow({ person, isMe }: { person: Person; isMe: boolean }) {
   )
 }
 
-export default function PeoplePage() {
+function SectionHeader({ label, count }: { label: string; count: number }) {
+  return (
+    <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3 mt-7 first:mt-0 flex items-center gap-3">
+      <span>{label}</span>
+      <span className="h-px flex-1 bg-border-default" />
+      <span className="normal-case tracking-normal font-normal">{count} rider{count !== 1 ? "s" : ""}</span>
+    </div>
+  )
+}
+
+export default function RidersPage() {
   const { activePersonId, userEntities } = useLineageStore()
   const [query, setQuery] = useState("")
+  const [sort, setSort] = useState<SortTab>("all")
   const [addOpen, setAddOpen] = useState(false)
 
-  const allPeople = [...PEOPLE, ...(userEntities.people ?? [])]
+  const allPeople = useMemo(
+    () => [...PEOPLE, ...(userEntities.people ?? [])],
+    [userEntities.people]
+  )
 
-  const filtered = useMemo(() => {
+  // Claim counts computed once
+  const claimCounts = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const c of CLAIMS) map.set(c.subject_id, (map.get(c.subject_id) ?? 0) + 1)
+    return map
+  }, [])
+
+  // Search filter
+  const searched = useMemo(() => {
     const q = query.trim().toLowerCase()
-    return allPeople.filter((p) =>
-      !q || p.display_name.toLowerCase().includes(q) || p.bio?.toLowerCase().includes(q)
+    if (!q) return allPeople
+    return allPeople.filter(
+      (p) => p.display_name.toLowerCase().includes(q) || p.bio?.toLowerCase().includes(q)
     )
-  }, [query, allPeople.length])
+  }, [query, allPeople])
+
+  // Sort / group
+  const result = useMemo(() => {
+    const copy = [...searched]
+
+    if (sort === "all") {
+      copy.sort((a, b) => (claimCounts.get(b.id) ?? 0) - (claimCounts.get(a.id) ?? 0))
+      return { type: "flat" as const, items: copy }
+    }
+
+    if (sort === "riders") {
+      copy.sort((a, b) => a.display_name.localeCompare(b.display_name))
+      return { type: "flat" as const, items: copy }
+    }
+
+    if (sort === "origin") {
+      const withYear = copy
+        .filter((p) => p.riding_since != null)
+        .sort((a, b) => a.riding_since! - b.riding_since!)
+      const noYear = copy
+        .filter((p) => p.riding_since == null)
+        .sort((a, b) => a.display_name.localeCompare(b.display_name))
+
+      const decadeMap = new Map<string, Person[]>()
+      for (const p of withYear) {
+        const decade = `${Math.floor(p.riding_since! / 10) * 10}s`
+        if (!decadeMap.has(decade)) decadeMap.set(decade, [])
+        decadeMap.get(decade)!.push(p)
+      }
+      const groups: { label: string; items: Person[] }[] = [...decadeMap.entries()].map(
+        ([label, items]) => ({ label, items })
+      )
+      if (noYear.length) groups.push({ label: "Unknown", items: noYear })
+      return { type: "grouped" as const, groups }
+    }
+
+    if (sort === "resort") {
+      const withResort = copy.filter((p) => p.home_resort_id != null)
+      const noResort = copy
+        .filter((p) => p.home_resort_id == null)
+        .sort((a, b) => a.display_name.localeCompare(b.display_name))
+
+      const resortMap = new Map<string, { name: string; items: Person[] }>()
+      for (const p of withResort) {
+        const resort = getPlaceById(p.home_resort_id!)
+        const key = p.home_resort_id!
+        if (!resortMap.has(key)) resortMap.set(key, { name: resort?.name ?? "Unknown", items: [] })
+        resortMap.get(key)!.items.push(p)
+      }
+      const groups: { label: string; items: Person[] }[] = [...resortMap.entries()]
+        .sort((a, b) => a[1].name.localeCompare(b[1].name))
+        .map(([, { name, items }]) => ({
+          label: name,
+          items: items.sort((a, b) => a.display_name.localeCompare(b.display_name)),
+        }))
+      if (noResort.length) groups.push({ label: "No home resort", items: noResort })
+      return { type: "grouped" as const, groups }
+    }
+
+    return { type: "flat" as const, items: copy }
+  }, [searched, sort, claimCounts])
+
+  const totalCount = searched.length
 
   return (
     <div className="min-h-screen bg-background">
@@ -95,8 +191,10 @@ export default function PeoplePage() {
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-foreground">People</h1>
-            <p className="text-sm text-muted mt-1">Riders who&apos;ve added their lineage</p>
+            <h1 className="text-xl font-bold text-foreground">Riders</h1>
+            <p className="text-sm text-muted mt-1">
+              {totalCount} rider{totalCount !== 1 ? "s" : ""} in the community graph
+            </p>
           </div>
           <button
             onClick={() => setAddOpen(true)}
@@ -107,33 +205,64 @@ export default function PeoplePage() {
         </div>
 
         {/* Search */}
-        <div className="relative mb-6">
+        <div className="relative mb-4">
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm">⌕</span>
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search riders…"
-            className="w-full pl-8 pr-4 py-2 bg-surface border border-border-default rounded-xl text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
+            className="w-full pl-8 pr-4 py-2 bg-surface border border-border-default rounded-xl text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent transition-colors"
           />
         </div>
 
-        {/* Rider list */}
-        <div className="space-y-2">
-          {filtered.length === 0 && (
-            <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
-              No riders found.{" "}
-              <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
-            </div>
-          )}
-          {filtered.map((person) => (
-            <RiderRow
-              key={person.id}
-              person={person}
-              isMe={person.id === activePersonId}
-            />
+        {/* Sort tabs */}
+        <div className="flex items-center gap-1 mb-6">
+          {SORT_TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setSort(tab.id)}
+              title={tab.title}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border",
+                sort === tab.id
+                  ? "bg-surface-active border-border-default text-foreground"
+                  : "border-transparent text-muted hover:text-foreground hover:bg-surface-hover"
+              )}
+            >
+              {tab.label}
+            </button>
           ))}
         </div>
+
+        {/* List */}
+        {totalCount === 0 ? (
+          <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
+            No riders found.{" "}
+            <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">
+              Add one.
+            </button>
+          </div>
+        ) : result.type === "flat" ? (
+          <div className="space-y-2">
+            {result.items.map((person) => (
+              <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} />
+            ))}
+          </div>
+        ) : (
+          <div>
+            {result.groups.map(({ label, items }) => (
+              <div key={label}>
+                <SectionHeader label={label} count={items.length} />
+                <div className="space-y-2">
+                  {items.map((person) => (
+                    <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {addOpen && (
