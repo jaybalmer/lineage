@@ -4,6 +4,7 @@ import { useState, useMemo } from "react"
 import { Nav } from "@/components/ui/nav"
 import { eventSlug, seriesSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
+import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -113,14 +114,21 @@ function EventCard({ event }: { event: Event }) {
               </div>
             )}
           </div>
-          {riderIds.length > 0 && (
-            <div className="shrink-0 flex flex-col items-end gap-1">
-              <AvatarStack riderIds={riderIds} />
-              <div className="text-[10px] text-muted">
-                {riderIds.length} rider{riderIds.length !== 1 ? "s" : ""}
-              </div>
-            </div>
-          )}
+          <div className="shrink-0 flex flex-col items-end gap-2">
+            {riderIds.length > 0 && (
+              <>
+                <AvatarStack riderIds={riderIds} />
+                <div className="text-[10px] text-muted">
+                  {riderIds.length} rider{riderIds.length !== 1 ? "s" : ""}
+                </div>
+              </>
+            )}
+            <QuickClaimPopover
+              entityId={event.id}
+              entityType="event"
+              entityName={event.name}
+            />
+          </div>
         </div>
       </div>
     </Link>

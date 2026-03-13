@@ -4,6 +4,7 @@ import { useState, useMemo } from "react"
 import { Nav } from "@/components/ui/nav"
 import { boardSlug, orgSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
+import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -78,7 +79,7 @@ function BoardCard({ board }: { board: Board }) {
               </div>
             )}
           </div>
-          <div className="shrink-0 flex flex-col items-end gap-1">
+          <div className="shrink-0 flex flex-col items-end gap-2">
             {isUnverified && (
               <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5">unverified</span>
             )}
@@ -90,6 +91,11 @@ function BoardCard({ board }: { board: Board }) {
                 </div>
               </>
             )}
+            <QuickClaimPopover
+              entityId={board.id}
+              entityType="board"
+              entityName={`${board.brand} ${board.model} '${String(board.model_year).slice(2)}`}
+            />
           </div>
         </div>
       </div>

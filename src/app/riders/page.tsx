@@ -5,6 +5,7 @@ import { Nav } from "@/components/ui/nav"
 import { PEOPLE, CLAIMS, getPlaceById, getPersonById } from "@/lib/mock-data"
 import { useLineageStore } from "@/store/lineage-store"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
+import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import type { Person } from "@/types"
@@ -66,16 +67,25 @@ function RiderRow({ person, isMe }: { person: Person; isMe: boolean }) {
           )}
         </div>
 
-        {/* Stats */}
-        <div className="shrink-0 text-right hidden sm:block">
-          {claimCount > 0 && (
-            <>
-              <div className="text-xs font-semibold text-foreground">{claimCount}</div>
-              <div className="text-[10px] text-muted">claim{claimCount !== 1 ? "s" : ""}</div>
-            </>
-          )}
-          {placeCount > 0 && (
-            <div className="text-[10px] text-muted mt-0.5">{placeCount} place{placeCount !== 1 ? "s" : ""}</div>
+        {/* Stats + quick add */}
+        <div className="shrink-0 flex items-center gap-3">
+          <div className="text-right hidden sm:block">
+            {claimCount > 0 && (
+              <>
+                <div className="text-xs font-semibold text-foreground">{claimCount}</div>
+                <div className="text-[10px] text-muted">claim{claimCount !== 1 ? "s" : ""}</div>
+              </>
+            )}
+            {placeCount > 0 && (
+              <div className="text-[10px] text-muted mt-0.5">{placeCount} place{placeCount !== 1 ? "s" : ""}</div>
+            )}
+          </div>
+          {!isMe && (
+            <QuickClaimPopover
+              entityId={person.id}
+              entityType="person"
+              entityName={person.display_name}
+            />
           )}
         </div>
       </div>

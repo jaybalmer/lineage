@@ -4,6 +4,7 @@ import { useState, useMemo } from "react"
 import { Nav } from "@/components/ui/nav"
 import { placeSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
+import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -45,6 +46,11 @@ function PlaceCard({ place }: { place: Place }) {
             {place.osm_id && (
               <span className="text-[10px] text-muted font-mono">OSM ✓</span>
             )}
+            <QuickClaimPopover
+              entityId={place.id}
+              entityType="place"
+              entityName={place.name}
+            />
           </div>
         </div>
         <div className="font-semibold text-foreground text-sm group-hover:text-blue-300 transition-colors">

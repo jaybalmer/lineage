@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
 import { orgSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
+import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import type { Org } from "@/types"
@@ -96,14 +97,21 @@ function OrgCard({ org }: { org: Org }) {
               <span className="text-muted">No claims yet</span>
             )}
           </div>
-          {isUnverified && addedByPerson && (
-            <div className="flex items-center gap-1 text-[10px] text-muted">
-              <div className="w-3 h-3 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold">
-                {addedByPerson.display_name[0]}
+          <div className="flex items-center gap-2">
+            {isUnverified && addedByPerson && (
+              <div className="flex items-center gap-1 text-[10px] text-muted">
+                <div className="w-3 h-3 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold">
+                  {addedByPerson.display_name[0]}
+                </div>
+                {addedByPerson.display_name.split(" ")[0]}
               </div>
-              {addedByPerson.display_name.split(" ")[0]}
-            </div>
-          )}
+            )}
+            <QuickClaimPopover
+              entityId={org.id}
+              entityType="org"
+              entityName={org.name}
+            />
+          </div>
         </div>
       </div>
     </Link>
