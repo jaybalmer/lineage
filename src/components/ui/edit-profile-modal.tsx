@@ -70,20 +70,20 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="absolute inset-0 bg-black/60" />
-      <div className="relative w-full max-w-md bg-[#111] border border-[#2a2a2a] rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+      <div className="relative w-full max-w-md bg-surface border border-border-default rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
         {/* Header */}
-        <div className="px-6 pt-5 pb-4 border-b border-[#1e1e1e] flex-shrink-0">
-          <h2 className="text-base font-bold text-white">Edit profile</h2>
+        <div className="px-6 pt-5 pb-4 border-b border-border-default flex-shrink-0">
+          <h2 className="text-base font-bold text-foreground">Edit profile</h2>
           <p className="text-xs text-zinc-500 mt-0.5">Your details are private by default</p>
         </div>
 
         {/* Avatar preview */}
         <div className="px-6 pt-5 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-xl font-bold text-white flex-shrink-0">
+          <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-xl font-bold text-foreground flex-shrink-0">
             {(displayName.trim()[0] ?? "?").toUpperCase()}
           </div>
           <div>
-            <div className="text-sm font-semibold text-white">{displayName.trim() || "—"}</div>
+            <div className="text-sm font-semibold text-foreground">{displayName.trim() || "—"}</div>
             <div className="text-xs text-zinc-500 mt-0.5">
               {birthYear && `b. ${birthYear}`}
               {birthYear && ridingSince && " · "}
@@ -167,7 +167,7 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
                     "flex-1 flex flex-col items-center gap-0.5 px-2 py-2.5 rounded-lg border text-xs transition-all",
                     privacyLevel === v
                       ? "border-blue-500 bg-blue-950/40 text-blue-200"
-                      : "border-[#2a2a2a] text-zinc-500 hover:border-zinc-600 hover:text-white"
+                      : "border-border-default text-zinc-500 hover:border-zinc-600 hover:text-foreground"
                   )}
                 >
                   <span className="text-base">{icon}</span>
@@ -180,10 +180,10 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-[#1e1e1e] flex gap-3 flex-shrink-0">
+        <div className="px-6 py-4 border-t border-border-default flex gap-3 flex-shrink-0">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-white border border-[#2a2a2a] hover:border-zinc-600 transition-all"
+            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-foreground border border-border-default hover:border-zinc-600 transition-all"
           >
             Cancel
           </button>
@@ -194,7 +194,7 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
               "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
               canSave
                 ? "bg-blue-600 text-white hover:bg-blue-500"
-                : "bg-[#1e1e1e] text-zinc-600 cursor-not-allowed"
+                : "bg-surface-active text-zinc-600 cursor-not-allowed"
             )}
           >
             Save profile
@@ -206,7 +206,7 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
 }
 
 const inputCls =
-  "w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+  "w-full bg-background border border-border-default rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (

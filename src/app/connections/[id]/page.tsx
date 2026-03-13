@@ -62,7 +62,7 @@ export default function ConnectionPage({ params }: { params: Promise<{ id: strin
 
   if (!personB) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a]">
+      <div className="min-h-screen bg-background">
         <Nav />
         <div className="max-w-3xl mx-auto px-4 py-16 text-center text-zinc-600">Loading…</div>
       </div>
@@ -87,7 +87,7 @@ export default function ConnectionPage({ params }: { params: Promise<{ id: strin
     : personBClaims
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen bg-background">
       <Nav />
       <div className="max-w-3xl mx-auto px-4 py-10">
         {/* Breadcrumb */}

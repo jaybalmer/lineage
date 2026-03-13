@@ -75,11 +75,11 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
 
       <div className="relative pl-10 pb-5 timeline-line last:pb-0 group">
         {/* Icon dot */}
-        <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-[#1c1c1c] border border-[#2a2a2a] flex items-center justify-center text-sm z-10">
+        <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-surface-2 border border-border-default flex items-center justify-center text-sm z-10">
           {icon}
         </div>
 
-        <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4 hover:border-[#2a2a2a] transition-colors">
+        <div className="bg-surface border border-border-default rounded-xl p-4 hover:border-border-default transition-colors">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -87,12 +87,12 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
                 {isLinked ? (
                   <Link
                     href={href}
-                    className="font-medium text-white hover:text-blue-400 transition-colors truncate"
+                    className="font-medium text-foreground hover:text-blue-400 transition-colors truncate"
                   >
                     {entityName}
                   </Link>
                 ) : (
-                  <span className="font-medium text-white truncate">{entityName}</span>
+                  <span className="font-medium text-foreground truncate">{entityName}</span>
                 )}
               </div>
 
@@ -125,7 +125,7 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
                 <div className="relative">
                   <button
                     onClick={() => { setMenuOpen((o) => !o); setConfirmDelete(false) }}
-                    className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-zinc-600 hover:text-white hover:bg-[#2a2a2a] transition-all text-sm"
+                    className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-zinc-600 hover:text-foreground hover:bg-border-default transition-all text-sm"
                     title="Options"
                   >
                     ⋯
@@ -135,26 +135,26 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
                     <>
                       {/* Click-away backdrop */}
                       <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                      <div className="absolute right-0 top-7 z-20 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg shadow-xl overflow-hidden w-36">
+                      <div className="absolute right-0 top-7 z-20 bg-surface-hover border border-border-default rounded-lg shadow-xl overflow-hidden w-36">
                         {!confirmDelete ? (
                           <>
                             <button
                               onClick={() => { setMenuOpen(false); setEditing(true) }}
-                              className="w-full text-left px-4 py-2.5 text-xs text-zinc-300 hover:bg-[#222] hover:text-white transition-colors flex items-center gap-2"
+                              className="w-full text-left px-4 py-2.5 text-xs text-zinc-300 hover:bg-surface-active hover:text-foreground transition-colors flex items-center gap-2"
                             >
                               <span>✏️</span> Edit claim
                             </button>
                             {userEvent && (
                               <button
                                 onClick={() => { setMenuOpen(false); setEditingEvent(true) }}
-                                className="w-full text-left px-4 py-2.5 text-xs text-zinc-300 hover:bg-[#222] hover:text-white transition-colors flex items-center gap-2"
+                                className="w-full text-left px-4 py-2.5 text-xs text-zinc-300 hover:bg-surface-active hover:text-foreground transition-colors flex items-center gap-2"
                               >
                                 <span>📋</span> Edit event
                               </button>
                             )}
                             <button
                               onClick={() => setConfirmDelete(true)}
-                              className="w-full text-left px-4 py-2.5 text-xs text-red-400 hover:bg-[#222] hover:text-red-300 transition-colors flex items-center gap-2"
+                              className="w-full text-left px-4 py-2.5 text-xs text-red-400 hover:bg-surface-active hover:text-red-300 transition-colors flex items-center gap-2"
                             >
                               <span>🗑</span> Delete
                             </button>
@@ -165,7 +165,7 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
                             <div className="flex gap-2">
                               <button
                                 onClick={() => setConfirmDelete(false)}
-                                className="flex-1 px-2 py-1.5 text-xs rounded border border-[#2a2a2a] text-zinc-500 hover:text-white transition-colors"
+                                className="flex-1 px-2 py-1.5 text-xs rounded border border-border-default text-zinc-500 hover:text-foreground transition-colors"
                               >
                                 Cancel
                               </button>

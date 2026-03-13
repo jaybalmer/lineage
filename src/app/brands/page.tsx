@@ -42,7 +42,7 @@ function OrgCard({ org }: { org: Org }) {
 
   return (
     <Link href={`/brands/${orgSlug(org)}`}>
-      <div className="group flex flex-col gap-3 p-4 bg-[#111] border border-[#1e1e1e] rounded-xl hover:border-[#2a2a2a] hover:bg-[#141414] transition-all h-full">
+      <div className="group flex flex-col gap-3 p-4 bg-surface border border-border-default rounded-xl hover:border-border-default hover:bg-surface transition-all h-full">
         <div className="flex items-start gap-3">
           {/* Logo / initials */}
           <div
@@ -66,7 +66,7 @@ function OrgCard({ org }: { org: Org }) {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <div className="text-sm font-semibold text-white group-hover:text-blue-300 transition-colors truncate">
+              <div className="text-sm font-semibold text-foreground group-hover:text-blue-300 transition-colors truncate">
                 {org.name}
               </div>
               {isUnverified && (
@@ -87,7 +87,7 @@ function OrgCard({ org }: { org: Org }) {
           </p>
         )}
 
-        <div className="flex items-center justify-between text-[11px] text-zinc-600 mt-auto pt-1 border-t border-[#1a1a1a]">
+        <div className="flex items-center justify-between text-[11px] text-zinc-600 mt-auto pt-1 border-t border-border-default">
           <div className="flex items-center gap-3">
             {riders > 0 && <span>{riders} rider{riders !== 1 ? "s" : ""}</span>}
             {boards > 0 && <span>{boards} board{boards !== 1 ? "s" : ""}</span>}
@@ -130,21 +130,21 @@ export default function BrandsPage() {
   const totalBrands = allOrgs.length
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <Nav />
       <div className="max-w-5xl mx-auto px-4 py-8">
 
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-white mb-1">Brands & Orgs</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-1">Brands & Orgs</h1>
             <p className="text-sm text-zinc-500">
               {totalBrands} brands, media outlets, and collectives in the community graph
             </p>
           </div>
           <button
             onClick={() => setAddOpen(true)}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-white hover:bg-blue-500 transition-all"
+            className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-foreground hover:bg-blue-500 transition-all"
           >
             + Add brand
           </button>

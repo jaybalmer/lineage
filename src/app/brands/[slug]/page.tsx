@@ -45,7 +45,7 @@ const PLACE_PREDICATES: { value: Predicate; label: string; desc: string }[] = [
 ]
 
 const inputCls =
-  "w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+  "w-full bg-background border border-border-default rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
 
 // ─── Add Claim Modal ───────────────────────────────────────────────────────────
 
@@ -107,15 +107,15 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center px-4" onClick={onClose}>
         <div className="absolute inset-0 bg-black/60" />
-        <div className="relative w-full max-w-md bg-[#111] border border-[#1e1e1e] rounded-2xl p-8 shadow-2xl text-center">
+        <div className="relative w-full max-w-md bg-surface border border-border-default rounded-2xl p-8 shadow-2xl text-center">
           <div className="text-3xl mb-3">✓</div>
-          <div className="text-white font-semibold text-lg mb-1">Claim added</div>
+          <div className="text-foreground font-semibold text-lg mb-1">Claim added</div>
           <p className="text-zinc-500 text-sm mb-5">
             This claim is unverified and visible to the community. It can be corroborated or challenged by others.
           </p>
           <button
             onClick={onClose}
-            className="px-6 py-2.5 bg-[#1e1e1e] border border-[#2a2a2a] rounded-lg text-sm text-white hover:bg-[#2a2a2a] transition-all"
+            className="px-6 py-2.5 bg-surface-active border border-border-default rounded-lg text-sm text-foreground hover:bg-border-default transition-all"
           >
             Done
           </button>
@@ -130,9 +130,9 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="absolute inset-0 bg-black/60" />
-      <div className="relative w-full max-w-md bg-[#111] border border-[#2a2a2a] rounded-2xl p-6 shadow-2xl">
+      <div className="relative w-full max-w-md bg-surface border border-border-default rounded-2xl p-6 shadow-2xl">
         <div className="mb-5">
-          <div className="text-lg font-semibold text-white mb-1">Add a claim</div>
+          <div className="text-lg font-semibold text-foreground mb-1">Add a claim</div>
           <p className="text-xs text-zinc-500">
             Connect something to <span className="text-zinc-300">{org.name}</span>.
             Unverified claims are visible to the community.
@@ -156,7 +156,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
                     "flex-1 px-3 py-2 rounded-lg border text-xs transition-all",
                     mode === key
                       ? "border-blue-500 bg-blue-950/40 text-blue-200"
-                      : "border-[#2a2a2a] text-zinc-400 hover:border-zinc-600 hover:text-white"
+                      : "border-border-default text-zinc-400 hover:border-zinc-600 hover:text-foreground"
                   )}
                 >
                   {label}
@@ -178,7 +178,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
                       "w-full text-left px-3 py-2.5 rounded-lg border text-xs transition-all",
                       predicate === opt.value
                         ? "border-blue-500 bg-blue-950/40 text-blue-200"
-                        : "border-[#2a2a2a] text-zinc-400 hover:border-zinc-600 hover:text-white"
+                        : "border-border-default text-zinc-400 hover:border-zinc-600 hover:text-foreground"
                     )}
                   >
                     <div className="font-medium">{opt.label}</div>
@@ -294,7 +294,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
                     "flex-1 px-2 py-2 rounded-lg border text-[11px] transition-all capitalize",
                     confidence === c
                       ? "border-blue-500 bg-blue-950/40 text-blue-200"
-                      : "border-[#2a2a2a] text-zinc-400 hover:border-zinc-600"
+                      : "border-border-default text-zinc-400 hover:border-zinc-600"
                   )}
                 >
                   {c.replace("-", " ")}
@@ -307,7 +307,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
         <div className="flex gap-3 mt-5">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-white border border-[#2a2a2a] hover:border-zinc-600 transition-all"
+            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-foreground border border-border-default hover:border-zinc-600 transition-all"
           >
             Cancel
           </button>
@@ -318,7 +318,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
               "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
               canSubmit
                 ? "bg-blue-600 text-white hover:bg-blue-500"
-                : "bg-[#1e1e1e] text-zinc-600 cursor-not-allowed"
+                : "bg-surface-active text-zinc-600 cursor-not-allowed"
             )}
           >
             Add claim
@@ -456,7 +456,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
   ]
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <Nav />
       <div className="max-w-5xl mx-auto px-4 py-8">
 
@@ -468,7 +468,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
         </div>
 
         {/* Header */}
-        <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-6 mb-6">
+        <div className="bg-surface border border-border-default rounded-xl p-6 mb-6">
           <div className="flex items-start gap-5">
             {/* Logo / initials block */}
             <div
@@ -508,7 +508,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                   <span className="text-xs text-zinc-700">· {org.country}</span>
                 )}
               </div>
-              <h1 className="text-2xl font-bold text-white">{org.name}</h1>
+              <h1 className="text-2xl font-bold text-foreground">{org.name}</h1>
               {org.description && (
                 <p className="text-sm text-zinc-400 mt-2 leading-relaxed max-w-2xl">{org.description}</p>
               )}
@@ -525,7 +525,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
             </div>
 
             {/* Edit button (community editable) */}
-            <button className="shrink-0 px-3 py-1.5 rounded-lg text-xs text-zinc-500 border border-[#2a2a2a] hover:border-zinc-600 hover:text-white transition-all">
+            <button className="shrink-0 px-3 py-1.5 rounded-lg text-xs text-zinc-500 border border-border-default hover:border-zinc-600 hover:text-foreground transition-all">
               Edit
             </button>
           </div>
@@ -534,33 +534,33 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
           <div className="mt-5 flex gap-6 text-sm flex-wrap">
             {uniqueRiderIds.length > 0 && (
               <div>
-                <div className="font-bold text-white text-xl">{uniqueRiderIds.length}</div>
+                <div className="font-bold text-foreground text-xl">{uniqueRiderIds.length}</div>
                 <div className="text-zinc-600 text-xs">connected riders</div>
               </div>
             )}
             {orgBoards.length > 0 && (
               <>
-                <div className="w-px bg-[#2a2a2a]" />
+                <div className="w-px bg-border-default" />
                 <div>
-                  <div className="font-bold text-white text-xl">{orgBoards.length}</div>
+                  <div className="font-bold text-foreground text-xl">{orgBoards.length}</div>
                   <div className="text-zinc-600 text-xs">board models</div>
                 </div>
               </>
             )}
             {organizedClaims.length > 0 && (
               <>
-                <div className="w-px bg-[#2a2a2a]" />
+                <div className="w-px bg-border-default" />
                 <div>
-                  <div className="font-bold text-white text-xl">{organizedClaims.length}</div>
+                  <div className="font-bold text-foreground text-xl">{organizedClaims.length}</div>
                   <div className="text-zinc-600 text-xs">events organized</div>
                 </div>
               </>
             )}
             {locatedAtClaims.length > 0 && (
               <>
-                <div className="w-px bg-[#2a2a2a]" />
+                <div className="w-px bg-border-default" />
                 <div>
-                  <div className="font-bold text-white text-xl">{locatedAtClaims.length}</div>
+                  <div className="font-bold text-foreground text-xl">{locatedAtClaims.length}</div>
                   <div className="text-zinc-600 text-xs">locations</div>
                 </div>
               </>
@@ -578,8 +578,8 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                 className={cn(
                   "px-3 py-1.5 rounded-md text-sm transition-colors",
                   tab === key
-                    ? "bg-[#1e1e1e] text-white"
-                    : "text-zinc-500 hover:text-white hover:bg-[#1a1a1a]"
+                    ? "bg-surface-active text-foreground"
+                    : "text-zinc-500 hover:text-foreground hover:bg-surface-hover"
                 )}
               >
                 {label}
@@ -621,7 +621,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                     {/* Decade divider */}
                     <div className="flex items-center gap-3 mb-3">
                       <span className="text-xs font-semibold text-zinc-600 uppercase tracking-widest shrink-0">{label}</span>
-                      <div className="flex-1 h-px bg-[#1e1e1e]" />
+                      <div className="flex-1 h-px bg-surface-active" />
                     </div>
                     <div className="space-y-2">
                       {entries.map((item, i) => {
@@ -631,7 +631,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                           const relLabel = PREDICATE_LABEL[item.claim.predicate] ?? item.claim.predicate
                           const confColor = CONFIDENCE_COLORS[item.claim.confidence] ?? "text-zinc-600"
                           return (
-                            <div key={item.claim.id} className="flex items-center gap-4 px-4 py-3.5 bg-[#111] border border-[#1e1e1e] rounded-xl hover:border-[#2a2a2a] transition-all">
+                            <div key={item.claim.id} className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all">
                               <Link href={`/riders/${person.id}`} className="shrink-0">
                                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-900 to-violet-950 border border-violet-800/30 flex items-center justify-center text-sm font-bold text-violet-300">
                                   {person.display_name[0].toUpperCase()}
@@ -639,7 +639,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                               </Link>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-baseline gap-2 flex-wrap">
-                                  <Link href={`/riders/${person.id}`} className="text-sm font-medium text-white hover:text-blue-300 transition-colors">
+                                  <Link href={`/riders/${person.id}`} className="text-sm font-medium text-foreground hover:text-blue-300 transition-colors">
                                     {person.display_name}
                                   </Link>
                                   <span className="text-xs text-zinc-600">{relLabel}</span>
@@ -659,10 +659,10 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                           const ownerCount = boardOwnerClaims.filter((c) => c.object_id === item.board.id).length
                           return (
                             <Link key={item.board.id} href={`/boards/${boardSlug(item.board)}`}>
-                              <div className="flex items-center gap-4 px-4 py-3.5 bg-[#111] border border-[#1e1e1e] border-l-2 border-l-emerald-700 rounded-xl hover:border-[#2a2a2a] transition-all group">
+                              <div className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 border-l-emerald-700 rounded-xl hover:border-border-default transition-all group">
                                 <span className="text-xl shrink-0">🏂</span>
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-white group-hover:text-blue-300 transition-colors">
+                                  <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">
                                     {item.board.brand} {item.board.model}
                                   </div>
                                   <div className="text-xs text-zinc-600 mt-0.5">
@@ -682,14 +682,14 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                           return (
                             <Link key={item.claim.id} href={`/events/${item.event.id}`}>
                               <div className={cn(
-                                "flex items-center gap-4 px-4 py-3.5 bg-[#111] border border-[#1e1e1e] border-l-2 rounded-xl hover:border-[#2a2a2a] transition-all group",
+                                "flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 rounded-xl hover:border-border-default transition-all group",
                                 accentColor
                               )}>
-                                <div className="shrink-0 w-9 h-9 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-base">
+                                <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">
                                   {item.event.event_type === "contest" ? "🏆" : item.event.event_type === "film-shoot" ? "🎬" : item.event.event_type === "trip" ? "🏔" : "📅"}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-white group-hover:text-blue-300 transition-colors">{item.event.name}</div>
+                                  <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">{item.event.name}</div>
                                   <div className="text-xs text-zinc-600 capitalize mt-0.5">{item.event.event_type.replace("-", " ")}</div>
                                 </div>
                                 <span className={cn("text-[11px] shrink-0", confColor)}>
@@ -703,10 +703,10 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                         if (item.kind === "place") {
                           const confColor = CONFIDENCE_COLORS[item.claim.confidence] ?? "text-zinc-600"
                           return (
-                            <div key={item.claim.id} className="flex items-center gap-4 px-4 py-3.5 bg-[#111] border border-[#1e1e1e] border-l-2 border-l-blue-800 rounded-xl">
-                              <div className="shrink-0 w-9 h-9 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-base">📍</div>
+                            <div key={item.claim.id} className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 border-l-blue-800 rounded-xl">
+                              <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">📍</div>
                               <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-white">{item.place.name}</div>
+                                <div className="text-sm font-medium text-foreground">{item.place.name}</div>
                                 <div className="text-xs text-zinc-600 mt-0.5">
                                   {[item.place.region, item.place.country].filter(Boolean).join(" · ")}
                                   {(item.claim.start_date || item.claim.end_date) && (
@@ -742,7 +742,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                   const relLabel = PREDICATE_LABEL[claim.predicate] ?? claim.predicate
                   const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-zinc-600"
                   return (
-                    <div key={claim.id} className="flex items-center gap-4 px-4 py-3.5 bg-[#111] border border-[#1e1e1e] rounded-xl hover:border-[#2a2a2a] transition-all">
+                    <div key={claim.id} className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all">
                       <Link href={`/riders/${person.id}`} className="shrink-0">
                         <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-900 to-violet-950 border border-violet-800/30 flex items-center justify-center text-sm font-bold text-violet-300">
                           {person.display_name[0].toUpperCase()}
@@ -750,7 +750,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                       </Link>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 flex-wrap">
-                          <Link href={`/riders/${person.id}`} className="text-sm font-medium text-white hover:text-blue-300 transition-colors">
+                          <Link href={`/riders/${person.id}`} className="text-sm font-medium text-foreground hover:text-blue-300 transition-colors">
                             {person.display_name}
                           </Link>
                           <span className="text-xs text-zinc-600">{relLabel}</span>
@@ -784,7 +784,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                       const ownerCount = boardOwnerClaims.filter((c) => c.object_id === board.id).length
                       return (
                         <Link key={board.id} href={`/boards/${boardSlug(board)}`}>
-                          <div className="flex items-start gap-3 px-3 py-3 bg-[#111] border border-[#1e1e1e] rounded-xl hover:border-[#2a2a2a] transition-all group">
+                          <div className="flex items-start gap-3 px-3 py-3 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all group">
                             <div className="shrink-0 flex items-center justify-center" style={{ width: 28, height: 60 }}>
                               <div style={{
                                 width: 22, height: 54, borderRadius: 999,
@@ -796,7 +796,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                               </div>
                             </div>
                             <div className="min-w-0">
-                              <div className="text-sm text-white group-hover:text-blue-300 transition-colors leading-tight">{board.model}</div>
+                              <div className="text-sm text-foreground group-hover:text-blue-300 transition-colors leading-tight">{board.model}</div>
                               <div className="text-[11px] text-zinc-600 mt-0.5">
                                 &apos;{String(board.model_year).slice(2)} · {board.shape ?? "–"}
                               </div>
@@ -828,14 +828,14 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                   return (
                     <Link key={claim.id} href={`/events/${event.id}`}>
                       <div className={cn(
-                        "flex items-start gap-4 px-4 py-3.5 bg-[#111] border border-[#1e1e1e] border-l-2 rounded-xl hover:border-[#2a2a2a] transition-all group",
+                        "flex items-start gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 rounded-xl hover:border-border-default transition-all group",
                         accentColor
                       )}>
-                        <div className="shrink-0 w-9 h-9 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-base">
+                        <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">
                           {event.event_type === "contest" ? "🏆" : event.event_type === "film-shoot" ? "🎬" : event.event_type === "trip" ? "🏔" : "📅"}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-white group-hover:text-blue-300 transition-colors">{event.name}</div>
+                          <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">{event.name}</div>
                           <div className="flex items-center gap-2 mt-0.5">
                             <span className="text-xs text-zinc-600 capitalize">{event.event_type.replace("-", " ")}</span>
                             {event.year && <span className="text-xs text-zinc-700">· {event.year}</span>}
@@ -864,10 +864,10 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                   if (!place) return null
                   const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-zinc-600"
                   return (
-                    <div key={claim.id} className="flex items-start gap-4 px-4 py-3.5 bg-[#111] border border-[#1e1e1e] border-l-2 border-l-blue-800 rounded-xl">
-                      <div className="shrink-0 w-9 h-9 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-base">📍</div>
+                    <div key={claim.id} className="flex items-start gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 border-l-blue-800 rounded-xl">
+                      <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">📍</div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-white">{place.name}</div>
+                        <div className="text-sm font-medium text-foreground">{place.name}</div>
                         <div className="flex items-center gap-2 mt-0.5">
                           {place.region && <span className="text-xs text-zinc-600">{place.region}</span>}
                           {place.country && <span className="text-xs text-zinc-700">· {place.country}</span>}
@@ -893,7 +893,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
           {/* Sidebar */}
           <div className="space-y-4">
             {/* Quick facts */}
-            <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4">
+            <div className="bg-surface border border-border-default rounded-xl p-4">
               <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">About</div>
               <div className="space-y-2 text-sm">
                 {org.founded_year && (
@@ -936,7 +936,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
 
             {/* Riders who owned boards */}
             {boardOwnerClaims.length > 0 && (
-              <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4">
+              <div className="bg-surface border border-border-default rounded-xl p-4">
                 <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">
                   Riders who owned {org.name.split(" ")[0]} boards
                 </div>
@@ -946,7 +946,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                     if (!person) return null
                     return (
                       <Link key={rid} href={`/riders/${rid}`}>
-                        <div className="flex items-center gap-1 px-2 py-1 bg-[#0a0a0a] border border-[#2a2a2a] rounded-full text-xs text-zinc-400 hover:text-white hover:border-zinc-600 transition-all">
+                        <div className="flex items-center gap-1 px-2 py-1 bg-background border border-border-default rounded-full text-xs text-zinc-400 hover:text-foreground hover:border-zinc-600 transition-all">
                           <span className="w-4 h-4 rounded-full bg-zinc-800 flex items-center justify-center text-[9px] font-bold">
                             {person.display_name[0]}
                           </span>
@@ -960,14 +960,14 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
             )}
 
             {/* Community note */}
-            <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-xl p-4">
+            <div className="bg-bg-nav border border-border-default rounded-xl p-4">
               <div className="text-xs font-semibold text-zinc-700 uppercase tracking-widest mb-2">Community profile</div>
               <p className="text-xs text-zinc-700 leading-relaxed">
                 This brand profile is open for anyone to contribute. Claims are unverified until corroborated by multiple sources.
               </p>
               <button
                 onClick={() => setAddOpen(true)}
-                className="mt-3 w-full px-3 py-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-xs text-zinc-400 hover:text-white hover:border-zinc-600 transition-all"
+                className="mt-3 w-full px-3 py-2 bg-surface-hover border border-border-default rounded-lg text-xs text-zinc-400 hover:text-foreground hover:border-zinc-600 transition-all"
               >
                 + Add a claim
               </button>

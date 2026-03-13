@@ -58,13 +58,13 @@ function PersonPicker({
       {value ? (
         <button
           onClick={() => setOpen(true)}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 bg-[#161616] border border-[#2a2a2a] rounded-xl text-left hover:border-zinc-600 transition-colors group"
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 bg-surface border border-border-default rounded-xl text-left hover:border-zinc-600 transition-colors group"
         >
-          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
+          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-foreground shrink-0">
             {initials(value.display_name)}
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-medium text-white truncate">{value.display_name}</div>
+            <div className="text-sm font-medium text-foreground truncate">{value.display_name}</div>
             {value.birth_year && (
               <div className="text-[11px] text-zinc-500">b. {value.birth_year}</div>
             )}
@@ -76,7 +76,7 @@ function PersonPicker({
       ) : (
         <button
           onClick={() => setOpen(true)}
-          className="w-full px-3 py-2.5 bg-[#161616] border border-dashed border-[#3a3a3a] rounded-xl text-sm text-zinc-600 text-left hover:border-zinc-500 hover:text-zinc-400 transition-colors"
+          className="w-full px-3 py-2.5 bg-surface border border-dashed border-border-default rounded-xl text-sm text-zinc-600 text-left hover:border-zinc-500 hover:text-zinc-400 transition-colors"
         >
           Search for a rider…
         </button>
@@ -85,14 +85,14 @@ function PersonPicker({
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-[#1a1a1a] border border-[#3a3a3a] rounded-xl shadow-2xl overflow-hidden">
-            <div className="p-2.5 border-b border-[#2a2a2a]">
+          <div className="absolute z-50 top-full mt-1 left-0 right-0 bg-surface-hover border border-border-default rounded-xl shadow-2xl overflow-hidden">
+            <div className="p-2.5 border-b border-border-default">
               <input
                 ref={inputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search riders…"
-                className="w-full bg-transparent text-sm text-white placeholder-zinc-600 outline-none"
+                className="w-full bg-transparent text-sm text-foreground placeholder-zinc-600 outline-none"
               />
             </div>
             <div className="max-h-56 overflow-y-auto">
@@ -107,13 +107,13 @@ function PersonPicker({
                       setOpen(false)
                       setQuery("")
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-[#252525] transition-colors text-left"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-surface-hover transition-colors text-left"
                   >
-                    <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-foreground shrink-0">
                       {initials(p.display_name)}
                     </div>
                     <div>
-                      <div className="text-sm text-white">{p.display_name}</div>
+                      <div className="text-sm text-foreground">{p.display_name}</div>
                       <div className="text-[11px] text-zinc-600">
                         {p.birth_year ? `b. ${p.birth_year}` : ""}
                         {p.home_resort_id
@@ -151,7 +151,7 @@ function CompactClaimRow({
         "flex items-start gap-1.5 px-2 py-1.5 rounded-lg text-left",
         shared
           ? "bg-blue-950/40 border border-blue-700/30"
-          : "bg-[#141414] border border-transparent"
+          : "bg-surface border border-transparent"
       )}
     >
       <span className="text-xs mt-0.5 shrink-0">{icon}</span>
@@ -221,12 +221,12 @@ function SideBySideTimeline({
       <div className="grid grid-cols-2 gap-4 mb-4">
         {[personA, personB].map((p) => (
           <div key={p.id} className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-foreground shrink-0">
               {initials(p.display_name)}
             </div>
             <Link
               href={`/riders/${p.id}`}
-              className="text-sm font-semibold text-white hover:text-blue-300 transition-colors truncate"
+              className="text-sm font-semibold text-foreground hover:text-blue-300 transition-colors truncate"
             >
               {p.display_name}
             </Link>
@@ -335,7 +335,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
         "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all",
         copied
           ? "bg-emerald-950 text-emerald-300 border-emerald-700"
-          : "bg-[#1e1e1e] text-zinc-300 border-[#3a3a3a] hover:border-zinc-500 hover:text-white"
+          : "bg-surface-active text-zinc-300 border-border-default hover:border-zinc-500 hover:text-foreground"
       )}
     >
       {copied ? "✓ Copied" : label}
@@ -432,13 +432,13 @@ function ComparePageInner() {
   )
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <Nav />
 
       <div className="max-w-3xl mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-lg font-semibold text-white">Compare riders</h1>
+          <h1 className="text-lg font-semibold text-foreground">Compare riders</h1>
           <p className="text-sm text-zinc-500 mt-0.5">
             Find overlapping history between two riders
           </p>
@@ -465,7 +465,7 @@ function ComparePageInner() {
 
         {/* No person B selected (and no ?b= param) */}
         {!personB && (
-          <div className="border border-dashed border-[#2a2a2a] rounded-xl py-12 text-center">
+          <div className="border border-dashed border-border-default rounded-xl py-12 text-center">
             <div className="text-3xl mb-2">⬡</div>
             <div className="text-sm text-zinc-500">Select a second rider to see their overlap</div>
           </div>
@@ -475,13 +475,13 @@ function ComparePageInner() {
         {personB && summary && (
           <div className="space-y-6">
             {/* Connection Summary Card */}
-            <div className="border border-[#2a2a2a] rounded-xl overflow-hidden">
-              <div className="px-5 py-4 border-b border-[#1e1e1e] flex items-center gap-3">
+            <div className="border border-border-default rounded-xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-border-default flex items-center gap-3">
                 <StrengthBadge strength={summary.strength} score={summary.score} />
               </div>
 
               <div className="px-5 py-4">
-                <h2 className="text-base font-semibold text-white mb-3 leading-snug">
+                <h2 className="text-base font-semibold text-foreground mb-3 leading-snug">
                   {summary.headline}
                 </h2>
 
@@ -514,7 +514,7 @@ function ComparePageInner() {
 
               {/* Invite prompt — hide if Person B is a real user with claims */}
               {(mockIds.has(personB.id) || personBDbClaims.length === 0) && (
-                <div className="px-5 py-3 bg-[#111] border-t border-[#1e1e1e] flex items-center justify-between">
+                <div className="px-5 py-3 bg-surface border-t border-border-default flex items-center justify-between">
                   <div className="text-xs text-zinc-500">
                     <span className="text-zinc-400">{personB.display_name}</span> hasn&apos;t
                     confirmed their side yet
@@ -528,7 +528,7 @@ function ComparePageInner() {
             </div>
 
             {/* Side-by-side timeline */}
-            <div className="border border-[#2a2a2a] rounded-xl p-5">
+            <div className="border border-border-default rounded-xl p-5">
               <div className="text-xs text-zinc-600 uppercase tracking-wider mb-4 font-mono">
                 Timeline comparison
               </div>
@@ -565,7 +565,7 @@ function ComparePageInner() {
 
 export default function ComparePage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#0a0a0a]" />}>
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
       <ComparePageInner />
     </Suspense>
   )

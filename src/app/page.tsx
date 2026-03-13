@@ -27,7 +27,7 @@ export default function Home() {
   const { onboardingComplete } = useLineageStore()
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen bg-background">
       {onboardingComplete && <Nav />}
 
       {/* Hero */}
@@ -36,12 +36,12 @@ export default function Home() {
           <span className="text-blue-400 text-[6rem] leading-none">⬡</span>
           <div className="text-left">
             <div className="h-[18px]" />{/* spacer matches SNOWBOARDING height so items-center lands on Lineage */}
-            <div className="text-4xl font-bold text-white tracking-tight leading-none">Lineage</div>
+            <div className="text-4xl font-bold text-foreground tracking-tight leading-none">Lineage</div>
             <div className="text-sm font-medium text-zinc-500 tracking-widest uppercase mt-1">Snowboarding</div>
           </div>
         </div>
 
-        <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight mb-5">
+        <h1 className="text-4xl sm:text-5xl font-bold text-foreground leading-tight mb-5">
           The living timeline of<br />
           <span className="text-blue-400">snowboarding history</span>
         </h1>
@@ -63,7 +63,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/onboarding"
-                className="w-full sm:w-auto px-8 py-3 rounded-xl border border-[#2a2a2a] text-zinc-300 font-semibold text-sm hover:border-zinc-500 hover:text-white transition-colors"
+                className="w-full sm:w-auto px-8 py-3 rounded-xl border border-border-default text-zinc-300 font-semibold text-sm hover:border-zinc-500 hover:text-foreground transition-colors"
               >
                 New Rider
               </Link>
@@ -78,7 +78,7 @@ export default function Home() {
               </Link>
               <Link
                 href="/profile"
-                className="w-full sm:w-auto px-8 py-3 rounded-xl border border-[#2a2a2a] text-zinc-300 font-semibold text-sm hover:border-zinc-500 hover:text-white transition-colors"
+                className="w-full sm:w-auto px-8 py-3 rounded-xl border border-border-default text-zinc-300 font-semibold text-sm hover:border-zinc-500 hover:text-foreground transition-colors"
               >
                 My Profile
               </Link>
@@ -89,7 +89,7 @@ export default function Home() {
 
       {/* Divider */}
       <div className="max-w-3xl mx-auto px-6">
-        <div className="border-t border-[#1e1e1e]" />
+        <div className="border-t border-border-default" />
       </div>
 
       {/* Feature list */}
@@ -98,7 +98,7 @@ export default function Home() {
           {FEATURES.map(({ title, desc }, i) => (
             <div key={title} className="grid grid-cols-[2rem_1fr] sm:grid-cols-[2rem_11rem_1fr] gap-x-6 gap-y-1 py-6 items-baseline">
               <span className="text-[11px] text-zinc-700 font-mono pt-px">{String(i + 1).padStart(2, "0")}</span>
-              <div className="text-sm font-semibold text-white leading-snug">{title}</div>
+              <div className="text-sm font-semibold text-foreground leading-snug">{title}</div>
               <div className="col-start-2 sm:col-start-3 text-zinc-500 text-sm leading-relaxed">{desc}</div>
             </div>
           ))}

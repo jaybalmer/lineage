@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { getPersonById } from "@/lib/mock-data"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
 
 const NAV_ITEMS = [
   { href: "/profile", label: "Profile" },
@@ -35,9 +36,9 @@ export function Nav() {
   const initial = displayName[0]?.toUpperCase() ?? "?"
 
   return (
-    <nav className="border-b border-[#2a2a2a] bg-[#0d0d0d] sticky top-0 z-50">
+    <nav className="border-b border-border-default bg-bg-nav sticky top-0 z-50">
       <div className="max-w-5xl mx-auto px-4 flex items-center h-14 gap-8">
-        <Link href="/" className="font-semibold text-white tracking-tight flex items-center gap-2">
+        <Link href="/" className="font-semibold text-foreground tracking-tight flex items-center gap-2">
           <span className="text-blue-400">⬡</span>
           <span>Lineage</span>
         </Link>
@@ -50,8 +51,8 @@ export function Nav() {
               className={cn(
                 "px-3 py-1.5 rounded-md text-sm transition-colors",
                 (href === "/profile" ? path === "/profile" || path.startsWith("/profile/") : path.startsWith(href))
-                  ? "bg-[#1e1e1e] text-white"
-                  : "text-zinc-400 hover:text-white hover:bg-[#1a1a1a]"
+                  ? "bg-surface-active text-foreground"
+                  : "text-muted hover:text-foreground hover:bg-surface-hover"
               )}
             >
               {label}
@@ -60,8 +61,9 @@ export function Nav() {
         </div>
 
         <div className="ml-auto flex items-center gap-3">
+          <ThemeToggle />
           <Link href="/profile">
-            <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-semibold text-white hover:bg-blue-500 transition-colors">
+            <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-semibold text-foreground hover:bg-blue-500 transition-colors">
               {initial}
             </div>
           </Link>

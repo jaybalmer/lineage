@@ -33,7 +33,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <Nav />
       <div className="max-w-5xl mx-auto px-4 py-8">
 
@@ -56,7 +56,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
         </div>
 
         {/* Header */}
-        <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-6 mb-6">
+        <div className="bg-surface border border-border-default rounded-xl p-6 mb-6">
           <div className="flex items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -65,7 +65,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   <span className="text-xs text-zinc-700">· {board.shape}</span>
                 )}
               </div>
-              <h1 className="text-2xl font-bold text-white">
+              <h1 className="text-2xl font-bold text-foreground">
                 {board.brand} {board.model}
               </h1>
               <p className="text-zinc-500 text-sm mt-1">{board.model_year}</p>
@@ -75,14 +75,14 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
 
           <div className="mt-5 flex gap-6">
             <div>
-              <div className="font-bold text-white text-xl">{riderIds.length}</div>
+              <div className="font-bold text-foreground text-xl">{riderIds.length}</div>
               <div className="text-zinc-600 text-xs">riders</div>
             </div>
             {board.shape && (
               <>
-                <div className="w-px bg-[#2a2a2a]" />
+                <div className="w-px bg-border-default" />
                 <div>
-                  <div className="font-bold text-white text-base capitalize">{board.shape.replace("-", " ")}</div>
+                  <div className="font-bold text-foreground text-base capitalize">{board.shape.replace("-", " ")}</div>
                   <div className="text-zinc-600 text-xs">shape</div>
                 </div>
               </>
@@ -97,7 +97,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
               Riders who owned this board
             </h2>
             {riderIds.length === 0 ? (
-              <div className="text-sm text-zinc-600 py-8 text-center border border-dashed border-[#2a2a2a] rounded-xl">
+              <div className="text-sm text-zinc-600 py-8 text-center border border-dashed border-border-default rounded-xl">
                 No riders documented yet.
               </div>
             ) : (
@@ -108,12 +108,12 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                   const claim = ownedClaims.find((c) => c.subject_id === rid)
                   return (
                     <Link key={rid} href={`/riders/${rid}`}>
-                      <div className="flex items-center gap-3 px-4 py-3 bg-[#111] border border-[#1e1e1e] rounded-xl hover:border-[#2a2a2a] transition-all group">
-                        <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold text-white shrink-0">
+                      <div className="flex items-center gap-3 px-4 py-3 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all group">
+                        <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold text-foreground shrink-0">
                           {initials(person.display_name)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-white group-hover:text-blue-300 transition-colors">
+                          <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">
                             {person.display_name}
                           </div>
                           {person.birth_year && (
@@ -142,15 +142,15 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
           <div className="space-y-4">
             {/* Brand link */}
             {brandOrg && (
-              <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4">
+              <div className="bg-surface border border-border-default rounded-xl p-4">
                 <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">Brand</div>
                 <Link href={`/orgs/${orgSlug(brandOrg)}`}>
                   <div className="flex items-center gap-2 hover:text-blue-300 transition-colors">
-                    <div className="w-7 h-7 rounded bg-[#1e1e1e] border border-[#2a2a2a] flex items-center justify-center text-xs font-bold text-zinc-500">
+                    <div className="w-7 h-7 rounded bg-surface-active border border-border-default flex items-center justify-center text-xs font-bold text-zinc-500">
                       {brandOrg.name[0]}
                     </div>
                     <div>
-                      <div className="text-sm text-white">{brandOrg.name}</div>
+                      <div className="text-sm text-foreground">{brandOrg.name}</div>
                       {brandOrg.founded_year && (
                         <div className="text-[11px] text-zinc-600">est. {brandOrg.founded_year}</div>
                       )}
@@ -162,7 +162,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
 
             {/* Other models */}
             {samesBrand.length > 0 && (
-              <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4">
+              <div className="bg-surface border border-border-default rounded-xl p-4">
                 <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">
                   Other {board.brand} models
                 </div>
@@ -175,7 +175,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                       <Link key={b.id} href={`/boards/${boardSlug(b)}`}>
                         <div className="flex items-center justify-between py-1.5 hover:text-blue-300 transition-colors group">
                           <div>
-                            <div className="text-sm text-white group-hover:text-blue-300">{b.model}</div>
+                            <div className="text-sm text-foreground group-hover:text-blue-300">{b.model}</div>
                             <div className="text-[11px] text-zinc-600">'{String(b.model_year).slice(2)}</div>
                           </div>
                           {ownerCount > 0 && (
@@ -189,11 +189,11 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
               </div>
             )}
 
-            <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4">
+            <div className="bg-surface border border-border-default rounded-xl p-4">
               <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-2">Add to profile</div>
               <p className="text-xs text-zinc-600 mb-3">Did you ride this board?</p>
               <Link href="/profile">
-                <button className="w-full px-3 py-2 bg-blue-600 rounded-lg text-xs text-white font-medium hover:bg-blue-500 transition-colors">
+                <button className="w-full px-3 py-2 bg-blue-600 rounded-lg text-xs text-foreground font-medium hover:bg-blue-500 transition-colors">
                   + Add to my profile
                 </button>
               </Link>

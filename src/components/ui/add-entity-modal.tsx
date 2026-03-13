@@ -178,10 +178,10 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="absolute inset-0 bg-black/60" />
-      <div className="relative w-full max-w-md bg-[#111] border border-[#2a2a2a] rounded-2xl p-6 shadow-2xl">
+      <div className="relative w-full max-w-md bg-surface border border-border-default rounded-2xl p-6 shadow-2xl">
         {/* Header */}
         <div className="mb-5">
-          <h2 className="text-lg font-bold text-white">{titles[entityType]}</h2>
+          <h2 className="text-lg font-bold text-foreground">{titles[entityType]}</h2>
           <p className="text-xs text-zinc-500 mt-1">
             Will be added as unverified — the community can confirm it.
           </p>
@@ -488,8 +488,8 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
         </div>
 
         {/* Author attribution */}
-        <div className="mt-4 flex items-center gap-2 px-3 py-2 bg-[#0d0d0d] border border-[#1e1e1e] rounded-lg">
-          <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[9px] font-bold text-white shrink-0">
+        <div className="mt-4 flex items-center gap-2 px-3 py-2 bg-bg-nav border border-border-default rounded-lg">
+          <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[9px] font-bold text-foreground shrink-0">
             {addingAsName[0]}
           </div>
           <span className="text-xs text-zinc-500">
@@ -502,7 +502,7 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
         <div className="flex gap-3 mt-4">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-white border border-[#2a2a2a] hover:border-zinc-600 transition-all"
+            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-foreground border border-border-default hover:border-zinc-600 transition-all"
           >
             Cancel
           </button>
@@ -513,7 +513,7 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
               "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
               canSubmit()
                 ? "bg-blue-600 text-white hover:bg-blue-500"
-                : "bg-[#1e1e1e] text-zinc-600 cursor-not-allowed"
+                : "bg-surface-active text-zinc-600 cursor-not-allowed"
             )}
           >
             Add to graph
@@ -525,7 +525,7 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
 }
 
 const inputCls =
-  "w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+  "w-full bg-background border border-border-default rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (

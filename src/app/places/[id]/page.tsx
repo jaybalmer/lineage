@@ -94,7 +94,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
   const sortedDecades = Object.keys(byDecade).sort((a, b) => parseInt(b) - parseInt(a))
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen bg-background">
       <Nav />
       <div className="max-w-5xl mx-auto px-4 py-8">
 
@@ -106,14 +106,14 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
         </div>
 
         {/* Header */}
-        <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-6 mb-6">
+        <div className="bg-surface border border-border-default rounded-xl p-6 mb-6">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs text-zinc-600 uppercase tracking-widest capitalize">{place.place_type}</span>
                 {place.osm_id && <span className="text-[10px] text-zinc-700 font-mono">OSM ✓</span>}
               </div>
-              <h1 className="text-2xl font-bold text-white">{place.name}</h1>
+              <h1 className="text-2xl font-bold text-foreground">{place.name}</h1>
               {place.region && (
                 <p className="text-zinc-500 mt-0.5 text-sm">{place.region}{place.country ? `, ${place.country}` : ""}</p>
               )}
@@ -137,33 +137,33 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
           <div className="mt-5 flex gap-6 text-sm flex-wrap">
             {riderIds.length > 0 && (
               <div>
-                <div className="font-bold text-white text-xl">{riderIds.length}</div>
+                <div className="font-bold text-foreground text-xl">{riderIds.length}</div>
                 <div className="text-zinc-600 text-xs">riders</div>
               </div>
             )}
             {placeEvents.length > 0 && (
               <>
-                {riderIds.length > 0 && <div className="w-px bg-[#2a2a2a]" />}
+                {riderIds.length > 0 && <div className="w-px bg-border-default" />}
                 <div>
-                  <div className="font-bold text-white text-xl">{placeEvents.length}</div>
+                  <div className="font-bold text-foreground text-xl">{placeEvents.length}</div>
                   <div className="text-zinc-600 text-xs">events</div>
                 </div>
               </>
             )}
             {Object.keys(byDecade).length > 0 && (
               <>
-                <div className="w-px bg-[#2a2a2a]" />
+                <div className="w-px bg-border-default" />
                 <div>
-                  <div className="font-bold text-white text-xl">{Object.keys(byDecade).length}</div>
+                  <div className="font-bold text-foreground text-xl">{Object.keys(byDecade).length}</div>
                   <div className="text-zinc-600 text-xs">decades</div>
                 </div>
               </>
             )}
             {place.first_snowboard_year && (
               <>
-                <div className="w-px bg-[#2a2a2a]" />
+                <div className="w-px bg-border-default" />
                 <div>
-                  <div className="font-bold text-white text-xl">{place.first_snowboard_year}</div>
+                  <div className="font-bold text-foreground text-xl">{place.first_snowboard_year}</div>
                   <div className="text-zinc-600 text-xs">first snowboard year</div>
                 </div>
               </>
@@ -172,7 +172,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
         </div>
 
         {/* Tab bar */}
-        <div className="flex gap-1 bg-[#111] border border-[#1e1e1e] rounded-lg p-1 mb-6 w-fit">
+        <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1 mb-6 w-fit">
           {tabs.map(({ key, label, count }) => (
             <button
               key={key}
@@ -180,7 +180,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
               className={cn(
                 "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
                 tab === key
-                  ? "bg-[#2a2a2a] text-white"
+                  ? "bg-surface-active text-foreground"
                   : "text-zinc-500 hover:text-zinc-300"
               )}
             >
@@ -201,14 +201,14 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
             {tab === "all" && (
               <div className="space-y-8">
                 {allDecadeGroups.length === 0 ? (
-                  <div className="text-sm text-zinc-600 py-12 text-center border border-dashed border-[#2a2a2a] rounded-xl">
+                  <div className="text-sm text-zinc-600 py-12 text-center border border-dashed border-border-default rounded-xl">
                     No riders or events documented yet for this place.
                   </div>
                 ) : allDecadeGroups.map(({ label, entries }) => (
                   <div key={label}>
                     <div className="flex items-center gap-3 mb-3">
                       <span className="text-xs font-semibold text-zinc-600 uppercase tracking-widest shrink-0">{label}</span>
-                      <div className="flex-1 h-px bg-[#1e1e1e]" />
+                      <div className="flex-1 h-px bg-surface-active" />
                     </div>
                     <div className="space-y-2">
                       {entries.map((item, i) => {
@@ -217,12 +217,12 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                           if (!rider) return null
                           return (
                             <Link key={`rider-${item.riderId}-${i}`} href={`/riders/${item.riderId}`}>
-                              <div className="flex items-center gap-3 px-4 py-3 bg-[#111] border border-[#1e1e1e] rounded-xl hover:border-[#2a2a2a] transition-all">
+                              <div className="flex items-center gap-3 px-4 py-3 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all">
                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-900 to-blue-950 border border-blue-800/30 flex items-center justify-center text-xs font-bold text-blue-300 shrink-0">
                                   {rider.display_name[0]}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-white">{rider.display_name}</div>
+                                  <div className="text-sm font-medium text-foreground">{rider.display_name}</div>
                                   {(item.claim.start_date || item.claim.end_date) && (
                                     <div className="text-xs text-zinc-600">{formatDateRange(item.claim.start_date, item.claim.end_date)}</div>
                                   )}
@@ -241,14 +241,14 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                           return (
                             <Link key={`event-${item.event.id}`} href={`/events/${eventSlug(item.event)}`}>
                               <div className={cn(
-                                "flex items-center gap-3 px-4 py-3 bg-[#111] border border-[#1e1e1e] border-l-2 rounded-xl hover:border-[#2a2a2a] transition-all group",
+                                "flex items-center gap-3 px-4 py-3 bg-surface border border-border-default border-l-2 rounded-xl hover:border-border-default transition-all group",
                                 accent
                               )}>
-                                <div className="shrink-0 w-8 h-8 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-sm">
+                                <div className="shrink-0 w-8 h-8 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-sm">
                                   {icon}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-white group-hover:text-blue-300 transition-colors">{item.event.name}</div>
+                                  <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">{item.event.name}</div>
                                   <div className="text-xs text-zinc-600 capitalize">{item.event.event_type.replace("-", " ")}</div>
                                 </div>
                                 <span className="text-xs text-zinc-600 shrink-0">{item.event.year}</span>
@@ -269,14 +269,14 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
             {tab === "riders" && (
               <div className="space-y-8">
                 {riderIds.length === 0 ? (
-                  <div className="text-sm text-zinc-600 py-12 text-center border border-dashed border-[#2a2a2a] rounded-xl">
+                  <div className="text-sm text-zinc-600 py-12 text-center border border-dashed border-border-default rounded-xl">
                     No riders documented yet for this place.
                   </div>
                 ) : sortedDecades.map((decade) => (
                   <div key={decade}>
                     <div className="flex items-center gap-3 mb-3">
                       <span className="text-xs font-semibold text-zinc-600 uppercase tracking-widest shrink-0">{decade}</span>
-                      <div className="flex-1 h-px bg-[#1e1e1e]" />
+                      <div className="flex-1 h-px bg-surface-active" />
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       {byDecade[decade].map((riderId) => {
@@ -285,12 +285,12 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                         const claim = rideClaims.find((c) => c.subject_id === riderId)
                         return (
                           <Link key={riderId} href={`/riders/${riderId}`}>
-                            <div className="flex items-center gap-2 p-2.5 bg-[#111] border border-[#1e1e1e] rounded-lg hover:border-[#333] transition-all">
+                            <div className="flex items-center gap-2 p-2.5 bg-surface border border-border-default rounded-lg hover:border-border-default transition-all">
                               <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-300 flex-shrink-0">
                                 {rider.display_name[0]}
                               </div>
                               <div className="min-w-0">
-                                <div className="text-xs font-medium text-white truncate">{rider.display_name}</div>
+                                <div className="text-xs font-medium text-foreground truncate">{rider.display_name}</div>
                                 {claim?.start_date && (
                                   <div className="text-[10px] text-zinc-600">{formatDateRange(claim.start_date, claim.end_date)}</div>
                                 )}
@@ -309,7 +309,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
             {tab === "events" && (
               <div className="space-y-2">
                 {placeEvents.length === 0 ? (
-                  <div className="text-sm text-zinc-600 py-12 text-center border border-dashed border-[#2a2a2a] rounded-xl">
+                  <div className="text-sm text-zinc-600 py-12 text-center border border-dashed border-border-default rounded-xl">
                     No events documented at this place yet.
                   </div>
                 ) : [...placeEvents].sort((a, b) => (b.year ?? 0) - (a.year ?? 0)).map((event) => {
@@ -318,14 +318,14 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                   return (
                     <Link key={event.id} href={`/events/${eventSlug(event)}`}>
                       <div className={cn(
-                        "flex items-center gap-4 px-4 py-3.5 bg-[#111] border border-[#1e1e1e] border-l-2 rounded-xl hover:border-[#2a2a2a] transition-all group",
+                        "flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 rounded-xl hover:border-border-default transition-all group",
                         accent
                       )}>
-                        <div className="shrink-0 w-9 h-9 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] flex items-center justify-center text-base">
+                        <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">
                           {icon}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-white group-hover:text-blue-300 transition-colors">{event.name}</div>
+                          <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">{event.name}</div>
                           <div className="text-xs text-zinc-600 capitalize mt-0.5">{event.event_type.replace("-", " ")}</div>
                         </div>
                         <span className="text-sm text-zinc-500 shrink-0">{event.year}</span>
@@ -343,7 +343,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
 
             {/* About */}
             {(place.first_snowboard_year || place.website || place.wikidata_qid || place.osm_id) && (
-              <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4">
+              <div className="bg-surface border border-border-default rounded-xl p-4">
                 <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">About</div>
                 <div className="space-y-2 text-sm">
                   {place.first_snowboard_year && (
@@ -395,7 +395,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
 
             {/* Staff */}
             {staffIds.length > 0 && (
-              <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4">
+              <div className="bg-surface border border-border-default rounded-xl p-4">
                 <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">People who worked here</div>
                 {staffIds.map((sid) => {
                   const person = catalog.people.find((p) => p.id === sid)
@@ -408,7 +408,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                           {person.display_name[0]}
                         </div>
                         <div>
-                          <div className="text-xs text-white">{person.display_name}</div>
+                          <div className="text-xs text-foreground">{person.display_name}</div>
                           {claim && <div className="text-[10px] text-zinc-600">{formatDateRange(claim.start_date, claim.end_date)}</div>}
                         </div>
                       </div>
@@ -419,11 +419,11 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
             )}
 
             {/* Add claim CTA */}
-            <div className="bg-[#0d0d0d] border border-[#1a1a1a] rounded-xl p-4">
+            <div className="bg-bg-nav border border-border-default rounded-xl p-4">
               <div className="text-xs font-semibold text-zinc-700 uppercase tracking-widest mb-2">Add a claim</div>
               <p className="text-xs text-zinc-700 mb-3">Did you ride here? Work here? Compete here?</p>
               <Link href="/profile">
-                <button className="w-full px-3 py-2 bg-blue-600 rounded-lg text-xs text-white font-medium hover:bg-blue-500 transition-colors">
+                <button className="w-full px-3 py-2 bg-blue-600 rounded-lg text-xs text-foreground font-medium hover:bg-blue-500 transition-colors">
                   + Add to my profile
                 </button>
               </Link>

@@ -203,10 +203,10 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <div className="absolute inset-0 bg-black/60" />
-        <div className="relative w-full max-w-lg bg-[#111] border border-[#2a2a2a] rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="relative w-full max-w-lg bg-surface border border-border-default rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
           {/* Header */}
-          <div className="px-6 pt-5 pb-4 border-b border-[#1e1e1e] flex-shrink-0">
-            <h2 className="text-base font-bold text-white">Add to your lineage</h2>
+          <div className="px-6 pt-5 pb-4 border-b border-border-default flex-shrink-0">
+            <h2 className="text-base font-bold text-foreground">Add to your lineage</h2>
             <p className="text-xs text-zinc-500 mt-0.5">Build your snowboarding history, one claim at a time</p>
           </div>
 
@@ -233,7 +233,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                             "px-3 py-1.5 rounded-lg text-xs font-medium border transition-all flex items-center gap-1.5",
                             predicate === p
                               ? "border-blue-500 bg-blue-950/50 text-blue-200"
-                              : "border-[#2a2a2a] text-zinc-400 hover:border-zinc-600 hover:text-white"
+                              : "border-border-default text-zinc-400 hover:border-zinc-600 hover:text-foreground"
                           )}
                         >
                           <span>{PREDICATE_ICONS[p]}</span>
@@ -279,7 +279,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                     </div>
                     <button
                       onClick={() => { setEntityId(null); setEntityQuery("") }}
-                      className="text-xs text-zinc-600 hover:text-white transition-colors flex-shrink-0 ml-2"
+                      className="text-xs text-zinc-600 hover:text-foreground transition-colors flex-shrink-0 ml-2"
                     >
                       change
                     </button>
@@ -292,10 +292,10 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                       value={entityQuery}
                       onChange={(e) => setEntityQuery(e.target.value)}
                       placeholder={`Search ${entityType === "person" ? "riders" : entityType + "s"}…`}
-                      className="w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+                      className="w-full bg-background border border-border-default rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
                     />
                     {entityQuery.length > 0 && (
-                      <div className="mt-1.5 max-h-44 overflow-y-auto rounded-lg border border-[#2a2a2a] divide-y divide-[#1a1a1a]">
+                      <div className="mt-1.5 max-h-44 overflow-y-auto rounded-lg border border-border-default divide-y divide-[#1a1a1a]">
                         {filteredEntities.slice(0, 8).map((item) => {
                           const e = item as unknown as Record<string, unknown>
                           const dateRange = getEventDateRange(e)
@@ -303,7 +303,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                             <button
                               key={String(e.id)}
                               onClick={() => { setEntityId(String(e.id)); setEntityQuery("") }}
-                              className="w-full text-left px-3 py-2.5 text-sm text-zinc-300 hover:bg-[#1a1a1a] transition-colors flex items-center justify-between gap-2"
+                              className="w-full text-left px-3 py-2.5 text-sm text-zinc-300 hover:bg-surface-hover transition-colors flex items-center justify-between gap-2"
                             >
                               <div>
                                 <div>{getEntityLabel(e)}</div>
@@ -318,7 +318,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                         {currentGroup?.addEntityType && (
                           <button
                             onClick={() => setShowAddEntity(true)}
-                            className="w-full text-left px-3 py-2.5 text-sm text-blue-400 hover:bg-[#1a1a1a] transition-colors flex items-center gap-2"
+                            className="w-full text-left px-3 py-2.5 text-sm text-blue-400 hover:bg-surface-hover transition-colors flex items-center gap-2"
                           >
                             <span className="font-bold">+</span>
                             Add &ldquo;{entityQuery.trim()}&rdquo; as a new {currentGroup.addEntityLabel}
@@ -330,7 +330,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                       </div>
                     )}
                     {entityQuery.length === 0 && (
-                      <div className="mt-1.5 max-h-44 overflow-y-auto rounded-lg border border-[#2a2a2a] divide-y divide-[#1a1a1a]">
+                      <div className="mt-1.5 max-h-44 overflow-y-auto rounded-lg border border-border-default divide-y divide-[#1a1a1a]">
                         {getEntityList().slice(0, 8).map((item) => {
                           const e = item as unknown as Record<string, unknown>
                           const dateRange = getEventDateRange(e)
@@ -338,7 +338,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                             <button
                               key={String(e.id)}
                               onClick={() => { setEntityId(String(e.id)); setEntityQuery("") }}
-                              className="w-full text-left px-3 py-2.5 text-sm text-zinc-300 hover:bg-[#1a1a1a] transition-colors"
+                              className="w-full text-left px-3 py-2.5 text-sm text-zinc-300 hover:bg-surface-hover transition-colors"
                             >
                               <div>{getEntityLabel(e)}</div>
                               {dateRange && <div className="text-[11px] text-zinc-600 mt-0.5">{dateRange}</div>}
@@ -348,7 +348,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                         {currentGroup?.addEntityType && (
                           <button
                             onClick={() => setShowAddEntity(true)}
-                            className="w-full text-left px-3 py-2.5 text-sm text-blue-400 hover:bg-[#1a1a1a] transition-colors flex items-center gap-2"
+                            className="w-full text-left px-3 py-2.5 text-sm text-blue-400 hover:bg-surface-hover transition-colors flex items-center gap-2"
                           >
                             <span className="font-bold">+</span>
                             Add a new {currentGroup.addEntityLabel}
@@ -420,7 +420,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                               "text-left px-3 py-2 rounded-lg border text-xs transition-all",
                               confidence === c
                                 ? "border-blue-500 bg-blue-950/40 text-blue-200"
-                                : "border-[#2a2a2a] text-zinc-500 hover:border-zinc-600 hover:text-white"
+                                : "border-border-default text-zinc-500 hover:border-zinc-600 hover:text-foreground"
                             )}
                           >
                             {c.replace("-", " ")}
@@ -445,7 +445,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                               "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-xs transition-all",
                               visibility === v
                                 ? "border-blue-500 bg-blue-950/40 text-blue-200"
-                                : "border-[#2a2a2a] text-zinc-500 hover:border-zinc-600 hover:text-white"
+                                : "border-border-default text-zinc-500 hover:border-zinc-600 hover:text-foreground"
                             )}
                           >
                             <span>{icon}</span> {v}
@@ -472,10 +472,10 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-[#1e1e1e] flex gap-3 flex-shrink-0">
+          <div className="px-6 py-4 border-t border-border-default flex gap-3 flex-shrink-0">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-white border border-[#2a2a2a] hover:border-zinc-600 transition-all"
+              className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-foreground border border-border-default hover:border-zinc-600 transition-all"
             >
               Cancel
             </button>
@@ -486,7 +486,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                 "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
                 canSave
                   ? "bg-blue-600 text-white hover:bg-blue-500"
-                  : "bg-[#1e1e1e] text-zinc-600 cursor-not-allowed"
+                  : "bg-surface-active text-zinc-600 cursor-not-allowed"
               )}
             >
               Add to lineage
@@ -499,4 +499,4 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
 }
 
 const inputCls =
-  "w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+  "w-full bg-background border border-border-default rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"

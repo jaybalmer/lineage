@@ -52,7 +52,7 @@ function AvatarStack({ riderIds }: { riderIds: string[] }) {
           <div
             key={rid}
             style={{ marginLeft: i === 0 ? 0 : -6 }}
-            className="w-5 h-5 rounded-full bg-blue-600 border border-[#111] flex items-center justify-center text-[8px] font-bold text-white"
+            className="w-5 h-5 rounded-full bg-blue-600 border border-border-default flex items-center justify-center text-[8px] font-bold text-foreground"
             title={person.display_name}
           >
             {person.display_name[0]}
@@ -62,7 +62,7 @@ function AvatarStack({ riderIds }: { riderIds: string[] }) {
       {extra > 0 && (
         <div
           style={{ marginLeft: -6 }}
-          className="w-5 h-5 rounded-full bg-[#2a2a2a] border border-[#111] flex items-center justify-center text-[8px] text-zinc-400"
+          className="w-5 h-5 rounded-full bg-border-default border border-border-default flex items-center justify-center text-[8px] text-zinc-400"
         >
           +{extra}
         </div>
@@ -86,7 +86,7 @@ function EventCard({ event }: { event: Event }) {
   return (
     <Link href={`/events/${eventSlug(event)}`}>
       <div className={cn(
-        "bg-[#111] border border-[#1e1e1e] border-l-2 rounded-xl p-4 hover:border-[#2a2a2a] transition-colors",
+        "bg-surface border border-border-default border-l-2 rounded-xl p-4 hover:border-border-default transition-colors",
         accent
       )}>
         <div className="flex items-start justify-between gap-3">
@@ -99,7 +99,7 @@ function EventCard({ event }: { event: Event }) {
                 <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5">unverified</span>
               )}
             </div>
-            <div className="font-medium text-white text-sm leading-snug">{event.name}</div>
+            <div className="font-medium text-foreground text-sm leading-snug">{event.name}</div>
             <div className="text-xs text-zinc-500 mt-1">
               {event.year}
               {place && <span className="text-zinc-700"> · {place.name}</span>}
@@ -142,20 +142,20 @@ function SeriesCard({ series, filteredEventCount }: { series: EventSeries; filte
 
   return (
     <Link href={`/events/${seriesSlug(series)}`}>
-      <div className="bg-[#111] border border-[#1e1e1e] border-l-2 border-l-amber-700 rounded-xl p-4 hover:border-[#2a2a2a] transition-colors">
+      <div className="bg-surface border border-border-default border-l-2 border-l-amber-700 rounded-xl p-4 hover:border-border-default transition-colors">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[10px] text-zinc-600 uppercase tracking-widest mb-1">
               Event series · {series.frequency}
             </div>
-            <div className="font-medium text-white text-sm leading-snug">{series.name}</div>
+            <div className="font-medium text-foreground text-sm leading-snug">{series.name}</div>
             <div className="text-xs text-zinc-500 mt-1">
               {series.start_year && <span>Since {series.start_year}</span>}
               {place && <span className="text-zinc-700"> · {place.name}</span>}
             </div>
           </div>
           <div className="shrink-0 text-right">
-            <div className="text-base font-bold text-white">{filteredEventCount}</div>
+            <div className="text-base font-bold text-foreground">{filteredEventCount}</div>
             <div className="text-[10px] text-zinc-600">edition{filteredEventCount !== 1 ? "s" : ""}</div>
             {totalRiders > 0 && (
               <div className="text-[10px] text-zinc-600 mt-0.5">{totalRiders} riders</div>
@@ -172,7 +172,7 @@ function SectionDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-3">
       <span className="text-xs font-semibold text-zinc-600 uppercase tracking-widest shrink-0">{label}</span>
-      <div className="flex-1 h-px bg-[#1e1e1e]" />
+      <div className="flex-1 h-px bg-surface-active" />
     </div>
   )
 }
@@ -226,19 +226,19 @@ export default function EventsPage() {
   const isEmpty = visibleEvents.length === 0
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen bg-background">
       <Nav />
       <div className="max-w-3xl mx-auto px-4 py-8">
 
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">Events</h1>
+            <h1 className="text-xl font-bold text-foreground">Events</h1>
             <p className="text-sm text-zinc-500 mt-1">Contests, trips, film shoots, and gatherings</p>
           </div>
           <button
             onClick={() => setAddOpen(true)}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-white hover:bg-blue-500 transition-all"
+            className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-foreground hover:bg-blue-500 transition-all"
           >
             + Add event
           </button>
@@ -247,7 +247,7 @@ export default function EventsPage() {
         {/* Main tab bar + type filter row */}
         <div className="flex items-center justify-between gap-4 mb-5">
           {/* Main tabs: All / Series */}
-          <div className="flex gap-1 bg-[#111] border border-[#1e1e1e] rounded-lg p-1">
+          <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1">
             {([
               { key: "all" as MainTab, label: "All" },
               { key: "series" as MainTab, label: "Series" },
@@ -258,7 +258,7 @@ export default function EventsPage() {
                 className={cn(
                   "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
                   mainTab === key
-                    ? "bg-[#2a2a2a] text-white"
+                    ? "bg-surface-active text-foreground"
                     : "text-zinc-500 hover:text-zinc-300"
                 )}
               >
@@ -277,7 +277,7 @@ export default function EventsPage() {
                   "px-3 py-1 rounded-full text-xs font-medium border transition-all",
                   typeFilter === value
                     ? "bg-white text-black border-white"
-                    : "bg-transparent text-zinc-500 border-[#2a2a2a] hover:border-zinc-500 hover:text-zinc-300"
+                    : "bg-transparent text-zinc-500 border-border-default hover:border-zinc-500 hover:text-zinc-300"
                 )}
               >
                 {label}
@@ -290,7 +290,7 @@ export default function EventsPage() {
         {mainTab === "all" && (
           <div className="space-y-8">
             {isEmpty ? (
-              <div className="text-sm text-zinc-600 text-center py-12 border border-dashed border-[#2a2a2a] rounded-xl">
+              <div className="text-sm text-zinc-600 text-center py-12 border border-dashed border-border-default rounded-xl">
                 No events found.{" "}
                 <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
               </div>
@@ -313,7 +313,7 @@ export default function EventsPage() {
         {mainTab === "series" && (
           <div className="space-y-8">
             {isEmpty ? (
-              <div className="text-sm text-zinc-600 text-center py-12 border border-dashed border-[#2a2a2a] rounded-xl">
+              <div className="text-sm text-zinc-600 text-center py-12 border border-dashed border-border-default rounded-xl">
                 No events found for this filter.
               </div>
             ) : (
@@ -324,7 +324,7 @@ export default function EventsPage() {
                     <div className="flex items-center gap-3 mb-3">
                       <SeriesCard series={series} filteredEventCount={events.length} />
                     </div>
-                    <div className="space-y-2 mt-2 pl-2 border-l border-[#1e1e1e]">
+                    <div className="space-y-2 mt-2 pl-2 border-l border-border-default">
                       {events.map((event) => (
                         <EventCard key={event.id} event={event} />
                       ))}

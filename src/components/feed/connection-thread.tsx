@@ -58,19 +58,19 @@ export function ConnectionThread({ personA, personB, claimsA, claimsB }: Connect
   return (
     <div>
       {/* Connection header */}
-      <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-5 mb-6">
+      <div className="bg-surface border border-border-default rounded-xl p-5 mb-6">
         {/* Avatar pair + strength */}
         <div className="flex items-center gap-3 mb-4">
           <div className="flex items-center shrink-0">
-            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold text-white">
+            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold text-foreground">
               {initials(personA.display_name)}
             </div>
-            <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-bold text-white -ml-3 border-2 border-[#111]">
+            <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-bold text-foreground -ml-3 border-2 border-border-default">
               {initials(personB.display_name)}
             </div>
           </div>
           <div className="min-w-0">
-            <div className="text-sm font-semibold text-white leading-snug">
+            <div className="text-sm font-semibold text-foreground leading-snug">
               {personA.display_name} + {personB.display_name}
             </div>
             <div className="mt-1.5">
@@ -105,7 +105,7 @@ export function ConnectionThread({ personA, personB, claimsA, claimsB }: Connect
           </div>
         </div>
       ) : (
-        <div className="mb-8 py-8 text-center border border-dashed border-[#2a2a2a] rounded-xl">
+        <div className="mb-8 py-8 text-center border border-dashed border-border-default rounded-xl">
           <div className="text-sm text-zinc-500">No documented overlaps yet</div>
           <div className="text-xs text-zinc-600 mt-1">
             Add more history to both profiles to uncover shared moments
@@ -117,7 +117,7 @@ export function ConnectionThread({ personA, personB, claimsA, claimsB }: Connect
       <div>
         <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-4 flex items-center gap-3">
           <span>{personB.display_name}&apos;s history</span>
-          <div className="flex-1 h-px bg-[#1e1e1e]" />
+          <div className="flex-1 h-px bg-surface-active" />
         </div>
         <FeedView claims={claimsB} personName={personB.display_name} isOwn={false} />
       </div>

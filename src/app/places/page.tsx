@@ -34,7 +34,7 @@ function PlaceCard({ place }: { place: Place }) {
 
   return (
     <Link href={`/places/${placeSlug(place)}`}>
-      <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4 hover:border-[#333] transition-all cursor-pointer group h-full flex flex-col">
+      <div className="bg-surface border border-border-default rounded-xl p-4 hover:border-border-default transition-all cursor-pointer group h-full flex flex-col">
         <div className="flex items-start justify-between mb-3">
           <span className="text-2xl">{PLACE_TYPE_ICONS[place.place_type] ?? "📍"}</span>
           <div className="flex items-center gap-1.5">
@@ -46,7 +46,7 @@ function PlaceCard({ place }: { place: Place }) {
             )}
           </div>
         </div>
-        <div className="font-semibold text-white text-sm group-hover:text-blue-300 transition-colors">
+        <div className="font-semibold text-foreground text-sm group-hover:text-blue-300 transition-colors">
           {place.name}
         </div>
         {place.region && (
@@ -59,7 +59,7 @@ function PlaceCard({ place }: { place: Place }) {
         {decades.length > 0 && (
           <div className="mt-2 flex gap-1 flex-wrap">
             {decades.map((d) => (
-              <span key={d} className="text-[10px] px-1.5 py-0.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded text-zinc-500">
+              <span key={d} className="text-[10px] px-1.5 py-0.5 bg-surface-hover border border-border-default rounded text-zinc-500">
                 {d}
               </span>
             ))}
@@ -94,17 +94,17 @@ export default function PlacesPage() {
   })
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen bg-background">
       <Nav />
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">Places</h1>
+            <h1 className="text-xl font-bold text-foreground">Places</h1>
             <p className="text-sm text-zinc-500 mt-1">Resorts, shops, and zones in the lineage</p>
           </div>
           <button
             onClick={() => setAddOpen(true)}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-white hover:bg-blue-500 transition-all"
+            className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-foreground hover:bg-blue-500 transition-all"
           >
             + Add place
           </button>
@@ -117,7 +117,7 @@ export default function PlacesPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search places..."
-            className="flex-1 bg-[#111] border border-[#1e1e1e] rounded-lg px-4 py-2 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+            className="flex-1 bg-surface border border-border-default rounded-lg px-4 py-2 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
           />
           <div className="flex gap-2">
             {["all", "resort", "shop", "zone"].map((t) => (
@@ -126,8 +126,8 @@ export default function PlacesPage() {
                 onClick={() => setTypeFilter(t)}
                 className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all capitalize ${
                   typeFilter === t
-                    ? "bg-blue-600 border-blue-600 text-white"
-                    : "border-[#2a2a2a] text-zinc-400 hover:border-zinc-600 hover:text-white"
+                    ? "bg-blue-600 border-blue-600 text-foreground"
+                    : "border-border-default text-zinc-400 hover:border-zinc-600 hover:text-foreground"
                 }`}
               >
                 {t}

@@ -65,13 +65,13 @@ export function EditClaimModal({ claim, entityName, onClose }: EditClaimModalPro
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="absolute inset-0 bg-black/60" />
-      <div className="relative w-full max-w-md bg-[#111] border border-[#2a2a2a] rounded-2xl p-6 shadow-2xl">
+      <div className="relative w-full max-w-md bg-surface border border-border-default rounded-2xl p-6 shadow-2xl">
         {/* Header */}
         <div className="mb-5">
           <div className="flex items-center gap-2 mb-1">
             <span>{icon}</span>
             <span className="text-xs text-zinc-500">{label}</span>
-            <span className="font-semibold text-white">{entityName}</span>
+            <span className="font-semibold text-foreground">{entityName}</span>
           </div>
           <p className="text-xs text-zinc-600">Edit the details of this claim</p>
         </div>
@@ -129,7 +129,7 @@ export function EditClaimModal({ claim, entityName, onClose }: EditClaimModalPro
                     "text-left px-3 py-2 rounded-lg border text-xs transition-all",
                     confidence === opt.value
                       ? "border-blue-500 bg-blue-950/40 text-blue-200"
-                      : "border-[#2a2a2a] text-zinc-400 hover:border-zinc-600 hover:text-white"
+                      : "border-border-default text-zinc-400 hover:border-zinc-600 hover:text-foreground"
                   )}
                 >
                   <div className="font-medium">{opt.label}</div>
@@ -151,7 +151,7 @@ export function EditClaimModal({ claim, entityName, onClose }: EditClaimModalPro
                     "flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border text-xs transition-all",
                     visibility === opt.value
                       ? "border-blue-500 bg-blue-950/40 text-blue-200"
-                      : "border-[#2a2a2a] text-zinc-400 hover:border-zinc-600 hover:text-white"
+                      : "border-border-default text-zinc-400 hover:border-zinc-600 hover:text-foreground"
                   )}
                 >
                   <span>{opt.icon}</span>
@@ -166,7 +166,7 @@ export function EditClaimModal({ claim, entityName, onClose }: EditClaimModalPro
         <div className="flex gap-3 mt-5">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-white border border-[#2a2a2a] hover:border-zinc-600 transition-all"
+            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-foreground border border-border-default hover:border-zinc-600 transition-all"
           >
             Cancel
           </button>
@@ -177,7 +177,7 @@ export function EditClaimModal({ claim, entityName, onClose }: EditClaimModalPro
               "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
               canSave
                 ? "bg-blue-600 text-white hover:bg-blue-500"
-                : "bg-[#1e1e1e] text-zinc-600 cursor-not-allowed"
+                : "bg-surface-active text-zinc-600 cursor-not-allowed"
             )}
           >
             Save changes
@@ -189,4 +189,4 @@ export function EditClaimModal({ claim, entityName, onClose }: EditClaimModalPro
 }
 
 const inputCls =
-  "w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+  "w-full bg-background border border-border-default rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"

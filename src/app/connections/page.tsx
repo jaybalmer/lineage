@@ -17,27 +17,27 @@ function ConnectionCard({ personId, currentUserId }: { personId: string; current
   const dateRange = rodeWithClaims[0] ? formatDateRange(rodeWithClaims[0].start_date, rodeWithClaims[0].end_date) : ""
 
   return (
-    <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4 hover:border-[#2a2a2a] transition-all">
+    <div className="bg-surface border border-border-default rounded-xl p-4 hover:border-border-default transition-all">
       <div className="flex items-start gap-3">
         <Link href={`/riders/${personId}`} className="flex-shrink-0">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 flex items-center justify-center text-sm font-bold text-white hover:from-blue-700 hover:to-blue-800 transition-all">
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 flex items-center justify-center text-sm font-bold text-foreground hover:from-blue-700 hover:to-blue-800 transition-all">
             {person.display_name[0]}
           </div>
         </Link>
         <div className="min-w-0 flex-1">
           <Link href={`/riders/${personId}`}>
-            <div className="font-semibold text-white text-sm hover:text-blue-300 transition-colors">{person.display_name}</div>
+            <div className="font-semibold text-foreground text-sm hover:text-blue-300 transition-colors">{person.display_name}</div>
           </Link>
           {dateRange && <div className="text-xs text-zinc-500">{dateRange}</div>}
         </div>
         <div className="flex gap-1.5 flex-shrink-0">
           <Link href={`/compare?b=${personId}`}>
-            <button className="px-2.5 py-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-[11px] text-zinc-400 hover:border-zinc-500 hover:text-white transition-all whitespace-nowrap">
+            <button className="px-2.5 py-1 bg-surface-hover border border-border-default rounded-lg text-[11px] text-zinc-400 hover:border-zinc-500 hover:text-foreground transition-all whitespace-nowrap">
               Compare ⬡
             </button>
           </Link>
           <Link href={`/connections/${personId}`}>
-            <button className="px-2.5 py-1 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-[11px] text-zinc-400 hover:border-blue-700/50 hover:text-blue-300 hover:bg-blue-950/30 transition-all whitespace-nowrap">
+            <button className="px-2.5 py-1 bg-surface-hover border border-border-default rounded-lg text-[11px] text-zinc-400 hover:border-blue-700/50 hover:text-blue-300 hover:bg-blue-950/30 transition-all whitespace-nowrap">
               View connection →
             </button>
           </Link>
@@ -46,12 +46,12 @@ function ConnectionCard({ personId, currentUserId }: { personId: string; current
 
       <div className="mt-3 flex flex-wrap gap-1.5">
         {sharedPlaces.map(({ place }) => (
-          <span key={place.id} className="text-[11px] px-2 py-0.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded text-zinc-400">
+          <span key={place.id} className="text-[11px] px-2 py-0.5 bg-surface-hover border border-border-default rounded text-zinc-400">
             🏔 {place.name}
           </span>
         ))}
         {sharedEvents.map(({ event }) => (
-          <span key={event.id} className="text-[11px] px-2 py-0.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded text-zinc-400">
+          <span key={event.id} className="text-[11px] px-2 py-0.5 bg-surface-hover border border-border-default rounded text-zinc-400">
             🏆 {event.name}
           </span>
         ))}
@@ -86,11 +86,11 @@ export default function ConnectionsPage() {
   )].filter((id) => !directConnections.includes(id))
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen bg-background">
       <Nav />
       <div className="max-w-5xl mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-xl font-bold text-white">Connections</h1>
+          <h1 className="text-xl font-bold text-foreground">Connections</h1>
           <p className="text-sm text-zinc-500 mt-1">Riders you&apos;ve crossed paths with</p>
         </div>
 
@@ -99,7 +99,7 @@ export default function ConnectionsPage() {
           <div className="mb-8">
             <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-4 flex items-center gap-3">
               <span>Your crew</span>
-              <div className="flex-1 h-px bg-[#1e1e1e]" />
+              <div className="flex-1 h-px bg-surface-active" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {directConnections.map((id) => (
@@ -114,7 +114,7 @@ export default function ConnectionsPage() {
           <div>
             <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-4 flex items-center gap-3">
               <span>Also rode your mountains</span>
-              <div className="flex-1 h-px bg-[#1e1e1e]" />
+              <div className="flex-1 h-px bg-surface-active" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {sharedPlaceRiders.map((id) => (
@@ -125,11 +125,11 @@ export default function ConnectionsPage() {
         )}
 
         {/* Connection invite CTA */}
-        <div className="mt-10 border border-dashed border-[#2a2a2a] rounded-xl p-6 text-center">
+        <div className="mt-10 border border-dashed border-border-default rounded-xl p-6 text-center">
           <div className="text-2xl mb-2">🤙</div>
-          <div className="text-sm font-medium text-white mb-1">Know someone who should be here?</div>
+          <div className="text-sm font-medium text-foreground mb-1">Know someone who should be here?</div>
           <p className="text-xs text-zinc-500 mb-4">Invite them to add their lineage, or send them a verification request to confirm an overlap.</p>
-          <button className="px-4 py-2 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-sm text-zinc-300 hover:border-zinc-500 hover:text-white transition-all">
+          <button className="px-4 py-2 bg-surface-hover border border-border-default rounded-lg text-sm text-zinc-300 hover:border-zinc-500 hover:text-foreground transition-all">
             Invite a rider
           </button>
         </div>

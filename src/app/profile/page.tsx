@@ -69,7 +69,7 @@ export default function ProfilePage() {
   const connectionsCount = personClaims.filter((c) => c.predicate === "rode_with").length
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen bg-background">
       <Nav />
 
       {editingProfile && person && (
@@ -83,15 +83,15 @@ export default function ProfilePage() {
         {/* Profile header */}
         <div className="mb-8">
           <div className="flex items-start gap-5">
-            <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-xl font-bold text-white flex-shrink-0">
+            <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-xl font-bold text-foreground flex-shrink-0">
               {person?.display_name?.[0]?.toUpperCase() ?? "?"}
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-3 flex-wrap">
-                <h1 className="text-2xl font-bold text-white">{person?.display_name ?? "Your profile"}</h1>
+                <h1 className="text-2xl font-bold text-foreground">{person?.display_name ?? "Your profile"}</h1>
                 <button
                   onClick={() => setEditingProfile(true)}
-                  className="text-xs text-zinc-600 hover:text-zinc-300 transition-colors px-2 py-1 rounded hover:bg-[#1e1e1e]"
+                  className="text-xs text-zinc-600 hover:text-zinc-300 transition-colors px-2 py-1 rounded hover:bg-surface-active"
                 >
                   Edit
                 </button>
@@ -116,7 +116,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Stats row */}
-          <div className="flex gap-6 mt-5 pt-5 border-t border-[#1e1e1e]">
+          <div className="flex gap-6 mt-5 pt-5 border-t border-border-default">
             {[
               { label: "claims", value: personClaims.length },
               { label: "places", value: placesCount },
@@ -125,7 +125,7 @@ export default function ProfilePage() {
               { label: "days", value: myDays.length },
             ].map(({ label, value }) => (
               <div key={label} className="text-center">
-                <div className="text-lg font-bold text-white">{value}</div>
+                <div className="text-lg font-bold text-foreground">{value}</div>
                 <div className="text-[11px] text-zinc-600">{label}</div>
               </div>
             ))}

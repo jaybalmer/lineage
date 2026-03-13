@@ -28,7 +28,7 @@ function ProgressBar({ step, total }: { step: number; total: number }) {
           key={i}
           className={cn(
             "h-0.5 flex-1 rounded-full transition-all duration-300",
-            i < step ? "bg-blue-500" : i === step ? "bg-blue-400" : "bg-[#2a2a2a]"
+            i < step ? "bg-blue-500" : i === step ? "bg-blue-400" : "bg-border-default"
           )}
         />
       ))}
@@ -48,7 +48,7 @@ function YearPicker({ value, onChange }: { value?: number; onChange: (y: number)
             "py-2 rounded-lg text-sm font-medium border transition-all",
             value === y
               ? "border-blue-500 bg-blue-950 text-blue-200"
-              : "border-[#2a2a2a] bg-[#141414] text-zinc-400 hover:border-zinc-600 hover:text-white"
+              : "border-border-default bg-surface text-zinc-400 hover:border-zinc-600 hover:text-foreground"
           )}
         >
           {y}
@@ -101,9 +101,9 @@ function SearchSelect({
         value={query}
         onChange={(e) => setQuery(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+        className="w-full bg-surface border border-border-default rounded-lg px-4 py-3 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
       />
-      <div className="mt-2 max-h-52 overflow-y-auto rounded-lg border border-[#2a2a2a] divide-y divide-[#1e1e1e]">
+      <div className="mt-2 max-h-52 overflow-y-auto rounded-lg border border-border-default divide-y divide-[#1e1e1e]">
         {filtered.slice(0, 12).map((item) => (
           <button
             key={getId(item)}
@@ -112,7 +112,7 @@ function SearchSelect({
               "w-full text-left px-4 py-3 text-sm transition-colors flex items-center gap-2",
               value === getId(item)
                 ? "bg-blue-950 text-blue-200"
-                : "text-zinc-300 hover:bg-[#1a1a1a]"
+                : "text-zinc-300 hover:bg-surface-hover"
             )}
           >
             <span className="flex-1">{getLabel(item)}</span>
@@ -124,7 +124,7 @@ function SearchSelect({
         {addEntityType && query.trim().length > 0 && (
           <button
             onClick={() => setShowModal(true)}
-            className="w-full text-left px-4 py-3 text-sm text-blue-400 hover:bg-[#1a1a1a] transition-colors flex items-center gap-2"
+            className="w-full text-left px-4 py-3 text-sm text-blue-400 hover:bg-surface-hover transition-colors flex items-center gap-2"
           >
             <span className="text-blue-500 font-bold">+</span>
             Add &ldquo;{query.trim()}&rdquo; as a new {addEntityLabel ?? addEntityType}
@@ -211,13 +211,13 @@ export function OnboardingFlow() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="w-full max-w-lg">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-8">
             <span className="text-blue-400 text-xl">⬡</span>
-            <span className="font-semibold text-white">Lineage</span>
+            <span className="font-semibold text-foreground">Lineage</span>
           </div>
           <ProgressBar step={step} total={STEPS.length} />
         </div>
@@ -226,7 +226,7 @@ export function OnboardingFlow() {
         <div className="min-h-[400px]">
           {step === 0 && (
             <div className="space-y-4">
-              <h1 className="text-2xl font-bold text-white">Build your snowboarding lineage.</h1>
+              <h1 className="text-2xl font-bold text-foreground">Build your snowboarding lineage.</h1>
               <p className="text-zinc-400 leading-relaxed">
                 Lineage is a living graph of snowboarding history — built by riders, for riders.
                 Start by adding your own timeline: where you rode, who you rode with, and what shaped your riding.
@@ -238,7 +238,7 @@ export function OnboardingFlow() {
                   "🏂  Document your gear lineage over the years",
                   "🔒  Private by default — you control what's visible",
                 ].map((item) => (
-                  <div key={item} className="flex gap-3 text-sm text-zinc-300 bg-[#141414] rounded-lg px-4 py-3 border border-[#2a2a2a]">
+                  <div key={item} className="flex gap-3 text-sm text-zinc-300 bg-surface rounded-lg px-4 py-3 border border-border-default">
                     {item}
                   </div>
                 ))}
@@ -248,7 +248,7 @@ export function OnboardingFlow() {
 
           {step === 1 && (
             <div className="space-y-5">
-              <h2 className="text-xl font-bold text-white mb-1">First, who are you?</h2>
+              <h2 className="text-xl font-bold text-foreground mb-1">First, who are you?</h2>
               <p className="text-zinc-500 text-sm">This is how you'll appear on your profile and to other riders.</p>
               <div>
                 <label className="text-xs font-medium text-zinc-400 uppercase tracking-widest mb-2 block">Your name</label>
@@ -258,7 +258,7 @@ export function OnboardingFlow() {
                   value={onboarding.display_name ?? ""}
                   onChange={(e) => setOnboardingField("display_name", e.target.value)}
                   placeholder="e.g. Alex Torres"
-                  className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface border border-border-default rounded-lg px-4 py-3 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
                 />
               </div>
               <div>
@@ -273,7 +273,7 @@ export function OnboardingFlow() {
                   placeholder="e.g. 1990"
                   min={1930}
                   max={2015}
-                  className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface border border-border-default rounded-lg px-4 py-3 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
                 />
               </div>
             </div>
@@ -281,7 +281,7 @@ export function OnboardingFlow() {
 
           {step === 2 && (
             <div>
-              <h2 className="text-xl font-bold text-white mb-1">When did you start snowboarding?</h2>
+              <h2 className="text-xl font-bold text-foreground mb-1">When did you start snowboarding?</h2>
               <p className="text-zinc-500 text-sm mb-2">Pick your first season — even an approximate year works.</p>
               <YearPicker
                 value={onboarding.start_year}
@@ -292,7 +292,7 @@ export function OnboardingFlow() {
 
           {step === 3 && (
             <div>
-              <h2 className="text-xl font-bold text-white mb-1">Where did you first ride?</h2>
+              <h2 className="text-xl font-bold text-foreground mb-1">Where did you first ride?</h2>
               <p className="text-zinc-500 text-sm mb-2">The resort, hill, or zone where it all started.</p>
               <SearchSelect
                 items={allPlaces}
@@ -309,7 +309,7 @@ export function OnboardingFlow() {
 
           {step === 4 && (
             <div>
-              <h2 className="text-xl font-bold text-white mb-1">What was your first board?</h2>
+              <h2 className="text-xl font-bold text-foreground mb-1">What was your first board?</h2>
               <p className="text-zinc-500 text-sm mb-2">The gear that started the obsession.</p>
               <SearchSelect
                 items={allBoards}
@@ -329,7 +329,7 @@ export function OnboardingFlow() {
 
           {step === 5 && (
             <div>
-              <h2 className="text-xl font-bold text-white mb-1">Who or what shaped your early riding?</h2>
+              <h2 className="text-xl font-bold text-foreground mb-1">Who or what shaped your early riding?</h2>
               <p className="text-zinc-500 text-sm mb-2">Shops, crews, sponsors, or teams you were part of.</p>
               <SearchSelect
                 items={allOrgs}
@@ -347,7 +347,7 @@ export function OnboardingFlow() {
 
           {step === 6 && (
             <div className="space-y-4">
-              <h2 className="text-xl font-bold text-white mb-1">Your privacy, your call.</h2>
+              <h2 className="text-xl font-bold text-foreground mb-1">Your privacy, your call.</h2>
               <p className="text-zinc-400 text-sm leading-relaxed">
                 Choose your default visibility for new timeline entries.
                 You can override this for any individual claim at any time.
@@ -367,12 +367,12 @@ export function OnboardingFlow() {
                         "w-full flex items-start gap-3 rounded-lg px-4 py-3 border text-left transition-all",
                         selected
                           ? "bg-blue-950/40 border-blue-600 ring-1 ring-blue-600/40"
-                          : "bg-[#141414] border-[#2a2a2a] hover:border-zinc-600"
+                          : "bg-surface border-border-default hover:border-zinc-600"
                       )}
                     >
                       <span className="text-lg">{icon}</span>
                       <div>
-                        <div className={cn("text-sm font-medium", selected ? "text-blue-200" : "text-white")}>{title}</div>
+                        <div className={cn("text-sm font-medium", selected ? "text-blue-600" : "text-foreground")}>{title}</div>
                         <div className="text-xs text-zinc-500">{desc}</div>
                       </div>
                       {selected && <span className="ml-auto text-blue-400 text-sm">✓</span>}
@@ -388,7 +388,7 @@ export function OnboardingFlow() {
 
           {step === 7 && !magicLinkSent && (
             <div className="space-y-5">
-              <h2 className="text-xl font-bold text-white">Save your lineage</h2>
+              <h2 className="text-xl font-bold text-foreground">Save your lineage</h2>
               <p className="text-zinc-400 text-sm leading-relaxed">
                 Enter your email to get a magic link — no password needed.
                 One click and your timeline is saved.
@@ -404,7 +404,7 @@ export function OnboardingFlow() {
                   onChange={(e) => setOnboardingField("email", e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter" && canContinue()) next() }}
                   placeholder="you@example.com"
-                  className="w-full bg-[#141414] border border-[#2a2a2a] rounded-lg px-4 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface border border-border-default rounded-lg px-4 py-3 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
                 />
               </div>
               {sendError && (
@@ -427,10 +427,10 @@ export function OnboardingFlow() {
           {step === 7 && magicLinkSent && (
             <div className="space-y-4 text-center pt-8">
               <div className="text-5xl">📬</div>
-              <h2 className="text-xl font-bold text-white">Check your email</h2>
+              <h2 className="text-xl font-bold text-foreground">Check your email</h2>
               <p className="text-zinc-400 text-sm leading-relaxed">
                 We sent a link to{" "}
-                <span className="text-white font-medium">{onboarding.email}</span>.
+                <span className="text-foreground font-medium">{onboarding.email}</span>.
                 Click it to open your lineage.
               </p>
               <p className="text-xs text-zinc-600 pt-2">
@@ -447,11 +447,11 @@ export function OnboardingFlow() {
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between mt-8 pt-6 border-t border-[#1e1e1e]">
+        <div className="flex items-center justify-between mt-8 pt-6 border-t border-border-default">
           <button
             onClick={back}
             className={cn(
-              "text-sm text-zinc-500 hover:text-white transition-colors",
+              "text-sm text-zinc-500 hover:text-foreground transition-colors",
               (step === 0 || magicLinkSent) && "invisible"
             )}
           >
@@ -464,7 +464,7 @@ export function OnboardingFlow() {
               "px-6 py-2.5 rounded-lg text-sm font-medium transition-all",
               canContinue()
                 ? "bg-blue-600 text-white hover:bg-blue-500"
-                : "bg-[#1e1e1e] text-zinc-600 cursor-not-allowed"
+                : "bg-surface-active text-zinc-600 cursor-not-allowed"
             )}
           >
             {magicLinkSent

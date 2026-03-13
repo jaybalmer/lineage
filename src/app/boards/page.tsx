@@ -25,7 +25,7 @@ function AvatarStack({ riderIds }: { riderIds: string[] }) {
           <div
             key={rid}
             style={{ marginLeft: i === 0 ? 0 : -6 }}
-            className="w-5 h-5 rounded-full bg-blue-600 border border-[#111] flex items-center justify-center text-[8px] font-bold text-white"
+            className="w-5 h-5 rounded-full bg-blue-600 border border-border-default flex items-center justify-center text-[8px] font-bold text-foreground"
             title={person.display_name}
           >
             {person.display_name[0]}
@@ -35,7 +35,7 @@ function AvatarStack({ riderIds }: { riderIds: string[] }) {
       {extra > 0 && (
         <div
           style={{ marginLeft: -6 }}
-          className="w-5 h-5 rounded-full bg-[#2a2a2a] border border-[#111] flex items-center justify-center text-[8px] text-zinc-400"
+          className="w-5 h-5 rounded-full bg-border-default border border-border-default flex items-center justify-center text-[8px] text-zinc-400"
         >
           +{extra}
         </div>
@@ -54,11 +54,11 @@ function BoardCard({ board }: { board: Board }) {
 
   return (
     <Link href={`/boards/${boardSlug(board)}`}>
-      <div className="bg-[#111] border border-[#1e1e1e] border-l-2 border-l-emerald-700 rounded-xl p-4 hover:border-[#2a2a2a] transition-colors">
+      <div className="bg-surface border border-border-default border-l-2 border-l-emerald-700 rounded-xl p-4 hover:border-border-default transition-colors">
         <div className="flex items-center gap-3">
           <span className="text-xl shrink-0">🏂</span>
           <div className="min-w-0 flex-1">
-            <div className="font-medium text-white text-sm leading-snug">
+            <div className="font-medium text-foreground text-sm leading-snug">
               {board.brand} {board.model}
             </div>
             <div className="text-xs text-zinc-500 mt-0.5">
@@ -108,11 +108,11 @@ function SectionDivider({ label, count, unit = "board", href }: { label: string;
 
   return (
     <div className="flex items-center gap-3 mb-3">
-      <div className="w-7 h-7 rounded bg-[#1e1e1e] border border-[#2a2a2a] flex items-center justify-center text-xs font-bold text-zinc-500 shrink-0">
+      <div className="w-7 h-7 rounded bg-surface-active border border-border-default flex items-center justify-center text-xs font-bold text-zinc-500 shrink-0">
         {label[0]}
       </div>
       {nameEl}
-      <div className="flex-1 h-px bg-[#1e1e1e]" />
+      <div className="flex-1 h-px bg-surface-active" />
       <span className="text-[10px] text-zinc-600">
         {count} {unit}{count !== 1 ? "s" : ""}
       </span>
@@ -124,7 +124,7 @@ function DecadeDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-3">
       <span className="text-xs font-semibold text-zinc-600 uppercase tracking-widest shrink-0">{label}</span>
-      <div className="flex-1 h-px bg-[#1e1e1e]" />
+      <div className="flex-1 h-px bg-surface-active" />
     </div>
   )
 }
@@ -185,26 +185,26 @@ export default function BoardsPage() {
   const isEmpty = allBoards.length === 0
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen bg-background">
       <Nav />
       <div className="max-w-3xl mx-auto px-4 py-8">
 
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">Boards</h1>
+            <h1 className="text-xl font-bold text-foreground">Boards</h1>
             <p className="text-sm text-zinc-500 mt-1">The shapes that shaped the scene</p>
           </div>
           <button
             onClick={() => setAddOpen(true)}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-white hover:bg-blue-500 transition-all"
+            className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-foreground hover:bg-blue-500 transition-all"
           >
             + Add board
           </button>
         </div>
 
         {/* Tab bar */}
-        <div className="flex gap-1 bg-[#111] border border-[#1e1e1e] rounded-lg p-1 mb-6 w-fit">
+        <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1 mb-6 w-fit">
           {([
             { key: "all" as MainTab, label: "All" },
             { key: "brands" as MainTab, label: "Brands" },
@@ -216,7 +216,7 @@ export default function BoardsPage() {
               className={cn(
                 "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
                 mainTab === key
-                  ? "bg-[#2a2a2a] text-white"
+                  ? "bg-surface-active text-foreground"
                   : "text-zinc-500 hover:text-zinc-300"
               )}
             >
@@ -226,7 +226,7 @@ export default function BoardsPage() {
         </div>
 
         {isEmpty ? (
-          <div className="text-sm text-zinc-600 text-center py-12 border border-dashed border-[#2a2a2a] rounded-xl">
+          <div className="text-sm text-zinc-600 text-center py-12 border border-dashed border-border-default rounded-xl">
             No boards found.{" "}
             <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
           </div>

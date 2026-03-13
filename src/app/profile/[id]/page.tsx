@@ -64,7 +64,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
 
   if (!person) {
     return (
-      <div className="min-h-screen bg-[#0a0a0a]">
+      <div className="min-h-screen bg-background">
         <Nav />
         <div className="max-w-3xl mx-auto px-4 py-16 text-center text-zinc-600">Loading…</div>
       </div>
@@ -81,7 +81,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
     : getSharedContext(activePersonId, id)
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen bg-background">
       <Nav />
       <div className="max-w-3xl mx-auto px-4 py-10">
 
@@ -94,21 +94,21 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Profile header */}
         <div className="flex items-start gap-5 mb-6">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 flex items-center justify-center text-xl font-bold text-white flex-shrink-0">
+          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 flex items-center justify-center text-xl font-bold text-foreground flex-shrink-0">
             {person.display_name[0]}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-white">{person.display_name}</h1>
+              <h1 className="text-2xl font-bold text-foreground">{person.display_name}</h1>
               {!isCurrentUser && (
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <Link href={`/compare?b=${id}`}>
-                    <button className="px-3 py-1.5 rounded-lg bg-[#1a1a1a] border border-[#2a2a2a] text-xs text-zinc-300 hover:border-zinc-500 hover:text-white transition-all">
+                    <button className="px-3 py-1.5 rounded-lg bg-surface-hover border border-border-default text-xs text-zinc-300 hover:border-zinc-500 hover:text-foreground transition-all">
                       Compare ⬡
                     </button>
                   </Link>
                   <Link href={`/connections/${id}`}>
-                    <button className="px-3 py-1.5 rounded-lg bg-blue-600 text-xs text-white font-medium hover:bg-blue-500 transition-all">
+                    <button className="px-3 py-1.5 rounded-lg bg-blue-600 text-xs text-foreground font-medium hover:bg-blue-500 transition-all">
                       View connection →
                     </button>
                   </Link>
@@ -126,7 +126,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
         </div>
 
         {/* Stats row */}
-        <div className="flex gap-6 pb-5 mb-6 border-b border-[#1e1e1e]">
+        <div className="flex gap-6 pb-5 mb-6 border-b border-border-default">
           {[
             { label: "claims", value: personClaims.length },
             { label: "places", value: personClaims.filter((c) => c.predicate === "rode_at").length },
@@ -134,7 +134,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
             { label: "connections", value: personClaims.filter((c) => c.predicate === "rode_with").length },
           ].map(({ label, value }) => (
             <div key={label} className="text-center">
-              <div className="text-lg font-bold text-white">{value}</div>
+              <div className="text-lg font-bold text-foreground">{value}</div>
               <div className="text-[11px] text-zinc-600">{label}</div>
             </div>
           ))}

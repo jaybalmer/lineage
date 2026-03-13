@@ -18,20 +18,20 @@ function RiderRow({ person, isMe }: { person: Person; isMe: boolean }) {
 
   return (
     <Link href={href}>
-      <div className="flex items-center gap-4 px-4 py-3.5 bg-[#111] border border-[#1e1e1e] rounded-xl hover:border-[#2a2a2a] transition-all group">
+      <div className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all group">
         {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold text-white shrink-0">
+        <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold text-foreground shrink-0">
           {person.display_name[0]}
         </div>
 
         {/* Info */}
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="font-semibold text-white text-sm group-hover:text-blue-300 transition-colors">
+            <span className="font-semibold text-foreground text-sm group-hover:text-blue-300 transition-colors">
               {person.display_name}
             </span>
             {isMe && (
-              <span className="text-[10px] text-zinc-600 border border-[#2a2a2a] rounded px-1.5 py-0.5">you</span>
+              <span className="text-[10px] text-zinc-600 border border-border-default rounded px-1.5 py-0.5">you</span>
             )}
             {isUnverified && (
               <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5">unverified</span>
@@ -60,7 +60,7 @@ function RiderRow({ person, isMe }: { person: Person; isMe: boolean }) {
         <div className="shrink-0 text-right hidden sm:block">
           {claimCount > 0 && (
             <>
-              <div className="text-xs font-semibold text-white">{claimCount}</div>
+              <div className="text-xs font-semibold text-foreground">{claimCount}</div>
               <div className="text-[10px] text-zinc-600">claim{claimCount !== 1 ? "s" : ""}</div>
             </>
           )}
@@ -88,19 +88,19 @@ export default function PeoplePage() {
   }, [query, allPeople.length])
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a]">
+    <div className="min-h-screen bg-background">
       <Nav />
       <div className="max-w-3xl mx-auto px-4 py-8">
 
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold text-white">People</h1>
+            <h1 className="text-xl font-bold text-foreground">People</h1>
             <p className="text-sm text-zinc-500 mt-1">Riders who&apos;ve added their lineage</p>
           </div>
           <button
             onClick={() => setAddOpen(true)}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-white hover:bg-blue-500 transition-all"
+            className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-foreground hover:bg-blue-500 transition-all"
           >
             + Add rider
           </button>
@@ -114,14 +114,14 @@ export default function PeoplePage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search riders…"
-            className="w-full pl-8 pr-4 py-2 bg-[#111] border border-[#2a2a2a] rounded-xl text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
+            className="w-full pl-8 pr-4 py-2 bg-surface border border-border-default rounded-xl text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-zinc-500 transition-colors"
           />
         </div>
 
         {/* Rider list */}
         <div className="space-y-2">
           {filtered.length === 0 && (
-            <div className="text-sm text-zinc-600 text-center py-12 border border-dashed border-[#2a2a2a] rounded-xl">
+            <div className="text-sm text-zinc-600 text-center py-12 border border-dashed border-border-default rounded-xl">
               No riders found.{" "}
               <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
             </div>

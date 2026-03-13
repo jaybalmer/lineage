@@ -108,7 +108,7 @@ export function TimelineView({
       {/* Header */}
       <div className="mb-6 flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-bold text-white">{personName}&apos;s Lineage</h1>
+          <h1 className="text-xl font-bold text-foreground">{personName}&apos;s Lineage</h1>
           <p className="text-sm text-zinc-500 mt-0.5">
             {claims.length} claims · {days.length} day{days.length !== 1 ? "s" : ""} · timeline
           </p>
@@ -142,14 +142,14 @@ export function TimelineView({
               className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
                 filter === f
                   ? isDaysChip
-                    ? "bg-emerald-700 border-emerald-700 text-white"
-                    : "bg-blue-600 border-blue-600 text-white"
-                  : "border-[#2a2a2a] text-zinc-400 hover:border-zinc-600 hover:text-white"
+                    ? "bg-emerald-700 border-emerald-700 text-foreground"
+                    : "bg-blue-600 border-blue-600 text-foreground"
+                  : "border-border-default text-zinc-400 hover:border-zinc-600 hover:text-foreground"
               }`}
             >
               {isDaysChip && "☀️ "}{FILTER_LABELS[f]}
               {isDaysChip && days.length > 0 && (
-                <span className={`ml-1.5 px-1 rounded text-[10px] ${filter === f ? "bg-emerald-600" : "bg-[#2a2a2a] text-zinc-500"}`}>
+                <span className={`ml-1.5 px-1 rounded text-[10px] ${filter === f ? "bg-emerald-600" : "bg-border-default text-zinc-500"}`}>
                   {days.length}
                 </span>
               )}
@@ -174,7 +174,7 @@ export function TimelineView({
         <div key={decade} className="mb-8">
           <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-4 flex items-center gap-3">
             <span>{decade}</span>
-            <div className="flex-1 h-px bg-[#1e1e1e]" />
+            <div className="flex-1 h-px bg-surface-active" />
             <span>{grouped[decade].length} entries</span>
           </div>
           <div className="space-y-1">

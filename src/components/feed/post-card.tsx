@@ -371,7 +371,7 @@ function EntityBlock({ claim, entityName, href, isOwn }: EntityBlockProps) {
   })()
 
   return (
-    <div className="flex items-center gap-3 mb-4 pb-4 border-b border-[#1a1a1a]">
+    <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border-default">
       <Link href={href} className="flex-shrink-0">
         {graphic}
       </Link>
@@ -380,7 +380,7 @@ function EntityBlock({ claim, entityName, href, isOwn }: EntityBlockProps) {
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0 flex-1">
             <Link href={href} className="block">
-              <p className="font-bold text-white text-base leading-snug hover:text-blue-300 transition-colors truncate">
+              <p className="font-bold text-foreground text-base leading-snug hover:text-blue-300 transition-colors truncate">
                 {displayName}
               </p>
             </Link>
@@ -400,10 +400,10 @@ function EntityBlock({ claim, entityName, href, isOwn }: EntityBlockProps) {
         <img
           src={imageUrl}
           alt={displayName}
-          className="w-14 h-14 rounded-lg object-cover border border-[#2a2a2a] flex-shrink-0"
+          className="w-14 h-14 rounded-lg object-cover border border-border-default flex-shrink-0"
         />
       ) : isOwn ? (
-        <div className="w-14 h-14 rounded-lg border border-dashed border-[#2a2a2a] flex items-center justify-center flex-shrink-0">
+        <div className="w-14 h-14 rounded-lg border border-dashed border-border-default flex items-center justify-center flex-shrink-0">
           <span className="text-[10px] text-zinc-700 text-center leading-tight">Add<br />photo</span>
         </div>
       ) : null}
@@ -462,7 +462,7 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
       )}
 
       <div className={cn(
-        "group bg-[#111] border border-[#1e1e1e] border-l-2 rounded-xl p-5 mb-4 hover:border-[#2a2a2a] transition-all",
+        "group bg-surface border border-border-default border-l-2 rounded-xl p-5 mb-4 hover:border-border-default transition-all",
         accentClass(claim.predicate)
       )}>
         {/* Entity visual block */}
@@ -477,7 +477,7 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap min-w-0">
             {/* Predicate pill */}
-            <span className="text-[10px] uppercase tracking-widest font-semibold text-zinc-600 bg-[#1a1a1a] border border-[#2a2a2a] rounded px-1.5 py-0.5">
+            <span className="text-[10px] uppercase tracking-widest font-semibold text-zinc-600 bg-surface-hover border border-border-default rounded px-1.5 py-0.5">
               {predicateLabel}
             </span>
             {dateRange && (
@@ -505,7 +505,7 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
               <div className="relative">
                 <button
                   onClick={() => { setMenuOpen((o) => !o); setConfirmDelete(false) }}
-                  className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-zinc-600 hover:text-white hover:bg-[#2a2a2a] transition-all text-sm"
+                  className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-zinc-600 hover:text-foreground hover:bg-border-default transition-all text-sm"
                   title="Options"
                 >
                   ⋯
@@ -514,26 +514,26 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
                 {menuOpen && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-                    <div className="absolute right-0 top-7 z-20 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg shadow-xl overflow-hidden w-36">
+                    <div className="absolute right-0 top-7 z-20 bg-surface-hover border border-border-default rounded-lg shadow-xl overflow-hidden w-36">
                       {!confirmDelete ? (
                         <>
                           <button
                             onClick={() => { setMenuOpen(false); setEditing(true) }}
-                            className="w-full text-left px-4 py-2.5 text-xs text-zinc-300 hover:bg-[#222] hover:text-white transition-colors flex items-center gap-2"
+                            className="w-full text-left px-4 py-2.5 text-xs text-zinc-300 hover:bg-surface-active hover:text-foreground transition-colors flex items-center gap-2"
                           >
                             <span>✏️</span> Edit claim
                           </button>
                           {userEvent && (
                             <button
                               onClick={() => { setMenuOpen(false); setEditingEvent(true) }}
-                              className="w-full text-left px-4 py-2.5 text-xs text-zinc-300 hover:bg-[#222] hover:text-white transition-colors flex items-center gap-2"
+                              className="w-full text-left px-4 py-2.5 text-xs text-zinc-300 hover:bg-surface-active hover:text-foreground transition-colors flex items-center gap-2"
                             >
                               <span>📋</span> Edit event
                             </button>
                           )}
                           <button
                             onClick={() => setConfirmDelete(true)}
-                            className="w-full text-left px-4 py-2.5 text-xs text-red-400 hover:bg-[#222] hover:text-red-300 transition-colors flex items-center gap-2"
+                            className="w-full text-left px-4 py-2.5 text-xs text-red-400 hover:bg-surface-active hover:text-red-300 transition-colors flex items-center gap-2"
                           >
                             <span>🗑</span> Delete
                           </button>
@@ -544,7 +544,7 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
                           <div className="flex gap-2">
                             <button
                               onClick={() => setConfirmDelete(false)}
-                              className="flex-1 px-2 py-1.5 text-xs rounded border border-[#2a2a2a] text-zinc-500 hover:text-white transition-colors"
+                              className="flex-1 px-2 py-1.5 text-xs rounded border border-border-default text-zinc-500 hover:text-foreground transition-colors"
                             >
                               Cancel
                             </button>
@@ -567,7 +567,7 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
 
         {/* Expanded: note + sources */}
         {expanded && claim.note && (
-          <p className="mt-3 text-sm text-zinc-400 leading-relaxed border-t border-[#1e1e1e] pt-3">
+          <p className="mt-3 text-sm text-zinc-400 leading-relaxed border-t border-border-default pt-3">
             {claim.note}
           </p>
         )}
@@ -588,7 +588,7 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
         )}
 
         {/* Bottom row: action stubs + expand toggle */}
-        <div className="mt-4 pt-3 border-t border-[#1a1a1a] flex items-center justify-between">
+        <div className="mt-4 pt-3 border-t border-border-default flex items-center justify-between">
           <div className="flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
             <button
               disabled

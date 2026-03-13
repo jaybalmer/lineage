@@ -26,7 +26,7 @@ export function Badge({
   variant?: "default" | "blue" | "green" | "amber"
 }) {
   const variants = {
-    default: "bg-[#222] text-zinc-300",
+    default: "bg-surface-active text-zinc-300",
     blue: "bg-blue-950 text-blue-300",
     green: "bg-emerald-950 text-emerald-300",
     amber: "bg-amber-950 text-amber-300",

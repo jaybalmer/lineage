@@ -62,12 +62,12 @@ export function StartCard({ person, claims }: StartCardProps) {
     ?? (firstPlaceClaim ? resolveEntityName(firstPlaceClaim.object_id, firstPlaceClaim.object_type) : null)
 
   return (
-    <div className="bg-[#111] border border-[#1e1e1e] border-l-2 border-l-zinc-500 rounded-xl p-4 mb-4">
+    <div className="bg-surface border border-border-default border-l-2 border-l-zinc-500 rounded-xl p-4 mb-4">
       <div className="flex items-start gap-3">
         <span className="text-lg shrink-0 mt-0.5">🏂</span>
         <div className="min-w-0 flex-1">
           <div className="text-[10px] text-zinc-600 uppercase tracking-widest mb-1">Origin</div>
-          <div className="font-semibold text-white text-sm leading-snug">
+          <div className="font-semibold text-foreground text-sm leading-snug">
             Started snowboarding in {person.riding_since}
           </div>
 
@@ -77,7 +77,7 @@ export function StartCard({ person, claims }: StartCardProps) {
                 <div className="flex items-center gap-2.5">
                   <span className="text-[10px] text-zinc-600 w-[72px] shrink-0 leading-none">First board</span>
                   <Link href={boardDetail ? `/boards/${boardSlug(boardDetail)}` : `/boards/${firstBoardClaim.object_id}`}>
-                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-zinc-300 hover:border-zinc-500 hover:text-white transition-all">
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-surface-hover border border-border-default rounded-lg text-zinc-300 hover:border-zinc-500 hover:text-foreground transition-all">
                       🏂 {boardName}
                       {boardDetail && (
                         <span className="text-zinc-600">
@@ -92,7 +92,7 @@ export function StartCard({ person, claims }: StartCardProps) {
                 <div className="flex items-center gap-2.5">
                   <span className="text-[10px] text-zinc-600 w-[72px] shrink-0 leading-none">First mountain</span>
                   <Link href={(() => { const p = getPlaceById(firstPlaceClaim.object_id); return p ? `/places/${placeSlug(p)}` : `/places/${firstPlaceClaim.object_id}` })()}>
-                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-[#1a1a1a] border border-[#2a2a2a] rounded-lg text-zinc-300 hover:border-zinc-500 hover:text-white transition-all">
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-surface-hover border border-border-default rounded-lg text-zinc-300 hover:border-zinc-500 hover:text-foreground transition-all">
                       🏔 {placeName}
                     </span>
                   </Link>

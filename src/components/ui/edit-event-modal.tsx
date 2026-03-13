@@ -19,7 +19,7 @@ const MONTHS = [
 ]
 
 const inputCls =
-  "w-full bg-[#0a0a0a] border border-[#2a2a2a] rounded-lg px-3 py-2.5 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+  "w-full bg-background border border-border-default rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
 
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
@@ -82,9 +82,9 @@ export function EditEventModal({ event, onClose }: EditEventModalProps) {
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="absolute inset-0 bg-black/60" />
-      <div className="relative w-full max-w-md bg-[#111] border border-[#2a2a2a] rounded-2xl p-6 shadow-2xl">
+      <div className="relative w-full max-w-md bg-surface border border-border-default rounded-2xl p-6 shadow-2xl">
         <div className="mb-5">
-          <h2 className="text-lg font-bold text-white">Edit event</h2>
+          <h2 className="text-lg font-bold text-foreground">Edit event</h2>
         </div>
 
         <div className="space-y-3">
@@ -173,7 +173,7 @@ export function EditEventModal({ event, onClose }: EditEventModalProps) {
         <div className="flex gap-3 mt-5">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-white border border-[#2a2a2a] hover:border-zinc-600 transition-all"
+            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-zinc-400 hover:text-foreground border border-border-default hover:border-zinc-600 transition-all"
           >
             Cancel
           </button>
@@ -184,7 +184,7 @@ export function EditEventModal({ event, onClose }: EditEventModalProps) {
               "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
               canSubmit()
                 ? "bg-blue-600 text-white hover:bg-blue-500"
-                : "bg-[#1e1e1e] text-zinc-600 cursor-not-allowed"
+                : "bg-surface-active text-zinc-600 cursor-not-allowed"
             )}
           >
             Save
