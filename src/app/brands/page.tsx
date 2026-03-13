@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
 import { orgSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { useLineageStore } from "@/store/lineage-store"
+import { cn } from "@/lib/utils"
 import type { Org } from "@/types"
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -109,11 +110,27 @@ function OrgCard({ org }: { org: Org }) {
   )
 }
 
+const BRAND_PREDICATES = ["sponsored_by", "worked_at", "part_of_team"] as const
+
 export default function BrandsPage() {
   const [addOpen, setAddOpen] = useState(false)
-  const { catalog } = useLineageStore()
+  const [myOnly, setMyOnly] = useState(false)
+  const { catalog, activePersonId } = useLineageStore()
 
-  const allOrgs = catalog.orgs
+  // IDs of orgs the active user is connected to
+  const myOrgIds = useMemo(() => {
+    if (!activePersonId) return new Set<string>()
+    return new Set(
+      catalog.claims
+        .filter((c) => c.subject_id === activePersonId && BRAND_PREDICATES.includes(c.predicate as typeof BRAND_PREDICATES[number]))
+        .map((c) => c.object_id)
+    )
+  }, [activePersonId, catalog.claims])
+
+  const allOrgs = useMemo(
+    () => myOnly ? catalog.orgs.filter((o) => myOrgIds.has(o.id)) : catalog.orgs,
+    [myOnly, catalog.orgs, myOrgIds]
+  )
 
   const brandOrgs = allOrgs.filter((o) => o.org_type === "brand" || o.org_type === "magazine")
   const teams = allOrgs.filter((o) => o.org_type === "team")
@@ -142,12 +159,25 @@ export default function BrandsPage() {
               {totalBrands} brands, media outlets, and collectives in the community graph
             </p>
           </div>
-          <button
-            onClick={() => setAddOpen(true)}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-foreground hover:bg-blue-500 transition-all"
-          >
-            + Add brand
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setMyOnly(!myOnly)}
+              className={cn(
+                "px-3 py-2 rounded-lg text-xs font-medium transition-colors border",
+                myOnly
+                  ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
+                  : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
+              )}
+            >
+              My Brands{myOnly && myOrgIds.size > 0 ? ` · ${myOrgIds.size}` : ""}
+            </button>
+            <button
+              onClick={() => setAddOpen(true)}
+              className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-foreground hover:bg-blue-500 transition-all"
+            >
+              + Add brand
+            </button>
+          </div>
         </div>
 
         <div className="space-y-10">

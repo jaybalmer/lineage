@@ -97,12 +97,21 @@ export default function RidersPage() {
   const { activePersonId, userEntities } = useLineageStore()
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState<SortTab>("all")
+  const [myOnly, setMyOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
 
   const allPeople = useMemo(
     () => [...PEOPLE, ...(userEntities.people ?? [])],
     [userEntities.people]
   )
+
+  // IDs of riders the active user rode with
+  const myRiderIds = useMemo(() => {
+    if (!activePersonId) return new Set<string>()
+    return new Set(
+      CLAIMS.filter((c) => c.subject_id === activePersonId && c.predicate === "rode_with").map((c) => c.object_id)
+    )
+  }, [activePersonId])
 
   // Claim counts computed once
   const claimCounts = useMemo(() => {
@@ -111,14 +120,15 @@ export default function RidersPage() {
     return map
   }, [])
 
-  // Search filter
+  // Search + mine filter
   const searched = useMemo(() => {
     const q = query.trim().toLowerCase()
-    if (!q) return allPeople
-    return allPeople.filter(
-      (p) => p.display_name.toLowerCase().includes(q) || p.bio?.toLowerCase().includes(q)
-    )
-  }, [query, allPeople])
+    return allPeople.filter((p) => {
+      if (myOnly && !myRiderIds.has(p.id)) return false
+      if (q && !p.display_name.toLowerCase().includes(q) && !p.bio?.toLowerCase().includes(q)) return false
+      return true
+    })
+  }, [query, myOnly, allPeople, myRiderIds])
 
   // Sort / group
   const result = useMemo(() => {
@@ -216,23 +226,36 @@ export default function RidersPage() {
           />
         </div>
 
-        {/* Sort tabs */}
-        <div className="flex items-center gap-1 mb-6">
-          {SORT_TABS.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setSort(tab.id)}
-              title={tab.title}
-              className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border",
-                sort === tab.id
-                  ? "bg-surface-active border-border-default text-foreground"
-                  : "border-transparent text-muted hover:text-foreground hover:bg-surface-hover"
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
+        {/* Sort tabs + Mine filter */}
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="flex items-center gap-1">
+            {SORT_TABS.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setSort(tab.id)}
+                title={tab.title}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border",
+                  sort === tab.id
+                    ? "bg-surface-active border-border-default text-foreground"
+                    : "border-transparent text-muted hover:text-foreground hover:bg-surface-hover"
+                )}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setMyOnly(!myOnly)}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border shrink-0",
+              myOnly
+                ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
+                : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
+            )}
+          >
+            My Riders{myOnly && myRiderIds.size > 0 ? ` · ${myRiderIds.size}` : ""}
+          </button>
         </div>
 
         {/* List */}

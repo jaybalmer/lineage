@@ -180,16 +180,30 @@ function SectionDivider({ label }: { label: string }) {
 export default function EventsPage() {
   const [mainTab, setMainTab] = useState<MainTab>("all")
   const [typeFilter, setTypeFilter] = useState<EventType | null>(null)
+  const [myOnly, setMyOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
-  const { catalog } = useLineageStore()
+  const { catalog, activePersonId } = useLineageStore()
 
   const allEvents = catalog.events
 
-  // Apply type filter across both tabs
-  const visibleEvents = useMemo(
-    () => typeFilter ? allEvents.filter((e) => e.event_type === typeFilter) : allEvents,
-    [typeFilter, allEvents.length]
-  )
+  // IDs of events the active user has a claim for
+  const myEventIds = useMemo(() => {
+    if (!activePersonId) return new Set<string>()
+    return new Set(
+      catalog.claims
+        .filter((c) => c.subject_id === activePersonId && EVENT_PREDICATES.includes(c.predicate as EventPredicate))
+        .map((c) => c.object_id)
+    )
+  }, [activePersonId, catalog.claims])
+
+  // Apply type + mine filters
+  const visibleEvents = useMemo(() => {
+    return allEvents.filter((e) => {
+      if (myOnly && !myEventIds.has(e.id)) return false
+      if (typeFilter && e.event_type !== typeFilter) return false
+      return true
+    })
+  }, [typeFilter, myOnly, allEvents, myEventIds])
 
   // ── All tab: group by decade ──────────────────────────────────────────────
   const decadeGroups = useMemo(() => {
@@ -244,46 +258,61 @@ export default function EventsPage() {
           </button>
         </div>
 
-        {/* Main tab bar + type filter row */}
-        <div className="flex items-center justify-between gap-4 mb-5">
-          {/* Main tabs: All / Series */}
-          <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1">
-            {([
-              { key: "all" as MainTab, label: "All" },
-              { key: "series" as MainTab, label: "Series" },
-            ]).map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setMainTab(key)}
-                className={cn(
-                  "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
-                  mainTab === key
-                    ? "bg-surface-active text-foreground"
-                    : "text-muted hover:text-foreground"
-                )}
-              >
-                {label}
-              </button>
-            ))}
+        {/* Controls row: main tabs + type filters + mine toggle */}
+        <div className="flex items-center justify-between gap-4 mb-5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Main tabs: All / Series */}
+            <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1">
+              {([
+                { key: "all" as MainTab, label: "All" },
+                { key: "series" as MainTab, label: "Series" },
+              ]).map(({ key, label }) => (
+                <button
+                  key={key}
+                  onClick={() => setMainTab(key)}
+                  className={cn(
+                    "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                    mainTab === key
+                      ? "bg-surface-active text-foreground"
+                      : "text-muted hover:text-foreground"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Type filter chips */}
+            <div className="flex flex-wrap gap-1.5">
+              {TYPE_FILTERS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setTypeFilter(typeFilter === value ? null : value)}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs font-medium border transition-all",
+                    typeFilter === value
+                      ? "bg-surface-active border-border-default text-foreground"
+                      : "bg-transparent text-muted border-border-default hover:border-border-default hover:text-foreground"
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Type filter chips — click to toggle, click active to clear */}
-          <div className="flex flex-wrap gap-1.5">
-            {TYPE_FILTERS.map(({ value, label }) => (
-              <button
-                key={value}
-                onClick={() => setTypeFilter(typeFilter === value ? null : value)}
-                className={cn(
-                  "px-3 py-1 rounded-full text-xs font-medium border transition-all",
-                  typeFilter === value
-                    ? "bg-white text-black border-white"
-                    : "bg-transparent text-muted border-border-default hover:border-border-default hover:text-foreground"
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          {/* Mine filter */}
+          <button
+            onClick={() => setMyOnly(!myOnly)}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border shrink-0",
+              myOnly
+                ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
+                : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
+            )}
+          >
+            My Events{myOnly && myEventIds.size > 0 ? ` · ${myEventIds.size}` : ""}
+          </button>
         </div>
 
         {/* ── All tab: decade groups ── */}

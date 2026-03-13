@@ -131,10 +131,24 @@ function DecadeDivider({ label }: { label: string }) {
 
 export default function BoardsPage() {
   const [mainTab, setMainTab] = useState<MainTab>("all")
+  const [myOnly, setMyOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
-  const { catalog } = useLineageStore()
+  const { catalog, activePersonId } = useLineageStore()
 
-  const allBoards = catalog.boards
+  // IDs of boards the active user owns
+  const myBoardIds = useMemo(() => {
+    if (!activePersonId) return new Set<string>()
+    return new Set(
+      catalog.claims
+        .filter((c) => c.subject_id === activePersonId && c.predicate === "owned_board")
+        .map((c) => c.object_id)
+    )
+  }, [activePersonId, catalog.claims])
+
+  const allBoards = useMemo(
+    () => myOnly ? catalog.boards.filter((b) => myBoardIds.has(b.id)) : catalog.boards,
+    [myOnly, catalog.boards, myBoardIds]
+  )
 
   // ── All tab: decade groups ────────────────────────────────────────────────
   const decadeGroups = useMemo(() => {
@@ -203,26 +217,39 @@ export default function BoardsPage() {
           </button>
         </div>
 
-        {/* Tab bar */}
-        <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1 mb-6 w-fit">
-          {([
-            { key: "all" as MainTab, label: "All" },
-            { key: "brands" as MainTab, label: "Brands" },
-            { key: "models" as MainTab, label: "Models" },
-          ]).map(({ key, label }) => (
-            <button
-              key={key}
-              onClick={() => setMainTab(key)}
-              className={cn(
-                "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
-                mainTab === key
-                  ? "bg-surface-active text-foreground"
-                  : "text-muted hover:text-foreground"
-              )}
-            >
-              {label}
-            </button>
-          ))}
+        {/* Tab bar + Mine toggle */}
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1">
+            {([
+              { key: "all" as MainTab, label: "All" },
+              { key: "brands" as MainTab, label: "Brands" },
+              { key: "models" as MainTab, label: "Models" },
+            ]).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => setMainTab(key)}
+                className={cn(
+                  "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                  mainTab === key
+                    ? "bg-surface-active text-foreground"
+                    : "text-muted hover:text-foreground"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setMyOnly(!myOnly)}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border shrink-0",
+              myOnly
+                ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
+                : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
+            )}
+          >
+            My Boards{myOnly && myBoardIds.size > 0 ? ` · ${myBoardIds.size}` : ""}
+          </button>
         </div>
 
         {isEmpty ? (

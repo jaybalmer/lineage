@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Nav } from "@/components/ui/nav"
 import { placeSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { useLineageStore } from "@/store/lineage-store"
+import { cn } from "@/lib/utils"
 import Link from "next/link"
 import type { Place } from "@/types"
 
@@ -81,17 +82,29 @@ function PlaceCard({ place }: { place: Place }) {
 export default function PlacesPage() {
   const [query, setQuery] = useState("")
   const [typeFilter, setTypeFilter] = useState<string>("all")
+  const [myOnly, setMyOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
-  const { catalog } = useLineageStore()
+  const { catalog, activePersonId } = useLineageStore()
 
-  const allPlaces = catalog.places
+  // IDs of places the active user rode at
+  const myPlaceIds = useMemo(() => {
+    if (!activePersonId) return new Set<string>()
+    return new Set(
+      catalog.claims
+        .filter((c) => c.subject_id === activePersonId && c.predicate === "rode_at")
+        .map((c) => c.object_id)
+    )
+  }, [activePersonId, catalog.claims])
 
-  const filtered = allPlaces.filter((p) => {
-    const matchesQuery = p.name.toLowerCase().includes(query.toLowerCase()) ||
-      (p.region ?? "").toLowerCase().includes(query.toLowerCase())
-    const matchesType = typeFilter === "all" || p.place_type === typeFilter
-    return matchesQuery && matchesType
-  })
+  const filtered = useMemo(() => {
+    return catalog.places.filter((p) => {
+      if (myOnly && !myPlaceIds.has(p.id)) return false
+      if (typeFilter !== "all" && p.place_type !== typeFilter) return false
+      const q = query.toLowerCase()
+      if (q && !p.name.toLowerCase().includes(q) && !(p.region ?? "").toLowerCase().includes(q)) return false
+      return true
+    })
+  }, [catalog.places, myOnly, myPlaceIds, typeFilter, query])
 
   return (
     <div className="min-h-screen bg-background">
@@ -110,29 +123,41 @@ export default function PlacesPage() {
           </button>
         </div>
 
-        {/* Search + filter */}
-        <div className="flex gap-3 mb-6">
+        {/* Search + type filter + mine toggle */}
+        <div className="flex gap-3 mb-6 flex-wrap">
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search places..."
-            className="flex-1 bg-surface border border-border-default rounded-lg px-4 py-2 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+            className="flex-1 min-w-0 bg-surface border border-border-default rounded-lg px-4 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent"
           />
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center flex-wrap">
             {["all", "resort", "shop", "zone"].map((t) => (
               <button
                 key={t}
                 onClick={() => setTypeFilter(t)}
-                className={`px-3 py-2 rounded-lg text-xs font-medium border transition-all capitalize ${
+                className={cn(
+                  "px-3 py-2 rounded-lg text-xs font-medium border transition-all capitalize",
                   typeFilter === t
-                    ? "bg-blue-600 border-blue-600 text-foreground"
+                    ? "bg-surface-active border-border-default text-foreground"
                     : "border-border-default text-muted hover:border-border-default hover:text-foreground"
-                }`}
+                )}
               >
                 {t}
               </button>
             ))}
+            <button
+              onClick={() => setMyOnly(!myOnly)}
+              className={cn(
+                "px-3 py-2 rounded-lg text-xs font-medium transition-colors border",
+                myOnly
+                  ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
+                  : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
+              )}
+            >
+              My Places{myOnly && myPlaceIds.size > 0 ? ` · ${myPlaceIds.size}` : ""}
+            </button>
           </div>
         </div>
 
