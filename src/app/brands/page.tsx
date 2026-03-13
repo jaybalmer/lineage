@@ -3,8 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
-import { ORGS, orgSlug, CLAIMS, BOARDS } from "@/lib/mock-data"
-import { getPersonById } from "@/lib/mock-data"
+import { orgSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { useLineageStore } from "@/store/lineage-store"
 import type { Org } from "@/types"
@@ -21,31 +20,25 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const CATEGORY_ORDER = ["board_brand", "outerwear", "media", "other"]
 
-function getConnectedCount(orgId: string) {
-  return new Set(
-    CLAIMS.filter(
-      (c) =>
-        c.object_id === orgId &&
+function OrgCard({ org }: { org: Org }) {
+  const { catalog } = useLineageStore()
+
+  const riders = new Set(
+    catalog.claims.filter(
+      (c) => c.object_id === org.id &&
         (c.predicate === "sponsored_by" || c.predicate === "worked_at" || c.predicate === "part_of_team")
     ).map((c) => c.subject_id)
   ).size
-}
 
-function getBoardCount(org: Org) {
   const firstName = org.name.split(" ")[0]
-  return BOARDS.filter(
-    (b) =>
-      b.brand.toLowerCase() === org.name.toLowerCase() ||
+  const boards = catalog.boards.filter(
+    (b) => b.brand.toLowerCase() === org.name.toLowerCase() ||
       b.brand.toLowerCase() === firstName.toLowerCase()
   ).length
-}
 
-function OrgCard({ org }: { org: Org }) {
-  const riders = getConnectedCount(org.id)
-  const boards = getBoardCount(org)
   const initial = org.name[0].toUpperCase()
   const isUnverified = org.community_status === "unverified"
-  const addedByPerson = org.added_by ? getPersonById(org.added_by) : null
+  const addedByPerson = org.added_by ? catalog.people.find((p) => p.id === org.added_by) : null
 
   return (
     <Link href={`/brands/${orgSlug(org)}`}>
@@ -118,9 +111,9 @@ function OrgCard({ org }: { org: Org }) {
 
 export default function BrandsPage() {
   const [addOpen, setAddOpen] = useState(false)
-  const { userEntities } = useLineageStore()
+  const { catalog } = useLineageStore()
 
-  const allOrgs = [...ORGS, ...(userEntities.orgs ?? [])]
+  const allOrgs = catalog.orgs
 
   const brandOrgs = allOrgs.filter((o) => o.org_type === "brand" || o.org_type === "magazine")
   const teams = allOrgs.filter((o) => o.org_type === "team")

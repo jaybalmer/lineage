@@ -2,9 +2,19 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import type { Claim, OnboardingState, Place, Board, Org, Event, Person, RidingDay } from "@/types"
-import { CLAIMS } from "@/lib/mock-data"
+import type { Claim, OnboardingState, Place, Board, Org, Event, EventSeries, Person, RidingDay } from "@/types"
+import { PLACES, ORGS, BOARDS, EVENTS, EVENT_SERIES, PEOPLE, CLAIMS } from "@/lib/mock-data"
 import { supabase } from "@/lib/supabase"
+
+type Catalog = {
+  places: Place[]
+  orgs: Org[]
+  boards: Board[]
+  events: Event[]
+  eventSeries: EventSeries[]
+  people: Person[]
+  claims: Claim[]
+}
 
 // A real auth user has a UUID as their ID; mock people use short strings like "u1"
 // Dev bypass IDs start with "dev-" — treated as local session users, no Supabase sync
@@ -64,6 +74,11 @@ interface LineageStore {
   profileOverride: Partial<Person>
   setProfileOverride: (updates: Partial<Person>) => void
 
+  // Catalog: all public entity data loaded from Supabase (initialized from mock-data)
+  catalog: Catalog
+  catalogLoaded: boolean
+  loadCatalog: () => void
+
   // Active view state
   activePersonId: string
   setActivePersonId: (id: string) => void
@@ -72,6 +87,41 @@ interface LineageStore {
 export const useLineageStore = create<LineageStore>()(
   persist(
     (set, get) => ({
+      catalog: {
+        places: PLACES,
+        orgs: ORGS,
+        boards: BOARDS,
+        events: EVENTS,
+        eventSeries: EVENT_SERIES,
+        people: PEOPLE,
+        claims: CLAIMS,
+      },
+      catalogLoaded: false,
+      loadCatalog: () => {
+        Promise.all([
+          supabase.from("places").select("*"),
+          supabase.from("orgs").select("*"),
+          supabase.from("boards").select("*"),
+          supabase.from("events").select("*"),
+          supabase.from("event_series").select("*"),
+          supabase.from("people").select("*"),
+          supabase.from("claims").select("*"),
+        ]).then(([p, o, b, e, es, pe, c]) => {
+          set({
+            catalog: {
+              places: (p.data ?? PLACES) as Place[],
+              orgs: (o.data ?? ORGS) as Org[],
+              boards: (b.data ?? BOARDS) as Board[],
+              events: (e.data ?? EVENTS) as Event[],
+              eventSeries: (es.data ?? EVENT_SERIES) as EventSeries[],
+              people: (pe.data ?? PEOPLE) as Person[],
+              claims: (c.data ?? CLAIMS) as Claim[],
+            },
+            catalogLoaded: true,
+          })
+        })
+      },
+
       onboardingComplete: false,
       onboarding: {
         step: 0,
@@ -160,7 +210,10 @@ export const useLineageStore = create<LineageStore>()(
       userEntities: { places: [], boards: [], orgs: [], events: [], people: [] },
       addUserPlace: (place) => {
         const entity = { ...place, community_status: "unverified" as const }
-        set((s) => ({ userEntities: { ...s.userEntities, places: [...s.userEntities.places, entity] } }))
+        set((s) => ({
+          userEntities: { ...s.userEntities, places: [...s.userEntities.places, entity] },
+          catalog: { ...s.catalog, places: [...s.catalog.places, entity] },
+        }))
         if (isAuthUser(get().activePersonId)) {
           supabase.from("places").insert({
             id: place.id, name: place.name, place_type: place.place_type,
@@ -174,7 +227,10 @@ export const useLineageStore = create<LineageStore>()(
       },
       addUserBoard: (board) => {
         const entity = { ...board, community_status: "unverified" as const }
-        set((s) => ({ userEntities: { ...s.userEntities, boards: [...s.userEntities.boards, entity] } }))
+        set((s) => ({
+          userEntities: { ...s.userEntities, boards: [...s.userEntities.boards, entity] },
+          catalog: { ...s.catalog, boards: [...s.catalog.boards, entity] },
+        }))
         if (isAuthUser(get().activePersonId)) {
           supabase.from("boards").insert({
             id: board.id, brand: board.brand, model: board.model, model_year: board.model_year,
@@ -184,7 +240,10 @@ export const useLineageStore = create<LineageStore>()(
       },
       addUserOrg: (org) => {
         const entity = { ...org, community_status: "unverified" as const }
-        set((s) => ({ userEntities: { ...s.userEntities, orgs: [...s.userEntities.orgs, entity] } }))
+        set((s) => ({
+          userEntities: { ...s.userEntities, orgs: [...s.userEntities.orgs, entity] },
+          catalog: { ...s.catalog, orgs: [...s.catalog.orgs, entity] },
+        }))
         if (isAuthUser(get().activePersonId)) {
           supabase.from("orgs").insert({
             id: org.id, name: org.name, org_type: org.org_type,
@@ -194,7 +253,10 @@ export const useLineageStore = create<LineageStore>()(
       },
       addUserEvent: (event) => {
         const entity = { ...event, community_status: "unverified" as const }
-        set((s) => ({ userEntities: { ...s.userEntities, events: [...s.userEntities.events, entity] } }))
+        set((s) => ({
+          userEntities: { ...s.userEntities, events: [...s.userEntities.events, entity] },
+          catalog: { ...s.catalog, events: [...s.catalog.events, entity] },
+        }))
         if (isAuthUser(get().activePersonId)) {
           supabase.from("events").insert({
             id: event.id, name: event.name, event_type: event.event_type,

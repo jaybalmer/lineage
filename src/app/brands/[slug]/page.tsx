@@ -4,10 +4,7 @@ import { useState, use, useMemo } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
-import {
-  ORGS, BOARDS, CLAIMS, PEOPLE, EVENTS, PLACES,
-  getPersonById, getEventById, getPlaceById, getOrgBySlug, boardSlug, orgSlug,
-} from "@/lib/mock-data"
+import { boardSlug, orgSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 import { cn } from "@/lib/utils"
 import { useLineageStore } from "@/store/lineage-store"
@@ -55,7 +52,7 @@ const inputCls =
 type ClaimMode = "person" | "event" | "place"
 
 function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void }) {
-  const { addClaim, activePersonId } = useLineageStore()
+  const { addClaim, activePersonId, catalog } = useLineageStore()
 
   const [mode, setMode] = useState<ClaimMode>("person")
   const [predicate, setPredicate] = useState<Predicate>("sponsored_by")
@@ -202,7 +199,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
                 className={cn(inputCls, "appearance-none")}
               >
                 <option value="">Select a rider…</option>
-                {PEOPLE.map((p) => (
+                {catalog.people.map((p) => (
                   <option key={p.id} value={p.id}>{p.display_name}</option>
                 ))}
               </select>
@@ -218,7 +215,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
                 className={cn(inputCls, "appearance-none")}
               >
                 <option value="">Select an event…</option>
-                {EVENTS.map((ev) => (
+                {catalog.events.map((ev) => (
                   <option key={ev.id} value={ev.id}>{ev.name}</option>
                 ))}
               </select>
@@ -234,7 +231,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
                 className={cn(inputCls, "appearance-none")}
               >
                 <option value="">Select a place…</option>
-                {PLACES.map((pl) => (
+                {catalog.places.map((pl) => (
                   <option key={pl.id} value={pl.id}>{pl.name}{pl.region ? ` — ${pl.region}` : ""}</option>
                 ))}
               </select>
@@ -363,16 +360,16 @@ type FeedTab = "all" | "people" | "boards" | "events" | "places"
 
 export default function BrandPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
-  const org = ORGS.find((o) => o.id === slug) ?? getOrgBySlug(slug)
+  const { catalog, sessionClaims, dbClaims } = useLineageStore()
+  const org = catalog.orgs.find((o) => o.id === slug || orgSlug(o) === slug)
   if (!org) notFound()
 
-  const { sessionClaims, dbClaims } = useLineageStore()
   const storeClaims = [...sessionClaims, ...dbClaims]
   const [addOpen, setAddOpen] = useState(false)
   const [tab, setTab] = useState<FeedTab>("all")
 
-  // All claims in DB/mock + session store
-  const allClaims = [...CLAIMS, ...storeClaims]
+  // All claims in catalog + session store
+  const allClaims = [...catalog.claims, ...storeClaims]
 
   // People claims — org is OBJECT
   const brandClaims  = allClaims.filter((c) => c.object_id === org.id && c.object_type === "org")
@@ -389,7 +386,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
 
   // Boards by this brand
   const orgFirstWord = org.name.split(" ")[0].toLowerCase()
-  const orgBoards = BOARDS.filter(
+  const orgBoards = catalog.boards.filter(
     (b) =>
       b.brand.toLowerCase() === org.name.toLowerCase() ||
       b.brand.toLowerCase() === orgFirstWord
@@ -416,12 +413,12 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
       items.push({ kind: "board", year: board.model_year, board })
     })
     organizedClaims.forEach((claim) => {
-      const event = getEventById(claim.object_id)
+      const event = catalog.events.find((e) => e.id === claim.object_id)
       if (!event?.year) return
       items.push({ kind: "event", year: event.year, claim, event })
     })
     locatedAtClaims.forEach((claim) => {
-      const place = getPlaceById(claim.object_id)
+      const place = catalog.places.find((p) => p.id === claim.object_id)
       if (!place) return
       const y = claim.start_date ? parseInt(claim.start_date.slice(0, 4)) : null
       if (y) items.push({ kind: "place", year: y, claim, place })
@@ -629,7 +626,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                     <div className="space-y-2">
                       {entries.map((item, i) => {
                         if (item.kind === "person") {
-                          const person = getPersonById(item.claim.subject_id)
+                          const person = catalog.people.find((p) => p.id === item.claim.subject_id)
                           if (!person) return null
                           const relLabel = PREDICATE_LABEL[item.claim.predicate] ?? item.claim.predicate
                           const confColor = CONFIDENCE_COLORS[item.claim.confidence] ?? "text-zinc-600"
@@ -740,7 +737,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                     No people claims yet. <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
                   </div>
                 ) : peopleClaims.map((claim) => {
-                  const person = getPersonById(claim.subject_id)
+                  const person = catalog.people.find((p) => p.id === claim.subject_id)
                   if (!person) return null
                   const relLabel = PREDICATE_LABEL[claim.predicate] ?? claim.predicate
                   const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-zinc-600"
@@ -824,7 +821,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                     No events yet. <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
                   </div>
                 ) : organizedClaims.map((claim) => {
-                  const event = getEventById(claim.object_id)
+                  const event = catalog.events.find((e) => e.id === claim.object_id)
                   if (!event) return null
                   const accentColor = EVENT_TYPE_COLOR[event.event_type] ?? "border-l-zinc-600"
                   const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-zinc-600"
@@ -863,7 +860,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                     No store locations yet. <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
                   </div>
                 ) : locatedAtClaims.map((claim) => {
-                  const place = getPlaceById(claim.object_id)
+                  const place = catalog.places.find((p) => p.id === claim.object_id)
                   if (!place) return null
                   const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-zinc-600"
                   return (
@@ -945,7 +942,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {[...new Set(boardOwnerClaims.map((c) => c.subject_id))].map((rid) => {
-                    const person = getPersonById(rid)
+                    const person = catalog.people.find((p) => p.id === rid)
                     if (!person) return null
                     return (
                       <Link key={rid} href={`/riders/${rid}`}>

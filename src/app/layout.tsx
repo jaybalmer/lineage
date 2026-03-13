@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import "./globals.css"
+import { CatalogLoader } from "@/components/catalog-loader"
 
 export const metadata: Metadata = {
   title: "Lineage — Snowboarding History Graph",
@@ -10,6 +11,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className="dark">
       <body className="bg-[#0a0a0a] text-[#e5e5e5] antialiased min-h-screen">
+        <CatalogLoader />
         {children}
       </body>
     </html>

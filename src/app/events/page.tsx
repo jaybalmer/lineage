@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { Nav } from "@/components/ui/nav"
-import { EVENTS, EVENT_SERIES, CLAIMS, getPersonById, getPlaceById, eventSlug, seriesSlug } from "@/lib/mock-data"
+import { eventSlug, seriesSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
@@ -38,24 +38,15 @@ const TYPE_FILTERS: { value: EventType; label: string }[] = [
   { value: "gathering",  label: "Gathering" },
 ]
 
-function getRiderIds(eventId: string): string[] {
-  return [
-    ...new Set(
-      CLAIMS.filter(
-        (c) => c.object_id === eventId && EVENT_PREDICATES.includes(c.predicate as EventPredicate)
-      ).map((c) => c.subject_id)
-    ),
-  ]
-}
-
 function AvatarStack({ riderIds }: { riderIds: string[] }) {
+  const { catalog } = useLineageStore()
   const shown = riderIds.slice(0, 3)
   const extra = riderIds.length - shown.length
   if (shown.length === 0) return null
   return (
     <div className="flex items-center">
       {shown.map((rid, i) => {
-        const person = getPersonById(rid)
+        const person = catalog.people.find((p) => p.id === rid)
         if (!person) return null
         return (
           <div
@@ -81,10 +72,15 @@ function AvatarStack({ riderIds }: { riderIds: string[] }) {
 }
 
 function EventCard({ event }: { event: Event }) {
-  const place = event.place_id ? getPlaceById(event.place_id) : null
-  const riderIds = getRiderIds(event.id)
+  const { catalog } = useLineageStore()
+  const place = event.place_id ? catalog.places.find((p) => p.id === event.place_id) : null
+  const riderIds = [...new Set(
+    catalog.claims.filter(
+      (c) => c.object_id === event.id && EVENT_PREDICATES.includes(c.predicate as EventPredicate)
+    ).map((c) => c.subject_id)
+  )]
   const accent = ACCENT[event.event_type] ?? "border-l-zinc-600"
-  const addedByPerson = event.added_by ? getPersonById(event.added_by) : null
+  const addedByPerson = event.added_by ? catalog.people.find((p) => p.id === event.added_by) : null
   const isUnverified = event.community_status === "unverified"
 
   return (
@@ -133,10 +129,11 @@ function EventCard({ event }: { event: Event }) {
 
 // Series tab — overview card linking to series detail
 function SeriesCard({ series, filteredEventCount }: { series: EventSeries; filteredEventCount: number }) {
-  const place = series.place_id ? getPlaceById(series.place_id) : null
-  const allInstances = EVENTS.filter((e) => e.series_id === series.id)
+  const { catalog } = useLineageStore()
+  const place = series.place_id ? catalog.places.find((p) => p.id === series.place_id) : null
+  const allInstances = catalog.events.filter((e) => e.series_id === series.id)
   const totalRiders = new Set(
-    CLAIMS.filter(
+    catalog.claims.filter(
       (c) =>
         EVENT_PREDICATES.includes(c.predicate as EventPredicate) &&
         allInstances.some((e) => e.id === c.object_id)
@@ -184,9 +181,9 @@ export default function EventsPage() {
   const [mainTab, setMainTab] = useState<MainTab>("all")
   const [typeFilter, setTypeFilter] = useState<EventType | null>(null)
   const [addOpen, setAddOpen] = useState(false)
-  const { userEntities } = useLineageStore()
+  const { catalog } = useLineageStore()
 
-  const allEvents = [...EVENTS, ...(userEntities.events ?? [])]
+  const allEvents = catalog.events
 
   // Apply type filter across both tabs
   const visibleEvents = useMemo(
@@ -213,7 +210,7 @@ export default function EventsPage() {
 
   // ── Series tab: group by series ───────────────────────────────────────────
   const seriesGroups = useMemo(() => {
-    return EVENT_SERIES.map((series) => ({
+    return catalog.eventSeries.map((series) => ({
       series,
       events: visibleEvents
         .filter((e) => e.series_id === series.id)

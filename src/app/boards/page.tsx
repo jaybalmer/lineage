@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { Nav } from "@/components/ui/nav"
-import { BOARDS, CLAIMS, ORGS, getPersonById, boardSlug, orgSlug } from "@/lib/mock-data"
+import { boardSlug, orgSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
@@ -11,24 +11,15 @@ import type { Board } from "@/types"
 
 type MainTab = "all" | "brands" | "models"
 
-function getRiderIds(boardId: string): string[] {
-  return [
-    ...new Set(
-      CLAIMS.filter((c) => c.object_id === boardId && c.predicate === "owned_board").map(
-        (c) => c.subject_id
-      )
-    ),
-  ]
-}
-
 function AvatarStack({ riderIds }: { riderIds: string[] }) {
+  const { catalog } = useLineageStore()
   const shown = riderIds.slice(0, 3)
   const extra = riderIds.length - shown.length
   if (shown.length === 0) return null
   return (
     <div className="flex items-center">
       {shown.map((rid, i) => {
-        const person = getPersonById(rid)
+        const person = catalog.people.find((p) => p.id === rid)
         if (!person) return null
         return (
           <div
@@ -54,8 +45,11 @@ function AvatarStack({ riderIds }: { riderIds: string[] }) {
 }
 
 function BoardCard({ board }: { board: Board }) {
-  const riderIds = getRiderIds(board.id)
-  const addedByPerson = board.added_by ? getPersonById(board.added_by) : null
+  const { catalog } = useLineageStore()
+  const riderIds = [...new Set(
+    catalog.claims.filter((c) => c.object_id === board.id && c.predicate === "owned_board").map((c) => c.subject_id)
+  )]
+  const addedByPerson = board.added_by ? catalog.people.find((p) => p.id === board.added_by) : null
   const isUnverified = board.community_status === "unverified"
 
   return (
@@ -138,9 +132,9 @@ function DecadeDivider({ label }: { label: string }) {
 export default function BoardsPage() {
   const [mainTab, setMainTab] = useState<MainTab>("all")
   const [addOpen, setAddOpen] = useState(false)
-  const { userEntities } = useLineageStore()
+  const { catalog } = useLineageStore()
 
-  const allBoards = [...BOARDS, ...(userEntities.boards ?? [])]
+  const allBoards = catalog.boards
 
   // ── All tab: decade groups ────────────────────────────────────────────────
   const decadeGroups = useMemo(() => {
@@ -258,7 +252,7 @@ export default function BoardsPage() {
             {mainTab === "brands" && (
               <div className="space-y-8">
                 {brandGroups.map(({ brand, boards }) => {
-                  const org = ORGS.find((o) =>
+                  const org = catalog.orgs.find((o) =>
                     o.name.toLowerCase() === brand.toLowerCase() ||
                     o.name.toLowerCase().startsWith(brand.toLowerCase() + " ")
                   )

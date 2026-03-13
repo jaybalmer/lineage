@@ -2,11 +2,12 @@
 
 import { use, useState, useMemo } from "react"
 import { Nav } from "@/components/ui/nav"
-import { PLACES, CLAIMS, EVENTS, getPersonById, getPlaceBySlug, eventSlug } from "@/lib/mock-data"
+import { eventSlug, placeSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import { useLineageStore } from "@/store/lineage-store"
 
 type PlaceTab = "all" | "riders" | "events"
 
@@ -28,14 +29,15 @@ const EVENT_TYPE_COLOR: Record<string, string> = {
 
 export default function PlacePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const place = PLACES.find((p) => p.id === id) ?? getPlaceBySlug(id)
+  const { catalog } = useLineageStore()
+  const place = catalog.places.find((p) => p.id === id || placeSlug(p) === id)
   if (!place) notFound()
 
   const [tab, setTab] = useState<PlaceTab>("all")
 
-  const rideClaims = CLAIMS.filter((c) => c.object_id === place.id && c.predicate === "rode_at")
-  const workClaims = CLAIMS.filter((c) => c.object_id === place.id && c.predicate === "worked_at")
-  const placeEvents = EVENTS.filter((e) => e.place_id === place.id)
+  const rideClaims = catalog.claims.filter((c) => c.object_id === place.id && c.predicate === "rode_at")
+  const workClaims = catalog.claims.filter((c) => c.object_id === place.id && c.predicate === "worked_at")
+  const placeEvents = catalog.events.filter((e) => e.place_id === place.id)
 
   const riderIds = [...new Set(rideClaims.map((c) => c.subject_id))]
   const staffIds = [...new Set(workClaims.map((c) => c.subject_id))]
@@ -211,7 +213,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                     <div className="space-y-2">
                       {entries.map((item, i) => {
                         if (item.kind === "rider") {
-                          const rider = getPersonById(item.riderId)
+                          const rider = catalog.people.find((p) => p.id === item.riderId)
                           if (!rider) return null
                           return (
                             <Link key={`rider-${item.riderId}-${i}`} href={`/riders/${item.riderId}`}>
@@ -278,7 +280,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       {byDecade[decade].map((riderId) => {
-                        const rider = getPersonById(riderId)
+                        const rider = catalog.people.find((p) => p.id === riderId)
                         if (!rider) return null
                         const claim = rideClaims.find((c) => c.subject_id === riderId)
                         return (
@@ -396,7 +398,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
               <div className="bg-[#111] border border-[#1e1e1e] rounded-xl p-4">
                 <div className="text-xs font-semibold text-zinc-600 uppercase tracking-widest mb-3">People who worked here</div>
                 {staffIds.map((sid) => {
-                  const person = getPersonById(sid)
+                  const person = catalog.people.find((p) => p.id === sid)
                   if (!person) return null
                   const claim = workClaims.find((c) => c.subject_id === sid)
                   return (

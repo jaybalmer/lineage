@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { Nav } from "@/components/ui/nav"
-import { PLACES, CLAIMS, placeSlug, getPersonById } from "@/lib/mock-data"
+import { placeSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { useLineageStore } from "@/store/lineage-store"
 import Link from "next/link"
@@ -17,17 +17,19 @@ const PLACE_TYPE_ICONS: Record<string, string> = {
 }
 
 function PlaceCard({ place }: { place: Place }) {
+  const { catalog } = useLineageStore()
+
   const riderCount = [...new Set(
-    CLAIMS.filter((c) => c.object_id === place.id && c.predicate === "rode_at").map((c) => c.subject_id)
+    catalog.claims.filter((c) => c.object_id === place.id && c.predicate === "rode_at").map((c) => c.subject_id)
   )].length
 
   const decades = [...new Set(
-    CLAIMS
+    catalog.claims
       .filter((c) => c.object_id === place.id && c.predicate === "rode_at" && c.start_date)
       .map((c) => `${Math.floor(parseInt(c.start_date!.slice(0, 4)) / 10) * 10}s`)
   )].sort()
 
-  const addedByPerson = place.added_by ? getPersonById(place.added_by) : null
+  const addedByPerson = place.added_by ? catalog.people.find((p) => p.id === place.added_by) : null
   const isUnverified = place.community_status === "unverified"
 
   return (
@@ -80,9 +82,9 @@ export default function PlacesPage() {
   const [query, setQuery] = useState("")
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [addOpen, setAddOpen] = useState(false)
-  const { userEntities } = useLineageStore()
+  const { catalog } = useLineageStore()
 
-  const allPlaces = [...PLACES, ...(userEntities.places ?? [])]
+  const allPlaces = catalog.places
 
   const filtered = allPlaces.filter((p) => {
     const matchesQuery = p.name.toLowerCase().includes(query.toLowerCase()) ||
