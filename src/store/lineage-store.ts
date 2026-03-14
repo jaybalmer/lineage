@@ -27,6 +27,7 @@ type UserEntities = {
   boards: Board[]
   orgs: Org[]
   events: Event[]
+  eventSeries: EventSeries[]
   people: Person[]
 }
 
@@ -59,6 +60,7 @@ interface LineageStore {
   addUserBoard: (board: Board) => void
   addUserOrg: (org: Org) => void
   addUserEvent: (event: Event) => void
+  addUserSeries: (series: EventSeries) => void
   addUserPerson: (person: Person) => void
   updateUserEvent: (id: string, updates: Partial<Event>) => void
   verifyEntity: (entityType: "place" | "board" | "org" | "event" | "person", id: string) => void
@@ -78,6 +80,17 @@ interface LineageStore {
   catalog: Catalog
   catalogLoaded: boolean
   loadCatalog: () => void
+
+  // Bulk catalog operations (for admin editor)
+  updateCatalogEntity: (
+    type: "boards" | "events" | "places" | "orgs" | "eventSeries",
+    id: string,
+    updates: Record<string, unknown>
+  ) => void
+  removeCatalogEntity: (
+    type: "boards" | "events" | "places" | "orgs" | "eventSeries",
+    id: string
+  ) => void
 
   // Active view state
   activePersonId: string
@@ -207,7 +220,7 @@ export const useLineageStore = create<LineageStore>()(
       deletedClaimIds: [],
       claimOverrides: {},
 
-      userEntities: { places: [], boards: [], orgs: [], events: [], people: [] },
+      userEntities: { places: [], boards: [], orgs: [], events: [], eventSeries: [], people: [] },
       addUserPlace: (place) => {
         const entity = { ...place, community_status: "unverified" as const }
         set((s) => ({
@@ -234,6 +247,7 @@ export const useLineageStore = create<LineageStore>()(
         if (isAuthUser(get().activePersonId)) {
           supabase.from("boards").insert({
             id: board.id, brand: board.brand, model: board.model, model_year: board.model_year,
+            shape: board.shape ?? null, external_ref: board.external_ref ?? null,
             community_status: "unverified", added_by: get().activePersonId,
           }).then(({ error }) => { if (error) console.error("board insert:", error) })
         }
@@ -247,8 +261,26 @@ export const useLineageStore = create<LineageStore>()(
         if (isAuthUser(get().activePersonId)) {
           supabase.from("orgs").insert({
             id: org.id, name: org.name, org_type: org.org_type,
+            brand_category: org.brand_category ?? null,
+            founded_year: org.founded_year ?? null,
+            country: org.country ?? null,
+            website: org.website ?? null,
+            description: org.description ?? null,
             community_status: "unverified", added_by: get().activePersonId,
           }).then(({ error }) => { if (error) console.error("org insert:", error) })
+        }
+      },
+      addUserSeries: (series) => {
+        set((s) => ({
+          userEntities: { ...s.userEntities, eventSeries: [...(s.userEntities.eventSeries ?? []), series] },
+          catalog: { ...s.catalog, eventSeries: [...s.catalog.eventSeries, series] },
+        }))
+        if (isAuthUser(get().activePersonId)) {
+          supabase.from("event_series").insert({
+            id: series.id, name: series.name, place_id: series.place_id ?? null,
+            frequency: series.frequency, start_year: series.start_year ?? null,
+            description: series.description ?? null,
+          }).then(({ error }) => { if (error) console.error("series insert:", error) })
         }
       },
       addUserEvent: (event) => {
@@ -283,6 +315,10 @@ export const useLineageStore = create<LineageStore>()(
           userEntities: {
             ...s.userEntities,
             events: s.userEntities.events.map((e) => e.id === id ? { ...e, ...updates } : e),
+          },
+          catalog: {
+            ...s.catalog,
+            events: s.catalog.events.map((e) => e.id === id ? { ...e, ...updates } : e),
           },
         }))
         if (isAuthUser(get().activePersonId)) {
@@ -356,6 +392,41 @@ export const useLineageStore = create<LineageStore>()(
       profileOverride: {},
       setProfileOverride: (updates) =>
         set((s) => ({ profileOverride: { ...s.profileOverride, ...updates } })),
+
+      updateCatalogEntity: (type, id, updates) => {
+        set((s) => ({
+          catalog: {
+            ...s.catalog,
+            [type]: (s.catalog[type] as { id: string }[]).map(
+              (e) => e.id === id ? { ...e, ...updates } : e
+            ),
+          },
+        }))
+        if (isAuthUser(get().activePersonId)) {
+          const tableMap: Record<string, string> = {
+            boards: "boards", events: "events", places: "places",
+            orgs: "orgs", eventSeries: "event_series",
+          }
+          supabase.from(tableMap[type]).update(updates).eq("id", id)
+            .then(({ error }) => { if (error) console.error(`${type} update:`, error) })
+        }
+      },
+      removeCatalogEntity: (type, id) => {
+        set((s) => ({
+          catalog: {
+            ...s.catalog,
+            [type]: (s.catalog[type] as { id: string }[]).filter((e) => e.id !== id),
+          },
+        }))
+        if (isAuthUser(get().activePersonId)) {
+          const tableMap: Record<string, string> = {
+            boards: "boards", events: "events", places: "places",
+            orgs: "orgs", eventSeries: "event_series",
+          }
+          supabase.from(tableMap[type]).delete().eq("id", id)
+            .then(({ error }) => { if (error) console.error(`${type} delete:`, error) })
+        }
+      },
 
       activePersonId: "u1",
       setActivePersonId: (id) => set({ activePersonId: id }),

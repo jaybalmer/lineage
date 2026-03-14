@@ -1,11 +1,12 @@
 "use client"
 
-import { use } from "react"
+import { use, useState } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore } from "@/store/lineage-store"
 import { EVENTS, EVENT_SERIES, eventSlug, seriesSlug, placeSlug } from "@/lib/mock-data"
+import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import type { Event } from "@/types"
 
 function formatEventDate(start: string, end?: string): string {
@@ -85,6 +86,7 @@ function InstanceRow({ event }: { event: Event }) {
 export default function EventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const { catalog, userEntities } = useLineageStore()
+  const [showAddEdition, setShowAddEdition] = useState(false)
 
   // Look up from static mock data first (always available), then user-added events
   const allSeries = EVENT_SERIES
@@ -267,19 +269,40 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
         </div>
 
         {/* Instances by year */}
-        {seriesInstances.length === 0 ? (
-          <div className="text-sm text-muted py-8 text-center border border-dashed border-border-default rounded-xl">
-            No instances documented yet for this series.
-          </div>
-        ) : (
-          <div className="space-y-4">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
             <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">Editions by year</h2>
-            {seriesInstances.map((event) => (
-              <InstanceRow key={event.id} event={event} />
-            ))}
+            <button
+              onClick={() => setShowAddEdition(true)}
+              className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors font-medium"
+            >
+              + Add edition
+            </button>
           </div>
-        )}
+          {seriesInstances.length === 0 ? (
+            <div className="text-sm text-muted py-8 text-center border border-dashed border-border-default rounded-xl">
+              No editions documented yet.{" "}
+              <button onClick={() => setShowAddEdition(true)} className="text-blue-400 hover:text-blue-300 transition-colors">
+                Add the first one →
+              </button>
+            </div>
+          ) : (
+            seriesInstances.map((event) => (
+              <InstanceRow key={event.id} event={event} />
+            ))
+          )}
+        </div>
       </div>
+
+      {showAddEdition && (
+        <AddEntityModal
+          entityType="event"
+          initialSeriesId={series!.id}
+          initialPlaceId={series!.place_id ?? ""}
+          onClose={() => setShowAddEdition(false)}
+          onAdded={() => setShowAddEdition(false)}
+        />
+      )}
     </div>
   )
 }

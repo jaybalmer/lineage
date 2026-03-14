@@ -4,7 +4,7 @@ import { useState, use, useMemo } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
-import { ORGS, boardSlug, orgSlug } from "@/lib/mock-data"
+import { boardSlug, orgSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 import { cn } from "@/lib/utils"
 import { useLineageStore } from "@/store/lineage-store"
@@ -360,8 +360,8 @@ type FeedTab = "all" | "people" | "boards" | "events" | "places"
 
 export default function BrandPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
-  const { catalog, userEntities, sessionClaims, dbClaims } = useLineageStore()
-  const allOrgs = [...ORGS, ...userEntities.orgs]
+  const { catalog, sessionClaims, dbClaims } = useLineageStore()
+  const allOrgs = catalog.orgs
   const org = allOrgs.find((o) => o.id === slug || orgSlug(o) === slug)
   if (!org) notFound()
 

@@ -3,14 +3,16 @@
 import { useState } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
-import { getPersonById } from "@/lib/mock-data"
-import type { PlaceType, OrgType, EventType } from "@/types"
+import { PLACES, EVENT_SERIES, getPersonById } from "@/lib/mock-data"
+import type { PlaceType, OrgType, EventType, EventSeries } from "@/types"
 
 type AddEntityType = "place" | "board" | "org" | "event" | "person"
 
 interface AddEntityModalProps {
   entityType: AddEntityType
   initialName?: string
+  initialSeriesId?: string
+  initialPlaceId?: string
   onClose: () => void
   onAdded: (id: string) => void
 }
@@ -33,8 +35,12 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ]
 
-export function AddEntityModal({ entityType, initialName = "", onClose, onAdded }: AddEntityModalProps) {
-  const { addUserPlace, addUserBoard, addUserOrg, addUserEvent, addUserPerson, activePersonId, profileOverride } = useLineageStore()
+export function AddEntityModal({ entityType, initialName = "", initialSeriesId = "", initialPlaceId = "", onClose, onAdded }: AddEntityModalProps) {
+  const { addUserPlace, addUserBoard, addUserOrg, addUserEvent, addUserSeries, addUserPerson, activePersonId, profileOverride, catalog } = useLineageStore()
+
+  // Combined series/places lists (catalog includes user-added entries)
+  const allSeries = catalog.eventSeries?.length ? catalog.eventSeries : EVENT_SERIES
+  const allPlaces = catalog.places?.length ? catalog.places : PLACES
 
   // Resolve the current user's display name for attribution
   // Check PEOPLE mock data first, then profile override, then generic fallback
@@ -71,6 +77,16 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
   const [showExactDates, setShowExactDates] = useState(false)
   const [startDate, setStartDate] = useState("")
   const [endDate, setEndDate] = useState("")
+  // Event — place
+  const [eventPlaceId, setEventPlaceId] = useState(initialPlaceId)
+  const [eventPlaceQuery, setEventPlaceQuery] = useState("")
+  // Event — series
+  const [eventSeriesId, setEventSeriesId] = useState(initialSeriesId)
+  const [eventSeriesQuery, setEventSeriesQuery] = useState("")
+  const [showCreateSeries, setShowCreateSeries] = useState(false)
+  const [newSeriesName, setNewSeriesName] = useState("")
+  const [newSeriesFreq, setNewSeriesFreq] = useState<EventSeries["frequency"]>("annual")
+  const [newSeriesStartYear, setNewSeriesStartYear] = useState("")
 
   // Person fields
   const [displayName, setDisplayName] = useState(initialName)
@@ -133,6 +149,19 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
       })
       onAdded(id)
     } else if (entityType === "event") {
+      // If user typed a new series name but hasn't created it yet, create it now
+      let resolvedSeriesId = eventSeriesId
+      if (!resolvedSeriesId && showCreateSeries && newSeriesName.trim()) {
+        const sid = generateId("series")
+        addUserSeries({
+          id: sid,
+          name: newSeriesName.trim(),
+          frequency: newSeriesFreq,
+          start_year: newSeriesStartYear ? parseInt(newSeriesStartYear) : undefined,
+          place_id: eventPlaceId || undefined,
+        })
+        resolvedSeriesId = sid
+      }
       const id = generateId("event")
       const year = parseInt(eventYear)
       let computedStart = eventYear
@@ -145,6 +174,8 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
         year,
         start_date: computedStart,
         end_date: showExactDates && endDate ? endDate : undefined,
+        place_id: eventPlaceId || undefined,
+        series_id: resolvedSeriesId || undefined,
         community_status: "unverified",
         added_by: activePersonId,
       })
@@ -448,6 +479,110 @@ export function AddEntityModal({ entityType, initialName = "", onClose, onAdded 
                   </Field>
                 </div>
               )}
+
+              {/* Place picker */}
+              <Field label="Place">
+                {eventPlaceId ? (
+                  <div className="flex items-center justify-between bg-emerald-950/30 border border-emerald-800/40 rounded-lg px-3 py-2">
+                    <span className="text-sm text-foreground">
+                      🏔 {allPlaces.find((p) => p.id === eventPlaceId)?.name ?? eventPlaceId}
+                    </span>
+                    <button onClick={() => setEventPlaceId("")} className="text-xs text-muted hover:text-foreground ml-2">×</button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={eventPlaceQuery}
+                      onChange={(e) => setEventPlaceQuery(e.target.value)}
+                      placeholder="Search places…"
+                      className={inputCls}
+                    />
+                    {eventPlaceQuery.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-surface border border-border-default rounded-lg shadow-xl max-h-36 overflow-y-auto">
+                        {allPlaces.filter((p) => p.name.toLowerCase().includes(eventPlaceQuery.toLowerCase())).slice(0, 6).map((p) => (
+                          <button key={p.id} onClick={() => { setEventPlaceId(p.id); setEventPlaceQuery("") }}
+                            className="w-full text-left px-3 py-2 text-sm text-muted hover:bg-surface-hover hover:text-foreground transition-colors">
+                            {p.name}
+                          </button>
+                        ))}
+                        {allPlaces.filter((p) => p.name.toLowerCase().includes(eventPlaceQuery.toLowerCase())).length === 0 && (
+                          <div className="px-3 py-2 text-xs text-muted">No places found</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </Field>
+
+              {/* Series picker */}
+              <Field label="Part of a series?">
+                {eventSeriesId && !showCreateSeries ? (
+                  <div className="flex items-center justify-between bg-blue-950/30 border border-blue-800/40 rounded-lg px-3 py-2">
+                    <span className="text-sm text-foreground">
+                      📅 {allSeries.find((s) => s.id === eventSeriesId)?.name ?? eventSeriesId}
+                    </span>
+                    <button onClick={() => setEventSeriesId("")} className="text-xs text-muted hover:text-foreground ml-2">×</button>
+                  </div>
+                ) : !showCreateSeries ? (
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={eventSeriesQuery}
+                      onChange={(e) => setEventSeriesQuery(e.target.value)}
+                      placeholder="Search or create a series…"
+                      className={inputCls}
+                    />
+                    {eventSeriesQuery.length > 0 && (
+                      <div className="absolute z-10 w-full mt-1 bg-surface border border-border-default rounded-lg shadow-xl max-h-40 overflow-y-auto">
+                        {allSeries.filter((s) => s.name.toLowerCase().includes(eventSeriesQuery.toLowerCase())).slice(0, 5).map((s) => (
+                          <button key={s.id} onClick={() => { setEventSeriesId(s.id); setEventSeriesQuery("") }}
+                            className="w-full text-left px-3 py-2 text-sm text-muted hover:bg-surface-hover hover:text-foreground transition-colors">
+                            {s.name}
+                            {s.start_year && <span className="text-xs text-muted/60 ml-2">since {s.start_year}</span>}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => { setNewSeriesName(eventSeriesQuery); setShowCreateSeries(true); setEventSeriesQuery("") }}
+                          className="w-full text-left px-3 py-2 text-sm text-blue-400 hover:bg-surface-hover transition-colors flex items-center gap-2">
+                          <span className="font-bold">+</span> Create &ldquo;{eventSeriesQuery.trim()}&rdquo; as new series
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* Inline series creation */
+                  <div className="border border-blue-800/40 rounded-lg p-3 bg-blue-950/20 space-y-2">
+                    <div className="text-xs font-medium text-blue-300 mb-2">New series</div>
+                    <input
+                      autoFocus
+                      type="text"
+                      value={newSeriesName}
+                      onChange={(e) => setNewSeriesName(e.target.value)}
+                      placeholder="Series name…"
+                      className={inputCls}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                      <select value={newSeriesFreq} onChange={(e) => setNewSeriesFreq(e.target.value as EventSeries["frequency"])} className={inputCls}>
+                        <option value="annual">Annual</option>
+                        <option value="tour">Tour</option>
+                        <option value="irregular">Irregular</option>
+                      </select>
+                      <input
+                        type="number"
+                        value={newSeriesStartYear}
+                        onChange={(e) => setNewSeriesStartYear(e.target.value)}
+                        placeholder="Start year"
+                        min={1950} max={2030}
+                        className={inputCls}
+                      />
+                    </div>
+                    <button onClick={() => { setShowCreateSeries(false); setNewSeriesName("") }} className="text-xs text-muted hover:text-foreground transition-colors">
+                      ← Cancel
+                    </button>
+                  </div>
+                )}
+              </Field>
             </>
           )}
 

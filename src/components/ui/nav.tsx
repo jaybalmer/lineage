@@ -20,6 +20,7 @@ const SECONDARY_NAV = [
   { href: "/boards", label: "Boards" },
   { href: "/brands", label: "Brands" },
   { href: "/places", label: "Places" },
+  { href: "/admin", label: "Editor" },
 ]
 
 const ALL_NAV = [...PRIMARY_NAV, ...SECONDARY_NAV]

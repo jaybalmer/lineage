@@ -5,15 +5,15 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore } from "@/store/lineage-store"
-import { BOARDS, boardSlug, orgSlug } from "@/lib/mock-data"
+import { boardSlug, orgSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 
 export default function BoardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { catalog, userEntities } = useLineageStore()
+  const { catalog } = useLineageStore()
 
-  // Look up from static mock data first (always available), then user-added boards
-  const allBoards = [...BOARDS, ...userEntities.boards]
+  // Look up from catalog (Supabase + mock-data), falling back to user-added boards
+  const allBoards = catalog.boards
   const board =
     allBoards.find((b) => b.id === id) ??
     allBoards.find((b) => boardSlug(b) === id)
