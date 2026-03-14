@@ -4,7 +4,8 @@ import { use } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
-import { EVENTS, EVENT_SERIES, CLAIMS, getPersonById, getPlaceById, getEventBySlug, getSeriesBySlug, placeSlug, seriesSlug, eventSlug } from "@/lib/mock-data"
+import { useLineageStore } from "@/store/lineage-store"
+import { eventSlug, seriesSlug, placeSlug } from "@/lib/mock-data"
 import type { Event } from "@/types"
 
 function formatEventDate(start: string, end?: string): string {
@@ -20,7 +21,8 @@ function formatEventDate(start: string, end?: string): string {
 const EVENT_PREDICATES = ["competed_at", "spectated_at", "organized_at"] as const
 
 function AttendeeList({ eventId }: { eventId: string }) {
-  const claims = CLAIMS.filter(
+  const { catalog } = useLineageStore()
+  const claims = catalog.claims.filter(
     (c) => c.object_id === eventId && EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number])
   )
   const riderIds = [...new Set(claims.map((c) => c.subject_id))]
@@ -32,7 +34,7 @@ function AttendeeList({ eventId }: { eventId: string }) {
   return (
     <div className="flex flex-wrap gap-1.5">
       {riderIds.map((rid) => {
-        const person = getPersonById(rid)
+        const person = catalog.people.find((p) => p.id === rid)
         if (!person) return null
         return (
           <Link key={rid} href={`/riders/${rid}`}>
@@ -51,18 +53,15 @@ function AttendeeList({ eventId }: { eventId: string }) {
   )
 }
 
-function InstanceRow({ event, highlight }: { event: Event; highlight?: boolean }) {
-  const place = event.place_id ? getPlaceById(event.place_id) : null
-  const attendeeCount = CLAIMS.filter(
+function InstanceRow({ event }: { event: Event }) {
+  const { catalog } = useLineageStore()
+  const place = event.place_id ? catalog.places.find((p) => p.id === event.place_id) : null
+  const attendeeCount = catalog.claims.filter(
     (c) => c.object_id === event.id && EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number])
   ).length
 
   return (
-    <div
-      className={`border rounded-xl overflow-hidden ${
-        highlight ? "border-blue-700/50 bg-blue-950/20" : "border-border-default bg-background"
-      }`}
-    >
+    <div className="border border-border-default bg-background rounded-xl overflow-hidden">
       <div className="px-4 py-3 border-b border-border-default flex items-center justify-between">
         <div>
           <div className="text-sm font-semibold text-foreground">{event.name}</div>
@@ -85,25 +84,32 @@ function InstanceRow({ event, highlight }: { event: Event; highlight?: boolean }
 
 export default function EventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const { catalog } = useLineageStore()
 
   // Check if it's a series or an instance — accept both id and slug
-  const series = EVENT_SERIES.find((s) => s.id === id) ?? getSeriesBySlug(id)
-  const instance = series ? undefined : (EVENTS.find((e) => e.id === id) ?? getEventBySlug(id))
+  const series =
+    catalog.eventSeries.find((s) => s.id === id) ??
+    catalog.eventSeries.find((s) => seriesSlug(s) === id)
+
+  const instance = series
+    ? undefined
+    : catalog.events.find((e) => e.id === id) ??
+      catalog.events.find((e) => eventSlug(e) === id)
 
   if (!series && !instance) notFound()
 
-  // If it's an instance, show its series context
+  // ── Instance view ────────────────────────────────────────────────────────
   if (instance && !series) {
     const parentSeries = instance.series_id
-      ? EVENT_SERIES.find((s) => s.id === instance.series_id)
+      ? catalog.eventSeries.find((s) => s.id === instance.series_id)
       : null
     const seriesInstances = parentSeries
-      ? EVENTS.filter((e) => e.series_id === parentSeries.id).sort(
+      ? catalog.events.filter((e) => e.series_id === parentSeries.id).sort(
           (a, b) => (a.year ?? 0) - (b.year ?? 0)
         )
       : []
-    const place = instance.place_id ? getPlaceById(instance.place_id) : null
-    const totalAttendees = CLAIMS.filter(
+    const place = instance.place_id ? catalog.places.find((p) => p.id === instance.place_id) : null
+    const totalAttendees = catalog.claims.filter(
       (c) => c.object_id === instance.id && EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number])
     ).length
 
@@ -113,6 +119,8 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
         <div className="max-w-3xl mx-auto px-4 py-8">
           {/* Breadcrumb */}
           <div className="text-xs text-muted mb-6">
+            <Link href="/events" className="hover:text-foreground">Events</Link>
+            <span className="mx-2">/</span>
             {parentSeries ? (
               <>
                 <Link href={`/events/${seriesSlug(parentSeries)}`} className="hover:text-foreground">{parentSeries.name}</Link>
@@ -163,7 +171,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
               </h2>
               <div className="space-y-2">
                 {seriesInstances.filter((e) => e.id !== instance.id).map((e) => {
-                  const count = CLAIMS.filter(
+                  const count = catalog.claims.filter(
                     (c) => c.object_id === e.id && EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number])
                   ).length
                   return (
@@ -186,13 +194,15 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
     )
   }
 
-  // Series view
-  const seriesInstances = EVENTS.filter((e) => e.series_id === series!.id).sort(
-    (a, b) => (b.year ?? 0) - (a.year ?? 0)
-  )
-  const place = series!.place_id ? getPlaceById(series!.place_id) : null
+  // ── Series view ──────────────────────────────────────────────────────────
+  const seriesInstances = catalog.events
+    .filter((e) => e.series_id === series!.id)
+    .sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
+
+  const place = series!.place_id ? catalog.places.find((p) => p.id === series!.place_id) : null
+
   const totalAttendees = new Set(
-    CLAIMS
+    catalog.claims
       .filter(
         (c) =>
           EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number]) &&

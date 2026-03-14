@@ -35,53 +35,57 @@ function PlaceCard({ place }: { place: Place }) {
   const isUnverified = place.community_status === "unverified"
 
   return (
-    <Link href={`/places/${placeSlug(place)}`}>
-      <div className="bg-surface border border-border-default rounded-xl p-4 hover:border-border-default transition-all cursor-pointer group h-full flex flex-col">
-        <div className="flex items-start justify-between mb-3">
-          <span className="text-2xl">{PLACE_TYPE_ICONS[place.place_type] ?? "📍"}</span>
-          <div className="flex items-center gap-1.5">
-            {isUnverified && (
-              <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5">unverified</span>
-            )}
-            {place.osm_id && (
-              <span className="text-[10px] text-muted font-mono">OSM ✓</span>
-            )}
-            <QuickClaimPopover
-              entityId={place.id}
-              entityType="place"
-              entityName={place.name}
-            />
-          </div>
-        </div>
-        <div className="font-semibold text-foreground text-sm group-hover:text-blue-300 transition-colors">
-          {place.name}
-        </div>
-        {place.region && (
-          <div className="text-xs text-muted mt-0.5">{place.region}{place.country ? `, ${place.country}` : ""}</div>
-        )}
-        <div className="mt-3 flex items-center gap-3 text-xs text-muted">
-          {riderCount > 0 && <span>{riderCount} rider{riderCount !== 1 ? "s" : ""}</span>}
-          {decades.length > 0 && <span>{decades[0]}–{decades[decades.length - 1]}</span>}
-        </div>
-        {decades.length > 0 && (
-          <div className="mt-2 flex gap-1 flex-wrap">
-            {decades.map((d) => (
-              <span key={d} className="text-[10px] px-1.5 py-0.5 bg-surface-hover border border-border-default rounded text-muted">
-                {d}
-              </span>
-            ))}
-          </div>
-        )}
-        {isUnverified && addedByPerson && (
-          <div className="mt-auto pt-2 flex items-center gap-1 text-[10px] text-muted">
-            <div className="w-3 h-3 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold">
-              {addedByPerson.display_name[0]}
+    <div className="relative">
+      <Link href={`/places/${placeSlug(place)}`}>
+        <div className="bg-surface border border-border-default rounded-xl p-4 hover:border-border-default transition-all cursor-pointer group h-full flex flex-col">
+          <div className="flex items-start justify-between mb-3">
+            <span className="text-2xl">{PLACE_TYPE_ICONS[place.place_type] ?? "📍"}</span>
+            <div className="flex items-center gap-1.5">
+              {isUnverified && (
+                <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5">unverified</span>
+              )}
+              {place.osm_id && (
+                <span className="text-[10px] text-muted font-mono">OSM ✓</span>
+              )}
             </div>
-            Added by {addedByPerson.display_name}
           </div>
-        )}
+          <div className="font-semibold text-foreground text-sm group-hover:text-blue-300 transition-colors">
+            {place.name}
+          </div>
+          {place.region && (
+            <div className="text-xs text-muted mt-0.5">{place.region}{place.country ? `, ${place.country}` : ""}</div>
+          )}
+          <div className="mt-3 flex items-center gap-3 text-xs text-muted">
+            {riderCount > 0 && <span>{riderCount} rider{riderCount !== 1 ? "s" : ""}</span>}
+            {decades.length > 0 && <span>{decades[0]}–{decades[decades.length - 1]}</span>}
+          </div>
+          {decades.length > 0 && (
+            <div className="mt-2 flex gap-1 flex-wrap">
+              {decades.map((d) => (
+                <span key={d} className="text-[10px] px-1.5 py-0.5 bg-surface-hover border border-border-default rounded text-muted">
+                  {d}
+                </span>
+              ))}
+            </div>
+          )}
+          {isUnverified && addedByPerson && (
+            <div className="mt-auto pt-2 flex items-center gap-1 text-[10px] text-muted">
+              <div className="w-3 h-3 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold">
+                {addedByPerson.display_name[0]}
+              </div>
+              Added by {addedByPerson.display_name}
+            </div>
+          )}
+        </div>
+      </Link>
+      <div className="absolute top-3 right-3">
+        <QuickClaimPopover
+          entityId={place.id}
+          entityType="place"
+          entityName={place.name}
+        />
       </div>
-    </Link>
+    </div>
   )
 }
 

@@ -16,6 +16,7 @@ const ENTITY_PREDICATES: Record<string, { value: Predicate; label: string; icon:
     { value: "organized_at", label: "Organized",  icon: "📋" },
   ],
   org: [
+    { value: "fan_of",        label: "Fan",        icon: "❤️" },
     { value: "sponsored_by",  label: "Sponsored",  icon: "💰" },
     { value: "part_of_team",  label: "On team",    icon: "👕" },
     { value: "worked_at",     label: "Worked at",  icon: "🔧" },

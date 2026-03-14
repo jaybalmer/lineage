@@ -4,29 +4,35 @@ import { use } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
-import { BOARDS, CLAIMS, ORGS, getPersonById, getBoardBySlug, boardSlug, orgSlug } from "@/lib/mock-data"
+import { useLineageStore } from "@/store/lineage-store"
+import { boardSlug, orgSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 
 export default function BoardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  // Accept both slug (Burton_Custom_2003) and legacy id (b1)
-  const board = BOARDS.find((b) => b.id === id) ?? getBoardBySlug(id)
+  const { catalog } = useLineageStore()
+
+  // Accept both slug (Burton_Custom_2003) and raw id
+  const board =
+    catalog.boards.find((b) => b.id === id) ??
+    catalog.boards.find((b) => boardSlug(b) === id)
+
   if (!board) notFound()
 
   // Riders who owned this board
-  const ownedClaims = CLAIMS.filter(
+  const ownedClaims = catalog.claims.filter(
     (c) => c.object_id === board.id && c.predicate === "owned_board"
   )
   const riderIds = [...new Set(ownedClaims.map((c) => c.subject_id))]
 
   // Other models by same brand
-  const samesBrand = BOARDS.filter(
-    (b) => b.brand === board.brand && b.id !== board.id
-  ).sort((a, b) => b.model_year - a.model_year)
+  const sameBrand = catalog.boards
+    .filter((b) => b.brand === board.brand && b.id !== board.id)
+    .sort((a, b) => b.model_year - a.model_year)
 
   // Find org for this brand
-  const brandOrg = ORGS.find(
-    (o) => o.name.toLowerCase().startsWith(board.brand.toLowerCase())
+  const brandOrg = catalog.orgs.find((o) =>
+    o.name.toLowerCase().startsWith(board.brand.toLowerCase())
   )
 
   const initials = (name: string) =>
@@ -43,7 +49,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
           <span className="mx-2">/</span>
           {brandOrg ? (
             <>
-              <Link href={`/orgs/${orgSlug(brandOrg)}`} className="hover:text-foreground">{board.brand}</Link>
+              <Link href={`/brands/${orgSlug(brandOrg)}`} className="hover:text-foreground">{board.brand}</Link>
               <span className="mx-2">/</span>
             </>
           ) : (
@@ -103,7 +109,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             ) : (
               <div className="space-y-2">
                 {riderIds.map((rid) => {
-                  const person = getPersonById(rid)
+                  const person = catalog.people.find((p) => p.id === rid)
                   if (!person) return null
                   const claim = ownedClaims.find((c) => c.subject_id === rid)
                   return (
@@ -144,7 +150,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             {brandOrg && (
               <div className="bg-surface border border-border-default rounded-xl p-4">
                 <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Brand</div>
-                <Link href={`/orgs/${orgSlug(brandOrg)}`}>
+                <Link href={`/brands/${orgSlug(brandOrg)}`}>
                   <div className="flex items-center gap-2 hover:text-blue-300 transition-colors">
                     <div className="w-7 h-7 rounded bg-surface-active border border-border-default flex items-center justify-center text-xs font-bold text-muted">
                       {brandOrg.name[0]}
@@ -161,14 +167,14 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             )}
 
             {/* Other models */}
-            {samesBrand.length > 0 && (
+            {sameBrand.length > 0 && (
               <div className="bg-surface border border-border-default rounded-xl p-4">
                 <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">
                   Other {board.brand} models
                 </div>
                 <div className="space-y-2">
-                  {samesBrand.slice(0, 6).map((b) => {
-                    const ownerCount = CLAIMS.filter(
+                  {sameBrand.slice(0, 6).map((b) => {
+                    const ownerCount = catalog.claims.filter(
                       (c) => c.object_id === b.id && c.predicate === "owned_board"
                     ).length
                     return (

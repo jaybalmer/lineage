@@ -85,53 +85,53 @@ function EventCard({ event }: { event: Event }) {
   const isUnverified = event.community_status === "unverified"
 
   return (
-    <Link href={`/events/${eventSlug(event)}`}>
-      <div className={cn(
-        "bg-surface border border-border-default border-l-2 rounded-xl p-4 hover:border-border-default transition-colors",
-        accent
-      )}>
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-[10px] text-muted uppercase tracking-widest">
-                {TYPE_LABEL[event.event_type]}
-              </span>
-              {isUnverified && (
-                <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5">unverified</span>
+    <div className="flex items-center gap-2">
+      <Link href={`/events/${eventSlug(event)}`} className="flex-1 min-w-0 block">
+        <div className={cn(
+          "bg-surface border border-border-default border-l-2 rounded-xl p-4 hover:border-border-default transition-colors",
+          accent
+        )}>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] text-muted uppercase tracking-widest">
+                  {TYPE_LABEL[event.event_type]}
+                </span>
+                {isUnverified && (
+                  <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5">unverified</span>
+                )}
+              </div>
+              <div className="font-medium text-foreground text-sm leading-snug">{event.name}</div>
+              <div className="text-xs text-muted mt-1">
+                {event.year}
+                {place && <span className="text-muted"> · {place.name}</span>}
+              </div>
+              {isUnverified && addedByPerson && (
+                <div className="flex items-center gap-1 mt-1 text-[10px] text-muted">
+                  <div className="w-3 h-3 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold">
+                    {addedByPerson.display_name[0]}
+                  </div>
+                  Added by {addedByPerson.display_name}
+                </div>
               )}
             </div>
-            <div className="font-medium text-foreground text-sm leading-snug">{event.name}</div>
-            <div className="text-xs text-muted mt-1">
-              {event.year}
-              {place && <span className="text-muted"> · {place.name}</span>}
-            </div>
-            {isUnverified && addedByPerson && (
-              <div className="flex items-center gap-1 mt-1 text-[10px] text-muted">
-                <div className="w-3 h-3 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold">
-                  {addedByPerson.display_name[0]}
-                </div>
-                Added by {addedByPerson.display_name}
-              </div>
-            )}
-          </div>
-          <div className="shrink-0 flex flex-col items-end gap-2">
             {riderIds.length > 0 && (
-              <>
+              <div className="shrink-0 flex flex-col items-end gap-2">
                 <AvatarStack riderIds={riderIds} />
                 <div className="text-[10px] text-muted">
                   {riderIds.length} rider{riderIds.length !== 1 ? "s" : ""}
                 </div>
-              </>
+              </div>
             )}
-            <QuickClaimPopover
-              entityId={event.id}
-              entityType="event"
-              entityName={event.name}
-            />
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+      <QuickClaimPopover
+        entityId={event.id}
+        entityType="event"
+        entityName={event.name}
+      />
+    </div>
   )
 }
 

@@ -11,6 +11,7 @@ export type Predicate =
   | "worked_at"
   | "sponsored_by"
   | "part_of_team"
+  | "fan_of"
   | "rode_with"
   | "shot_by"
   | "competed_at"

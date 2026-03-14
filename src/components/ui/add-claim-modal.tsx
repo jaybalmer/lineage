@@ -17,6 +17,7 @@ const PREDICATE_ENTITY_TYPE: Record<Predicate, EntityType> = {
   organized_at: "event",
   sponsored_by: "org",
   part_of_team: "org",
+  fan_of: "org",
   rode_with: "person",
   shot_by: "person",
   coached_by: "person",
@@ -56,7 +57,7 @@ const PREDICATE_GROUPS: PredicateGroup[] = [
   {
     label: "Orgs",
     icon: "🎽",
-    predicates: ["sponsored_by", "part_of_team"],
+    predicates: ["fan_of", "sponsored_by", "part_of_team"],
     addEntityType: "org",
     addEntityLabel: "shop/brand/team",
   },

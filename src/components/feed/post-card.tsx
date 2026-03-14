@@ -19,6 +19,7 @@ import { EditClaimModal } from "@/components/ui/edit-claim-modal"
 import { EditEventModal } from "@/components/ui/edit-event-modal"
 import { cn } from "@/lib/utils"
 import type { Predicate } from "@/types"
+import { useBoardImage } from "@/hooks/use-board-image"
 
 // Left border accent color by predicate group
 function accentClass(predicate: Predicate): string {
@@ -33,48 +34,56 @@ function accentClass(predicate: Predicate): string {
 
 function BoardGraphic() {
   return (
-    <div className="flex-shrink-0 flex items-center justify-center" style={{ width: 40, height: 84 }}>
-      <div
-        style={{
-          width: 34,
-          height: 78,
-          borderRadius: 999,
-          background: "linear-gradient(180deg, #6ee7b7 0%, #059669 38%, #065f46 72%, #022c22 100%)",
-          boxShadow: "0 0 20px 6px rgba(52,211,153,0.22), inset 1px 0 0 rgba(167,243,208,0.35), inset -1px 0 0 rgba(0,0,0,0.4)",
-          position: "relative",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}
-      >
+    <div
+      className="flex-shrink-0"
+      style={{
+        width: 56,
+        height: 56,
+        borderRadius: 14,
+        overflow: "hidden",
+        position: "relative",
+        background: "linear-gradient(145deg, #052e16 0%, #031a0e 100%)",
+        border: "1px solid rgba(52,211,153,0.18)",
+        boxShadow: "0 0 18px 2px rgba(52,211,153,0.12)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      {/* Ambient radial glow */}
+      <div style={{
+        position: "absolute",
+        inset: 0,
+        background: "radial-gradient(ellipse 80% 80% at 50% 110%, rgba(52,211,153,0.22) 0%, transparent 65%)",
+      }} />
+      {/* Board shape */}
+      <div style={{
+        width: 16,
+        height: 38,
+        borderRadius: 999,
+        background: "linear-gradient(180deg, #6ee7b7 0%, #059669 38%, #065f46 72%, #022c22 100%)",
+        boxShadow: "0 0 10px 3px rgba(52,211,153,0.28), inset 1px 0 0 rgba(167,243,208,0.3)",
+        position: "relative",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+      }}>
         {/* Center spine */}
         <div style={{
-          width: 2,
-          height: 52,
+          width: 1.5,
+          height: 24,
           borderRadius: 999,
-          background: "linear-gradient(180deg, rgba(167,243,208,0.95) 0%, rgba(52,211,153,0.5) 55%, transparent 100%)",
+          background: "linear-gradient(180deg, rgba(167,243,208,0.9) 0%, rgba(52,211,153,0.4) 60%, transparent 100%)",
         }} />
         {/* Edge highlight */}
         <div style={{
           position: "absolute",
-          left: 6,
-          top: 12,
-          width: 2,
-          height: 54,
+          left: 4,
+          top: 6,
+          width: 1.5,
+          height: 24,
           borderRadius: 999,
-          background: "linear-gradient(180deg, rgba(167,243,208,0.4) 0%, transparent 100%)",
-        }} />
-        {/* Bottom cap glow */}
-        <div style={{
-          position: "absolute",
-          bottom: 6,
-          left: "50%",
-          transform: "translateX(-50%)",
-          width: 20,
-          height: 4,
-          borderRadius: 999,
-          background: "rgba(52,211,153,0.35)",
-          filter: "blur(2px)",
+          background: "linear-gradient(180deg, rgba(167,243,208,0.35) 0%, transparent 100%)",
         }} />
       </div>
     </div>
@@ -316,12 +325,27 @@ function EntityBlock({ claim, entityName, href, isOwn }: EntityBlockProps) {
   const event  = type === "event"  ? getEventById(id)  : null
   const person = type === "person" ? getPersonById(id) : null
 
-  const imageUrl: string | undefined =
+  // Auto-fetch board image via search API (hook always called; returns null for non-boards)
+  const autoBoard = board as Board | null
+  const autoBoardImage = useBoardImage(
+    autoBoard?.brand,
+    autoBoard?.model,
+    autoBoard?.model_year,
+  )
+
+  // Resolve final image URL: manually-set image takes priority, then auto-fetched
+  const manualImageUrl: string | undefined =
     (board as Board | null)?.image_url ??
     (org as Org | null)?.logo_url ??
     (place as Place | null)?.image_url ??
     (event as Event | null)?.image_url ??
     undefined
+
+  const imageUrl: string | undefined =
+    manualImageUrl ??
+    (type === "board" && autoBoardImage ? autoBoardImage : undefined)
+
+  const isBoardImageLoading = type === "board" && !manualImageUrl && autoBoardImage === undefined
 
   // Graphic
   const graphic = (() => {
@@ -402,6 +426,9 @@ function EntityBlock({ claim, entityName, href, isOwn }: EntityBlockProps) {
           alt={displayName}
           className="w-14 h-14 rounded-lg object-cover border border-border-default flex-shrink-0"
         />
+      ) : isBoardImageLoading ? (
+        // Shimmer while board image search is in-flight
+        <div className="w-14 h-14 rounded-lg border border-border-default flex-shrink-0 bg-surface-hover animate-pulse" />
       ) : isOwn ? (
         <div className="w-14 h-14 rounded-lg border border-dashed border-border-default flex items-center justify-center flex-shrink-0">
           <span className="text-[10px] text-muted text-center leading-tight">Add<br />photo</span>
@@ -492,8 +519,17 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
             )}
           </div>
 
-          {/* Right: privacy + menu */}
+            {/* Right: expand toggle + privacy + menu */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
+            {hasExtra && (
+              <button
+                onClick={() => setExpanded((e) => !e)}
+                className="text-[11px] text-muted hover:text-foreground transition-colors px-1"
+                title={expanded ? "Show less" : "Show more"}
+              >
+                {expanded ? "▲" : "▼"}
+              </button>
+            )}
             {claim.visibility === "private" && (
               <span className="text-xs text-muted" title="Private">🔒</span>
             )}
@@ -531,6 +567,29 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
                               <span>📋</span> Edit event
                             </button>
                           )}
+                          <div className="h-px bg-border-default mx-2" />
+                          <button
+                            disabled
+                            title="Coming soon"
+                            className="w-full text-left px-4 py-2.5 text-xs text-muted opacity-40 cursor-not-allowed flex items-center gap-2"
+                          >
+                            <span>✓</span> Verify
+                          </button>
+                          <button
+                            disabled
+                            title="Coming soon"
+                            className="w-full text-left px-4 py-2.5 text-xs text-muted opacity-40 cursor-not-allowed flex items-center gap-2"
+                          >
+                            <span>?</span> Challenge
+                          </button>
+                          <button
+                            disabled
+                            title="Coming soon"
+                            className="w-full text-left px-4 py-2.5 text-xs text-muted opacity-40 cursor-not-allowed flex items-center gap-2"
+                          >
+                            <span>♥</span> Save
+                          </button>
+                          <div className="h-px bg-border-default mx-2" />
                           <button
                             onClick={() => setConfirmDelete(true)}
                             className="w-full text-left px-4 py-2.5 text-xs text-red-400 hover:bg-surface-active hover:text-red-300 transition-colors flex items-center gap-2"
@@ -586,41 +645,6 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
             ))}
           </div>
         )}
-
-        {/* Bottom row: action stubs + expand toggle */}
-        <div className="mt-4 pt-3 border-t border-border-default flex items-center justify-between">
-          <div className="flex gap-4 opacity-0 group-hover:opacity-100 transition-opacity">
-            <button
-              disabled
-              title="Coming soon"
-              className="flex items-center gap-1 text-xs text-muted hover:text-foreground disabled:cursor-not-allowed transition-colors"
-            >
-              ✓ Verify
-            </button>
-            <button
-              disabled
-              title="Coming soon"
-              className="flex items-center gap-1 text-xs text-muted hover:text-foreground disabled:cursor-not-allowed transition-colors"
-            >
-              ? Challenge
-            </button>
-            <button
-              disabled
-              title="Coming soon"
-              className="flex items-center gap-1 text-xs text-muted hover:text-foreground disabled:cursor-not-allowed transition-colors"
-            >
-              ♥ Save
-            </button>
-          </div>
-          {hasExtra && (
-            <button
-              onClick={() => setExpanded((e) => !e)}
-              className="text-[11px] text-muted hover:text-foreground transition-colors ml-auto"
-            >
-              {expanded ? "Show less" : "Show more"}
-            </button>
-          )}
-        </div>
       </div>
     </>
   )

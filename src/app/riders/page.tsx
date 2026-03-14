@@ -28,48 +28,48 @@ function RiderRow({ person, isMe }: { person: Person; isMe: boolean }) {
   const addedByPerson = person.added_by ? getPersonById(person.added_by) : null
 
   return (
-    <Link href={href}>
-      <div className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default rounded-xl hover:bg-surface-hover transition-all group">
-        {/* Avatar */}
-        <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold text-foreground shrink-0">
-          {person.display_name[0]}
-        </div>
+    <div className="flex items-center gap-2">
+      <Link href={href} className="flex-1 min-w-0 block group">
+        <div className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default rounded-xl hover:bg-surface-hover transition-all">
+          {/* Avatar */}
+          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold text-foreground shrink-0">
+            {person.display_name[0]}
+          </div>
 
-        {/* Info */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-baseline gap-2 flex-wrap">
-            <span className="font-semibold text-foreground text-sm group-hover:text-blue-400 transition-colors">
-              {person.display_name}
-            </span>
-            {isMe && (
-              <span className="text-[10px] text-muted border border-border-default rounded px-1.5 py-0.5">you</span>
+          {/* Info */}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-baseline gap-2 flex-wrap">
+              <span className="font-semibold text-foreground text-sm group-hover:text-blue-400 transition-colors">
+                {person.display_name}
+              </span>
+              {isMe && (
+                <span className="text-[10px] text-muted border border-border-default rounded px-1.5 py-0.5">you</span>
+              )}
+              {isUnverified && (
+                <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5">unverified</span>
+              )}
+              {person.riding_since && (
+                <span className="text-[11px] text-muted">riding since {person.riding_since}</span>
+              )}
+            </div>
+            {person.bio && (
+              <p className="text-xs text-muted mt-0.5 truncate">{person.bio}</p>
             )}
-            {isUnverified && (
-              <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5">unverified</span>
+            {homeResort && (
+              <p className="text-[11px] text-muted mt-0.5">🏔 {homeResort.name}</p>
             )}
-            {person.riding_since && (
-              <span className="text-[11px] text-muted">riding since {person.riding_since}</span>
+            {isUnverified && addedByPerson && (
+              <div className="flex items-center gap-1 mt-1 text-[10px] text-muted">
+                <div className="w-3 h-3 rounded-full bg-surface-2 flex items-center justify-center text-[8px] font-bold text-foreground">
+                  {addedByPerson.display_name[0]}
+                </div>
+                Added by {addedByPerson.display_name}
+              </div>
             )}
           </div>
-          {person.bio && (
-            <p className="text-xs text-muted mt-0.5 truncate">{person.bio}</p>
-          )}
-          {homeResort && (
-            <p className="text-[11px] text-muted mt-0.5">🏔 {homeResort.name}</p>
-          )}
-          {isUnverified && addedByPerson && (
-            <div className="flex items-center gap-1 mt-1 text-[10px] text-muted">
-              <div className="w-3 h-3 rounded-full bg-surface-2 flex items-center justify-center text-[8px] font-bold text-foreground">
-                {addedByPerson.display_name[0]}
-              </div>
-              Added by {addedByPerson.display_name}
-            </div>
-          )}
-        </div>
 
-        {/* Stats + quick add */}
-        <div className="shrink-0 flex items-center gap-3">
-          <div className="text-right hidden sm:block">
+          {/* Stats */}
+          <div className="shrink-0 text-right hidden sm:block">
             {claimCount > 0 && (
               <>
                 <div className="text-xs font-semibold text-foreground">{claimCount}</div>
@@ -80,16 +80,16 @@ function RiderRow({ person, isMe }: { person: Person; isMe: boolean }) {
               <div className="text-[10px] text-muted mt-0.5">{placeCount} place{placeCount !== 1 ? "s" : ""}</div>
             )}
           </div>
-          {!isMe && (
-            <QuickClaimPopover
-              entityId={person.id}
-              entityType="person"
-              entityName={person.display_name}
-            />
-          )}
         </div>
-      </div>
-    </Link>
+      </Link>
+      {!isMe && (
+        <QuickClaimPopover
+          entityId={person.id}
+          entityType="person"
+          entityName={person.display_name}
+        />
+      )}
+    </div>
   )
 }
 

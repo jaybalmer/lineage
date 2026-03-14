@@ -43,61 +43,61 @@ function OrgCard({ org }: { org: Org }) {
   const addedByPerson = org.added_by ? catalog.people.find((p) => p.id === org.added_by) : null
 
   return (
-    <Link href={`/brands/${orgSlug(org)}`}>
-      <div className="group flex flex-col gap-3 p-4 bg-surface border border-border-default rounded-xl hover:border-border-default hover:bg-surface transition-all h-full">
-        <div className="flex items-start gap-3">
-          {/* Logo / initials */}
-          <div
-            className="w-10 h-10 rounded-lg flex items-center justify-center text-base font-bold shrink-0"
-            style={{
-              background: "linear-gradient(145deg, #1c1c1f 0%, #111113 100%)",
-              border: "1px solid rgba(161,161,170,0.12)",
-              backgroundImage: "radial-gradient(circle, rgba(161,161,170,0.12) 1px, transparent 1px)",
-              backgroundSize: "7px 7px",
-              color: "#a1a1aa",
-            }}
-          >
-            <span style={{
-              background: "linear-gradient(140deg, #f4f4f5 0%, #a1a1aa 100%)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-              backgroundClip: "text",
-            }}>
-              {initial}
-            </span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <div className="text-sm font-semibold text-foreground group-hover:text-blue-300 transition-colors truncate">
-                {org.name}
+    <div className="relative">
+      <Link href={`/brands/${orgSlug(org)}`}>
+        <div className="group flex flex-col gap-3 p-4 bg-surface border border-border-default rounded-xl hover:border-border-default hover:bg-surface transition-all h-full">
+          <div className="flex items-start gap-3">
+            {/* Logo / initials */}
+            <div
+              className="w-10 h-10 rounded-lg flex items-center justify-center text-base font-bold shrink-0"
+              style={{
+                background: "linear-gradient(145deg, #1c1c1f 0%, #111113 100%)",
+                border: "1px solid rgba(161,161,170,0.12)",
+                backgroundImage: "radial-gradient(circle, rgba(161,161,170,0.12) 1px, transparent 1px)",
+                backgroundSize: "7px 7px",
+                color: "#a1a1aa",
+              }}
+            >
+              <span style={{
+                background: "linear-gradient(140deg, #f4f4f5 0%, #a1a1aa 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}>
+                {initial}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <div className="text-sm font-semibold text-foreground group-hover:text-blue-300 transition-colors truncate">
+                  {org.name}
+                </div>
+                {isUnverified && (
+                  <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5 shrink-0">unverified</span>
+                )}
               </div>
-              {isUnverified && (
-                <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5 shrink-0">unverified</span>
+              <div className="text-[11px] text-muted mt-0.5">
+                {org.founded_year ? `Est. ${org.founded_year}` : ""}
+                {org.founded_year && org.country ? " · " : ""}
+                {org.country ?? ""}
+              </div>
+            </div>
+          </div>
+
+          {org.description && (
+            <p className="text-xs text-muted leading-relaxed line-clamp-2 flex-1">
+              {org.description}
+            </p>
+          )}
+
+          <div className="flex items-center justify-between text-[11px] text-muted mt-auto pt-1 border-t border-border-default">
+            <div className="flex items-center gap-3">
+              {riders > 0 && <span>{riders} rider{riders !== 1 ? "s" : ""}</span>}
+              {boards > 0 && <span>{boards} board{boards !== 1 ? "s" : ""}</span>}
+              {riders === 0 && boards === 0 && (
+                <span className="text-muted">No claims yet</span>
               )}
             </div>
-            <div className="text-[11px] text-muted mt-0.5">
-              {org.founded_year ? `Est. ${org.founded_year}` : ""}
-              {org.founded_year && org.country ? " · " : ""}
-              {org.country ?? ""}
-            </div>
-          </div>
-        </div>
-
-        {org.description && (
-          <p className="text-xs text-muted leading-relaxed line-clamp-2 flex-1">
-            {org.description}
-          </p>
-        )}
-
-        <div className="flex items-center justify-between text-[11px] text-muted mt-auto pt-1 border-t border-border-default">
-          <div className="flex items-center gap-3">
-            {riders > 0 && <span>{riders} rider{riders !== 1 ? "s" : ""}</span>}
-            {boards > 0 && <span>{boards} board{boards !== 1 ? "s" : ""}</span>}
-            {riders === 0 && boards === 0 && (
-              <span className="text-muted">No claims yet</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
             {isUnverified && addedByPerson && (
               <div className="flex items-center gap-1 text-[10px] text-muted">
                 <div className="w-3 h-3 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold">
@@ -106,15 +106,17 @@ function OrgCard({ org }: { org: Org }) {
                 {addedByPerson.display_name.split(" ")[0]}
               </div>
             )}
-            <QuickClaimPopover
-              entityId={org.id}
-              entityType="org"
-              entityName={org.name}
-            />
           </div>
         </div>
+      </Link>
+      <div className="absolute bottom-3.5 right-3">
+        <QuickClaimPopover
+          entityId={org.id}
+          entityType="org"
+          entityName={org.name}
+        />
       </div>
-    </Link>
+    </div>
   )
 }
 

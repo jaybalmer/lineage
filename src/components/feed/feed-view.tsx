@@ -6,6 +6,7 @@ import { PostCard } from "@/components/feed/post-card"
 import { DayPostCard } from "@/components/feed/day-post-card"
 import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddDayModal } from "@/components/ui/add-day-modal"
+import { cn } from "@/lib/utils"
 
 type FilterType = "all" | "places" | "gear" | "people" | "orgs" | "events" | "days"
 
@@ -14,7 +15,7 @@ const FILTER_PREDICATES: Record<Exclude<FilterType, "days">, string[]> = {
   places: ["rode_at", "worked_at"],
   gear: ["owned_board"],
   people: ["rode_with", "coached_by", "shot_by"],
-  orgs: ["sponsored_by", "part_of_team"],
+  orgs: ["sponsored_by", "part_of_team", "fan_of"],
   events: ["competed_at", "spectated_at", "organized_at"],
 }
 
@@ -31,6 +32,18 @@ const FILTER_LABELS: Record<FilterType, string> = {
 type FeedItem =
   | { kind: "claim"; claim: Claim; sortDate: number }
   | { kind: "day"; day: RidingDay; sortDate: number }
+
+// Timeline node color keyed to predicate category
+function nodeColor(item: FeedItem): string {
+  if (item.kind === "day") return "bg-emerald-600"
+  const p = item.claim.predicate
+  if (p === "owned_board") return "bg-emerald-700"
+  if (p === "rode_at" || p === "worked_at") return "bg-blue-700"
+  if (p === "rode_with" || p === "shot_by" || p === "coached_by") return "bg-violet-700"
+  if (p === "competed_at" || p === "spectated_at" || p === "organized_at") return "bg-amber-700"
+  if (p === "sponsored_by" || p === "part_of_team" || p === "fan_of") return "bg-zinc-500"
+  return "bg-zinc-600"
+}
 
 function itemDecade(sortDate: number): string {
   if (!sortDate) return "Unknown"
@@ -169,24 +182,44 @@ export function FeedView({
         </div>
       )}
 
-      {decades.map((decade) => (
-        <div key={decade} className="mb-8">
-          <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-4 flex items-center gap-3">
-            <span>{decade}</span>
-            <div className="flex-1 h-px bg-surface-active" />
-            <span>{grouped[decade].length} entries</span>
-          </div>
-          <div>
-            {grouped[decade].map((item) =>
-              item.kind === "claim" ? (
-                <PostCard key={item.claim.id} claim={item.claim} isOwn={isOwn} />
-              ) : (
-                <DayPostCard key={item.day.id} day={item.day} isOwn={isOwn} />
-              )
-            )}
-          </div>
+      {decades.length > 0 && (
+        <div className="relative">
+          {/* Continuous vertical timeline line */}
+          <div className="absolute left-[12px] top-6 bottom-6 w-2 bg-border-default rounded-full" />
+
+          {decades.map((decade) => (
+            <div key={decade} className="mb-8">
+              {/* Decade header — shifted right of timeline gutter */}
+              <div className="pl-9 text-xs font-semibold text-muted uppercase tracking-widest mb-4 flex items-center gap-3">
+                <span>{decade}</span>
+                <div className="flex-1 h-px bg-surface-active" />
+                <span>{grouped[decade].length} entries</span>
+              </div>
+
+              {/* Items with timeline nodes */}
+              <div>
+                {grouped[decade].map((item) => {
+                  const key = item.kind === "claim" ? item.claim.id : item.day.id
+                  return (
+                    <div key={key} className="relative pl-9">
+                      {/* Node circle */}
+                      <div className={cn(
+                        "absolute left-[7px] top-[20px] w-[22px] h-[22px] rounded-full border-[3px] border-background z-10",
+                        nodeColor(item)
+                      )} />
+                      {item.kind === "claim" ? (
+                        <PostCard claim={item.claim} isOwn={isOwn} />
+                      ) : (
+                        <DayPostCard day={item.day} isOwn={isOwn} />
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
+      )}
     </div>
   )
 }
