@@ -1,12 +1,230 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import { PREDICATE_ICONS, PREDICATE_LABELS } from "@/lib/utils"
 import { PLACES, ORGS, BOARDS, PEOPLE, EVENTS } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
-import type { Predicate, EntityType, ConfidenceLevel, PrivacyLevel } from "@/types"
+import type { Predicate, EntityType, ConfidenceLevel, PrivacyLevel, Board } from "@/types"
+
+const inputCls =
+  "w-full bg-background border border-border-default rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+
+// ─── Board Picker ─────────────────────────────────────────────────────────────
+
+type BoardStep = "brand" | "model" | "year"
+
+interface BoardPickerProps {
+  allBoards: Board[]
+  onSelect: (boardId: string) => void
+}
+
+function BoardPicker({ allBoards, onSelect }: BoardPickerProps) {
+  const { addUserBoard } = useLineageStore()
+  const [step, setStep] = useState<BoardStep>("brand")
+  const [brand, setBrand] = useState("")
+  const [model, setModel] = useState("")
+  const [query, setQuery] = useState("")
+  const [customYear, setCustomYear] = useState("")
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { inputRef.current?.focus() }, [step])
+
+  const uniqueBrands = [...new Set(allBoards.map((b) => b.brand))].sort()
+  const filteredBrands = uniqueBrands.filter((b) =>
+    b.toLowerCase().includes(query.toLowerCase())
+  )
+
+  const modelsForBrand = [...new Set(
+    allBoards.filter((b) => b.brand === brand).map((b) => b.model)
+  )].sort()
+  const filteredModels = modelsForBrand.filter((m) =>
+    m.toLowerCase().includes(query.toLowerCase())
+  )
+
+  const yearsForPair = allBoards
+    .filter((b) => b.brand === brand && b.model === model)
+    .map((b) => b.model_year)
+    .sort((a, z) => z - a)
+
+  function pickBrand(b: string) {
+    setBrand(b); setModel(""); setQuery(""); setStep("model")
+  }
+
+  function pickModel(m: string) {
+    setModel(m); setQuery(""); setStep("year")
+  }
+
+  function pickYear(year: number) {
+    const existing = allBoards.find(
+      (b) => b.brand === brand && b.model === model && b.model_year === year
+    )
+    if (existing) {
+      onSelect(existing.id)
+    } else {
+      const id = `board_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`
+      addUserBoard({ id, brand, model, model_year: year })
+      onSelect(id)
+    }
+  }
+
+  function handleCustomYear() {
+    const y = parseInt(customYear)
+    if (y >= 1965 && y <= new Date().getFullYear() + 2) pickYear(y)
+  }
+
+  const breadcrumbs = (
+    <div className="flex items-center gap-1.5 text-[11px] text-muted mb-3 flex-wrap">
+      <button
+        onClick={() => { setStep("brand"); setBrand(""); setModel(""); setQuery("") }}
+        className={cn("hover:text-foreground transition-colors", step === "brand" ? "text-foreground font-medium" : "")}
+      >
+        Brand
+      </button>
+      {brand && (
+        <>
+          <span>/</span>
+          <button
+            onClick={() => { setStep("model"); setModel(""); setQuery("") }}
+            className={cn("hover:text-foreground transition-colors", step === "model" ? "text-foreground font-medium" : "text-blue-400")}
+          >
+            {brand}
+          </button>
+        </>
+      )}
+      {model && (
+        <>
+          <span>/</span>
+          <span className={cn(step === "year" ? "text-foreground font-medium" : "text-blue-400")}>{model}</span>
+        </>
+      )}
+    </div>
+  )
+
+  if (step === "brand") return (
+    <div>
+      {breadcrumbs}
+      <input
+        ref={inputRef}
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Filter brands…"
+        className={inputCls}
+      />
+      <div className="mt-1.5 max-h-52 overflow-y-auto rounded-lg border border-border-default divide-y divide-[#1a1a1a]">
+        {filteredBrands.map((b) => (
+          <button
+            key={b}
+            onClick={() => pickBrand(b)}
+            className="w-full text-left px-3 py-2.5 text-sm text-muted hover:bg-surface-hover hover:text-foreground transition-colors flex items-center justify-between"
+          >
+            <span>{b}</span>
+            <span className="text-xs text-muted/60">
+              {[...new Set(allBoards.filter((bd) => bd.brand === b).map((bd) => bd.model))].length} models
+            </span>
+          </button>
+        ))}
+        {query.trim() && !uniqueBrands.some((b) => b.toLowerCase() === query.trim().toLowerCase()) && (
+          <button
+            onClick={() => pickBrand(query.trim())}
+            className="w-full text-left px-3 py-2.5 text-sm text-blue-400 hover:bg-surface-hover transition-colors flex items-center gap-2"
+          >
+            <span className="font-bold">+</span> Add &ldquo;{query.trim()}&rdquo; as a new brand
+          </button>
+        )}
+        {filteredBrands.length === 0 && !query.trim() && (
+          <div className="px-3 py-2.5 text-xs text-muted">No brands found</div>
+        )}
+      </div>
+    </div>
+  )
+
+  if (step === "model") return (
+    <div>
+      {breadcrumbs}
+      <input
+        ref={inputRef}
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={`Filter ${brand} models…`}
+        className={inputCls}
+      />
+      <div className="mt-1.5 max-h-52 overflow-y-auto rounded-lg border border-border-default divide-y divide-[#1a1a1a]">
+        {filteredModels.map((m) => (
+          <button
+            key={m}
+            onClick={() => pickModel(m)}
+            className="w-full text-left px-3 py-2.5 text-sm text-muted hover:bg-surface-hover hover:text-foreground transition-colors flex items-center justify-between"
+          >
+            <span>{m}</span>
+            <span className="text-xs text-muted/60">
+              {allBoards.filter((b) => b.brand === brand && b.model === m).map((b) => `'${String(b.model_year).slice(2)}`).join(", ")}
+            </span>
+          </button>
+        ))}
+        {query.trim() && !modelsForBrand.some((m) => m.toLowerCase() === query.trim().toLowerCase()) && (
+          <button
+            onClick={() => pickModel(query.trim())}
+            className="w-full text-left px-3 py-2.5 text-sm text-blue-400 hover:bg-surface-hover transition-colors flex items-center gap-2"
+          >
+            <span className="font-bold">+</span> Add &ldquo;{query.trim()}&rdquo; as a new {brand} model
+          </button>
+        )}
+        {modelsForBrand.length === 0 && !query.trim() && (
+          <div className="px-3 py-2.5 text-xs text-muted">
+            No models yet — type to add the first one
+          </div>
+        )}
+      </div>
+    </div>
+  )
+
+  // step === "year"
+  return (
+    <div>
+      {breadcrumbs}
+      <div className="max-h-52 overflow-y-auto rounded-lg border border-border-default divide-y divide-[#1a1a1a]">
+        {yearsForPair.map((y) => (
+          <button
+            key={y}
+            onClick={() => pickYear(y)}
+            className="w-full text-left px-3 py-2.5 text-sm text-muted hover:bg-surface-hover hover:text-foreground transition-colors"
+          >
+            {y}
+          </button>
+        ))}
+        <div className="px-3 py-2.5 flex items-center gap-2">
+          <input
+            ref={inputRef}
+            type="number"
+            value={customYear}
+            onChange={(e) => setCustomYear(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleCustomYear()}
+            placeholder="Different year…"
+            min={1965}
+            max={new Date().getFullYear() + 2}
+            className="flex-1 bg-background border border-border-default rounded-lg px-2.5 py-1.5 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+          />
+          <button
+            onClick={handleCustomYear}
+            disabled={!customYear || parseInt(customYear) < 1965}
+            className={cn(
+              "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
+              customYear && parseInt(customYear) >= 1965
+                ? "bg-blue-600 text-white hover:bg-blue-500"
+                : "bg-surface-active text-muted cursor-not-allowed"
+            )}
+          >
+            Add
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 // Which entity type each predicate points to
 const PREDICATE_ENTITY_TYPE: Record<Predicate, EntityType> = {
@@ -285,6 +503,11 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                       change
                     </button>
                   </div>
+                ) : entityType === "board" ? (
+                  <BoardPicker
+                    allBoards={[...BOARDS, ...userEntities.boards]}
+                    onSelect={(id) => setEntityId(id)}
+                  />
                 ) : (
                   <div>
                     <input
@@ -499,5 +722,3 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
   )
 }
 
-const inputCls =
-  "w-full bg-background border border-border-default rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"

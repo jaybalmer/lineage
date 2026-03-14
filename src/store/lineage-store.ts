@@ -109,13 +109,13 @@ export const useLineageStore = create<LineageStore>()(
         ]).then(([p, o, b, e, es, pe, c]) => {
           set({
             catalog: {
-              places: (p.data ?? PLACES) as Place[],
-              orgs: (o.data ?? ORGS) as Org[],
-              boards: (b.data ?? BOARDS) as Board[],
-              events: (e.data ?? EVENTS) as Event[],
-              eventSeries: (es.data ?? EVENT_SERIES) as EventSeries[],
-              people: (pe.data ?? PEOPLE) as Person[],
-              claims: (c.data ?? CLAIMS) as Claim[],
+              places: (p.data?.length ? p.data : PLACES) as Place[],
+              orgs: (o.data?.length ? o.data : ORGS) as Org[],
+              boards: (b.data?.length ? b.data : BOARDS) as Board[],
+              events: (e.data?.length ? e.data : EVENTS) as Event[],
+              eventSeries: (es.data?.length ? es.data : EVENT_SERIES) as EventSeries[],
+              people: (pe.data?.length ? pe.data : PEOPLE) as Person[],
+              claims: (c.data?.length ? c.data : CLAIMS) as Claim[],
             },
             catalogLoaded: true,
           })
@@ -361,10 +361,11 @@ export const useLineageStore = create<LineageStore>()(
       setActivePersonId: (id) => set({ activePersonId: id }),
     }),
     {
-      name: "lineage-store",
-      // Don't persist dbClaims — always reload fresh from DB
+      name: "lineage-store-v2",
+      // Don't persist catalog or dbClaims — catalog always starts from mock data
+      // and gets overwritten by loadCatalog(); dbClaims are always reloaded from DB
       partialize: (s) => {
-        const { dbClaims: _db, ...rest } = s
+        const { dbClaims: _db, catalog: _cat, catalogLoaded: _cl, ...rest } = s
         return rest
       },
     }

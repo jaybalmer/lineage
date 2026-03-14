@@ -5,7 +5,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore } from "@/store/lineage-store"
-import { eventSlug, seriesSlug, placeSlug } from "@/lib/mock-data"
+import { EVENTS, EVENT_SERIES, eventSlug, seriesSlug, placeSlug } from "@/lib/mock-data"
 import type { Event } from "@/types"
 
 function formatEventDate(start: string, end?: string): string {
@@ -84,17 +84,20 @@ function InstanceRow({ event }: { event: Event }) {
 
 export default function EventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { catalog } = useLineageStore()
+  const { catalog, userEntities } = useLineageStore()
 
-  // Check if it's a series or an instance — accept both id and slug
+  // Look up from static mock data first (always available), then user-added events
+  const allSeries = EVENT_SERIES
+  const allEvents = [...EVENTS, ...userEntities.events]
+
   const series =
-    catalog.eventSeries.find((s) => s.id === id) ??
-    catalog.eventSeries.find((s) => seriesSlug(s) === id)
+    allSeries.find((s) => s.id === id) ??
+    allSeries.find((s) => seriesSlug(s) === id)
 
   const instance = series
     ? undefined
-    : catalog.events.find((e) => e.id === id) ??
-      catalog.events.find((e) => eventSlug(e) === id)
+    : allEvents.find((e) => e.id === id) ??
+      allEvents.find((e) => eventSlug(e) === id)
 
   if (!series && !instance) notFound()
 

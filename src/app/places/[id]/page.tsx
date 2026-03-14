@@ -2,7 +2,7 @@
 
 import { use, useState, useMemo } from "react"
 import { Nav } from "@/components/ui/nav"
-import { eventSlug, placeSlug } from "@/lib/mock-data"
+import { PLACES, eventSlug, placeSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -29,8 +29,9 @@ const EVENT_TYPE_COLOR: Record<string, string> = {
 
 export default function PlacePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { catalog } = useLineageStore()
-  const place = catalog.places.find((p) => p.id === id || placeSlug(p) === id)
+  const { catalog, userEntities } = useLineageStore()
+  const allPlaces = [...PLACES, ...userEntities.places]
+  const place = allPlaces.find((p) => p.id === id || placeSlug(p) === id)
   if (!place) notFound()
 
   const [tab, setTab] = useState<PlaceTab>("all")

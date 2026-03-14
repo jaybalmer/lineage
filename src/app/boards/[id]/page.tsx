@@ -5,17 +5,18 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore } from "@/store/lineage-store"
-import { boardSlug, orgSlug } from "@/lib/mock-data"
+import { BOARDS, boardSlug, orgSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 
 export default function BoardPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { catalog } = useLineageStore()
+  const { catalog, userEntities } = useLineageStore()
 
-  // Accept both slug (Burton_Custom_2003) and raw id
+  // Look up from static mock data first (always available), then user-added boards
+  const allBoards = [...BOARDS, ...userEntities.boards]
   const board =
-    catalog.boards.find((b) => b.id === id) ??
-    catalog.boards.find((b) => boardSlug(b) === id)
+    allBoards.find((b) => b.id === id) ??
+    allBoards.find((b) => boardSlug(b) === id)
 
   if (!board) notFound()
 
