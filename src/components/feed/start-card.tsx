@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react"
 import Link from "next/link"
 import { useLineageStore } from "@/store/lineage-store"
-import { getEntityName, getBoardById, getPlaceById, boardSlug, placeSlug } from "@/lib/mock-data"
+import { getBoardById, getPlaceById, boardSlug, placeSlug } from "@/lib/mock-data"
 import { cn } from "@/lib/utils"
 import type { Person, Claim, Board, Place } from "@/types"
 
@@ -104,49 +104,11 @@ function InlineSearch<T extends { id: string }>({
 export function StartCard({ person, claims, isOwn = false }: StartCardProps) {
   const { userEntities, catalog, setProfileOverride, updateClaim, addClaim, activePersonId } = useLineageStore()
   const [editing, setEditing] = useState(false)
-
-  // ── Resolve display data ─────────────────────────────────────────────────
-
-  function resolveEntityName(id: string, type: string): string {
-    const allUserEntities = [
-      ...userEntities.places,
-      ...userEntities.boards,
-      ...userEntities.orgs,
-      ...userEntities.events,
-    ]
-    const ue = allUserEntities.find((e) => e.id === id)
-    if (ue) {
-      if ("brand" in ue) return `${(ue as { brand: string; model: string }).brand} ${(ue as { brand: string; model: string }).model}`
-      if ("name" in ue) return (ue as { name: string }).name
-    }
-    return getEntityName(id, type as Parameters<typeof getEntityName>[1])
-  }
-
-  const firstBoardClaim = claims
-    .filter((c) => c.predicate === "owned_board")
-    .sort((a, b) => yearOf(a.start_date) - yearOf(b.start_date))[0] ?? null
-
-  const firstPlaceClaim = claims
-    .filter((c) => c.predicate === "rode_at" && c.object_type === "place")
-    .sort((a, b) => yearOf(a.start_date) - yearOf(b.start_date))[0] ?? null
-
-  const boardDetail = firstBoardClaim ? getBoardById(firstBoardClaim.object_id) : null
-  const placeDetail = firstPlaceClaim ? getPlaceById(firstPlaceClaim.object_id) : null
-
-  const boardName = boardDetail
-    ? `${boardDetail.brand} ${boardDetail.model}`
-    : firstBoardClaim
-    ? resolveEntityName(firstBoardClaim.object_id, firstBoardClaim.object_type)
-    : null
-
-  const placeName = placeDetail?.name
-    ?? (firstPlaceClaim ? resolveEntityName(firstPlaceClaim.object_id, firstPlaceClaim.object_type) : null)
-
-  // ── Edit state ────────────────────────────────────────────────────────────
-
   const [draftYear, setDraftYear] = useState<number | "">(person.riding_since ?? "")
-  const [draftBoardId, setDraftBoardId] = useState<string | undefined>(firstBoardClaim?.object_id)
-  const [draftPlaceId, setDraftPlaceId] = useState<string | undefined>(firstPlaceClaim?.object_id)
+  const [draftBoardId, setDraftBoardId] = useState<string | undefined>(undefined)
+  const [draftPlaceId, setDraftPlaceId] = useState<string | undefined>(undefined)
+
+  // ── Full catalog lookups (Supabase + mock + user-created) ────────────────
 
   const allBoards: Board[] = useMemo(
     () => [...catalog.boards, ...userEntities.boards].sort((a, b) => b.model_year - a.model_year),
@@ -156,6 +118,31 @@ export function StartCard({ person, claims, isOwn = false }: StartCardProps) {
     () => [...catalog.places, ...userEntities.places],
     [catalog.places, userEntities.places]
   )
+
+  // ── Resolve display data ─────────────────────────────────────────────────
+
+  const firstBoardClaim = claims
+    .filter((c) => c.predicate === "owned_board")
+    .sort((a, b) => yearOf(a.start_date) - yearOf(b.start_date))[0] ?? null
+
+  const firstPlaceClaim = claims
+    .filter((c) => c.predicate === "rode_at" && c.object_type === "place")
+    .sort((a, b) => yearOf(a.start_date) - yearOf(b.start_date))[0] ?? null
+
+  // Look up from full catalog first, then fall back to mock-data helpers
+  const boardDetail = firstBoardClaim
+    ? (allBoards.find((b) => b.id === firstBoardClaim.object_id) ?? getBoardById(firstBoardClaim.object_id) ?? null)
+    : null
+
+  const placeDetail = firstPlaceClaim
+    ? (allPlaces.find((p) => p.id === firstPlaceClaim.object_id) ?? getPlaceById(firstPlaceClaim.object_id) ?? null)
+    : null
+
+  const boardName = boardDetail
+    ? `${boardDetail.brand} ${boardDetail.model}`
+    : null
+
+  const placeName = placeDetail?.name ?? null
 
   const openEdit = () => {
     setDraftYear(person.riding_since ?? "")
