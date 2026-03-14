@@ -66,11 +66,13 @@ export function FeedView({
   days = [],
   personName,
   isOwn,
+  hideActionButtons = false,
 }: {
   claims: Claim[]
   days?: RidingDay[]
   personName: string
   isOwn?: boolean
+  hideActionButtons?: boolean
 }) {
   const [filter, setFilter] = useState<FilterType>("all")
   const [addingClaim, setAddingClaim] = useState(false)
@@ -123,7 +125,7 @@ export function FeedView({
             {claims.length} claims · {days.length} day{days.length !== 1 ? "s" : ""}
           </p>
         </div>
-        {isOwn && (
+        {isOwn && !hideActionButtons && (
           <div className="flex gap-2 flex-shrink-0">
             <button
               onClick={() => setAddingDay(true)}

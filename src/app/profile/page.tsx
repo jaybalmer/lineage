@@ -7,6 +7,8 @@ import { StartCard } from "@/components/feed/start-card"
 import { useLineageStore, getAllClaims, isAuthUser } from "@/store/lineage-store"
 import { getPersonById, PLACES } from "@/lib/mock-data"
 import { EditProfileModal } from "@/components/ui/edit-profile-modal"
+import { AddClaimModal } from "@/components/ui/add-claim-modal"
+import { AddDayModal } from "@/components/ui/add-day-modal"
 import { supabase } from "@/lib/supabase"
 import type { Claim, PrivacyLevel } from "@/types"
 
@@ -14,6 +16,8 @@ export default function ProfilePage() {
   const { activePersonId, sessionClaims, dbClaims, setDbClaims, deletedClaimIds, claimOverrides, profileOverride, ridingDays } = useLineageStore()
   const myDays = ridingDays.filter((d) => d.created_by === activePersonId)
   const [editingProfile, setEditingProfile] = useState(false)
+  const [addingClaim, setAddingClaim] = useState(false)
+  const [addingDay, setAddingDay] = useState(false)
 
   const basePerson = getPersonById(activePersonId)
   const person = basePerson
@@ -78,6 +82,12 @@ export default function ProfilePage() {
           onClose={() => setEditingProfile(false)}
         />
       )}
+      {addingClaim && (
+        <AddClaimModal onClose={() => setAddingClaim(false)} />
+      )}
+      {addingDay && (
+        <AddDayModal onClose={() => setAddingDay(false)} />
+      )}
 
       <div className="max-w-3xl mx-auto px-4 py-10">
         {/* Profile header */}
@@ -132,10 +142,24 @@ export default function ProfilePage() {
           </div>
         </div>
 
+        {/* Action buttons */}
+        <div className="flex justify-end gap-2 mb-3">
+          <button
+            onClick={() => setAddingDay(true)}
+            className="px-3 py-2 rounded-lg bg-emerald-800 text-white text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-1.5"
+          >
+            ☀️ Log day
+          </button>
+          <button
+            onClick={() => setAddingClaim(true)}
+            className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
+          >
+            + Add claim
+          </button>
+        </div>
+
         {/* Origin card */}
-        {person && (
-          <StartCard person={person} claims={personClaims} isOwn={true} />
-        )}
+        {person && <StartCard person={person} claims={personClaims} isOwn={true} />}
 
         {/* Feed */}
         <FeedView
@@ -143,6 +167,7 @@ export default function ProfilePage() {
           days={myDays}
           personName={person?.display_name ?? "Your"}
           isOwn={true}
+          hideActionButtons={true}
         />
       </div>
     </div>

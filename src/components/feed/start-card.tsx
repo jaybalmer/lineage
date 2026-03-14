@@ -219,93 +219,83 @@ export function StartCard({ person, claims, isOwn = false }: StartCardProps) {
 
   return (
     <div className={cn(
-      "bg-surface border border-border-default border-l-2 border-l-zinc-500 rounded-xl p-4 mb-4 transition-all",
-      editing && "border-blue-900/40"
+      "bg-surface border border-border-default rounded-xl px-3 py-2.5 mb-3 transition-all",
+      editing ? "border-blue-900/40" : ""
     )}>
-      <div className="flex items-start gap-3">
-        <span className="text-lg shrink-0 mt-0.5">🏂</span>
+      <div className="flex items-center gap-2 min-w-0">
+        <span className="text-sm shrink-0">🏂</span>
         <div className="min-w-0 flex-1">
 
-          {/* Header row */}
-          <div className="flex items-center justify-between mb-1">
-            <div className="text-[10px] text-muted uppercase tracking-widest">Origin</div>
-            {isOwn && !editing && (
-              <button
-                onClick={openEdit}
-                className="text-[10px] text-muted hover:text-foreground transition-colors px-1.5 py-0.5 rounded hover:bg-surface-active"
-              >
-                Edit
-              </button>
-            )}
-            {isOwn && editing && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setEditing(false)}
-                  className="text-[10px] text-muted hover:text-foreground transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleSave}
-                  className="text-[10px] text-blue-400 hover:text-blue-300 font-medium transition-colors px-2 py-0.5 rounded bg-blue-950/40 border border-blue-900/50"
-                >
-                  Save
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* ── Display mode ── */}
+          {/* ── Display mode: single compact line ── */}
           {!editing && (
-            <>
-              {person.riding_since && (
-                <div className="font-semibold text-foreground text-sm leading-snug">
-                  Started snowboarding in {person.riding_since}
-                </div>
+            <div className="flex items-center gap-2 min-w-0">
+              {/* Scrollable info strip */}
+              <div className="flex items-center gap-1.5 min-w-0 flex-1 overflow-hidden">
+                <span className="text-[10px] text-muted uppercase tracking-widest shrink-0">Origin</span>
+                {person.riding_since && (
+                  <span className="text-xs text-foreground font-medium shrink-0">{person.riding_since}</span>
+                )}
+                {boardName && firstBoardClaim && (
+                  <>
+                    <span className="text-muted text-xs shrink-0">·</span>
+                    <Link
+                      href={boardDetail ? `/boards/${boardSlug(boardDetail)}` : `/boards/${firstBoardClaim.object_id}`}
+                      className="text-xs text-muted hover:text-foreground transition-colors shrink-0"
+                    >
+                      {boardName}{boardDetail ? ` '${String(boardDetail.model_year).slice(2)}` : ""}
+                    </Link>
+                  </>
+                )}
+                {placeName && firstPlaceClaim && (
+                  <>
+                    <span className="text-muted text-xs shrink-0">·</span>
+                    <Link
+                      href={(() => { const p = getPlaceById(firstPlaceClaim.object_id); return p ? `/places/${placeSlug(p)}` : `/places/${firstPlaceClaim.object_id}` })()}
+                      className="text-xs text-muted hover:text-foreground transition-colors shrink-0"
+                    >
+                      {placeName}
+                    </Link>
+                  </>
+                )}
+                {isOwn && !boardName && !placeName && (
+                  <button onClick={openEdit} className="text-xs text-blue-400 hover:underline shrink-0">
+                    + add first board &amp; mountain
+                  </button>
+                )}
+              </div>
+              {/* Edit button pinned to right */}
+              {isOwn && (
+                <button
+                  onClick={openEdit}
+                  className="text-[10px] text-muted hover:text-foreground transition-colors shrink-0"
+                >
+                  Edit
+                </button>
               )}
-
-              {(boardName || placeName) && (
-                <div className="mt-3 space-y-2">
-                  {boardName && firstBoardClaim && (
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-[10px] text-muted w-[72px] shrink-0 leading-none">First board</span>
-                      <Link href={boardDetail ? `/boards/${boardSlug(boardDetail)}` : `/boards/${firstBoardClaim.object_id}`}>
-                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-surface-hover border border-border-default rounded-lg text-muted hover:text-foreground transition-all">
-                          🏂 {boardName}
-                          {boardDetail && (
-                            <span className="text-muted">&nbsp;&apos;{String(boardDetail.model_year).slice(2)}</span>
-                          )}
-                        </span>
-                      </Link>
-                    </div>
-                  )}
-                  {placeName && firstPlaceClaim && (
-                    <div className="flex items-center gap-2.5">
-                      <span className="text-[10px] text-muted w-[72px] shrink-0 leading-none">First mountain</span>
-                      <Link href={(() => { const p = getPlaceById(firstPlaceClaim.object_id); return p ? `/places/${placeSlug(p)}` : `/places/${firstPlaceClaim.object_id}` })()}>
-                        <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-surface-hover border border-border-default rounded-lg text-muted hover:text-foreground transition-all">
-                          🏔 {placeName}
-                        </span>
-                      </Link>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {isOwn && !boardName && !placeName && (
-                <p className="text-xs text-muted mt-2">
-                  <button onClick={openEdit} className="text-blue-400 hover:underline">
-                    Add your first board and mountain
-                  </button>{" "}
-                  to complete your origin story.
-                </p>
-              )}
-            </>
+            </div>
           )}
 
           {/* ── Edit mode ── */}
           {editing && (
-            <div className="space-y-4 mt-2">
+            <div className="space-y-4 mt-1">
+              {/* Edit header */}
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] text-muted uppercase tracking-widest">Edit Origin</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setEditing(false)}
+                    className="text-[10px] text-muted hover:text-foreground transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSave}
+                    className="text-[10px] text-blue-400 hover:text-blue-300 font-medium transition-colors px-2 py-0.5 rounded bg-blue-950/40 border border-blue-900/50"
+                  >
+                    Save
+                  </button>
+                </div>
+              </div>
               {/* Year started */}
               <div>
                 <label className="text-[10px] text-muted uppercase tracking-widest block mb-1.5">
