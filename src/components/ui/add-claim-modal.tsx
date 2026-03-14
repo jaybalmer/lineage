@@ -313,7 +313,7 @@ interface AddClaimModalProps {
 }
 
 export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalProps) {
-  const { activePersonId, addClaim, userEntities } = useLineageStore()
+  const { activePersonId, addClaim, userEntities, catalog } = useLineageStore()
 
   const defaultPredicate = FILTER_DEFAULT_PREDICATE[defaultFilter] ?? null
   const [predicate, setPredicate] = useState<Predicate | null>(defaultPredicate)
@@ -329,15 +329,17 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
 
   const entityType = predicate ? PREDICATE_ENTITY_TYPE[predicate] : null
 
-  // Get the entity list based on type
+  // Get the entity list based on type — use catalog (Supabase) first so IDs
+  // match what's used during display; fall back to mock-data only if catalog
+  // hasn't loaded yet (empty array guard).
   const getEntityList = () => {
     if (!entityType) return []
     switch (entityType) {
-      case "place": return [...PLACES, ...userEntities.places]
-      case "org": return [...ORGS, ...userEntities.orgs]
-      case "board": return [...BOARDS, ...userEntities.boards]
+      case "place": return [...(catalog.places.length ? catalog.places : PLACES), ...userEntities.places]
+      case "org": return [...(catalog.orgs.length ? catalog.orgs : ORGS), ...userEntities.orgs]
+      case "board": return [...(catalog.boards.length ? catalog.boards : BOARDS), ...userEntities.boards]
       case "person": return PEOPLE.filter((p) => p.id !== activePersonId)
-      case "event": return [...EVENTS, ...userEntities.events]
+      case "event": return [...(catalog.events.length ? catalog.events : EVENTS), ...userEntities.events]
       default: return []
     }
   }
@@ -505,7 +507,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                   </div>
                 ) : entityType === "board" ? (
                   <BoardPicker
-                    allBoards={[...BOARDS, ...userEntities.boards]}
+                    allBoards={[...(catalog.boards.length ? catalog.boards : BOARDS), ...userEntities.boards]}
                     onSelect={(id) => setEntityId(id)}
                   />
                 ) : (
