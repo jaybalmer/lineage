@@ -134,7 +134,7 @@ export default function ProfilePage() {
 
         {/* Origin card */}
         {person && (
-          <StartCard person={person} claims={personClaims} />
+          <StartCard person={person} claims={personClaims} isOwn={true} />
         )}
 
         {/* Feed */}
