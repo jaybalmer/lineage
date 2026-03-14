@@ -354,6 +354,7 @@ export const useLineageStore = create<LineageStore>()(
               boards: (boardsRes.data ?? []) as Board[],
               orgs: (orgsRes.data ?? []) as Org[],
               events: (eventsRes.data ?? []) as Event[],
+              eventSeries: [],
               people: [],
             },
           })
