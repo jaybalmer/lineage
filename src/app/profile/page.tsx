@@ -68,10 +68,6 @@ export default function ProfilePage() {
     ? PLACES.find((p) => p.id === (person as { home_resort_id?: string }).home_resort_id)
     : null
 
-  const placesCount = personClaims.filter((c) => c.predicate === "rode_at").length
-  const boardsCount = personClaims.filter((c) => c.predicate === "owned_board").length
-  const connectionsCount = personClaims.filter((c) => c.predicate === "rode_with").length
-
   return (
     <div className="min-h-screen bg-background">
       <Nav />
@@ -125,37 +121,26 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          {/* Stats row */}
-          <div className="flex gap-6 mt-5 pt-5 border-t border-border-default">
-            {[
-              { label: "claims", value: personClaims.length },
-              { label: "places", value: placesCount },
-              { label: "boards", value: boardsCount },
-              { label: "connections", value: connectionsCount },
-              { label: "days", value: myDays.length },
-            ].map(({ label, value }) => (
-              <div key={label} className="text-center">
-                <div className="text-lg font-bold text-foreground">{value}</div>
-                <div className="text-[11px] text-muted">{label}</div>
-              </div>
-            ))}
+          {/* Stats + action row */}
+          <div className="flex items-center justify-between mt-5 pt-5 border-t border-border-default">
+            <span className="text-sm text-muted">
+              <span className="text-foreground font-bold">{personClaims.length}</span> claims
+            </span>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setAddingDay(true)}
+                className="px-3 py-2 rounded-lg bg-emerald-800 text-white text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-1.5"
+              >
+                ☀️ Log day
+              </button>
+              <button
+                onClick={() => setAddingClaim(true)}
+                className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
+              >
+                + Add claim
+              </button>
+            </div>
           </div>
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex justify-end gap-2 mb-3">
-          <button
-            onClick={() => setAddingDay(true)}
-            className="px-3 py-2 rounded-lg bg-emerald-800 text-white text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-1.5"
-          >
-            ☀️ Log day
-          </button>
-          <button
-            onClick={() => setAddingClaim(true)}
-            className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
-          >
-            + Add claim
-          </button>
         </div>
 
         {/* Origin card */}

@@ -106,6 +106,20 @@ export function FeedView({
   const grouped = useMemo(() => groupByDecade(items), [items])
   const decades = Object.keys(grouped).sort()
 
+  // Count per filter tab
+  const filterCounts = useMemo((): Record<FilterType, number> => {
+    const countFor = (preds: string[]) => claims.filter((c) => preds.includes(c.predicate)).length
+    return {
+      all: claims.length + days.length,
+      places: countFor(FILTER_PREDICATES.places),
+      gear: countFor(FILTER_PREDICATES.gear),
+      people: countFor(FILTER_PREDICATES.people),
+      orgs: countFor(FILTER_PREDICATES.orgs),
+      events: countFor(FILTER_PREDICATES.events),
+      days: days.length,
+    }
+  }, [claims, days])
+
   return (
     <div>
       {addingClaim && isOwn && (
@@ -118,41 +132,43 @@ export function FeedView({
         <AddDayModal onClose={() => setAddingDay(false)} />
       )}
 
-      {/* Header */}
-      <div className="mb-6 flex items-center justify-between gap-3">
-        <div>
+      {/* Header — only shown when action buttons are present (non-profile contexts) */}
+      {!hideActionButtons && (
+        <div className="mb-6 flex items-center justify-between gap-3">
           <p className="text-sm text-muted">
             {claims.length} claims · {days.length} day{days.length !== 1 ? "s" : ""}
           </p>
+          {isOwn && (
+            <div className="flex gap-2 flex-shrink-0">
+              <button
+                onClick={() => setAddingDay(true)}
+                className="px-3 py-2 rounded-lg bg-emerald-800 text-white text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-1.5"
+              >
+                ☀️ Log day
+              </button>
+              <button
+                onClick={() => setAddingClaim(true)}
+                className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
+              >
+                + Add claim
+              </button>
+            </div>
+          )}
         </div>
-        {isOwn && !hideActionButtons && (
-          <div className="flex gap-2 flex-shrink-0">
-            <button
-              onClick={() => setAddingDay(true)}
-              className="px-3 py-2 rounded-lg bg-emerald-800 text-white text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-1.5"
-            >
-              ☀️ Log day
-            </button>
-            <button
-              onClick={() => setAddingClaim(true)}
-              className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
-            >
-              + Add claim
-            </button>
-          </div>
-        )}
-      </div>
+      )}
 
-      {/* Filter chips */}
+      {/* Filter chips with counts */}
       <div className="flex gap-2 flex-wrap mb-6">
         {(Object.keys(FILTER_LABELS) as FilterType[]).map((f) => {
           const isDaysChip = f === "days"
+          const count = filterCounts[f]
+          const active = filter === f
           return (
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-all ${
-                filter === f
+              className={`px-3 py-1 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 ${
+                active
                   ? isDaysChip
                     ? "bg-emerald-700 border-emerald-700 text-foreground"
                     : "bg-blue-600 border-blue-600 text-foreground"
@@ -160,9 +176,13 @@ export function FeedView({
               }`}
             >
               {isDaysChip && "☀️ "}{FILTER_LABELS[f]}
-              {isDaysChip && days.length > 0 && (
-                <span className={`ml-1.5 px-1 rounded text-[10px] ${filter === f ? "bg-emerald-600" : "bg-border-default text-muted"}`}>
-                  {days.length}
+              {count > 0 && (
+                <span className={`text-[10px] tabular-nums ${
+                  active
+                    ? isDaysChip ? "text-emerald-200" : "text-blue-200"
+                    : "text-muted"
+                }`}>
+                  {count}
                 </span>
               )}
             </button>
