@@ -318,11 +318,20 @@ function EntityBlock({ claim, entityName, href, isOwn }: EntityBlockProps) {
   const type = claim.object_type
   const id = claim.object_id
 
-  // Resolve entity details
-  const board  = type === "board"  ? getBoardById(id)  : null
-  const place  = type === "place"  ? getPlaceById(id)  : null
-  const org    = type === "org"    ? getOrgById(id)    : null
-  const event  = type === "event"  ? getEventById(id)  : null
+  // Resolve entity details — check full Supabase catalog first, then mock-data fallbacks
+  const { catalog, userEntities } = useLineageStore()
+  const board  = type === "board"
+    ? (catalog.boards.find((b) => b.id === id) ?? userEntities.boards.find((b) => b.id === id) ?? getBoardById(id) ?? null)
+    : null
+  const place  = type === "place"
+    ? (catalog.places.find((p) => p.id === id) ?? userEntities.places.find((p) => p.id === id) ?? getPlaceById(id) ?? null)
+    : null
+  const org    = type === "org"
+    ? (catalog.orgs.find((o) => o.id === id) ?? userEntities.orgs.find((o) => o.id === id) ?? getOrgById(id) ?? null)
+    : null
+  const event  = type === "event"
+    ? (catalog.events.find((e) => e.id === id) ?? userEntities.events.find((e) => e.id === id) ?? getEventById(id) ?? null)
+    : null
   const person = type === "person" ? getPersonById(id) : null
 
   // Auto-fetch board image via search API (hook always called; returns null for non-boards)
