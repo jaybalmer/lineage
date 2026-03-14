@@ -185,9 +185,14 @@ export interface OnboardingState {
   step: number
   display_name?: string
   birth_year?: number
+  home_country?: string
+  home_region?: string
+  home_city?: string
   start_year?: number
   first_place_id?: string
   first_board_id?: string
+  board_ids: string[]
+  event_ids: string[]
   early_orgs: string[]
   crew_ids: string[]
   privacy?: "private" | "shared" | "public"

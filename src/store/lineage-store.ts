@@ -140,6 +140,8 @@ export const useLineageStore = create<LineageStore>()(
         step: 0,
         early_orgs: [],
         crew_ids: [],
+        board_ids: [],
+        event_ids: [],
       },
       setOnboardingStep: (step) =>
         set((s) => ({ onboarding: { ...s.onboarding, step } })),
