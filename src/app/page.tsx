@@ -35,9 +35,9 @@ function TimelineNodes() {
       className="w-full max-w-[520px] mx-auto"
       aria-hidden="true"
     >
-      <line x1="0" y1="18" x2="520" y2="18" stroke="#1e293b" strokeWidth="2.5" />
+      <line x1="0" y1="18" x2="520" y2="18" stroke="currentColor" strokeWidth="2.5" className="text-foreground opacity-20" />
       {[26, 112, 198, 260, 322, 408, 494].map((cx) => (
-        <circle key={cx} cx={cx} cy={18} r={9} stroke="#1e293b" strokeWidth="2.5" fill="transparent" />
+        <circle key={cx} cx={cx} cy={18} r={9} stroke="currentColor" strokeWidth="2.5" fill="transparent" className="text-foreground opacity-30" />
       ))}
     </svg>
   )
