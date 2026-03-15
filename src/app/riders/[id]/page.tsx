@@ -2,10 +2,10 @@
 
 import { use } from "react"
 import { Nav } from "@/components/ui/nav"
-import { PEOPLE, CLAIMS, getPersonById, getEntityName, getSharedContext } from "@/lib/mock-data"
-import { TimelineView } from "@/components/timeline/timeline-view"
+import { CLAIMS, getPersonById, getSharedContext } from "@/lib/mock-data"
+import { FeedView } from "@/components/feed/feed-view"
+import { StartCard } from "@/components/feed/start-card"
 import { useLineageStore } from "@/store/lineage-store"
-import { formatDateRange } from "@/lib/utils"
 import { getLinkIcon } from "@/components/ui/edit-profile-modal"
 import Link from "next/link"
 import { notFound } from "next/navigation"
@@ -28,7 +28,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   return (
     <div className="min-h-screen bg-background">
       <Nav />
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-3xl mx-auto px-4 py-10">
 
         {/* Breadcrumb */}
         <div className="text-xs text-muted mb-6">
@@ -38,15 +38,20 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
         </div>
 
         {/* Profile header */}
-        <div className="bg-surface border border-border-default rounded-xl p-6 mb-6">
-          <div className="flex items-start gap-4">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 flex items-center justify-center text-xl font-bold text-foreground flex-shrink-0">
-              {person.display_name[0]}
+        <div className="mb-8">
+          <div className="flex items-start gap-5">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center text-xl font-bold text-white flex-shrink-0">
+              {person.display_name[0].toUpperCase()}
             </div>
-            <div className="flex-1">
-              <h1 className="text-xl font-bold text-foreground">{person.display_name}</h1>
-              {person.birth_year && <p className="text-muted text-sm">b. {person.birth_year}</p>}
-              {person.bio && <p className="text-muted text-sm mt-2 leading-relaxed">{person.bio}</p>}
+            <div className="min-w-0 flex-1">
+              <h1 className="text-2xl font-bold text-foreground">{person.display_name}</h1>
+              <div className="flex items-center gap-3 mt-1 text-xs text-muted flex-wrap">
+                {person.birth_year && <span>b. {person.birth_year}</span>}
+                {person.riding_since && <span>Riding since {person.riding_since}</span>}
+              </div>
+              {person.bio && (
+                <p className="text-sm text-muted mt-2 leading-relaxed max-w-lg">{person.bio}</p>
+              )}
               {person.links && person.links.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {person.links.map((link, i) => (
@@ -55,7 +60,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                       href={link.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-hover border border-border-default rounded-lg text-xs text-muted hover:text-foreground hover:border-border-default transition-all"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-hover border border-border-default rounded-lg text-xs text-muted hover:text-foreground transition-all"
                     >
                       <span>{getLinkIcon(link.url)}</span>
                       <span>{link.label}</span>
@@ -64,40 +69,42 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                 </div>
               )}
             </div>
-            <div className="flex-shrink-0 flex gap-2">
-              {!isCurrentUser && (
-                <>
-                  <Link href={`/compare?b=${id}`}>
-                    <button className="px-3 py-1.5 rounded-lg bg-surface-hover border border-border-default text-xs text-muted hover:border-border-default hover:text-foreground transition-all">
-                      Compare ⬡
-                    </button>
-                  </Link>
-                  <Link href={`/connections/${id}`}>
-                    <button className="px-3 py-1.5 rounded-lg bg-blue-600 text-xs text-foreground font-medium hover:bg-blue-500 transition-all">
-                      View connection →
-                    </button>
-                  </Link>
-                  <button className="px-3 py-1.5 rounded-lg bg-surface-hover border border-border-default text-xs text-muted hover:border-border-default hover:text-foreground transition-all">
-                    Request verification
-                  </button>
-                </>
-              )}
-            </div>
           </div>
+
+          {/* Action row */}
+          {!isCurrentUser && (
+            <div className="flex items-center justify-between mt-5 pt-5 border-t border-border-default">
+              <span className="text-sm text-muted">
+                <span className="text-foreground font-bold">{personClaims.length}</span> claims
+              </span>
+              <div className="flex gap-2">
+                <Link href={`/compare?b=${id}`}>
+                  <button className="px-3 py-2 rounded-lg bg-surface-hover border border-border-default text-xs text-muted hover:text-foreground transition-all">
+                    Compare ⬡
+                  </button>
+                </Link>
+                <Link href={`/connections/${id}`}>
+                  <button className="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-500 transition-all">
+                    View connection →
+                  </button>
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Shared context (shown if viewing another rider) */}
+        {/* Shared context */}
         {!isCurrentUser && (sharedPlaces.length > 0 || sharedEvents.length > 0) && (
-          <div className="bg-blue-950/30 border border-blue-900/40 rounded-xl p-4 mb-6">
-            <div className="text-xs font-semibold text-blue-400 uppercase tracking-widest mb-3">You both…</div>
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
+            <div className="text-xs font-semibold text-blue-500 uppercase tracking-widest mb-3">You both…</div>
             <div className="flex flex-wrap gap-2">
               {sharedPlaces.map(({ place }) => (
-                <span key={place.id} className="text-xs px-3 py-1.5 bg-blue-900/30 border border-blue-800/40 rounded-lg text-blue-200">
+                <span key={place.id} className="text-xs px-3 py-1.5 bg-blue-100 border border-blue-200 rounded-lg text-blue-700">
                   🏔 Rode {place.name}
                 </span>
               ))}
               {sharedEvents.map(({ event }) => (
-                <span key={event.id} className="text-xs px-3 py-1.5 bg-blue-900/30 border border-blue-800/40 rounded-lg text-blue-200">
+                <span key={event.id} className="text-xs px-3 py-1.5 bg-blue-100 border border-blue-200 rounded-lg text-blue-700">
                   🏆 {event.name}
                 </span>
               ))}
@@ -105,40 +112,17 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
           </div>
         )}
 
-        <div className="grid grid-cols-[1fr_260px] gap-6">
-          <TimelineView claims={personClaims} personName={person.display_name} isOwn={isCurrentUser} />
+        {/* Origin card */}
+        <StartCard person={person} claims={personClaims} isOwn={false} />
 
-          {/* Sidebar */}
-          <div className="space-y-4">
-            <div className="bg-surface border border-border-default rounded-xl p-4 space-y-3">
-              <div className="text-xs font-semibold text-muted uppercase tracking-widest">Stats</div>
-              {[
-                { label: "Claims", value: personClaims.length },
-                { label: "Places", value: personClaims.filter((c) => c.predicate === "rode_at").length },
-                { label: "Gear", value: personClaims.filter((c) => c.predicate === "owned_board").length },
-                { label: "Connections", value: personClaims.filter((c) => c.predicate === "rode_with").length },
-              ].map(({ label, value }) => (
-                <div key={label} className="flex justify-between text-sm">
-                  <span className="text-muted">{label}</span>
-                  <span className="font-semibold text-foreground">{value}</span>
-                </div>
-              ))}
-            </div>
+        {/* Feed — same styled cards as own profile */}
+        <FeedView
+          claims={personClaims}
+          personName={person.display_name}
+          isOwn={false}
+          hideActionButtons={true}
+        />
 
-            {/* Sponsors */}
-            {personClaims.filter((c) => c.predicate === "sponsored_by").length > 0 && (
-              <div className="bg-surface border border-border-default rounded-xl p-4">
-                <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Sponsors</div>
-                {personClaims.filter((c) => c.predicate === "sponsored_by").map((c) => (
-                  <div key={c.id} className="text-sm py-1">
-                    <span className="text-foreground">{getEntityName(c.object_id, c.object_type)}</span>
-                    <span className="text-muted text-xs ml-2">{formatDateRange(c.start_date, c.end_date)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
       </div>
     </div>
   )
