@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
@@ -451,6 +451,29 @@ export function OnboardingFlow() {
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [emailConfirmPending, setEmailConfirmPending] = useState(false)
+  const [claimContext, setClaimContext] = useState<{ inviterName?: string } | null>(null)
+
+  // Pre-fill from invite claim link (sessionStorage set by /claim/[token] page)
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("lineage_claim_prefill")
+      if (!raw) return
+      const prefill = JSON.parse(raw) as {
+        display_name?: string
+        riding_since?: number | null
+        inviter_name?: string
+      }
+      if (prefill.display_name && !onboarding.display_name) {
+        setOnboardingField("display_name", prefill.display_name)
+      }
+      if (prefill.riding_since && !onboarding.start_year) {
+        setOnboardingField("start_year", prefill.riding_since)
+      }
+      if (prefill.inviter_name) {
+        setClaimContext({ inviterName: prefill.inviter_name })
+      }
+    } catch { /* sessionStorage may not be available */ }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Merged catalog data
   const allPlaces = useMemo(
@@ -623,7 +646,17 @@ export function OnboardingFlow() {
           {/* ── Step 0: Welcome ── */}
           {step === 0 && (
             <div className="space-y-4">
-              <h1 className="text-2xl font-bold text-foreground">Build your snowboarding lineage.</h1>
+              {claimContext ? (
+                <>
+                  <div className="bg-blue-950/40 border border-blue-900/50 rounded-xl px-4 py-3 text-sm text-blue-200">
+                    <span className="font-semibold">{claimContext.inviterName}</span> added you to their snowboard lineage.
+                    {" "}Claim your profile to verify the connection.
+                  </div>
+                  <h1 className="text-2xl font-bold text-foreground">Claim your profile</h1>
+                </>
+              ) : (
+                <h1 className="text-2xl font-bold text-foreground">Build your snowboarding lineage.</h1>
+              )}
               <p className="text-muted leading-relaxed text-sm">
                 Lineage is a living record of snowboarding history — built by riders, for riders.
                 Add your own timeline: the boards you rode, the places you rode them, and the events you attended.

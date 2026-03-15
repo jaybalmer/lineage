@@ -6,6 +6,7 @@ import { PEOPLE, CLAIMS, getPlaceById, getPersonById } from "@/lib/mock-data"
 import { useLineageStore } from "@/store/lineage-store"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
+import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import type { Person } from "@/types"
@@ -19,7 +20,7 @@ const SORT_TABS: { id: SortTab; label: string; title: string }[] = [
   { id: "resort", label: "Resort", title: "Group by home resort" },
 ]
 
-function RiderRow({ person, isMe }: { person: Person; isMe: boolean }) {
+function RiderRow({ person, isMe, onInvite }: { person: Person; isMe: boolean; onInvite?: (p: Person) => void }) {
   const claimCount = CLAIMS.filter((c) => c.subject_id === person.id).length
   const placeCount = CLAIMS.filter((c) => c.subject_id === person.id && c.predicate === "rode_at").length
   const homeResort = person.home_resort_id ? getPlaceById(person.home_resort_id) : null
@@ -83,11 +84,22 @@ function RiderRow({ person, isMe }: { person: Person; isMe: boolean }) {
         </div>
       </Link>
       {!isMe && (
-        <QuickClaimPopover
-          entityId={person.id}
-          entityType="person"
-          entityName={person.display_name}
-        />
+        <div className="flex items-center gap-1.5 shrink-0">
+          {isUnverified && onInvite && (
+            <button
+              onClick={() => onInvite(person)}
+              className="px-2.5 py-1.5 rounded-lg border border-border-default text-[11px] text-muted hover:text-foreground hover:bg-surface-hover transition-colors shrink-0"
+              title="Invite this rider to claim their profile"
+            >
+              Invite
+            </button>
+          )}
+          <QuickClaimPopover
+            entityId={person.id}
+            entityType="person"
+            entityName={person.display_name}
+          />
+        </div>
       )}
     </div>
   )
@@ -109,6 +121,7 @@ export default function RidersPage() {
   const [sort, setSort] = useState<SortTab>("all")
   const [myOnly, setMyOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  const [invitePerson, setInvitePerson] = useState<Person | null>(null)
 
   const allPeople = useMemo(
     () => [...PEOPLE, ...(userEntities.people ?? [])],
@@ -279,7 +292,7 @@ export default function RidersPage() {
         ) : result.type === "flat" ? (
           <div className="space-y-2">
             {result.items.map((person) => (
-              <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} />
+              <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} />
             ))}
           </div>
         ) : (
@@ -289,7 +302,7 @@ export default function RidersPage() {
                 <SectionHeader label={label} count={items.length} />
                 <div className="space-y-2">
                   {items.map((person) => (
-                    <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} />
+                    <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} />
                   ))}
                 </div>
               </div>
@@ -303,6 +316,14 @@ export default function RidersPage() {
           entityType="person"
           onClose={() => setAddOpen(false)}
           onAdded={() => setAddOpen(false)}
+        />
+      )}
+      {invitePerson && (
+        <InviteRiderModal
+          personId={invitePerson.id}
+          personName={invitePerson.display_name}
+          predicate="rode_with"
+          onClose={() => setInvitePerson(null)}
         />
       )}
     </div>

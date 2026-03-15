@@ -74,6 +74,55 @@ export default function AuthCompletePage() {
       store.setActivePersonId(user.id)
       store.completeOnboarding()
 
+      // 4. Merge rider_xxx record if arriving via invite claim
+      try {
+        let inviteToken: string | null = null
+        try {
+          inviteToken = localStorage.getItem("lineage_invite_token")
+          if (!inviteToken) {
+            const prefillRaw = sessionStorage.getItem("lineage_claim_prefill")
+            if (prefillRaw) {
+              const prefill = JSON.parse(prefillRaw) as { invite_token?: string }
+              inviteToken = prefill.invite_token ?? null
+            }
+          }
+        } catch { /* storage not available */ }
+
+        if (inviteToken) {
+          setStatus("Linking your profile…")
+          const { data: invite } = await supabase
+            .from("invites")
+            .select("*")
+            .eq("id", inviteToken)
+            .single()
+
+          if (invite && !invite.claimed_at) {
+            const oldId = invite.person_id as string
+
+            // Migrate all claims where the rider_xxx is subject or object
+            await supabase.from("claims").update({ subject_id: user.id }).eq("subject_id", oldId)
+            await supabase.from("claims").update({ object_id: user.id }).eq("object_id", oldId)
+
+            // Mark invite as claimed
+            await supabase
+              .from("invites")
+              .update({ claimed_at: new Date().toISOString(), claimed_by: user.id })
+              .eq("id", inviteToken)
+
+            // Remove the stale unverified person entry
+            await supabase.from("people").delete().eq("id", oldId)
+          }
+
+          try {
+            localStorage.removeItem("lineage_invite_token")
+            sessionStorage.removeItem("lineage_claim_prefill")
+          } catch { /* storage not available */ }
+        }
+      } catch (mergeErr) {
+        console.error("Invite merge error:", mergeErr)
+        // Non-fatal — don't block the redirect
+      }
+
       setStatus("Done! Opening your lineage…")
       router.replace("/profile")
     }

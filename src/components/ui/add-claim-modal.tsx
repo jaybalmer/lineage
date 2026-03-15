@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils"
 import { PREDICATE_ICONS, PREDICATE_LABELS } from "@/lib/utils"
 import { PLACES, ORGS, BOARDS, PEOPLE, EVENTS } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
+import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import type { Predicate, EntityType, ConfidenceLevel, PrivacyLevel, Board } from "@/types"
 
 const inputCls =
@@ -326,6 +327,9 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
   const [note, setNote] = useState("")
   const [showAddEntity, setShowAddEntity] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
+  const [showInvite, setShowInvite] = useState(false)
+  const [invitePersonId, setInvitePersonId] = useState("")
+  const [invitePersonName, setInvitePersonName] = useState("")
 
   const entityType = predicate ? PREDICATE_ENTITY_TYPE[predicate] : null
 
@@ -401,7 +405,28 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
       created_at: new Date().toISOString(),
       note: note.trim() || undefined,
     })
-    onClose()
+
+    // For person-type claims, show invite nudge before closing
+    if (PREDICATE_ENTITY_TYPE[predicate] === "person" && selectedEntity) {
+      const name = getEntityLabel(selectedEntity)
+      setInvitePersonId(entityId)
+      setInvitePersonName(name)
+      setShowInvite(true)
+    } else {
+      onClose()
+    }
+  }
+
+  // If invite nudge is active, render it over everything else
+  if (showInvite && predicate) {
+    return (
+      <InviteRiderModal
+        personId={invitePersonId}
+        personName={invitePersonName}
+        predicate={predicate}
+        onClose={onClose}
+      />
+    )
   }
 
   return (
