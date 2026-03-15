@@ -30,7 +30,13 @@ const EVENT_TYPE_COLOR: Record<string, string> = {
 export default function PlacePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const { catalog, userEntities } = useLineageStore()
-  const allPlaces = [...PLACES, ...userEntities.places]
+  // Catalog-first: Supabase catalog > user-created > mock-data fallback (deduped by id)
+  const seen = new Set<string>()
+  const allPlaces = [...catalog.places, ...userEntities.places, ...PLACES].filter((p) => {
+    if (seen.has(p.id)) return false
+    seen.add(p.id)
+    return true
+  })
   const place = allPlaces.find((p) => p.id === id || placeSlug(p) === id)
   if (!place) notFound()
 

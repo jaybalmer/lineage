@@ -360,8 +360,8 @@ type FeedTab = "all" | "people" | "boards" | "events" | "places"
 
 export default function BrandPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
-  const { catalog, sessionClaims, dbClaims } = useLineageStore()
-  const allOrgs = catalog.orgs
+  const { catalog, sessionClaims, dbClaims, userEntities } = useLineageStore()
+  const allOrgs = [...catalog.orgs, ...userEntities.orgs]
   const org = allOrgs.find((o) => o.id === slug || orgSlug(o) === slug)
   if (!org) notFound()
 

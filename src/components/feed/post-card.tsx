@@ -12,7 +12,10 @@ import {
   getOrgById,
   getEventById,
   getPersonById,
-  getEntityHref,
+  boardSlug,
+  placeSlug,
+  orgSlug,
+  eventSlug,
 } from "@/lib/mock-data"
 import { useLineageStore } from "@/store/lineage-store"
 import { EditClaimModal } from "@/components/ui/edit-claim-modal"
@@ -310,11 +313,10 @@ function PersonGraphic({ name }: { name: string }) {
 interface EntityBlockProps {
   claim: Claim
   entityName: string
-  href: string
   isOwn?: boolean
 }
 
-function EntityBlock({ claim, entityName, href, isOwn }: EntityBlockProps) {
+function EntityBlock({ claim, entityName, isOwn }: EntityBlockProps) {
   const type = claim.object_type
   const id = claim.object_id
 
@@ -333,6 +335,14 @@ function EntityBlock({ claim, entityName, href, isOwn }: EntityBlockProps) {
     ? (catalog.events.find((e) => e.id === id) ?? userEntities.events.find((e) => e.id === id) ?? getEventById(id) ?? null)
     : null
   const person = type === "person" ? getPersonById(id) : null
+
+  // Generate href from catalog-resolved entity (avoids mock-data ID mismatches)
+  const href = place  ? `/places/${placeSlug(place)}`
+    : board  ? `/boards/${boardSlug(board)}`
+    : org    ? `/brands/${orgSlug(org)}`
+    : event  ? `/events/${eventSlug(event)}`
+    : person ? `/riders/${id}`
+    : "#"
 
   // Auto-fetch board image via search API (hook always called; returns null for non-boards)
   const autoBoard = board as Board | null
@@ -478,7 +488,6 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
 
   const userEvent = userEntities.events.find((e) => e.id === claim.object_id) as Event | undefined
 
-  const href = getEntityHref(claim.object_id, claim.object_type)
   const hasExtra = !!(claim.note || (claim.sources && claim.sources.length > 0))
 
   return (
@@ -505,7 +514,6 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
         <EntityBlock
           claim={claim}
           entityName={entityName}
-          href={href}
           isOwn={isOwn}
         />
 
