@@ -22,6 +22,11 @@ export type Predicate =
   | "organized"
   | "located_at"
 
+export interface ProfileLink {
+  label: string   // e.g. "Instagram", "YouTube", or custom label
+  url: string     // full URL
+}
+
 export interface Person {
   id: string
   display_name: string
@@ -35,6 +40,7 @@ export interface Person {
   is_current_user?: boolean
   community_status?: CommunityStatus
   added_by?: string
+  links?: ProfileLink[]
 }
 
 export interface Place {

@@ -5,7 +5,7 @@ import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { PLACES } from "@/lib/mock-data"
-import type { Person, PrivacyLevel } from "@/types"
+import type { Person, PrivacyLevel, ProfileLink } from "@/types"
 
 interface EditProfileModalProps {
   person: Person
@@ -13,6 +13,24 @@ interface EditProfileModalProps {
 }
 
 const currentYear = new Date().getFullYear()
+
+// Detect platform from URL for icon + label suggestion
+function detectPlatform(url: string): { icon: string; label: string } {
+  const u = url.toLowerCase()
+  if (u.includes("instagram.com"))  return { icon: "📸", label: "Instagram" }
+  if (u.includes("youtube.com") || u.includes("youtu.be")) return { icon: "▶️", label: "YouTube" }
+  if (u.includes("tiktok.com"))     return { icon: "🎵", label: "TikTok" }
+  if (u.includes("twitter.com") || u.includes("x.com")) return { icon: "✖", label: "X / Twitter" }
+  if (u.includes("facebook.com"))   return { icon: "📘", label: "Facebook" }
+  if (u.includes("linkedin.com"))   return { icon: "💼", label: "LinkedIn" }
+  if (u.includes("strava.com"))     return { icon: "🏃", label: "Strava" }
+  if (u.includes("vimeo.com"))      return { icon: "🎬", label: "Vimeo" }
+  return { icon: "🔗", label: "Link" }
+}
+
+export function getLinkIcon(url: string): string {
+  return detectPlatform(url).icon
+}
 
 export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
   const { setProfileOverride, onboarding } = useLineageStore()
@@ -29,11 +47,42 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
   const [bio, setBio] = useState(person.bio ?? "")
   const [homeResortId, setHomeResortId] = useState(person.home_resort_id ?? "")
   const [privacyLevel, setPrivacyLevel] = useState<PrivacyLevel>(person.privacy_level ?? "private")
+  const [links, setLinks] = useState<ProfileLink[]>(person.links ?? [])
+  const [newLinkUrl, setNewLinkUrl] = useState("")
+  const [newLinkLabel, setNewLinkLabel] = useState("")
 
   const canSave = displayName.trim().length > 0
 
+  function addLink() {
+    const url = newLinkUrl.trim()
+    if (!url) return
+    const fullUrl = url.startsWith("http") ? url : `https://${url}`
+    const detected = detectPlatform(fullUrl)
+    const label = newLinkLabel.trim() || detected.label
+    setLinks((prev) => [...prev, { label, url: fullUrl }])
+    setNewLinkUrl("")
+    setNewLinkLabel("")
+  }
+
+  function removeLink(i: number) {
+    setLinks((prev) => prev.filter((_, idx) => idx !== i))
+  }
+
+  function updateLinkLabel(i: number, label: string) {
+    setLinks((prev) => prev.map((l, idx) => idx === i ? { ...l, label } : l))
+  }
+
   const handleSave = () => {
     if (!canSave) return
+
+    // Add pending new link if URL entered but not yet submitted
+    const finalLinks = [...links]
+    if (newLinkUrl.trim()) {
+      const url = newLinkUrl.trim().startsWith("http") ? newLinkUrl.trim() : `https://${newLinkUrl.trim()}`
+      const detected = detectPlatform(url)
+      finalLinks.push({ label: newLinkLabel.trim() || detected.label, url })
+    }
+
     const override = {
       display_name: displayName.trim(),
       birth_year: birthYear ? parseInt(birthYear) : undefined,
@@ -41,6 +90,7 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
       bio: bio.trim() || undefined,
       home_resort_id: homeResortId || undefined,
       privacy_level: privacyLevel,
+      links: finalLinks.length > 0 ? finalLinks : undefined,
     }
     setProfileOverride(override)
 
@@ -56,6 +106,7 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
             bio: override.bio ?? null,
             home_resort_id: override.home_resort_id ?? null,
             privacy_level: override.privacy_level ?? "private",
+            links: override.links ?? null,
           })
         }
       })
@@ -152,6 +203,76 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
               ))}
             </select>
           </Field>
+
+          {/* Links */}
+          <div>
+            <label className="block text-xs text-muted mb-2">Links</label>
+
+            {/* Existing links */}
+            {links.length > 0 && (
+              <div className="space-y-1.5 mb-2">
+                {links.map((link, i) => (
+                  <div key={i} className="flex items-center gap-2 bg-background border border-border-default rounded-lg px-3 py-2">
+                    <span className="text-sm flex-shrink-0">{detectPlatform(link.url).icon}</span>
+                    <input
+                      type="text"
+                      value={link.label}
+                      onChange={(e) => updateLinkLabel(i, e.target.value)}
+                      className="flex-1 min-w-0 bg-transparent text-xs text-foreground focus:outline-none"
+                    />
+                    <span className="text-[10px] text-muted truncate max-w-[100px]">{link.url.replace(/^https?:\/\//, "")}</span>
+                    <button
+                      onClick={() => removeLink(i)}
+                      className="text-muted hover:text-red-400 transition-colors text-sm flex-shrink-0"
+                      title="Remove"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add new link */}
+            <div className="space-y-1.5">
+              <input
+                type="url"
+                value={newLinkUrl}
+                onChange={(e) => {
+                  setNewLinkUrl(e.target.value)
+                  // Auto-suggest label from URL
+                  if (!newLinkLabel) {
+                    const detected = detectPlatform(e.target.value)
+                    if (detected.label !== "Link") setNewLinkLabel(detected.label)
+                  }
+                }}
+                onKeyDown={(e) => e.key === "Enter" && addLink()}
+                placeholder="https://instagram.com/username"
+                className={inputCls}
+              />
+              {newLinkUrl.trim() && (
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newLinkLabel}
+                    onChange={(e) => setNewLinkLabel(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && addLink()}
+                    placeholder={detectPlatform(newLinkUrl).label}
+                    className="flex-1 bg-background border border-border-default rounded-lg px-3 py-2 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+                  />
+                  <button
+                    onClick={addLink}
+                    className="px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-500 transition-colors flex-shrink-0"
+                  >
+                    Add
+                  </button>
+                </div>
+              )}
+              {links.length === 0 && !newLinkUrl && (
+                <p className="text-[11px] text-muted">Instagram, YouTube, personal site, etc.</p>
+              )}
+            </div>
+          </div>
 
           <Field label="Profile visibility">
             <div className="flex gap-2">

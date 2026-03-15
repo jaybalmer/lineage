@@ -6,6 +6,7 @@ import { PEOPLE, CLAIMS, getPersonById, getEntityName, getSharedContext } from "
 import { TimelineView } from "@/components/timeline/timeline-view"
 import { useLineageStore } from "@/store/lineage-store"
 import { formatDateRange } from "@/lib/utils"
+import { getLinkIcon } from "@/components/ui/edit-profile-modal"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
@@ -46,6 +47,22 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
               <h1 className="text-xl font-bold text-foreground">{person.display_name}</h1>
               {person.birth_year && <p className="text-muted text-sm">b. {person.birth_year}</p>}
               {person.bio && <p className="text-muted text-sm mt-2 leading-relaxed">{person.bio}</p>}
+              {person.links && person.links.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {person.links.map((link, i) => (
+                    <a
+                      key={i}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-hover border border-border-default rounded-lg text-xs text-muted hover:text-foreground hover:border-border-default transition-all"
+                    >
+                      <span>{getLinkIcon(link.url)}</span>
+                      <span>{link.label}</span>
+                    </a>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="flex-shrink-0 flex gap-2">
               {!isCurrentUser && (

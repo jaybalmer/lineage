@@ -6,7 +6,7 @@ import { FeedView } from "@/components/feed/feed-view"
 import { StartCard } from "@/components/feed/start-card"
 import { useLineageStore, getAllClaims, isAuthUser } from "@/store/lineage-store"
 import { getPersonById, PLACES } from "@/lib/mock-data"
-import { EditProfileModal } from "@/components/ui/edit-profile-modal"
+import { EditProfileModal, getLinkIcon } from "@/components/ui/edit-profile-modal"
 import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddDayModal } from "@/components/ui/add-day-modal"
 import { supabase } from "@/lib/supabase"
@@ -45,6 +45,7 @@ export default function ProfilePage() {
             bio: data.bio ?? undefined,
             home_resort_id: data.home_resort_id ?? undefined,
             privacy_level: data.privacy_level as PrivacyLevel,
+            links: data.links ?? undefined,
           })
         }
       })
@@ -117,6 +118,22 @@ export default function ProfilePage() {
                 >
                   + Add a bio
                 </button>
+              )}
+              {person?.links && person.links.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {person.links.map((link, i) => (
+                    <a
+                      key={i}
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-hover border border-border-default rounded-lg text-xs text-muted hover:text-foreground hover:border-border-default transition-all"
+                    >
+                      <span>{getLinkIcon(link.url)}</span>
+                      <span>{link.label}</span>
+                    </a>
+                  ))}
+                </div>
               )}
             </div>
           </div>
