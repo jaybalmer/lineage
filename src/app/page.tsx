@@ -1,8 +1,10 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore } from "@/store/lineage-store"
+import { supabase } from "@/lib/supabase"
 
 const FEATURES = [
   {
@@ -23,32 +25,75 @@ const FEATURES = [
   },
 ]
 
+// Inline SVG timeline — mirrors the logo's ○──○──○──○──○──○──○ motif
+function TimelineNodes() {
+  return (
+    <svg
+      viewBox="0 0 520 36"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className="w-full max-w-[520px] mx-auto"
+      aria-hidden="true"
+    >
+      <line x1="0" y1="18" x2="520" y2="18" stroke="#1e293b" strokeWidth="2.5" />
+      {[26, 112, 198, 260, 322, 408, 494].map((cx) => (
+        <circle key={cx} cx={cx} cy={18} r={9} stroke="#1e293b" strokeWidth="2.5" fill="transparent" />
+      ))}
+    </svg>
+  )
+}
+
 export default function Home() {
   const { onboardingComplete } = useLineageStore()
+  const [browseHref, setBrowseHref] = useState<string>("/riders")
+
+  // Find the rider with the most claims to use as the Browse destination
+  useEffect(() => {
+    supabase
+      .from("claims")
+      .select("subject_id")
+      .then(({ data }) => {
+        if (!data || data.length === 0) return
+        const counts: Record<string, number> = {}
+        for (const row of data) {
+          if (row.subject_id) counts[row.subject_id] = (counts[row.subject_id] ?? 0) + 1
+        }
+        const topId = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0]
+        if (topId) setBrowseHref(`/riders/${topId}`)
+      })
+  }, [])
 
   return (
     <div className="min-h-screen bg-background">
       {onboardingComplete && <Nav />}
 
       {/* Hero */}
-      <div className="max-w-3xl mx-auto px-6 pt-24 pb-16 text-center">
-        <div className="flex items-center justify-center gap-3 mb-6">
-          <span className="text-blue-400 text-[6rem] leading-none">⬡</span>
-          <div className="text-left">
-            <div className="h-[18px]" />{/* spacer matches SNOWBOARDING height so items-center lands on Lineage */}
-            <div className="text-4xl font-bold text-foreground tracking-tight leading-none">Lineage</div>
-            <div className="text-sm font-medium text-muted tracking-widest uppercase mt-1">Snowboarding</div>
+      <div className="max-w-3xl mx-auto px-6 pt-20 pb-16 text-center">
+
+        {/* Wordmark */}
+        <div className="mb-8">
+          <div
+            className="font-black text-foreground leading-none tracking-tight select-none"
+            style={{ fontSize: "clamp(4rem, 14vw, 8rem)", letterSpacing: "-0.02em" }}
+          >
+            LINEAGE
           </div>
+          <div className="text-[0.7rem] font-semibold tracking-[0.35em] text-muted uppercase mt-1 mb-4">
+            SNOWBOARDING
+          </div>
+          <TimelineNodes />
         </div>
 
-        <h1 className="text-4xl sm:text-5xl font-bold text-foreground leading-tight mb-5">
-          The living timeline of<br />
-          <span className="text-blue-400">snowboarding history</span>
+        {/* Headline */}
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-snug mb-5 mt-8">
+          The collective timeline of snowboarding
         </h1>
 
-        <p className="text-muted text-lg leading-relaxed max-w-xl mx-auto mb-10">
-          Built by riders, for riders. Track where you&apos;ve been, who you rode with,
-          and what shaped your riding — then discover how your story connects to everyone else&apos;s.
+        {/* Body */}
+        <p className="text-muted text-base leading-relaxed max-w-xl mx-auto mb-10">
+          Lineage is a new kind of social platform where people build personal timelines
+          of their experiences, and together those timelines form a collective timeline
+          that connects us.
         </p>
 
         {/* CTAs */}
@@ -62,10 +107,10 @@ export default function Home() {
                 My Profile →
               </Link>
               <Link
-                href="/onboarding"
+                href={browseHref}
                 className="w-full sm:w-auto px-8 py-3 rounded-xl border border-border-default text-muted font-semibold text-sm hover:border-border-default hover:text-foreground transition-colors"
               >
-                New Rider
+                Browse
               </Link>
             </>
           ) : (
@@ -74,13 +119,13 @@ export default function Home() {
                 href="/onboarding"
                 className="w-full sm:w-auto px-8 py-3 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-500 transition-colors"
               >
-                Start your lineage →
+                Start Your Timeline →
               </Link>
               <Link
-                href="/profile"
+                href={browseHref}
                 className="w-full sm:w-auto px-8 py-3 rounded-xl border border-border-default text-muted font-semibold text-sm hover:border-border-default hover:text-foreground transition-colors"
               >
-                My Profile
+                Browse
               </Link>
             </>
           )}
