@@ -125,6 +125,7 @@ const BRAND_PREDICATES = ["sponsored_by", "worked_at", "part_of_team"] as const
 export default function BrandsPage() {
   const [addOpen, setAddOpen] = useState(false)
   const [myOnly, setMyOnly] = useState(false)
+  const [search, setSearch] = useState("")
   const { catalog, activePersonId } = useLineageStore()
 
   // IDs of orgs the active user is connected to
@@ -137,10 +138,15 @@ export default function BrandsPage() {
     )
   }, [activePersonId, catalog.claims])
 
-  const allOrgs = useMemo(
-    () => myOnly ? catalog.orgs.filter((o) => myOrgIds.has(o.id)) : catalog.orgs,
-    [myOnly, catalog.orgs, myOrgIds]
-  )
+  const allOrgs = useMemo(() => {
+    const base = myOnly ? catalog.orgs.filter((o) => myOrgIds.has(o.id)) : catalog.orgs
+    const q = search.trim().toLowerCase()
+    if (!q) return base
+    return base.filter((o) => {
+      const haystack = [o.name, o.description ?? "", o.country ?? "", o.brand_category ?? ""].join(" ").toLowerCase()
+      return haystack.includes(q)
+    })
+  }, [myOnly, search, catalog.orgs, myOrgIds])
 
   const brandOrgs = allOrgs.filter((o) => o.org_type === "brand" || o.org_type === "magazine")
   const teams = allOrgs.filter((o) => o.org_type === "team")
@@ -162,7 +168,7 @@ export default function BrandsPage() {
       <div className="max-w-5xl mx-auto px-4 py-8">
 
         {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground mb-1">Brands & Orgs</h1>
             <p className="text-sm text-muted">
@@ -188,6 +194,21 @@ export default function BrandsPage() {
               + Add brand
             </button>
           </div>
+        </div>
+
+        {/* Search */}
+        <div className="relative mb-6">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm pointer-events-none">🔍</span>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search brands by name, category, or country…"
+            className="w-full bg-surface border border-border-default rounded-xl pl-9 pr-4 py-2.5 text-sm text-foreground placeholder-muted focus:outline-none focus:border-blue-500 transition-colors"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground text-lg leading-none">×</button>
+          )}
         </div>
 
         <div className="space-y-10">

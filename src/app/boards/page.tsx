@@ -141,6 +141,7 @@ export default function BoardsPage() {
   const [mainTab, setMainTab] = useState<MainTab>("all")
   const [myOnly, setMyOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  const [search, setSearch] = useState("")
   const { catalog, activePersonId } = useLineageStore()
 
   // IDs of boards the active user owns
@@ -153,10 +154,15 @@ export default function BoardsPage() {
     )
   }, [activePersonId, catalog.claims])
 
-  const allBoards = useMemo(
-    () => myOnly ? catalog.boards.filter((b) => myBoardIds.has(b.id)) : catalog.boards,
-    [myOnly, catalog.boards, myBoardIds]
-  )
+  const allBoards = useMemo(() => {
+    const base = myOnly ? catalog.boards.filter((b) => myBoardIds.has(b.id)) : catalog.boards
+    const q = search.trim().toLowerCase()
+    if (!q) return base
+    return base.filter((b) => {
+      const haystack = [b.brand, b.model, String(b.model_year), b.shape ?? ""].join(" ").toLowerCase()
+      return haystack.includes(q)
+    })
+  }, [myOnly, search, catalog.boards, myBoardIds])
 
   // ── All tab: decade groups ────────────────────────────────────────────────
   const decadeGroups = useMemo(() => {
@@ -223,6 +229,21 @@ export default function BoardsPage() {
           >
             + Add board
           </button>
+        </div>
+
+        {/* Search */}
+        <div className="relative mb-4">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm pointer-events-none">🔍</span>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by brand, model, or year…"
+            className="w-full bg-surface border border-border-default rounded-xl pl-9 pr-4 py-2.5 text-sm text-foreground placeholder-muted focus:outline-none focus:border-blue-500 transition-colors"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground text-lg leading-none">×</button>
+          )}
         </div>
 
         {/* Tab bar + Mine toggle */}

@@ -190,6 +190,7 @@ export default function EventsPage() {
   const [typeFilter, setTypeFilter] = useState<EventType | null>(null)
   const [myOnly, setMyOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  const [search, setSearch] = useState("")
   const { catalog, activePersonId } = useLineageStore()
 
   const allEvents = catalog.events
@@ -204,14 +205,25 @@ export default function EventsPage() {
     )
   }, [activePersonId, catalog.claims])
 
-  // Apply type + mine filters
+  // Apply search + type + mine filters
   const visibleEvents = useMemo(() => {
+    const q = search.trim().toLowerCase()
     return allEvents.filter((e) => {
       if (myOnly && !myEventIds.has(e.id)) return false
       if (typeFilter && e.event_type !== typeFilter) return false
+      if (q) {
+        const place = e.place_id ? catalog.places.find((p) => p.id === e.place_id) : null
+        const haystack = [
+          e.name,
+          String(e.year ?? ""),
+          place?.name ?? "",
+          e.event_type,
+        ].join(" ").toLowerCase()
+        if (!haystack.includes(q)) return false
+      }
       return true
     })
-  }, [typeFilter, myOnly, allEvents, myEventIds])
+  }, [search, typeFilter, myOnly, allEvents, myEventIds, catalog.places])
 
   // ── All tab: group by decade ──────────────────────────────────────────────
   const decadeGroups = useMemo(() => {
@@ -264,6 +276,21 @@ export default function EventsPage() {
           >
             + Add event
           </button>
+        </div>
+
+        {/* Search */}
+        <div className="relative mb-4">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm pointer-events-none">🔍</span>
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search events by name, year, or location…"
+            className="w-full bg-surface border border-border-default rounded-xl pl-9 pr-4 py-2.5 text-sm text-foreground placeholder-muted focus:outline-none focus:border-blue-500 transition-colors"
+          />
+          {search && (
+            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground text-lg leading-none">×</button>
+          )}
         </div>
 
         {/* Controls row: main tabs + type filters + mine toggle */}
