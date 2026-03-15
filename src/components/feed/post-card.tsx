@@ -23,11 +23,11 @@ import { useBoardImage } from "@/hooks/use-board-image"
 
 // Left border accent color by predicate group
 function accentClass(predicate: Predicate): string {
-  if (predicate === "rode_at" || predicate === "worked_at") return "border-l-blue-700"
-  if (predicate === "owned_board") return "border-l-emerald-700"
-  if (predicate === "rode_with" || predicate === "shot_by" || predicate === "coached_by") return "border-l-violet-700"
-  if (predicate === "competed_at" || predicate === "spectated_at" || predicate === "organized_at") return "border-l-amber-700"
-  return "border-l-zinc-600"
+  if (predicate === "rode_at" || predicate === "worked_at") return "border-blue-700"
+  if (predicate === "owned_board") return "border-emerald-700"
+  if (predicate === "rode_with" || predicate === "shot_by" || predicate === "coached_by") return "border-violet-700"
+  if (predicate === "competed_at" || predicate === "spectated_at" || predicate === "organized_at") return "border-amber-700"
+  return "border-zinc-600"
 }
 
 // ─── Type-specific entity block ───────────────────────────────────────────────
@@ -498,7 +498,7 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
       )}
 
       <div className={cn(
-        "group bg-surface border border-border-default border-l-2 rounded-xl p-5 mb-4 hover:border-border-default transition-all",
+        "group bg-surface border-2 rounded-xl p-5 mb-4 transition-all",
         accentClass(claim.predicate)
       )}>
         {/* Entity visual block */}
