@@ -11,10 +11,27 @@ export function formatYear(dateStr?: string): string {
   return dateStr.slice(0, 4)
 }
 
+const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
+/** Formats a YYYY-MM-DD date string smartly:
+ *  - If day > 1 and month present → "15 Jan 2023"
+ *  - Otherwise → "2023" (year only) */
+export function formatSmartDate(dateStr?: string): string {
+  if (!dateStr) return "present"
+  const parts = dateStr.split("-")
+  const year = parts[0]
+  const month = parseInt(parts[1] ?? "0")
+  const day = parseInt(parts[2] ?? "0")
+  if (month >= 1 && month <= 12 && day > 1) {
+    return `${day} ${MONTHS_SHORT[month - 1]} ${year}`
+  }
+  return year
+}
+
 export function formatDateRange(start?: string, end?: string): string {
   if (!start) return ""
-  const s = formatYear(start)
-  const e = end ? formatYear(end) : "present"
+  const s = formatSmartDate(start)
+  const e = end ? formatSmartDate(end) : "present"
   return s === e ? s : `${s} – ${e}`
 }
 

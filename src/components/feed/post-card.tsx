@@ -457,6 +457,71 @@ function EntityBlock({ claim, entityName, isOwn }: EntityBlockProps) {
   )
 }
 
+// ─── Companion Avatars ────────────────────────────────────────────────────────
+
+const PLACE_PREDICATES_SET = new Set(["rode_at", "worked_at"])
+const EVENT_PREDICATES_SET = new Set(["competed_at", "spectated_at", "organized_at"])
+
+function CompanionAvatars({ claim }: { claim: Claim }) {
+  const { catalog } = useLineageStore()
+
+  const isPlace = PLACE_PREDICATES_SET.has(claim.predicate)
+  const isEvent = EVENT_PREDICATES_SET.has(claim.predicate)
+  if (!isPlace && !isEvent) return null
+
+  const relevantPredicates = isPlace
+    ? [...PLACE_PREDICATES_SET]
+    : [...EVENT_PREDICATES_SET]
+
+  const claimYear = claim.start_date?.slice(0, 4)
+  if (!claimYear) return null
+
+  // Find other riders who have claims at the same place/event in the same year
+  const companionIds = [
+    ...new Set(
+      catalog.claims
+        .filter(
+          (c) =>
+            c.object_id === claim.object_id &&
+            relevantPredicates.includes(c.predicate) &&
+            c.subject_id !== claim.subject_id &&
+            c.start_date?.slice(0, 4) === claimYear
+        )
+        .map((c) => c.subject_id)
+    ),
+  ].slice(0, 6)
+
+  if (companionIds.length === 0) return null
+
+  return (
+    <div className="mt-3 pt-3 border-t border-border-default flex items-center gap-2 flex-wrap">
+      <span className="text-[10px] text-muted uppercase tracking-widest shrink-0">With</span>
+      <div className="flex items-center gap-1 flex-wrap">
+        {companionIds.map((pid) => {
+          const person = catalog.people.find((p) => p.id === pid)
+          const initials = (person?.display_name ?? "?")[0].toUpperCase()
+          const name = person?.display_name ?? "Rider"
+          return (
+            <Link key={pid} href={`/riders/${pid}`} title={name}>
+              <div className="w-6 h-6 rounded-full bg-violet-700 border border-violet-600 flex items-center justify-center text-[9px] font-bold text-white hover:bg-violet-500 transition-colors">
+                {initials}
+              </div>
+            </Link>
+          )
+        })}
+        <span className="text-[11px] text-muted ml-0.5">
+          {companionIds
+            .map((pid) => catalog.people.find((p) => p.id === pid)?.display_name)
+            .filter(Boolean)
+            .slice(0, 3)
+            .join(", ")}
+          {companionIds.length > 3 ? ` +${companionIds.length - 3} more` : ""}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 
 export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
@@ -662,6 +727,9 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
             ))}
           </div>
         )}
+
+        {/* Companion avatars — other riders tagged at same place/event/year */}
+        <CompanionAvatars claim={claim} />
       </div>
     </>
   )

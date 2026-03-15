@@ -88,9 +88,16 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
   const { catalog, userEntities } = useLineageStore()
   const [showAddEdition, setShowAddEdition] = useState(false)
 
-  // Look up from static mock data first (always available), then user-added events
-  const allSeries = EVENT_SERIES
-  const allEvents = [...EVENTS, ...userEntities.events]
+  // Look up from all sources: mock-data, catalog (Supabase), and user-added entities
+  const allSeries = [
+    ...EVENT_SERIES,
+    ...catalog.eventSeries.filter((s) => !EVENT_SERIES.some((m) => m.id === s.id)),
+  ]
+  const allEvents = [
+    ...EVENTS,
+    ...catalog.events.filter((e) => !EVENTS.some((m) => m.id === e.id)),
+    ...userEntities.events,
+  ]
 
   const series =
     allSeries.find((s) => s.id === id) ??
@@ -200,7 +207,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
   }
 
   // ── Series view ──────────────────────────────────────────────────────────
-  const seriesInstances = catalog.events
+  const seriesInstances = allEvents
     .filter((e) => e.series_id === series!.id)
     .sort((a, b) => (b.year ?? 0) - (a.year ?? 0))
 

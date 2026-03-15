@@ -7,7 +7,7 @@ import { PREDICATE_ICONS, PREDICATE_LABELS } from "@/lib/utils"
 import { PLACES, ORGS, BOARDS, PEOPLE, EVENTS } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
-import type { Predicate, EntityType, ConfidenceLevel, PrivacyLevel, Board } from "@/types"
+import type { Predicate, EntityType, ConfidenceLevel, PrivacyLevel, Board, Person } from "@/types"
 
 const inputCls =
   "w-full bg-background border border-border-default rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
@@ -245,6 +245,9 @@ const PREDICATE_ENTITY_TYPE: Record<Predicate, EntityType> = {
   located_at: "place",
 }
 
+// Predicates that support tagging companions ("who was there")
+const COMPANION_PREDICATES: Predicate[] = ["rode_at", "worked_at", "competed_at", "spectated_at", "organized_at"]
+
 type PredicateGroup = {
   label: string
   icon: string
@@ -320,8 +323,18 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
   const [predicate, setPredicate] = useState<Predicate | null>(defaultPredicate)
   const [entityId, setEntityId] = useState<string | null>(null)
   const [entityQuery, setEntityQuery] = useState("")
+
+  // Date state — year range (always) + optional specific trip dates
   const [startYear, setStartYear] = useState("")
   const [endYear, setEndYear] = useState("")
+  const [showSpecificDates, setShowSpecificDates] = useState(false)
+  const [specificStart, setSpecificStart] = useState("")   // YYYY-MM-DD
+  const [specificEnd, setSpecificEnd] = useState("")       // YYYY-MM-DD
+
+  // Companion riders state
+  const [companions, setCompanions] = useState<string[]>([])
+  const [companionQuery, setCompanionQuery] = useState("")
+
   const [confidence, setConfidence] = useState<ConfidenceLevel>("self-reported")
   const [visibility, setVisibility] = useState<PrivacyLevel>("private")
   const [note, setNote] = useState("")
@@ -333,6 +346,21 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
 
   const entityType = predicate ? PREDICATE_ENTITY_TYPE[predicate] : null
 
+  // Reset companion + date state when predicate changes
+  useEffect(() => {
+    setCompanions([])
+    setCompanionQuery("")
+    setShowSpecificDates(false)
+    setSpecificStart("")
+    setSpecificEnd("")
+  }, [predicate])
+
+  // All people excluding current user — catalog first, then mock fallback
+  const getAllPeople = (): Person[] => {
+    const people = catalog.people.length ? catalog.people : PEOPLE
+    return people.filter((p) => p.id !== activePersonId)
+  }
+
   // Get the entity list based on type — use catalog (Supabase) first so IDs
   // match what's used during display; fall back to mock-data only if catalog
   // hasn't loaded yet (empty array guard).
@@ -342,7 +370,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
       case "place": return [...(catalog.places.length ? catalog.places : PLACES), ...userEntities.places]
       case "org": return [...(catalog.orgs.length ? catalog.orgs : ORGS), ...userEntities.orgs]
       case "board": return [...(catalog.boards.length ? catalog.boards : BOARDS), ...userEntities.boards]
-      case "person": return PEOPLE.filter((p) => p.id !== activePersonId)
+      case "person": return getAllPeople()
       case "event": return [...(catalog.events.length ? catalog.events : EVENTS), ...userEntities.events]
       default: return []
     }
@@ -385,11 +413,44 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
     ? getEntityList().find((e) => (e as unknown as Record<string, unknown>).id === entityId) ?? null
     : null
 
-  const canSave = predicate !== null && entityId !== null && startYear.length === 4
+  // Effective dates: specific dates take priority over year-only
+  const effectiveStartYear = showSpecificDates && specificStart
+    ? specificStart.slice(0, 4)
+    : startYear
+  const effectiveStartDate = showSpecificDates && specificStart
+    ? specificStart
+    : yearToDate(startYear)
+  const effectiveEndDate = showSpecificDates && specificEnd
+    ? specificEnd
+    : yearToDate(endYear)
+
+  const dateIsReady = showSpecificDates
+    ? specificStart.length > 0
+    : startYear.length === 4
+
+  const supportsCompanions = predicate ? COMPANION_PREDICATES.includes(predicate) : false
+  const supportsSpecificDates = predicate === "rode_at" || predicate === "worked_at" ||
+    predicate === "competed_at" || predicate === "spectated_at" || predicate === "organized_at"
+
+  const canSave = predicate !== null && entityId !== null && dateIsReady
+
+  // Companion people filtered by query, excluding already-selected
+  const allPeople = getAllPeople()
+  const filteredCompanions = allPeople.filter((p) =>
+    p.display_name.toLowerCase().includes(companionQuery.toLowerCase()) &&
+    !companions.includes(p.id)
+  )
+
+  function toggleCompanion(personId: string) {
+    setCompanions((prev) =>
+      prev.includes(personId) ? prev.filter((id) => id !== personId) : [...prev, personId]
+    )
+  }
 
   const handleSave = () => {
-    if (!predicate || !entityId || !canSave) return
+    if (!predicate || !entityId || !canSave || !effectiveStartDate) return
 
+    // Create main claim
     addClaim({
       id: generateId("claim"),
       subject_id: activePersonId,
@@ -397,8 +458,8 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
       predicate,
       object_id: entityId,
       object_type: PREDICATE_ENTITY_TYPE[predicate],
-      start_date: yearToDate(startYear)!,
-      end_date: yearToDate(endYear),
+      start_date: effectiveStartDate,
+      end_date: effectiveEndDate,
       confidence,
       visibility,
       asserted_by: activePersonId,
@@ -406,11 +467,38 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
       note: note.trim() || undefined,
     })
 
-    // For person-type claims, show invite nudge before closing
+    // Create companion claims (one per tagged person, same place/event + dates)
+    const unverifiedCompanions: Person[] = []
+    for (const personId of companions) {
+      addClaim({
+        id: generateId("claim"),
+        subject_id: personId,
+        subject_type: "person",
+        predicate,
+        object_id: entityId,
+        object_type: PREDICATE_ENTITY_TYPE[predicate],
+        start_date: effectiveStartDate,
+        end_date: effectiveEndDate,
+        confidence: "self-reported",
+        visibility: "public",
+        asserted_by: activePersonId,
+        created_at: new Date().toISOString(),
+      })
+      const p = allPeople.find((p) => p.id === personId)
+      if (!p || p.community_status === "unverified") {
+        unverifiedCompanions.push(p ?? { id: personId, display_name: "", privacy_level: "public" })
+      }
+    }
+
+    // Show invite nudge for person-type claims or first unverified companion
     if (PREDICATE_ENTITY_TYPE[predicate] === "person" && selectedEntity) {
-      const name = getEntityLabel(selectedEntity)
       setInvitePersonId(entityId)
-      setInvitePersonName(name)
+      setInvitePersonName(getEntityLabel(selectedEntity))
+      setShowInvite(true)
+    } else if (unverifiedCompanions.length > 0) {
+      const first = unverifiedCompanions[0]
+      setInvitePersonId(first.id)
+      setInvitePersonName(first.display_name)
       setShowInvite(true)
     } else {
       onClose()
@@ -616,38 +704,171 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
             {predicate && entityId && (
               <div>
                 <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">When?</div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs text-muted mb-1.5">Start year <span className="text-blue-500">*</span></label>
-                    <input
-                      autoFocus
-                      type="number"
-                      value={startYear}
-                      onChange={(e) => setStartYear(e.target.value)}
-                      placeholder="e.g. 2003"
-                      min={1965}
-                      max={2030}
-                      className={inputCls}
-                    />
+
+                {/* Year inputs — always shown unless using specific dates */}
+                {!showSpecificDates && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-muted mb-1.5">
+                        {supportsSpecificDates ? "Year" : "Start year"} <span className="text-blue-500">*</span>
+                      </label>
+                      <input
+                        autoFocus
+                        type="number"
+                        value={startYear}
+                        onChange={(e) => setStartYear(e.target.value)}
+                        placeholder="e.g. 2023"
+                        min={1965}
+                        max={2030}
+                        className={inputCls}
+                      />
+                    </div>
+                    {!supportsSpecificDates && (
+                      <div>
+                        <label className="block text-xs text-muted mb-1.5">End year <span className="text-muted">(optional)</span></label>
+                        <input
+                          type="number"
+                          value={endYear}
+                          onChange={(e) => setEndYear(e.target.value)}
+                          placeholder="present"
+                          min={1965}
+                          max={2030}
+                          className={inputCls}
+                        />
+                      </div>
+                    )}
+                    {supportsSpecificDates && (
+                      <div>
+                        <label className="block text-xs text-muted mb-1.5">End year <span className="text-muted">(optional)</span></label>
+                        <input
+                          type="number"
+                          value={endYear}
+                          onChange={(e) => setEndYear(e.target.value)}
+                          placeholder="present"
+                          min={1965}
+                          max={2030}
+                          className={inputCls}
+                        />
+                      </div>
+                    )}
                   </div>
-                  <div>
-                    <label className="block text-xs text-muted mb-1.5">End year <span className="text-muted">(optional)</span></label>
-                    <input
-                      type="number"
-                      value={endYear}
-                      onChange={(e) => setEndYear(e.target.value)}
-                      placeholder="present"
-                      min={1965}
-                      max={2030}
-                      className={inputCls}
-                    />
+                )}
+
+                {/* Trip dates toggle — for places & events */}
+                {supportsSpecificDates && (
+                  <div className="mt-2.5">
+                    <button
+                      onClick={() => {
+                        setShowSpecificDates((v) => !v)
+                        if (!showSpecificDates && startYear.length === 4) {
+                          setSpecificStart(`${startYear}-01-01`)
+                        }
+                      }}
+                      className="text-xs text-muted hover:text-foreground transition-colors flex items-center gap-1"
+                    >
+                      <span>{showSpecificDates ? "▾" : "▸"}</span>
+                      {showSpecificDates ? "Use year range instead" : "Add specific trip dates (optional)"}
+                    </button>
+
+                    {showSpecificDates && (
+                      <div className="mt-2 grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs text-muted mb-1.5">Trip start <span className="text-blue-500">*</span></label>
+                          <input
+                            autoFocus
+                            type="date"
+                            value={specificStart}
+                            onChange={(e) => {
+                              setSpecificStart(e.target.value)
+                              if (e.target.value) setStartYear(e.target.value.slice(0, 4))
+                            }}
+                            className={inputCls}
+                            style={{ colorScheme: "dark" }}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-muted mb-1.5">Trip end <span className="text-muted">(optional)</span></label>
+                          <input
+                            type="date"
+                            value={specificEnd}
+                            onChange={(e) => setSpecificEnd(e.target.value)}
+                            min={specificStart || undefined}
+                            className={inputCls}
+                            style={{ colorScheme: "dark" }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
+                )}
               </div>
             )}
 
-            {/* Section 4: Details (collapsible) */}
-            {predicate && entityId && startYear.length === 4 && (
+            {/* Section 4: Who was there? (place + event predicates only) */}
+            {supportsCompanions && entityId && dateIsReady && (
+              <div>
+                <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-1">Who was there?</div>
+                <p className="text-[11px] text-muted mb-3">
+                  Tag riders who joined you — it adds this to their timeline too.
+                </p>
+
+                {/* Selected companion chips */}
+                {companions.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mb-2">
+                    {companions.map((pid) => {
+                      const p = allPeople.find((p) => p.id === pid)
+                      return (
+                        <button
+                          key={pid}
+                          onClick={() => toggleCompanion(pid)}
+                          className="flex items-center gap-1.5 px-2.5 py-1 bg-violet-950/40 border border-violet-700/50 rounded-full text-xs text-violet-200 hover:bg-violet-950/70 transition-colors"
+                        >
+                          <span className="w-4 h-4 rounded-full bg-violet-700 flex items-center justify-center text-[9px] font-bold flex-shrink-0">
+                            {(p?.display_name ?? "?")[0].toUpperCase()}
+                          </span>
+                          {p?.display_name ?? pid}
+                          <span className="text-violet-400 ml-0.5">×</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Companion search */}
+                <input
+                  type="text"
+                  value={companionQuery}
+                  onChange={(e) => setCompanionQuery(e.target.value)}
+                  placeholder="Search riders to tag…"
+                  className="w-full bg-background border border-border-default rounded-lg px-3 py-2 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-violet-500"
+                />
+                {(companionQuery.length > 0 || filteredCompanions.length > 0) && (
+                  <div className="mt-1.5 max-h-36 overflow-y-auto rounded-lg border border-border-default divide-y divide-[#1a1a1a]">
+                    {filteredCompanions.slice(0, 6).map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => { toggleCompanion(p.id); setCompanionQuery("") }}
+                        className="w-full text-left px-3 py-2 text-sm text-muted hover:bg-surface-hover transition-colors flex items-center gap-2"
+                      >
+                        <span className="w-5 h-5 rounded-full bg-violet-700 flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0">
+                          {p.display_name[0].toUpperCase()}
+                        </span>
+                        <span>{p.display_name}</span>
+                        {p.community_status === "unverified" && (
+                          <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-400 border border-amber-800/40">◎ unverified</span>
+                        )}
+                      </button>
+                    ))}
+                    {filteredCompanions.length === 0 && companionQuery.length > 0 && (
+                      <div className="px-3 py-2 text-xs text-muted">No riders found — add them via People first</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Section 5: Details (collapsible) */}
+            {predicate && entityId && dateIsReady && (
               <div>
                 <button
                   onClick={() => setShowDetails((v) => !v)}
@@ -740,7 +961,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                   : "bg-surface-active text-muted cursor-not-allowed"
               )}
             >
-              Add to lineage
+              {companions.length > 0 ? `Add to lineage (+${companions.length} rider${companions.length > 1 ? "s" : ""})` : "Add to lineage"}
             </button>
           </div>
         </div>
@@ -748,4 +969,3 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
     </>
   )
 }
-
