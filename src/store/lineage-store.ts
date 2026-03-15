@@ -230,14 +230,15 @@ export const useLineageStore = create<LineageStore>()(
           catalog: { ...s.catalog, places: [...s.catalog.places, entity] },
         }))
         if (isAuthUser(get().activePersonId)) {
-          supabase.from("places").insert({
-            id: place.id, name: place.name, place_type: place.place_type,
-            region: place.region ?? null, country: place.country ?? null,
-            website: place.website ?? null,
-            description: place.description ?? null,
-            first_snowboard_year: place.first_snowboard_year ?? null,
-            community_status: "unverified", added_by: get().activePersonId,
-          }).then(({ error }) => { if (error) console.error("place insert:", error) })
+          fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ operation: "insert", table: "places", data: {
+              id: place.id, name: place.name, place_type: place.place_type,
+              region: place.region ?? null, country: place.country ?? null,
+              website: place.website ?? null, description: place.description ?? null,
+              first_snowboard_year: place.first_snowboard_year ?? null,
+              community_status: "unverified", added_by: get().activePersonId,
+            }})
+          }).then(r => r.json()).then(d => { if (!d.ok) console.error("place insert:", d.error) })
         }
       },
       addUserBoard: (board) => {
@@ -247,11 +248,13 @@ export const useLineageStore = create<LineageStore>()(
           catalog: { ...s.catalog, boards: [...s.catalog.boards, entity] },
         }))
         if (isAuthUser(get().activePersonId)) {
-          supabase.from("boards").insert({
-            id: board.id, brand: board.brand, model: board.model, model_year: board.model_year,
-            shape: board.shape ?? null, external_ref: board.external_ref ?? null,
-            community_status: "unverified", added_by: get().activePersonId,
-          }).then(({ error }) => { if (error) console.error("board insert:", error) })
+          fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ operation: "insert", table: "boards", data: {
+              id: board.id, brand: board.brand, model: board.model, model_year: board.model_year,
+              shape: board.shape ?? null, external_ref: board.external_ref ?? null,
+              community_status: "unverified", added_by: get().activePersonId,
+            }})
+          }).then(r => r.json()).then(d => { if (!d.ok) console.error("board insert:", d.error) })
         }
       },
       addUserOrg: (org) => {
@@ -261,15 +264,15 @@ export const useLineageStore = create<LineageStore>()(
           catalog: { ...s.catalog, orgs: [...s.catalog.orgs, entity] },
         }))
         if (isAuthUser(get().activePersonId)) {
-          supabase.from("orgs").insert({
-            id: org.id, name: org.name, org_type: org.org_type,
-            brand_category: org.brand_category ?? null,
-            founded_year: org.founded_year ?? null,
-            country: org.country ?? null,
-            website: org.website ?? null,
-            description: org.description ?? null,
-            community_status: "unverified", added_by: get().activePersonId,
-          }).then(({ error }) => { if (error) console.error("org insert:", error) })
+          fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ operation: "insert", table: "orgs", data: {
+              id: org.id, name: org.name, org_type: org.org_type,
+              brand_category: org.brand_category ?? null, founded_year: org.founded_year ?? null,
+              country: org.country ?? null, website: org.website ?? null,
+              description: org.description ?? null,
+              community_status: "unverified", added_by: get().activePersonId,
+            }})
+          }).then(r => r.json()).then(d => { if (!d.ok) console.error("org insert:", d.error) })
         }
       },
       addUserSeries: (series) => {
@@ -278,11 +281,13 @@ export const useLineageStore = create<LineageStore>()(
           catalog: { ...s.catalog, eventSeries: [...s.catalog.eventSeries, series] },
         }))
         if (isAuthUser(get().activePersonId)) {
-          supabase.from("event_series").insert({
-            id: series.id, name: series.name, place_id: series.place_id ?? null,
-            frequency: series.frequency, start_year: series.start_year ?? null,
-            description: series.description ?? null,
-          }).then(({ error }) => { if (error) console.error("series insert:", error) })
+          fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ operation: "insert", table: "event_series", data: {
+              id: series.id, name: series.name, place_id: series.place_id ?? null,
+              frequency: series.frequency, start_year: series.start_year ?? null,
+              description: series.description ?? null,
+            }})
+          }).then(r => r.json()).then(d => { if (!d.ok) console.error("series insert:", d.error) })
         }
       },
       addUserEvent: (event) => {
@@ -292,12 +297,19 @@ export const useLineageStore = create<LineageStore>()(
           catalog: { ...s.catalog, events: [...s.catalog.events, entity] },
         }))
         if (isAuthUser(get().activePersonId)) {
-          supabase.from("events").insert({
-            id: event.id, name: event.name, event_type: event.event_type,
-            start_date: event.start_date, end_date: event.end_date ?? null,
-            description: event.description ?? null,
-            community_status: "unverified", added_by: get().activePersonId,
-          }).then(({ error }) => { if (error) console.error("event insert:", error) })
+          // Normalise start_date: if it's just a year ("2024"), convert to "2024-01-01"
+          const rawDate = event.start_date ?? ""
+          const startDate = /^\d{4}$/.test(rawDate) ? `${rawDate}-01-01` : (rawDate || null)
+          fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ operation: "insert", table: "events", data: {
+              id: event.id, name: event.name, event_type: event.event_type,
+              year: event.year ?? null,
+              start_date: startDate, end_date: event.end_date ?? null,
+              series_id: event.series_id ?? null, place_id: event.place_id ?? null,
+              description: event.description ?? null,
+              community_status: "unverified", added_by: get().activePersonId,
+            }})
+          }).then(r => r.json()).then(d => { if (!d.ok) console.error("event insert:", d.error) })
         }
       },
       addUserPerson: (person) => {
@@ -406,12 +418,9 @@ export const useLineageStore = create<LineageStore>()(
           },
         }))
         if (isAuthUser(get().activePersonId)) {
-          const tableMap: Record<string, string> = {
-            boards: "boards", events: "events", places: "places",
-            orgs: "orgs", eventSeries: "event_series",
-          }
-          supabase.from(tableMap[type]).update(updates).eq("id", id)
-            .then(({ error }) => { if (error) console.error(`${type} update:`, error) })
+          fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ operation: "update", table: type, data: updates, id })
+          }).then(r => r.json()).then(d => { if (!d.ok) console.error(`${type} update:`, d.error) })
         }
       },
       removeCatalogEntity: (type, id) => {
@@ -422,12 +431,9 @@ export const useLineageStore = create<LineageStore>()(
           },
         }))
         if (isAuthUser(get().activePersonId)) {
-          const tableMap: Record<string, string> = {
-            boards: "boards", events: "events", places: "places",
-            orgs: "orgs", eventSeries: "event_series",
-          }
-          supabase.from(tableMap[type]).delete().eq("id", id)
-            .then(({ error }) => { if (error) console.error(`${type} delete:`, error) })
+          fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ operation: "delete", table: type, id })
+          }).then(r => r.json()).then(d => { if (!d.ok) console.error(`${type} delete:`, d.error) })
         }
       },
 
