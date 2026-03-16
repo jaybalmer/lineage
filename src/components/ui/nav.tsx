@@ -9,16 +9,16 @@ import { getPersonById } from "@/lib/mock-data"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 
 const TIER_BADGE: Record<string, { label: string; color: string; symbol: string }> = {
-  annual:   { label: "MEMBER",          color: "#3b82f6", symbol: "◈" },
-  lifetime: { label: "LIFETIME",        color: "#8b5cf6", symbol: "◆" },
-  founding: { label: "FOUNDING ✦",      color: "#f59e0b", symbol: "✦" },
+  annual:   { label: "MEMBER",      color: "#3b82f6", symbol: "◈" },
+  lifetime: { label: "LIFETIME",    color: "#8b5cf6", symbol: "◆" },
+  founding: { label: "FOUNDING ✦",  color: "#f59e0b", symbol: "✦" },
 }
 
 const PRIMARY_NAV = [
-  { href: "/profile", label: "Profile" },
-  { href: "/compare", label: "Compare" },
+  { href: "/profile",     label: "Profile" },
+  { href: "/compare",     label: "Compare" },
   { href: "/connections", label: "Connections" },
-  { href: "/collective", label: "Collective" },
+  { href: "/collective",  label: "Collective" },
 ]
 
 const SECONDARY_NAV = [
@@ -27,7 +27,7 @@ const SECONDARY_NAV = [
   { href: "/boards", label: "Boards" },
   { href: "/brands", label: "Brands" },
   { href: "/places", label: "Places" },
-  { href: "/admin", label: "Editor" },
+  { href: "/admin",  label: "Editor" },
 ]
 
 const ALL_NAV = [...PRIMARY_NAV, ...SECONDARY_NAV]
@@ -47,45 +47,38 @@ function isActive(href: string, path: string) {
     : path.startsWith(href)
 }
 
-export function Nav() {
-  const path = usePathname()
-  const { activePersonId, profileOverride, loadDbEntities, membership } = useLineageStore()
-  const basePerson = getPersonById(activePersonId)
-  const loadedForId = useRef<string | null>(null)
-  const [dropOpen, setDropOpen] = useState(false)
-  const dropRef = useRef<HTMLDivElement>(null)
+// ─── Avatar dropdown — isolated component so each desktop/mobile instance
+//     has its own ref and state (avoids the shared-ref-rendered-twice bug) ────
 
-  // Load shared entity catalog + riding days once per auth session
-  useEffect(() => {
-    if (!isAuthUser(activePersonId)) return
-    if (loadedForId.current === activePersonId) return
-    loadedForId.current = activePersonId
-    loadDbEntities()
-  }, [activePersonId, loadDbEntities])
+interface AvatarDropdownProps {
+  initial:      string
+  displayName:  string
+  tier:         string
+  totalTokens:  number
+}
 
-  // Close dropdown on navigation (path change) or outside click
-  useEffect(() => { setDropOpen(false) }, [path])
+function AvatarDropdown({ initial, displayName, tier, totalTokens }: AvatarDropdownProps) {
+  const path     = usePathname()
+  const [open, setOpen] = useState(false)
+  const ref      = useRef<HTMLDivElement>(null)
+  const tierBadge = TIER_BADGE[tier] ?? null
 
+  // Close when the route changes (navigation completed)
+  useEffect(() => { setOpen(false) }, [path])
+
+  // Close on outside mousedown
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (dropRef.current && !dropRef.current.contains(e.target as Node)) {
-        setDropOpen(false)
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
     }
     document.addEventListener("mousedown", handler)
     return () => document.removeEventListener("mousedown", handler)
   }, [])
 
-  const displayName = profileOverride.display_name ?? basePerson?.display_name ?? ""
-  const initial = displayName[0]?.toUpperCase() ?? "?"
-  const tier = membership.tier
-  const tierBadge = TIER_BADGE[tier] ?? null
-  const totalTokens = membership.token_balance.founder * 2 + membership.token_balance.member + membership.token_balance.contribution
-
-  const avatarDropdown = (
-    <div ref={dropRef} className="relative flex-shrink-0">
+  return (
+    <div ref={ref} className="relative flex-shrink-0">
       <button
-        onClick={() => setDropOpen(v => !v)}
+        onClick={() => setOpen(v => !v)}
         className="flex items-center gap-1.5 rounded-full focus:outline-none"
         aria-label="User menu"
       >
@@ -93,21 +86,27 @@ export function Nav() {
           {initial}
         </div>
         {tierBadge && (
-          <span className="hidden sm:inline text-xs font-bold px-1.5 py-0.5 rounded-full"
-            style={{ background: `${tierBadge.color}20`, color: tierBadge.color, fontSize: 8, letterSpacing: 0.5 }}>
+          <span className="hidden sm:inline px-1.5 py-0.5 rounded-full"
+            style={{ background: `${tierBadge.color}20`, color: tierBadge.color, fontSize: 8, letterSpacing: 0.5, fontWeight: 700 }}>
             {tierBadge.label}
           </span>
         )}
       </button>
 
-      {dropOpen && (
-        <div className="absolute right-0 top-full mt-2 w-52 bg-surface border border-border-default rounded-xl shadow-lg overflow-hidden z-50"
-          style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+      {open && (
+        <div
+          className="absolute right-0 top-full mt-2 w-52 bg-surface border border-border-default rounded-xl shadow-lg overflow-hidden z-50"
+          style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+        >
           {/* Name row */}
           <div className="px-4 py-3 border-b border-border-default">
-            <div className="text-foreground font-semibold" style={{ fontSize: 12 }}>{displayName || "Your Profile"}</div>
+            <div className="text-foreground font-semibold" style={{ fontSize: 12 }}>
+              {displayName || "Your Profile"}
+            </div>
             {tierBadge ? (
-              <div style={{ fontSize: 9, color: tierBadge.color, marginTop: 2 }}>{tierBadge.symbol} {tierBadge.label}</div>
+              <div style={{ fontSize: 9, color: tierBadge.color, marginTop: 2 }}>
+                {tierBadge.symbol} {tierBadge.label}
+              </div>
             ) : (
               <div className="text-muted" style={{ fontSize: 9, marginTop: 2 }}>Free rider</div>
             )}
@@ -115,18 +114,18 @@ export function Nav() {
 
           {/* Links */}
           <Link href="/profile"
-            className="flex items-center gap-2 px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
+            className="flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
             style={{ fontSize: 11 }}>
             My Timeline
           </Link>
           <Link href="/account/membership"
-            className="flex items-center gap-2 px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
+            className="flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
             style={{ fontSize: 11 }}>
             Membership
           </Link>
 
-          {/* Divider + membership CTA or token status */}
           <div className="border-t border-border-default" />
+
           {tier === "free" ? (
             <Link href="/membership"
               className="flex items-center justify-between px-4 py-2.5 hover:bg-surface-hover transition-colors"
@@ -146,6 +145,30 @@ export function Nav() {
       )}
     </div>
   )
+}
+
+// ─── Main Nav ─────────────────────────────────────────────────────────────────
+
+export function Nav() {
+  const path = usePathname()
+  const { activePersonId, profileOverride, loadDbEntities, membership } = useLineageStore()
+  const basePerson    = getPersonById(activePersonId)
+  const loadedForId   = useRef<string | null>(null)
+
+  // Load shared entity catalog + riding days once per auth session
+  useEffect(() => {
+    if (!isAuthUser(activePersonId)) return
+    if (loadedForId.current === activePersonId) return
+    loadedForId.current = activePersonId
+    loadDbEntities()
+  }, [activePersonId, loadDbEntities])
+
+  const displayName = profileOverride.display_name ?? basePerson?.display_name ?? ""
+  const initial     = displayName[0]?.toUpperCase() ?? "?"
+  const tier        = membership.tier
+  const totalTokens = membership.token_balance.founder * 2 + membership.token_balance.member + membership.token_balance.contribution
+
+  const dropdownProps = { initial, displayName, tier, totalTokens }
 
   return (
     <nav className="border-b border-border-default bg-bg-nav sticky top-0 z-50">
@@ -164,7 +187,7 @@ export function Nav() {
         </div>
         <div className="ml-auto flex items-center gap-3 flex-shrink-0">
           <ThemeToggle />
-          {avatarDropdown}
+          <AvatarDropdown {...dropdownProps} />
         </div>
       </div>
 
@@ -188,7 +211,7 @@ export function Nav() {
               </Link>
             ))}
           </div>
-          {avatarDropdown}
+          <AvatarDropdown {...dropdownProps} />
         </div>
 
         {/* Row 2: secondary nav + theme toggle */}
