@@ -64,16 +64,26 @@ export async function POST(req: NextRequest) {
         break
       }
 
+      // For founding tier: assign sequential member number
+      let foundingMemberNumber: number | null = null
+      if (tier === "founding") {
+        const { count } = await db.from("profiles")
+          .select("*", { count: "exact", head: true })
+          .eq("membership_tier", "founding")
+        foundingMemberNumber = (count ?? 0) + 1
+      }
+
       // Update membership in profiles table
       await db.from("profiles").update({
-        membership_tier:        tier,
-        membership_status:      "active",
-        founding_badge:         tier === "founding",
-        token_founder:          tokens.founder,
-        token_member:           tokens.member,
-        stripe_customer_id:     session.customer as string,
-        stripe_subscription_id: (session.subscription as string) ?? null,
-        membership_expires_at:  tier === "annual"
+        membership_tier:         tier,
+        membership_status:       "active",
+        founding_badge:          tier === "founding",
+        founding_member_number:  foundingMemberNumber,
+        token_founder:           tokens.founder,
+        token_member:            tokens.member,
+        stripe_customer_id:      session.customer as string,
+        stripe_subscription_id:  (session.subscription as string) ?? null,
+        membership_expires_at:   tier === "annual"
           ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString()
           : null,
       }).eq("id", userId)

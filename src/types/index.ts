@@ -154,6 +154,9 @@ export interface Claim {
   sources?: Source[]
   note?: string
   approximate?: boolean
+  // Competition-specific fields (competed_at claims only)
+  division?: string   // e.g. "Open Men", "Masters", "Boardercross"
+  result?: string     // e.g. "1st", "3rd", "DNF", "Top 10"
 }
 
 // ─── Connection Summary ───────────────────────────────────────────────────────
@@ -200,6 +203,7 @@ export interface MembershipState {
   tier:                    MembershipTier
   status:                  MembershipStatus
   founding_badge:          boolean
+  founding_member_number?: number  // sequential # assigned at purchase (founding tier only)
   token_balance:           TokenBalance
   gift_codes:              GiftCode[]
   stripe_customer_id?:     string

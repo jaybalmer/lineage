@@ -331,6 +331,10 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
   const [specificStart, setSpecificStart] = useState("")   // YYYY-MM-DD
   const [specificEnd, setSpecificEnd] = useState("")       // YYYY-MM-DD
 
+  // Competition fields (competed_at only)
+  const [division, setDivision] = useState("")
+  const [result, setResult] = useState("")
+
   // Companion riders state
   const [companions, setCompanions] = useState<string[]>([])
   const [companionQuery, setCompanionQuery] = useState("")
@@ -346,13 +350,15 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
 
   const entityType = predicate ? PREDICATE_ENTITY_TYPE[predicate] : null
 
-  // Reset companion + date state when predicate changes
+  // Reset companion + date + competition state when predicate changes
   useEffect(() => {
     setCompanions([])
     setCompanionQuery("")
     setShowSpecificDates(false)
     setSpecificStart("")
     setSpecificEnd("")
+    setDivision("")
+    setResult("")
   }, [predicate])
 
   // All people excluding current user — catalog first, then mock fallback
@@ -424,13 +430,20 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
     ? specificEnd
     : yearToDate(endYear)
 
-  const dateIsReady = showSpecificDates
-    ? specificStart.length > 0
-    : startYear.length === 4
+  const isEventClaim = predicate === "competed_at" || predicate === "spectated_at" || predicate === "organized_at"
+
+  // For event claims the date comes from the event itself — no year entry needed
+  const dateIsReady = isEventClaim
+    ? !!entityId
+    : showSpecificDates
+      ? specificStart.length > 0
+      : startYear.length === 4
+
+  // Gate for sections that follow entity + date (companions, details)
+  const sectionGate = isEventClaim ? !!entityId : dateIsReady
 
   const supportsCompanions = predicate ? COMPANION_PREDICATES.includes(predicate) : false
-  const supportsSpecificDates = predicate === "rode_at" || predicate === "worked_at" ||
-    predicate === "competed_at" || predicate === "spectated_at" || predicate === "organized_at"
+  const supportsSpecificDates = predicate === "rode_at" || predicate === "worked_at"
 
   const canSave = predicate !== null && entityId !== null && dateIsReady
 
@@ -448,7 +461,18 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
   }
 
   const handleSave = () => {
-    if (!predicate || !entityId || !canSave || !effectiveStartDate) return
+    if (!predicate || !entityId || !canSave) return
+
+    // For event claims, pull date directly from the selected event record
+    const resolvedStartDate = isEventClaim && selectedEntity
+      ? ((selectedEntity as unknown as Record<string, unknown>).start_date as string | undefined) ?? effectiveStartDate
+      : effectiveStartDate
+
+    const resolvedEndDate = isEventClaim && selectedEntity
+      ? ((selectedEntity as unknown as Record<string, unknown>).end_date as string | undefined) ?? effectiveEndDate
+      : effectiveEndDate
+
+    if (!resolvedStartDate) return
 
     // Create main claim
     addClaim({
@@ -458,13 +482,15 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
       predicate,
       object_id: entityId,
       object_type: PREDICATE_ENTITY_TYPE[predicate],
-      start_date: effectiveStartDate,
-      end_date: effectiveEndDate,
+      start_date: resolvedStartDate,
+      end_date: resolvedEndDate,
       confidence,
       visibility,
       asserted_by: activePersonId,
       created_at: new Date().toISOString(),
       note: note.trim() || undefined,
+      ...(predicate === "competed_at" && division.trim() ? { division: division.trim() } : {}),
+      ...(predicate === "competed_at" && result.trim() ? { result: result.trim() } : {}),
     })
 
     // Create companion claims (one per tagged person, same place/event + dates)
@@ -700,17 +726,17 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
               </div>
             )}
 
-            {/* Section 3: When */}
-            {predicate && entityId && (
+            {/* Section 3: When — skipped for event claims (date comes from the event) */}
+            {predicate && entityId && !isEventClaim && (
               <div>
                 <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">When?</div>
 
-                {/* Year inputs — always shown unless using specific dates */}
+                {/* Year inputs */}
                 {!showSpecificDates && (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs text-muted mb-1.5">
-                        {supportsSpecificDates ? "Year" : "Start year"} <span className="text-blue-500">*</span>
+                        Start year <span className="text-blue-500">*</span>
                       </label>
                       <input
                         autoFocus
@@ -723,38 +749,22 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                         className={inputCls}
                       />
                     </div>
-                    {!supportsSpecificDates && (
-                      <div>
-                        <label className="block text-xs text-muted mb-1.5">End year <span className="text-muted">(optional)</span></label>
-                        <input
-                          type="number"
-                          value={endYear}
-                          onChange={(e) => setEndYear(e.target.value)}
-                          placeholder="present"
-                          min={1965}
-                          max={2030}
-                          className={inputCls}
-                        />
-                      </div>
-                    )}
-                    {supportsSpecificDates && (
-                      <div>
-                        <label className="block text-xs text-muted mb-1.5">End year <span className="text-muted">(optional)</span></label>
-                        <input
-                          type="number"
-                          value={endYear}
-                          onChange={(e) => setEndYear(e.target.value)}
-                          placeholder="present"
-                          min={1965}
-                          max={2030}
-                          className={inputCls}
-                        />
-                      </div>
-                    )}
+                    <div>
+                      <label className="block text-xs text-muted mb-1.5">End year <span className="text-muted">(optional)</span></label>
+                      <input
+                        type="number"
+                        value={endYear}
+                        onChange={(e) => setEndYear(e.target.value)}
+                        placeholder="present"
+                        min={1965}
+                        max={2030}
+                        className={inputCls}
+                      />
+                    </div>
                   </div>
                 )}
 
-                {/* Trip dates toggle — for places & events */}
+                {/* Trip dates toggle — places & orgs */}
                 {supportsSpecificDates && (
                   <div className="mt-2.5">
                     <button
@@ -801,6 +811,35 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                     )}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Section 3b: Competition details — competed_at only */}
+            {predicate === "competed_at" && entityId && (
+              <div>
+                <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Competition details</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs text-muted mb-1.5">Division <span className="text-muted">(optional)</span></label>
+                    <input
+                      type="text"
+                      value={division}
+                      onChange={(e) => setDivision(e.target.value)}
+                      placeholder="e.g. Open Men, Masters"
+                      className={inputCls}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-muted mb-1.5">Result <span className="text-muted">(optional)</span></label>
+                    <input
+                      type="text"
+                      value={result}
+                      onChange={(e) => setResult(e.target.value)}
+                      placeholder="e.g. 1st, 3rd, DNF"
+                      className={inputCls}
+                    />
+                  </div>
+                </div>
               </div>
             )}
 

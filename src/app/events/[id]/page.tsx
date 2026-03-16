@@ -21,35 +21,91 @@ function formatEventDate(start: string, end?: string): string {
 
 const EVENT_PREDICATES = ["competed_at", "spectated_at", "organized_at"] as const
 
+function parseResult(result?: string): number {
+  if (!result) return 9999
+  const n = parseInt(result)
+  return isNaN(n) ? 9999 : n
+}
+
 function AttendeeList({ eventId }: { eventId: string }) {
   const { catalog } = useLineageStore()
   const claims = catalog.claims.filter(
     (c) => c.object_id === eventId && EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number])
   )
-  const riderIds = [...new Set(claims.map((c) => c.subject_id))]
 
-  if (riderIds.length === 0) {
-    return <div className="text-xs text-muted italic py-2">No attendees documented</div>
+  const competitors = claims
+    .filter((c) => c.predicate === "competed_at")
+    .sort((a, b) => parseResult(a.result) - parseResult(b.result))
+  const attendees = claims.filter((c) => c.predicate === "spectated_at")
+  const organizers = claims.filter((c) => c.predicate === "organized_at")
+
+  if (claims.length === 0) {
+    return <div className="text-xs text-muted italic py-2">No participants documented</div>
+  }
+
+  const RiderChip = ({ claim }: { claim: typeof claims[0] }) => {
+    const person = catalog.people.find((p) => p.id === claim.subject_id)
+    if (!person) return null
+    return (
+      <Link href={`/riders/${claim.subject_id}`}>
+        <div className="flex items-center gap-2 px-3 py-2 bg-surface border border-border-default rounded-xl hover:border-blue-500/40 transition-all group">
+          <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+            {person.display_name[0]}
+          </div>
+          <div className="min-w-0">
+            <div className="text-xs font-medium text-foreground group-hover:text-blue-400 transition-colors leading-tight">
+              {person.display_name}
+            </div>
+            {(claim.division || claim.result) && (
+              <div className="text-[10px] text-muted leading-tight mt-0.5 flex items-center gap-1">
+                {claim.result && (
+                  <span className="font-semibold text-amber-400">{claim.result}</span>
+                )}
+                {claim.result && claim.division && <span>·</span>}
+                {claim.division && <span>{claim.division}</span>}
+              </div>
+            )}
+          </div>
+        </div>
+      </Link>
+    )
   }
 
   return (
-    <div className="flex flex-wrap gap-1.5">
-      {riderIds.map((rid) => {
-        const person = catalog.people.find((p) => p.id === rid)
-        if (!person) return null
-        return (
-          <Link key={rid} href={`/riders/${rid}`}>
-            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-surface border border-border-default rounded-full hover:border-border-default transition-all group">
-              <div className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-[9px] font-bold text-foreground shrink-0">
-                {person.display_name[0]}
-              </div>
-              <span className="text-xs text-muted group-hover:text-foreground transition-colors">
-                {person.display_name}
-              </span>
-            </div>
-          </Link>
-        )
-      })}
+    <div className="space-y-5">
+      {competitors.length > 0 && (
+        <div>
+          <div className="text-[10px] font-semibold text-muted uppercase tracking-widest mb-2 flex items-center gap-1.5">
+            <span className="text-amber-400">🏆</span> Competitors
+            <span className="text-muted font-normal">({competitors.length})</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+            {competitors.map((c) => <RiderChip key={c.id} claim={c} />)}
+          </div>
+        </div>
+      )}
+      {attendees.length > 0 && (
+        <div>
+          <div className="text-[10px] font-semibold text-muted uppercase tracking-widest mb-2 flex items-center gap-1.5">
+            <span>👁</span> Attendees
+            <span className="text-muted font-normal">({attendees.length})</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+            {attendees.map((c) => <RiderChip key={c.id} claim={c} />)}
+          </div>
+        </div>
+      )}
+      {organizers.length > 0 && (
+        <div>
+          <div className="text-[10px] font-semibold text-muted uppercase tracking-widest mb-2 flex items-center gap-1.5">
+            <span>🎬</span> Organizers
+            <span className="text-muted font-normal">({organizers.length})</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+            {organizers.map((c) => <RiderChip key={c.id} claim={c} />)}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -73,7 +129,7 @@ function InstanceRow({ event }: { event: Event }) {
         </div>
         <div className="text-right shrink-0">
           <div className="text-lg font-bold text-foreground">{attendeeCount}</div>
-          <div className="text-[10px] text-muted">rider{attendeeCount !== 1 ? "s" : ""}</div>
+          <div className="text-[10px] text-muted">participant{attendeeCount !== 1 ? "s" : ""}</div>
         </div>
       </div>
       <div className="px-4 py-3">
@@ -162,14 +218,14 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
             <div className="mt-4 flex gap-6">
               <div>
                 <div className="font-bold text-foreground text-xl">{totalAttendees}</div>
-                <div className="text-muted text-xs">documented riders</div>
+                <div className="text-muted text-xs">documented participants</div>
               </div>
             </div>
           </div>
 
-          {/* Attendees */}
+          {/* Participants */}
           <section className="mb-8">
-            <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Attendees</h2>
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Participants</h2>
             <div className="bg-background border border-border-default rounded-xl p-4">
               <AttendeeList eventId={instance.id} />
             </div>

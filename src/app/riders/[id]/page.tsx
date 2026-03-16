@@ -11,9 +11,15 @@ import { TimelinePlayer } from "@/components/ui/timeline-player"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
+const TIER_BADGE: Record<string, { symbol: string; label: string; color: string }> = {
+  annual:   { symbol: "◈", label: "MEMBER",    color: "#3b82f6" },
+  lifetime: { symbol: "◆", label: "LIFETIME",  color: "#8b5cf6" },
+  founding: { symbol: "✦", label: "FOUNDING",  color: "#f59e0b" },
+}
+
 export default function RiderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { activePersonId, profileOverride } = useLineageStore()
+  const { activePersonId, profileOverride, membership } = useLineageStore()
   const isCurrentUser = id === activePersonId
   const [playingTimeline, setPlayingTimeline] = useState(false)
 
@@ -69,6 +75,22 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
               <div className="flex items-center gap-3 mt-1 text-xs text-muted flex-wrap">
                 {person.birth_year && <span>b. {person.birth_year}</span>}
                 {person.riding_since && <span>Riding since {person.riding_since}</span>}
+                {/* Membership badge — shown for current user from store; future: load from DB for others */}
+                {isCurrentUser && membership.tier !== "free" && TIER_BADGE[membership.tier] && (() => {
+                  const badge = TIER_BADGE[membership.tier]
+                  return (
+                    <span
+                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold"
+                      style={{ background: `${badge.color}22`, color: badge.color, border: `1px solid ${badge.color}44` }}
+                    >
+                      <span>{badge.symbol}</span>
+                      <span>{badge.label}</span>
+                      {membership.founding_member_number && (
+                        <span>#{String(membership.founding_member_number).padStart(3, "0")}</span>
+                      )}
+                    </span>
+                  )
+                })()}
               </div>
               {person.bio && (
                 <p className="text-sm text-muted mt-2 leading-relaxed max-w-lg">{person.bio}</p>

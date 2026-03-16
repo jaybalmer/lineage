@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import type React from "react"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore } from "@/store/lineage-store"
@@ -10,15 +10,16 @@ import type { EventType, PlaceType, OrgType, BrandCategory } from "@/types"
 const generateId = (prefix: string) =>
   `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
 
-type Tab = "brands" | "boards" | "events" | "places" | "orgs" | "series"
+type Tab = "brands" | "boards" | "events" | "places" | "orgs" | "series" | "members"
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "brands", label: "Brands" },
-  { id: "boards", label: "Boards" },
-  { id: "events", label: "Events" },
-  { id: "places", label: "Places" },
-  { id: "orgs", label: "Orgs" },
-  { id: "series", label: "Series" },
+  { id: "brands",  label: "Brands" },
+  { id: "boards",  label: "Boards" },
+  { id: "events",  label: "Events" },
+  { id: "places",  label: "Places" },
+  { id: "orgs",    label: "Orgs" },
+  { id: "series",  label: "Series" },
+  { id: "members", label: "Members" },
 ]
 
 const BRAND_CAT_OPTIONS: BrandCategory[] = [
@@ -1342,6 +1343,305 @@ function SeriesTable() {
   )
 }
 
+// ── Members Table ─────────────────────────────────────────────────────────────
+
+type MemberRow = {
+  id: string
+  display_name: string | null
+  email: string | null
+  membership_tier: string | null
+  membership_status: string | null
+  founding_badge: boolean | null
+  founding_member_number: number | null
+  token_founder: number | null
+  token_member: number | null
+  token_contribution: number | null
+  stripe_customer_id: string | null
+  membership_expires_at: string | null
+  created_at: string | null
+}
+
+const TIER_COLOR: Record<string, string> = {
+  free: "#888", annual: "#3b82f6", lifetime: "#8b5cf6", founding: "#f59e0b",
+}
+const TIER_SYMBOL: Record<string, string> = {
+  free: "●", annual: "◈", lifetime: "◆", founding: "✦",
+}
+
+function MembersTable() {
+  const { activePersonId } = useLineageStore()
+  const [members, setMembers] = useState<MemberRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
+  const [msg, setMsg] = useState<{ id: string; text: string; ok: boolean } | null>(null)
+  const [draft, setDraft] = useState<{
+    tier: string; tokenFounder: string; tokenMember: string; memberNumber: string; status: string
+  }>({ tier: "free", tokenFounder: "0", tokenMember: "0", memberNumber: "", status: "active" })
+
+  const load = useCallback(async () => {
+    setLoading(true)
+    const res = await fetch("/api/admin/memberships")
+    const data = await res.json()
+    setMembers(data.members ?? [])
+    setLoading(false)
+  }, [])
+
+  useEffect(() => { load() }, [load])
+
+  function startEdit(m: MemberRow) {
+    setEditId(m.id)
+    setDraft({
+      tier:        m.membership_tier   ?? "free",
+      tokenFounder: String(m.token_founder  ?? 0),
+      tokenMember:  String(m.token_member   ?? 0),
+      memberNumber: String(m.founding_member_number ?? ""),
+      status:      m.membership_status ?? "active",
+    })
+  }
+
+  async function save(userId: string) {
+    setSaving(true)
+    const res = await fetch("/api/admin/memberships", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id:               userId,
+        tier:                  draft.tier,
+        token_founder:         parseInt(draft.tokenFounder) || 0,
+        token_member:          parseInt(draft.tokenMember)  || 0,
+        founding_member_number: draft.memberNumber ? parseInt(draft.memberNumber) : null,
+        founding_badge:        draft.tier === "founding",
+        membership_status:     draft.status,
+      }),
+    })
+    const data = await res.json()
+    setSaving(false)
+    if (data.ok) {
+      setMsg({ id: userId, text: "✓ Saved", ok: true })
+      setEditId(null)
+      await load()
+    } else {
+      setMsg({ id: userId, text: data.error ?? "Error", ok: false })
+    }
+    setTimeout(() => setMsg(null), 3000)
+  }
+
+  async function quickGrant(m: MemberRow, tier: string) {
+    // Count existing founding members for number assignment
+    let memberNumber: number | null = null
+    if (tier === "founding") {
+      const existing = members.filter((x) => x.membership_tier === "founding" && x.id !== m.id).length
+      memberNumber = existing + 1
+    }
+    const tokenMap: Record<string, { founder: number; member: number }> = {
+      annual: { founder: 0, member: 10 }, lifetime: { founder: 0, member: 30 }, founding: { founder: 100, member: 0 },
+    }
+    const tokens = tokenMap[tier] ?? { founder: 0, member: 0 }
+    setSaving(true)
+    const res = await fetch("/api/admin/memberships", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        user_id:               m.id,
+        tier,
+        token_founder:         tokens.founder,
+        token_member:          tokens.member,
+        founding_member_number: memberNumber,
+        founding_badge:        tier === "founding",
+        membership_status:     "active",
+      }),
+    })
+    const data = await res.json()
+    setSaving(false)
+    setMsg({ id: m.id, text: data.ok ? `✓ Granted ${tier}` : (data.error ?? "Error"), ok: !!data.ok })
+    setTimeout(() => setMsg(null), 3000)
+    if (data.ok) load()
+  }
+
+  if (loading) {
+    return <div className="py-12 text-center text-muted text-sm">Loading members…</div>
+  }
+
+  const foundingCount = members.filter((m) => m.membership_tier === "founding").length
+  const paidCount = members.filter((m) => m.membership_tier && m.membership_tier !== "free").length
+
+  return (
+    <div className="space-y-4">
+      {/* Stats */}
+      <div className="flex gap-4 text-xs text-muted">
+        <span>{members.length} total users</span>
+        <span>·</span>
+        <span className="text-amber-400 font-semibold">{foundingCount} founding</span>
+        <span>·</span>
+        <span className="text-blue-400">{paidCount} paid members</span>
+      </div>
+
+      <div className="rounded-xl border border-border-default overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-surface border-b border-border-default">
+            <tr>
+              <th className={thCls}>User</th>
+              <th className={thCls}>Tier</th>
+              <th className={thCls}>#</th>
+              <th className={thCls}>Tokens</th>
+              <th className={thCls}>Status</th>
+              <th className={thCls}>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {members.map((m, i) => {
+              const isMe = m.id === activePersonId
+              const tier = m.membership_tier ?? "free"
+              const color = TIER_COLOR[tier] ?? "#888"
+              const symbol = TIER_SYMBOL[tier] ?? "●"
+              const rowMsg = msg?.id === m.id ? msg : null
+
+              return (
+                <tr
+                  key={m.id}
+                  className={cn(
+                    "border-b border-border-default last:border-0 transition-colors",
+                    isMe && "ring-1 ring-inset ring-blue-500/30",
+                    editId === m.id ? "bg-blue-950/20" : i % 2 === 0 ? "bg-background" : "bg-surface/40"
+                  )}
+                >
+                  {editId === m.id ? (
+                    <>
+                      {/* Edit row */}
+                      <td className={cn(cellCls, "text-foreground")}>
+                        <div className="font-medium">{m.display_name ?? "—"}</div>
+                        <div className="text-[10px] text-muted">{m.id.slice(0, 12)}…</div>
+                      </td>
+                      <td className="py-1 px-1">
+                        <select value={draft.tier} onChange={(e) => setDraft({ ...draft, tier: e.target.value })}
+                          className={cn(inputCls, "cursor-pointer")}>
+                          <option value="free">Free</option>
+                          <option value="annual">Annual</option>
+                          <option value="lifetime">Lifetime</option>
+                          <option value="founding">Founding</option>
+                        </select>
+                      </td>
+                      <td className="py-1 px-1">
+                        <input type="number" value={draft.memberNumber}
+                          onChange={(e) => setDraft({ ...draft, memberNumber: e.target.value })}
+                          placeholder="001" className={cn(inputCls, "w-16")} />
+                      </td>
+                      <td className="py-1 px-1">
+                        <div className="flex gap-1 items-center">
+                          <input type="number" value={draft.tokenFounder}
+                            onChange={(e) => setDraft({ ...draft, tokenFounder: e.target.value })}
+                            placeholder="F" className={cn(inputCls, "w-14")} title="Founder tokens" />
+                          <span className="text-muted text-xs">F</span>
+                          <input type="number" value={draft.tokenMember}
+                            onChange={(e) => setDraft({ ...draft, tokenMember: e.target.value })}
+                            placeholder="M" className={cn(inputCls, "w-14")} title="Member tokens" />
+                          <span className="text-muted text-xs">M</span>
+                        </div>
+                      </td>
+                      <td className="py-1 px-1">
+                        <select value={draft.status} onChange={(e) => setDraft({ ...draft, status: e.target.value })}
+                          className={cn(inputCls, "cursor-pointer")}>
+                          <option value="active">Active</option>
+                          <option value="expired">Expired</option>
+                          <option value="gifted">Gifted</option>
+                        </select>
+                      </td>
+                      <td className="py-1 px-2">
+                        <div className="flex gap-1">
+                          <button onClick={() => save(m.id)} disabled={saving}
+                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500 disabled:opacity-50 transition-colors">
+                            {saving ? "…" : "Save"}
+                          </button>
+                          <button onClick={() => setEditId(null)}
+                            className="px-2 py-1 text-xs text-muted hover:text-foreground transition-colors">×</button>
+                        </div>
+                      </td>
+                    </>
+                  ) : (
+                    <>
+                      {/* Read row */}
+                      <td className={cn(cellCls)}>
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-medium text-foreground">{m.display_name ?? "—"}</span>
+                          {isMe && <span className="text-[9px] text-blue-400 font-semibold">(you)</span>}
+                        </div>
+                        <div className="text-[10px] text-muted">{m.id.slice(0, 12)}…</div>
+                      </td>
+                      <td className={cellCls}>
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold"
+                          style={{ color }}>
+                          {symbol} {tier}
+                        </span>
+                      </td>
+                      <td className={cn(cellCls, "text-muted text-xs")}>
+                        {m.founding_member_number ? `#${String(m.founding_member_number).padStart(3, "0")}` : "—"}
+                      </td>
+                      <td className={cn(cellCls, "text-xs")}>
+                        {m.token_founder || m.token_member ? (
+                          <span className="text-foreground">
+                            {m.token_founder ? <span className="text-amber-400">{m.token_founder}F</span> : null}
+                            {m.token_founder && m.token_member ? " · " : ""}
+                            {m.token_member ? <span className="text-blue-400">{m.token_member}M</span> : null}
+                          </span>
+                        ) : (
+                          <span className="text-muted">—</span>
+                        )}
+                      </td>
+                      <td className={cn(cellCls, "text-xs")}>
+                        <span style={{ color: m.membership_status === "expired" ? "#ef4444" : m.membership_tier !== "free" ? "#10b981" : "#52525b" }}>
+                          {m.membership_status ?? "free"}
+                        </span>
+                      </td>
+                      <td className={cn(cellCls, "text-right")}>
+                        {rowMsg ? (
+                          <span className={cn("text-xs", rowMsg.ok ? "text-green-400" : "text-red-400")}>{rowMsg.text}</span>
+                        ) : (
+                          <div className="flex items-center gap-1 justify-end">
+                            {/* Quick grant buttons for non-members */}
+                            {(!m.membership_tier || m.membership_tier === "free") && (
+                              <>
+                                <button
+                                  onClick={() => quickGrant(m, "founding")}
+                                  disabled={saving}
+                                  className="px-2 py-0.5 text-[10px] rounded border border-amber-700/40 text-amber-400 hover:bg-amber-900/20 transition-colors disabled:opacity-40"
+                                  title="Grant Founding membership with 100 founder tokens">
+                                  ✦ Grant
+                                </button>
+                                <button
+                                  onClick={() => quickGrant(m, "annual")}
+                                  disabled={saving}
+                                  className="px-2 py-0.5 text-[10px] rounded border border-blue-700/40 text-blue-400 hover:bg-blue-900/20 transition-colors disabled:opacity-40"
+                                  title="Grant Annual membership with 10 member tokens">
+                                  ◈ Grant
+                                </button>
+                              </>
+                            )}
+                            <button
+                              onClick={() => startEdit(m)}
+                              className="px-2 py-0.5 text-[10px] rounded border border-border-default text-muted hover:text-foreground hover:border-foreground transition-colors">
+                              Edit
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </>
+                  )}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
+
+      <p className="text-[10px] text-muted">
+        Changes take effect immediately in Supabase. The member will see their new tier on next page load.
+        Use &quot;Edit&quot; for full control · &quot;✦ Grant&quot; / &quot;◈ Grant&quot; for quick one-click membership.
+      </p>
+    </div>
+  )
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
@@ -1349,12 +1649,13 @@ export default function AdminPage() {
   const { catalog } = useLineageStore()
 
   const counts: Record<Tab, number> = {
-    brands: catalog.orgs.filter((o) => o.org_type === "brand").length,
-    boards: catalog.boards.length,
-    events: catalog.events.length,
-    places: catalog.places.length,
-    orgs: catalog.orgs.length,
-    series: catalog.eventSeries.length,
+    brands:  catalog.orgs.filter((o) => o.org_type === "brand").length,
+    boards:  catalog.boards.length,
+    events:  catalog.events.length,
+    places:  catalog.places.length,
+    orgs:    catalog.orgs.length,
+    series:  catalog.eventSeries.length,
+    members: 0, // loaded async in MembersTable
   }
 
   return (
@@ -1387,24 +1688,27 @@ export default function AdminPage() {
               )}
             >
               {label}
-              <span className={cn(
-                "ml-1.5 text-[10px] tabular-nums px-1.5 py-0.5 rounded-full",
-                tab === id ? "bg-blue-600/30 text-blue-300" : "bg-surface text-muted"
-              )}>
-                {counts[id]}
-              </span>
+              {id !== "members" && (
+                <span className={cn(
+                  "ml-1.5 text-[10px] tabular-nums px-1.5 py-0.5 rounded-full",
+                  tab === id ? "bg-blue-600/30 text-blue-300" : "bg-surface text-muted"
+                )}>
+                  {counts[id]}
+                </span>
+              )}
             </button>
           ))}
         </div>
 
         {/* Table content */}
         <div>
-          {tab === "brands" && <BrandsTable />}
-          {tab === "boards" && <BoardsTable />}
-          {tab === "events" && <EventsTable />}
-          {tab === "places" && <PlacesTable />}
-          {tab === "orgs" && <OrgsTable />}
-          {tab === "series" && <SeriesTable />}
+          {tab === "brands"  && <BrandsTable />}
+          {tab === "boards"  && <BoardsTable />}
+          {tab === "events"  && <EventsTable />}
+          {tab === "places"  && <PlacesTable />}
+          {tab === "orgs"    && <OrgsTable />}
+          {tab === "series"  && <SeriesTable />}
+          {tab === "members" && <MembersTable />}
         </div>
 
         {/* Footer hint */}

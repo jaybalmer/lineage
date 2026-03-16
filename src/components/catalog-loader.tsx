@@ -7,26 +7,24 @@ import { supabase } from "@/lib/supabase"
 /**
  * Invisible component mounted at the root layout level.
  * 1. Loads the shared entity catalog (mock + Supabase public tables)
- * 2. Syncs activePersonId with the live Supabase auth session on mount so
- *    returning users get the right identity without signing in again.
+ * 2. Syncs activePersonId + membership with the live Supabase auth session on mount.
  * 3. Listens for auth state changes to handle sign-in and sign-out reactively.
  */
 export function CatalogLoader() {
-  const { loadCatalog, activePersonId, setActivePersonId, setProfileOverride, completeOnboarding } = useLineageStore()
+  const { loadCatalog, activePersonId, setActivePersonId, setProfileOverride, setMembership, completeOnboarding } = useLineageStore()
 
   // ── 1. Load public catalog ───────────────────────────────────────────────
   useEffect(() => {
     loadCatalog()
   }, [loadCatalog])
 
-  // ── 2. Sync auth session → activePersonId on mount ──────────────────────
+  // ── 2. Sync auth session → activePersonId + membership on mount ──────────
   useEffect(() => {
     async function syncSession() {
       const { data: { session } } = await supabase.auth.getSession()
       const uid = session?.user?.id
 
       if (!uid) {
-        // No session — if activePersonId is a stale non-auth value, clear it
         if (activePersonId && !isAuthUser(activePersonId)) {
           setActivePersonId("")
         }
@@ -35,22 +33,7 @@ export function CatalogLoader() {
 
       if (activePersonId === uid) return  // already in sync
 
-      // Session exists but store has a stale ID — load profile and fix it
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("display_name, birth_year, riding_since, privacy_level")
-        .eq("id", uid)
-        .single()
-
-      if (profile) {
-        setProfileOverride({
-          display_name:  profile.display_name  ?? undefined,
-          birth_year:    profile.birth_year    ?? undefined,
-          riding_since:  profile.riding_since  ?? undefined,
-          privacy_level: (profile.privacy_level ?? "public") as "private" | "shared" | "public",
-        })
-      }
-
+      await loadProfileAndMembership(uid)
       setActivePersonId(uid)
       completeOnboarding()
     }
@@ -71,27 +54,56 @@ export function CatalogLoader() {
       if (!uid) return
       if (useLineageStore.getState().activePersonId === uid) return
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("display_name, birth_year, riding_since, privacy_level")
-        .eq("id", uid)
-        .single()
-
-      if (profile) {
-        setProfileOverride({
-          display_name:  profile.display_name  ?? undefined,
-          birth_year:    profile.birth_year    ?? undefined,
-          riding_since:  profile.riding_since  ?? undefined,
-          privacy_level: (profile.privacy_level ?? "public") as "private" | "shared" | "public",
-        })
-      }
-
+      await loadProfileAndMembership(uid)
       setActivePersonId(uid)
       completeOnboarding()
     })
 
     return () => subscription.unsubscribe()
-  }, [setActivePersonId, setProfileOverride, completeOnboarding])
+  }, [setActivePersonId, setProfileOverride, completeOnboarding]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return null
+
+  // ── Helper: load profile + membership fields from Supabase ───────────────
+  async function loadProfileAndMembership(uid: string) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select(`
+        display_name, birth_year, riding_since, privacy_level,
+        membership_tier, membership_status, founding_badge, founding_member_number,
+        token_founder, token_member, token_contribution,
+        stripe_customer_id, stripe_subscription_id, membership_expires_at, pending_credit
+      `)
+      .eq("id", uid)
+      .single()
+
+    if (!profile) return
+
+    setProfileOverride({
+      display_name:  profile.display_name  ?? undefined,
+      birth_year:    profile.birth_year    ?? undefined,
+      riding_since:  profile.riding_since  ?? undefined,
+      privacy_level: (profile.privacy_level ?? "public") as "private" | "shared" | "public",
+    })
+
+    // Only update membership if DB has a non-free tier (respect local contribution tokens otherwise)
+    const dbTier = profile.membership_tier ?? "free"
+    if (dbTier !== "free" || profile.token_founder || profile.token_member) {
+      setMembership({
+        tier:                    dbTier as "free" | "annual" | "lifetime" | "founding",
+        status:                  (profile.membership_status ?? "active") as "active" | "expired" | "gifted",
+        founding_badge:          profile.founding_badge ?? false,
+        founding_member_number:  profile.founding_member_number ?? undefined,
+        token_balance: {
+          founder:      profile.token_founder      ?? 0,
+          member:       profile.token_member       ?? 0,
+          contribution: profile.token_contribution ?? useLineageStore.getState().membership.token_balance.contribution,
+        },
+        stripe_customer_id:     profile.stripe_customer_id     ?? undefined,
+        stripe_subscription_id: profile.stripe_subscription_id ?? undefined,
+        membership_expires_at:  profile.membership_expires_at  ?? undefined,
+        pending_credit:         profile.pending_credit         ?? 0,
+      })
+    }
+  }
 }
