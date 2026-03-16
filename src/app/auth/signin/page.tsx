@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 
+
+
 export default function SignInPage() {
   const router  = useRouter()
   const [email, setEmail]   = useState("")
@@ -103,12 +105,20 @@ export default function SignInPage() {
           </form>
         )}
 
-        <p className="text-center text-muted" style={{ fontSize: 10 }}>
-          No account yet?{" "}
-          <Link href="/onboarding" className="underline hover:text-foreground">
-            Create your timeline
-          </Link>
-        </p>
+        <div className="flex items-center justify-between" style={{ fontSize: 10 }}>
+          <p className="text-muted">
+            No account yet?{" "}
+            <Link href="/onboarding" className="underline hover:text-foreground">
+              Create your timeline
+            </Link>
+          </p>
+          <button
+            onClick={() => router.back()}
+            className="text-muted hover:text-foreground transition-colors"
+          >
+            ← Back
+          </button>
+        </div>
       </div>
     </div>
   )
