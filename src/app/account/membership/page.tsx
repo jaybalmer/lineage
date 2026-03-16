@@ -75,11 +75,21 @@ export default function MembershipDashboardPage() {
     return (
       <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
         <Nav />
-        <div className="max-w-3xl mx-auto px-4 pt-20 text-center">
-          <p className="text-muted mb-4" style={{ fontSize: 12 }}>Sign in to view your membership.</p>
-          <Link href="/profile" className="underline text-muted hover:text-foreground" style={{ fontSize: 11 }}>
-            Go to profile →
+        <div className="max-w-sm mx-auto px-4 pt-24 text-center space-y-5">
+          <div className="text-3xl">⬡</div>
+          <p className="text-foreground font-semibold" style={{ fontSize: 14 }}>Sign in to Lineage</p>
+          <p className="text-muted" style={{ fontSize: 12 }}>Sign in to view your membership and profile.</p>
+          <Link
+            href="/auth/signin"
+            className="inline-block w-full px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-500 transition-colors"
+            style={{ fontSize: 13 }}
+          >
+            Sign in →
           </Link>
+          <p className="text-muted" style={{ fontSize: 10 }}>
+            New here?{" "}
+            <Link href="/onboarding" className="underline hover:text-foreground">Create your timeline</Link>
+          </p>
         </div>
       </div>
     )

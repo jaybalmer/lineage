@@ -2,11 +2,12 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { getPersonById } from "@/lib/mock-data"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
+import { supabase } from "@/lib/supabase"
 
 const TIER_BADGE: Record<string, { label: string; color: string; symbol: string }> = {
   annual:   { label: "MEMBER",      color: "#3b82f6", symbol: "◈" },
@@ -59,9 +60,19 @@ interface AvatarDropdownProps {
 
 function AvatarDropdown({ initial, displayName, tier, totalTokens }: AvatarDropdownProps) {
   const path     = usePathname()
+  const router   = useRouter()
   const [open, setOpen] = useState(false)
   const ref      = useRef<HTMLDivElement>(null)
   const tierBadge = TIER_BADGE[tier] ?? null
+
+  async function handleSignOut() {
+    setOpen(false)
+    const { setActivePersonId, setProfileOverride } = useLineageStore.getState()
+    await supabase.auth.signOut()
+    setActivePersonId("u1")
+    setProfileOverride({})
+    router.push("/")
+  }
 
   // Close when the route changes (navigation completed)
   useEffect(() => { setOpen(false) }, [path])
@@ -141,6 +152,16 @@ function AvatarDropdown({ initial, displayName, tier, totalTokens }: AvatarDropd
               <span className="text-green-500" style={{ fontSize: 9 }}>● Revenue share active</span>
             </Link>
           )}
+
+          <div className="border-t border-border-default" />
+
+          <button
+            onClick={handleSignOut}
+            className="w-full flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
+            style={{ fontSize: 11 }}
+          >
+            Sign out
+          </button>
         </div>
       )}
     </div>
