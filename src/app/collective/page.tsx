@@ -55,6 +55,7 @@ const TYPE_KEYS: CollectiveType[] = ["rider", "event", "board", "brand", "place"
 // ─── Editorial labels per year / decade ──────────────────────────────────────
 
 const YEAR_LABELS: Record<number, string> = {
+  1979: "Before snowboarding",
   1980: "Winterstick & Snurfer",
   1981: "First snowboard shops",
   1982: "Before the scene",
@@ -108,6 +109,7 @@ const DECADE_LABELS: Record<number, string> = {
 }
 
 const CHART_YEARS = [
+  1979,                                                          // pre-dataset baseline
   1980, 1981, 1982,
   1983, 1985, 1987, 1988, 1990, 1991, 1992, 1993, 1994, 1995,
   1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
@@ -343,9 +345,12 @@ export default function CollectivePage() {
   const showLabel = (i: number) => mode === "decade" || i % 4 === 0 || i === activeIdx
 
   // ── Link for info panel type row ──────────────────────────────────────────
-  // Decade mode: pass first 3 digits (e.g. "199") so all years in the decade match
+  // Decade mode: extract the decade prefix from the label (e.g. "1990s" → "199")
+  // Year mode: pass the exact year (e.g. 1994)
   const yearParam = activeData
-    ? `?year=${activeData.decade ? String(activeData.year).slice(0, 3) : activeData.year}`
+    ? `?year=${activeData.decade
+        ? activeData.decade.replace("s", "").slice(0, 3) // "1990s" → "199"
+        : activeData.year}`
     : ""
 
   // ─── Render ───────────────────────────────────────────────────────────────

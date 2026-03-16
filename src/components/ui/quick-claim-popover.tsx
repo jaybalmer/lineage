@@ -131,9 +131,6 @@ export function QuickClaimPopover({ entityId, entityType, entityName }: QuickCla
           className="absolute right-0 top-9 z-50 w-56 bg-surface border border-border-default rounded-xl shadow-xl p-3"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="text-[10px] text-muted uppercase tracking-widest mb-2">
-            Add to your timeline
-          </div>
           <div className="text-xs font-medium text-foreground mb-3 truncate">{entityName}</div>
 
           {/* Predicate selection (multi only) */}
