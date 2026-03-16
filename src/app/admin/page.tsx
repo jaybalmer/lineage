@@ -1379,10 +1379,18 @@ function MembersTable() {
     tier: string; tokenFounder: string; tokenMember: string; memberNumber: string; status: string
   }>({ tier: "free", tokenFounder: "0", tokenMember: "0", memberNumber: "", status: "active" })
 
+  const [loadError, setLoadError] = useState<string | null>(null)
+
   const load = useCallback(async () => {
     setLoading(true)
+    setLoadError(null)
     const res = await fetch("/api/admin/memberships")
     const data = await res.json()
+    if (data.error) {
+      setLoadError(data.error)
+      setLoading(false)
+      return
+    }
     setMembers(data.members ?? [])
     setLoading(false)
   }, [])
@@ -1461,6 +1469,16 @@ function MembersTable() {
 
   if (loading) {
     return <div className="py-12 text-center text-muted text-sm">Loading members…</div>
+  }
+
+  if (loadError) {
+    return (
+      <div className="py-12 text-center space-y-2">
+        <p className="text-red-400 text-sm font-mono">Error loading members</p>
+        <p className="text-muted text-xs">{loadError}</p>
+        <button onClick={load} className="text-blue-400 text-xs underline mt-2">Retry</button>
+      </div>
+    )
   }
 
   const foundingCount = members.filter((m) => m.membership_tier === "founding").length

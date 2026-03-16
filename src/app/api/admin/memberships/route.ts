@@ -26,10 +26,11 @@ export async function GET() {
     return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 })
   }
 
-  const { data, error } = await client
+  // Fetch profiles (no email column — that lives in auth.users)
+  const { data: profiles, error } = await client
     .from("profiles")
     .select(`
-      id, display_name, email,
+      id, display_name,
       membership_tier, membership_status, founding_badge, founding_member_number,
       token_founder, token_member, token_contribution,
       stripe_customer_id, membership_expires_at, created_at
@@ -38,7 +39,15 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  return NextResponse.json({ members: data ?? [] })
+  // Fetch emails from auth.users via admin API
+  const { data: { users }, error: authErr } = await client.auth.admin.listUsers({ perPage: 1000 })
+  if (authErr) return NextResponse.json({ error: authErr.message }, { status: 500 })
+
+  const emailById = Object.fromEntries(users.map(u => [u.id, u.email ?? ""]))
+
+  const members = (profiles ?? []).map(p => ({ ...p, email: emailById[p.id] ?? "" }))
+
+  return NextResponse.json({ members })
 }
 
 // ─── POST /api/admin/memberships ── grant / edit membership ──────────────────
