@@ -28,6 +28,18 @@ function itemDecade(sortDate: number): string {
   return `${Math.floor(year / 10) * 10}s`
 }
 
+// Within the same date, boards appear first, then places, people, events, orgs
+function predicateRank(item: TimelineItem): number {
+  if (item.kind === "day") return 9
+  const p = item.claim.predicate
+  if (p === "owned_board") return 0
+  if (p === "rode_at" || p === "worked_at") return 2
+  if (p === "rode_with" || p === "shot_by" || p === "coached_by") return 3
+  if (p === "competed_at" || p === "spectated_at" || p === "organized_at") return 4
+  if (p === "sponsored_by" || p === "part_of_team") return 5
+  return 6
+}
+
 function groupByDecade(items: TimelineItem[]): Record<string, TimelineItem[]> {
   const groups: Record<string, TimelineItem[]> = {}
   for (const item of items) {
@@ -85,7 +97,11 @@ export function TimelineView({
         }))
       : []
 
-    return [...claimItems, ...dayItems].sort((a, b) => a.sortDate - b.sortDate)
+    return [...claimItems, ...dayItems].sort((a, b) =>
+      a.sortDate !== b.sortDate
+        ? a.sortDate - b.sortDate
+        : predicateRank(a) - predicateRank(b)
+    )
   }, [claims, days, filter])
 
   const grouped = useMemo(() => groupByDecade(items), [items])

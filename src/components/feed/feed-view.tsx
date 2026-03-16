@@ -45,6 +45,18 @@ function nodeColor(item: FeedItem): string {
   return "bg-zinc-600"
 }
 
+// Within the same date, boards appear first, then places, people, events, orgs
+function predicateRank(item: FeedItem): number {
+  if (item.kind === "day") return 9
+  const p = item.claim.predicate
+  if (p === "owned_board") return 0
+  if (p === "rode_at" || p === "worked_at") return 2
+  if (p === "rode_with" || p === "shot_by" || p === "coached_by") return 3
+  if (p === "competed_at" || p === "spectated_at" || p === "organized_at") return 4
+  if (p === "sponsored_by" || p === "part_of_team" || p === "fan_of") return 5
+  return 6
+}
+
 function itemDecade(sortDate: number): string {
   if (!sortDate) return "Unknown"
   const year = Math.floor(sortDate / 10000)
@@ -100,7 +112,11 @@ export function FeedView({
         }))
       : []
 
-    return [...claimItems, ...dayItems].sort((a, b) => a.sortDate - b.sortDate)
+    return [...claimItems, ...dayItems].sort((a, b) =>
+      a.sortDate !== b.sortDate
+        ? a.sortDate - b.sortDate
+        : predicateRank(a) - predicateRank(b)
+    )
   }, [claims, days, filter])
 
   const grouped = useMemo(() => groupByDecade(items), [items])
