@@ -55,6 +55,9 @@ const TYPE_KEYS: CollectiveType[] = ["rider", "event", "board", "brand", "place"
 // ─── Editorial labels per year / decade ──────────────────────────────────────
 
 const YEAR_LABELS: Record<number, string> = {
+  1980: "Winterstick & Snurfer",
+  1981: "First snowboard shops",
+  1982: "Before the scene",
   1983: "Burton Performer",
   1985: "First World Championships",
   1987: "Sims dominate",
@@ -96,6 +99,7 @@ const YEAR_LABELS: Record<number, string> = {
 }
 
 const DECADE_LABELS: Record<number, string> = {
+  1970: "Before snowboarding",
   1983: "The outlaw era",
   1990: "The golden era",
   2000: "Peak culture",
@@ -104,13 +108,14 @@ const DECADE_LABELS: Record<number, string> = {
 }
 
 const CHART_YEARS = [
+  1980, 1981, 1982,
   1983, 1985, 1987, 1988, 1990, 1991, 1992, 1993, 1994, 1995,
   1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005,
   2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015,
   2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023,
 ]
 
-const CHART_DECADES = [1983, 1990, 2000, 2010, 2020]
+const CHART_DECADES = [1970, 1983, 1990, 2000, 2010, 2020]
 
 // ─── Build chart data from catalog ───────────────────────────────────────────
 
@@ -146,6 +151,7 @@ function buildYearData(catalog: Catalog, extraRidersByYear: Map<number, number>)
 
 function buildDecadeData(catalog: Catalog, extraRidersByYear: Map<number, number>): DataPoint[] {
   const decades: [number, number, string][] = [
+    [1970, 1979, "1970s"],
     [1983, 1989, "1980s"],
     [1990, 1999, "1990s"],
     [2000, 2009, "2000s"],
