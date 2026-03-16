@@ -77,9 +77,14 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate the magic link via Supabase admin API
+    // redirectTo must point to /auth/complete so the session hash is handled correctly
+    const origin = req.headers.get("origin") ?? "https://lineage.wtf"
     const { data, error: genError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
       email: email.trim().toLowerCase(),
+      options: {
+        redirectTo: `${origin}/auth/complete`,
+      },
     })
 
     if (genError || !data?.properties?.action_link) {

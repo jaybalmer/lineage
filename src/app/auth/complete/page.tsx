@@ -23,22 +23,31 @@ export default function AuthCompletePage() {
 
       const { onboarding } = store
 
-      // 1. Upsert profile
-      const { error: profileError } = await supabase.from("profiles").upsert({
-        id: user.id,
-        display_name:
-          onboarding.display_name?.trim() ||
-          user.email?.split("@")[0] ||
-          "Rider",
-        birth_year: onboarding.birth_year ?? null,
-        riding_since: onboarding.start_year ?? null,
-        privacy_level: "public",
-        home_resort_id: onboarding.first_place_id ?? null,
-      })
+      // 1. Check if profile already exists (returning user via magic link)
+      const { data: existingProfile } = await supabase
+        .from("profiles")
+        .select("id, display_name")
+        .eq("id", user.id)
+        .single()
 
-      if (profileError) {
-        console.error("Profile save failed:", profileError)
+      if (!existingProfile) {
+        // New user — upsert with onboarding data
+        const { error: profileError } = await supabase.from("profiles").upsert({
+          id: user.id,
+          display_name:
+            onboarding.display_name?.trim() ||
+            user.email?.split("@")[0] ||
+            "Rider",
+          birth_year: onboarding.birth_year ?? null,
+          riding_since: onboarding.start_year ?? null,
+          privacy_level: "public",
+          home_resort_id: onboarding.first_place_id ?? null,
+        })
+        if (profileError) {
+          console.error("Profile save failed:", profileError)
+        }
       }
+      // Returning user — skip upsert, profile is already correct in DB
 
       // 2. Migrate any session claims to DB
       if (store.sessionClaims.length > 0) {
