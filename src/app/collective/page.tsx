@@ -22,14 +22,32 @@ interface DataPoint {
   label: string
 }
 
-// ─── Type definitions (colors + symbols) ─────────────────────────────────────
+// ─── Type definitions (symbols + labels + hrefs) ──────────────────────────────
 
-const TYPE: Record<CollectiveType, { symbol: string; label: string; color: string; href: string }> = {
-  rider: { symbol: "●",  label: "Riders",  color: "#a29bfe", href: "/riders" },
-  event: { symbol: "◈",  label: "Events",  color: "#00d4ff", href: "/events" },
-  board: { symbol: "◆",  label: "Boards",  color: "#ff9f43", href: "/boards" },
-  brand: { symbol: "◎",  label: "Brands",  color: "#55efc4", href: "/brands" },
-  place: { symbol: "◇",  label: "Places",  color: "#4fc3f7", href: "/places" },
+const TYPE: Record<CollectiveType, { symbol: string; label: string; href: string }> = {
+  rider: { symbol: "●",  label: "Riders",  href: "/riders" },
+  event: { symbol: "◈",  label: "Events",  href: "/events" },
+  board: { symbol: "◆",  label: "Boards",  href: "/boards" },
+  brand: { symbol: "◎",  label: "Brands",  href: "/brands" },
+  place: { symbol: "◇",  label: "Places",  href: "/places" },
+}
+
+// Dark mode: vivid neon palette (original)
+const TYPE_COLORS_DARK: Record<CollectiveType, string> = {
+  rider: "#a29bfe",  // lavender
+  event: "#00d4ff",  // cyan
+  board: "#ff9f43",  // orange
+  brand: "#55efc4",  // mint
+  place: "#4fc3f7",  // sky
+}
+
+// Light mode: darker versions matching post-card border accents
+const TYPE_COLORS_LIGHT: Record<CollectiveType, string> = {
+  rider: "#6d28d9",  // violet-700
+  event: "#b45309",  // amber-700
+  board: "#047857",  // emerald-700
+  brand: "#0f766e",  // teal-700
+  place: "#1d4ed8",  // blue-700
 }
 
 const TYPE_KEYS: CollectiveType[] = ["rider", "event", "board", "brand", "place"]
@@ -197,6 +215,16 @@ export default function CollectivePage() {
   const [addedYear, setAddedYear] = useState<number | null>(null)
   // Extra rider counts from Supabase profiles (by riding_since year)
   const [extraRidersByYear, setExtraRidersByYear] = useState<Map<number, number>>(new Map())
+  // Theme detection for data-viz color switching
+  const [isDark, setIsDark] = useState(true)
+
+  useEffect(() => {
+    const check = () => setIsDark(document.documentElement.classList.contains("dark"))
+    check()
+    const obs = new MutationObserver(check)
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] })
+    return () => obs.disconnect()
+  }, [])
 
   const svgRef    = useRef<SVGSVGElement>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -248,6 +276,10 @@ export default function CollectivePage() {
   const yearData   = useMemo(() => buildYearData(catalog, extraRidersByYear),   [catalog, extraRidersByYear])
   const decadeData = useMemo(() => buildDecadeData(catalog, extraRidersByYear), [catalog, extraRidersByYear])
   const data = mode === "decade" ? decadeData : yearData
+
+  // ── Theme-aware colors ────────────────────────────────────────────────────
+  const typeColors  = isDark ? TYPE_COLORS_DARK  : TYPE_COLORS_LIGHT
+  const accentColor = isDark ? "#00d4ff" : "#2563eb"
 
   // ── Chart dimensions ──────────────────────────────────────────────────────
   const CHART_H = 160
@@ -346,7 +378,7 @@ export default function CollectivePage() {
           <div className="mb-6">
             <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: 3, lineHeight: 1, marginBottom: 4 }}
               className="text-foreground">
-              COLLECTIVE<span style={{ color: "#00d4ff" }}>.</span>
+              COLLECTIVE<span style={{ color: accentColor }}>.</span>
             </div>
             <div className="text-muted" style={{ fontSize: 10, letterSpacing: 2 }}>
               // snowboarding · 1983–present
@@ -367,9 +399,9 @@ export default function CollectivePage() {
                     className="flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-bold transition-all"
                     style={{
                       fontFamily: "'IBM Plex Mono', monospace",
-                      background:   on ? `${t.color}18` : "transparent",
-                      borderColor:  on ? `${t.color}80` : "var(--muted)",
-                      color:        on ? t.color         : "var(--muted)",
+                      background:   on ? `${typeColors[k]}18` : "transparent",
+                      borderColor:  on ? `${typeColors[k]}80` : "var(--muted)",
+                      color:        on ? typeColors[k]         : "var(--muted)",
                       opacity:      on ? 1 : 0.6,
                     }}
                   >
@@ -426,8 +458,8 @@ export default function CollectivePage() {
                 <defs>
                   {TYPE_KEYS.map(k => (
                     <linearGradient key={k} id={`ct-grad-${k}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%"   stopColor={TYPE[k].color} stopOpacity="0.14" />
-                      <stop offset="100%" stopColor={TYPE[k].color} stopOpacity="0.00" />
+                      <stop offset="0%"   stopColor={typeColors[k]} stopOpacity="0.14" />
+                      <stop offset="100%" stopColor={typeColors[k]} stopOpacity="0.00" />
                     </linearGradient>
                   ))}
                   <linearGradient id="ct-scrubGrad" x1="0" y1="0" x2="0" y2="1">
@@ -467,7 +499,7 @@ export default function CollectivePage() {
                 {TYPE_KEYS.map((k, ki) => (
                   <path key={`line-idle-${k}`}
                     d={catmullRomPath(linePoints[k])}
-                    fill="none" stroke={TYPE[k].color}
+                    fill="none" stroke={typeColors[k]}
                     strokeWidth={activeData ? 1.0 : 1.5}
                     strokeOpacity={activeData ? 0.22 : 0.7}
                     strokeLinecap="round"
@@ -485,7 +517,7 @@ export default function CollectivePage() {
                 {activeData && TYPE_KEYS.map(k => (
                   <path key={`line-active-${k}`}
                     d={catmullRomPath(linePoints[k])}
-                    fill="none" stroke={TYPE[k].color}
+                    fill="none" stroke={typeColors[k]}
                     strokeWidth="2" strokeOpacity="1"
                     strokeLinecap="round" filter="url(#ct-glow)"
                     style={{ opacity: enabled.has(k) ? 1 : 0, transition: "opacity 0.3s" }}
@@ -497,7 +529,7 @@ export default function CollectivePage() {
                   linePoints[k].map((pt, i) => (
                     <circle key={`node-${k}-${i}`}
                       cx={pt.x} cy={pt.y} r={1.8}
-                      fill="var(--surface)" stroke={TYPE[k].color}
+                      fill="var(--surface)" stroke={typeColors[k]}
                       strokeWidth="1" strokeOpacity="0.4"
                       style={{ opacity: enabled.has(k) ? 1 : 0, transition: "opacity 0.3s" }}
                     />
@@ -515,8 +547,8 @@ export default function CollectivePage() {
                       if (!pt) return null
                       return (
                         <g key={`scrub-node-${k}`} filter="url(#ct-glow)">
-                          <circle cx={pt.x} cy={pt.y} r={6}   fill="var(--surface)" stroke={TYPE[k].color} strokeWidth="1.5" />
-                          <circle cx={pt.x} cy={pt.y} r={2.5} fill={TYPE[k].color} />
+                          <circle cx={pt.x} cy={pt.y} r={6}   fill="var(--surface)" stroke={typeColors[k]} strokeWidth="1.5" />
+                          <circle cx={pt.x} cy={pt.y} r={2.5} fill={typeColors[k]} />
                         </g>
                       )
                     })}
@@ -554,8 +586,8 @@ export default function CollectivePage() {
                       {isMe ? (
                         <rect x={x - 5} y={NODE_Y - 5} width={10} height={10}
                           transform={`rotate(45,${x},${NODE_Y})`}
-                          fill={isAct ? "#00d4ff" : "var(--surface)"}
-                          stroke="#00d4ff" strokeWidth={isAct ? 1.5 : 1}
+                          fill={isAct ? accentColor : "var(--surface)"}
+                          stroke={accentColor} strokeWidth={isAct ? 1.5 : 1}
                           filter={isAct ? "url(#ct-cyan-glow)" : undefined}
                           style={{ transition: "all 0.2s" }}
                         />
@@ -589,7 +621,7 @@ export default function CollectivePage() {
               <div className="flex items-center gap-1.5">
                 <svg width="12" height="12" viewBox="0 0 12 12">
                   <rect x="1" y="1" width="10" height="10" transform="rotate(45,6,6)"
-                    fill="none" stroke="#00d4ff" strokeWidth="1" />
+                    fill="none" stroke={accentColor} strokeWidth="1" />
                 </svg>
                 <span className="text-muted" style={{ fontSize: 8, fontFamily: "'IBM Plex Mono', monospace" }}>your years</span>
               </div>
@@ -612,7 +644,7 @@ export default function CollectivePage() {
                   {/* Title row */}
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: "#00d4ff", letterSpacing: 2, marginBottom: 5 }}>
+                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: accentColor, letterSpacing: 2, marginBottom: 5 }}>
                         {activeData.decade ?? activeData.year}
                       </div>
                       <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 700, lineHeight: 1.1 }}
@@ -622,7 +654,7 @@ export default function CollectivePage() {
                     </div>
                     {myYears.has(activeData.year) && (
                       <div className="shrink-0 mt-1 px-2 py-1 rounded-full flex items-center gap-1"
-                        style={{ background: "#001a26", border: "1px solid #00d4ff33", fontSize: 9, color: "#00d4ff", fontFamily: "'IBM Plex Mono', monospace" }}>
+                        style={{ background: "var(--surface-2)", border: `1px solid ${accentColor}44`, fontSize: 9, color: accentColor, fontFamily: "'IBM Plex Mono', monospace" }}>
                         ◆ yours
                       </div>
                     )}
@@ -645,11 +677,11 @@ export default function CollectivePage() {
                               style={{ padding: "4px 6px", margin: "-4px -6px" }}
                             >
                               <div className="flex items-center gap-2 mb-1">
-                                <span style={{ fontSize: 10, color: t.color, fontFamily: "'IBM Plex Mono', monospace", width: 14 }}>{t.symbol}</span>
-                                <span className="text-muted flex-1" style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", letterSpacing: 0.5 }}>
+                                <span style={{ fontSize: 10, color: typeColors[k], fontFamily: "'IBM Plex Mono', monospace", width: 14 }}>{t.symbol}</span>
+                                <span className="text-foreground flex-1" style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", letterSpacing: 0.5 }}>
                                   {t.label}
                                 </span>
-                                <span style={{ fontSize: 9, color: t.color, fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>
+                                <span style={{ fontSize: 9, color: typeColors[k], fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>
                                   {val.toLocaleString()}
                                 </span>
                                 <span className="text-muted" style={{ fontSize: 8, fontFamily: "'IBM Plex Mono', monospace", width: 28, textAlign: "right" }}>
@@ -660,8 +692,8 @@ export default function CollectivePage() {
                               <div className="bg-surface-2 rounded overflow-hidden" style={{ height: 2 }}>
                                 <div style={{
                                   height: "100%", borderRadius: 2,
-                                  width: `${pct}%`, background: t.color,
-                                  boxShadow: `0 0 5px ${t.color}88`,
+                                  width: `${pct}%`, background: typeColors[k],
+                                  boxShadow: `0 0 5px ${typeColors[k]}66`,
                                   transition: "width 0.4s ease",
                                 }} />
                               </div>
@@ -685,9 +717,9 @@ export default function CollectivePage() {
                     onClick={handleAdd}
                     className="w-full rounded-full py-2 text-center transition-all"
                     style={{
-                      background: addedYear === activeData.year ? "#00d4ff18" : "none",
-                      border: `1px solid ${addedYear === activeData.year ? "#00d4ff" : "#00d4ff44"}`,
-                      color: "#00d4ff",
+                      background: addedYear === activeData.year ? `${accentColor}18` : "none",
+                      border: `1px solid ${addedYear === activeData.year ? accentColor : `${accentColor}44`}`,
+                      color: accentColor,
                       fontSize: 9, letterSpacing: 1.5,
                       fontFamily: "'IBM Plex Mono', monospace",
                       cursor: "pointer",
@@ -710,7 +742,7 @@ export default function CollectivePage() {
           <div className="flex flex-wrap gap-x-5 gap-y-1 mt-4 px-1">
             {TYPE_KEYS.map(k => (
               <div key={k} className="flex items-center gap-2">
-                <div style={{ width: 18, height: 2, background: TYPE[k].color, borderRadius: 1, opacity: 0.6 }} />
+                <div style={{ width: 18, height: 2, background: typeColors[k], borderRadius: 1, opacity: 0.8 }} />
                 <span className="text-muted" style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace" }}>
                   {TYPE[k].label}
                 </span>
