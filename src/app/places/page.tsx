@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { placeSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
@@ -80,8 +81,10 @@ function PlaceCard({ place }: { place: Place }) {
   )
 }
 
-export default function PlacesPage() {
-  const [query, setQuery] = useState("")
+function PlacesPageInner() {
+  const searchParams = useSearchParams()
+  const yearParam = searchParams.get("year")
+  const [query, setQuery] = useState(yearParam ?? "")
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [myOnly, setMyOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
@@ -102,7 +105,7 @@ export default function PlacesPage() {
       if (myOnly && !myPlaceIds.has(p.id)) return false
       if (typeFilter !== "all" && p.place_type !== typeFilter) return false
       const q = query.toLowerCase()
-      if (q && !p.name.toLowerCase().includes(q) && !(p.region ?? "").toLowerCase().includes(q)) return false
+      if (q && !p.name.toLowerCase().includes(q) && !(p.region ?? "").toLowerCase().includes(q) && !String(p.first_snowboard_year ?? "").includes(q)) return false
       return true
     })
   }, [catalog.places, myOnly, myPlaceIds, typeFilter, query])
@@ -183,5 +186,13 @@ export default function PlacesPage() {
         />
       )}
     </div>
+  )
+}
+
+export default function PlacesPage() {
+  return (
+    <Suspense>
+      <PlacesPageInner />
+    </Suspense>
   )
 }

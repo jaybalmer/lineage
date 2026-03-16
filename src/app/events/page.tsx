@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { eventSlug, seriesSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
@@ -193,12 +194,14 @@ function SectionDivider({ label }: { label: string }) {
   )
 }
 
-export default function EventsPage() {
+function EventsPageInner() {
+  const searchParams = useSearchParams()
+  const yearParam = searchParams.get("year")
   const [mainTab, setMainTab] = useState<MainTab>("all")
   const [typeFilter, setTypeFilter] = useState<EventType | null>(null)
   const [myOnly, setMyOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState(yearParam ?? "")
   const { catalog, activePersonId } = useLineageStore()
 
   const allEvents = catalog.events
@@ -429,5 +432,13 @@ export default function EventsPage() {
         />
       )}
     </div>
+  )
+}
+
+export default function EventsPage() {
+  return (
+    <Suspense>
+      <EventsPageInner />
+    </Suspense>
   )
 }

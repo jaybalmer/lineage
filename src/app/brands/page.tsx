@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
 import { orgSlug } from "@/lib/mock-data"
@@ -86,10 +87,12 @@ function OrgCard({ org }: { org: Org }) {
 
 const BRAND_PREDICATES = ["sponsored_by", "worked_at", "part_of_team"] as const
 
-export default function BrandsPage() {
+function BrandsPageInner() {
+  const searchParams = useSearchParams()
+  const yearParam = searchParams.get("year")
   const [addOpen, setAddOpen] = useState(false)
   const [myOnly, setMyOnly] = useState(false)
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState(yearParam ?? "")
   const { catalog, activePersonId } = useLineageStore()
 
   // IDs of orgs the active user is connected to
@@ -107,7 +110,7 @@ export default function BrandsPage() {
     const q = search.trim().toLowerCase()
     if (!q) return base
     return base.filter((o) => {
-      const haystack = [o.name, o.description ?? "", o.country ?? "", o.brand_category ?? ""].join(" ").toLowerCase()
+      const haystack = [o.name, o.description ?? "", o.country ?? "", o.brand_category ?? "", String(o.founded_year ?? "")].join(" ").toLowerCase()
       return haystack.includes(q)
     })
   }, [myOnly, search, catalog.orgs, myOrgIds])
@@ -212,5 +215,13 @@ export default function BrandsPage() {
         />
       )}
     </div>
+  )
+}
+
+export default function BrandsPage() {
+  return (
+    <Suspense>
+      <BrandsPageInner />
+    </Suspense>
   )
 }

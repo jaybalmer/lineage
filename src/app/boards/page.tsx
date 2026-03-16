@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { boardSlug, orgSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
@@ -135,11 +136,13 @@ function DecadeDivider({ label }: { label: string }) {
   )
 }
 
-export default function BoardsPage() {
+function BoardsPageInner() {
+  const searchParams = useSearchParams()
+  const yearParam = searchParams.get("year")
   const [mainTab, setMainTab] = useState<MainTab>("all")
   const [myOnly, setMyOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
-  const [search, setSearch] = useState("")
+  const [search, setSearch] = useState(yearParam ?? "")
   const { catalog, activePersonId } = useLineageStore()
 
   // IDs of boards the active user owns
@@ -352,5 +355,13 @@ export default function BoardsPage() {
         />
       )}
     </div>
+  )
+}
+
+export default function BoardsPage() {
+  return (
+    <Suspense>
+      <BoardsPageInner />
+    </Suspense>
   )
 }

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { PEOPLE, CLAIMS, getPlaceById, getPersonById } from "@/lib/mock-data"
 import { useLineageStore } from "@/store/lineage-store"
@@ -115,10 +116,12 @@ function SectionHeader({ label, count }: { label: string; count: number }) {
   )
 }
 
-export default function RidersPage() {
+function RidersPageInner() {
+  const searchParams = useSearchParams()
+  const yearParam = searchParams.get("year")
   const { activePersonId, userEntities } = useLineageStore()
   const [query, setQuery] = useState("")
-  const [sort, setSort] = useState<SortTab>("all")
+  const [sort, setSort] = useState<SortTab>(yearParam ? "origin" : "all")
   const [myOnly, setMyOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [invitePerson, setInvitePerson] = useState<Person | null>(null)
@@ -327,5 +330,13 @@ export default function RidersPage() {
         />
       )}
     </div>
+  )
+}
+
+export default function RidersPage() {
+  return (
+    <Suspense>
+      <RidersPageInner />
+    </Suspense>
   )
 }
