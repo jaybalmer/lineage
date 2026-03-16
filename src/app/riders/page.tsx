@@ -3,7 +3,7 @@
 import { useState, useMemo, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
-import { PEOPLE, CLAIMS, getPlaceById, getPersonById } from "@/lib/mock-data"
+import { getPlaceById, getPersonById } from "@/lib/mock-data"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
@@ -21,9 +21,9 @@ const SORT_TABS: { id: SortTab; label: string; title: string }[] = [
   { id: "resort", label: "Resort", title: "Group by home resort" },
 ]
 
-function RiderRow({ person, isMe, onInvite }: { person: Person; isMe: boolean; onInvite?: (p: Person) => void }) {
-  const claimCount = CLAIMS.filter((c) => c.subject_id === person.id).length
-  const placeCount = CLAIMS.filter((c) => c.subject_id === person.id && c.predicate === "rode_at").length
+function RiderRow({ person, isMe, onInvite, claims }: { person: Person; isMe: boolean; onInvite?: (p: Person) => void; claims: import("@/types").Claim[] }) {
+  const claimCount = claims.filter((c) => c.subject_id === person.id).length
+  const placeCount = claims.filter((c) => c.subject_id === person.id && c.predicate === "rode_at").length
   const homeResort = person.home_resort_id ? getPlaceById(person.home_resort_id) : null
   const href = isMe ? "/profile" : `/riders/${person.id}`
   const isUnverified = person.community_status === "unverified"
@@ -119,7 +119,7 @@ function SectionHeader({ label, count }: { label: string; count: number }) {
 function RidersPageInner() {
   const searchParams = useSearchParams()
   const yearParam = searchParams.get("year")
-  const { activePersonId, userEntities } = useLineageStore()
+  const { activePersonId, userEntities, catalog } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState<SortTab>(yearParam ? "origin" : "all")
@@ -127,25 +127,28 @@ function RidersPageInner() {
   const [addOpen, setAddOpen] = useState(false)
   const [invitePerson, setInvitePerson] = useState<Person | null>(null)
 
+  // catalog.people already merges the people table + registered profiles
   const allPeople = useMemo(
-    () => [...PEOPLE, ...(userEntities.people ?? [])],
-    [userEntities.people]
+    () => [...catalog.people, ...(userEntities.people ?? [])],
+    [catalog.people, userEntities.people]
   )
+
+  const allClaims = catalog.claims
 
   // IDs of riders the active user rode with
   const myRiderIds = useMemo(() => {
     if (!activePersonId) return new Set<string>()
     return new Set(
-      CLAIMS.filter((c) => c.subject_id === activePersonId && c.predicate === "rode_with").map((c) => c.object_id)
+      allClaims.filter((c) => c.subject_id === activePersonId && c.predicate === "rode_with").map((c) => c.object_id)
     )
-  }, [activePersonId])
+  }, [activePersonId, allClaims])
 
   // Claim counts computed once
   const claimCounts = useMemo(() => {
     const map = new Map<string, number>()
-    for (const c of CLAIMS) map.set(c.subject_id, (map.get(c.subject_id) ?? 0) + 1)
+    for (const c of allClaims) map.set(c.subject_id, (map.get(c.subject_id) ?? 0) + 1)
     return map
-  }, [])
+  }, [allClaims])
 
   // Search + mine filter
   const searched = useMemo(() => {
@@ -298,7 +301,7 @@ function RidersPageInner() {
         ) : result.type === "flat" ? (
           <div className="space-y-2">
             {result.items.map((person) => (
-              <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} />
+              <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} claims={allClaims} />
             ))}
           </div>
         ) : (
@@ -308,7 +311,7 @@ function RidersPageInner() {
                 <SectionHeader label={label} count={items.length} />
                 <div className="space-y-2">
                   {items.map((person) => (
-                    <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} />
+                    <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} claims={allClaims} />
                   ))}
                 </div>
               </div>
