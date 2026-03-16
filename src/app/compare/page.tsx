@@ -10,6 +10,7 @@ import { supabase } from "@/lib/supabase"
 import { computeConnectionSummary } from "@/lib/connection-summary"
 import { PREDICATE_ICONS, PREDICATE_LABELS, formatDateRange } from "@/lib/utils"
 import { cn } from "@/lib/utils"
+import { ComparePlayer } from "@/components/ui/compare-player"
 import type { Person, Claim } from "@/types"
 
 // ─── Person Picker ────────────────────────────────────────────────────────────
@@ -392,6 +393,7 @@ function ComparePageInner() {
   const bParam = searchParams.get("b")
   const initialB = bParam ? (allPeople.find((p) => p.id === bParam) ?? null) : null
   const [personB, setPersonB] = useState<Person | null>(initialB)
+  const [playingCompare, setPlayingCompare] = useState(false)
 
   // DB claims for a real Person B
   const [personBDbClaims, setPersonBDbClaims] = useState<Claim[]>([])
@@ -433,6 +435,15 @@ function ComparePageInner() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
+      {playingCompare && personB && (
+        <ComparePlayer
+          personA={personA}
+          personB={personB}
+          claimsA={claimsA}
+          claimsB={claimsB}
+          onClose={() => setPlayingCompare(false)}
+        />
+      )}
       <Nav />
 
       <div className="max-w-3xl mx-auto px-4 py-8">
@@ -478,6 +489,13 @@ function ComparePageInner() {
             <div className="border border-border-default rounded-xl overflow-hidden">
               <div className="px-5 py-4 border-b border-border-default flex items-center gap-3">
                 <StrengthBadge strength={summary.strength} score={summary.score} />
+                <button
+                  onClick={() => setPlayingCompare(true)}
+                  className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:opacity-80 transition-opacity shrink-0"
+                >
+                  <span className="text-[10px]">▶</span>
+                  <span>Play</span>
+                </button>
               </div>
 
               <div className="px-5 py-4">
