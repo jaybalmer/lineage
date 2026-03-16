@@ -212,7 +212,6 @@ export default function CollectivePage() {
   const [enabled, setEnabled]     = useState<Set<CollectiveType>>(new Set(TYPE_KEYS))
   const [myYears, setMyYears]     = useState<Set<number>>(new Set())
   const [drawn, setDrawn]         = useState(false)
-  const [addedYear, setAddedYear] = useState<number | null>(null)
   // Extra rider counts from Supabase profiles (by riding_since year)
   const [extraRidersByYear, setExtraRidersByYear] = useState<Map<number, number>>(new Map())
   // Theme detection for data-viz color switching
@@ -335,18 +334,12 @@ export default function CollectivePage() {
     })
   }
 
-  // ── "Add to timeline" ─────────────────────────────────────────────────────
-  const handleAdd = () => {
-    if (!activeData) return
-    setAddedYear(activeData.year)
-    setTimeout(() => setAddedYear(null), 2000)
-  }
-
   const showLabel = (i: number) => mode === "decade" || i % 4 === 0 || i === activeIdx
 
   // ── Link for info panel type row ──────────────────────────────────────────
+  // Decade mode: pass first 3 digits (e.g. "199") so all years in the decade match
   const yearParam = activeData
-    ? `?year=${activeData.decade ? activeData.year : activeData.year}`
+    ? `?year=${activeData.decade ? String(activeData.year).slice(0, 3) : activeData.year}`
     : ""
 
   // ─── Render ───────────────────────────────────────────────────────────────
@@ -712,21 +705,6 @@ export default function CollectivePage() {
                     )
                   })()}
 
-                  {/* CTA */}
-                  <button
-                    onClick={handleAdd}
-                    className="w-full rounded-full py-2 text-center transition-all"
-                    style={{
-                      background: addedYear === activeData.year ? `${accentColor}18` : "none",
-                      border: `1px solid ${addedYear === activeData.year ? accentColor : `${accentColor}44`}`,
-                      color: accentColor,
-                      fontSize: 9, letterSpacing: 1.5,
-                      fontFamily: "'IBM Plex Mono', monospace",
-                      cursor: "pointer",
-                    }}
-                  >
-                    {addedYear === activeData.year ? "✓ MARKED ON YOUR TIMELINE" : "+ ADD TO YOUR TIMELINE"}
-                  </button>
                 </div>
               ) : (
                 <div className="flex items-center justify-center" style={{ height: 180 }}>
