@@ -72,7 +72,10 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
     setLinks((prev) => prev.map((l, idx) => idx === i ? { ...l, label } : l))
   }
 
-  const handleSave = () => {
+  const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+
+  const handleSave = async () => {
     if (!canSave) return
 
     // Add pending new link if URL entered but not yet submitted
@@ -84,32 +87,42 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
     }
 
     const override = {
-      display_name: displayName.trim(),
-      birth_year: birthYear ? parseInt(birthYear) : undefined,
-      riding_since: ridingSince ? parseInt(ridingSince) : undefined,
-      bio: bio.trim() || undefined,
+      display_name:   displayName.trim(),
+      birth_year:     birthYear   ? parseInt(birthYear)   : undefined,
+      riding_since:   ridingSince ? parseInt(ridingSince) : undefined,
+      bio:            bio.trim()  || undefined,
       home_resort_id: homeResortId || undefined,
-      privacy_level: privacyLevel,
-      links: finalLinks.length > 0 ? finalLinks : undefined,
+      privacy_level:  privacyLevel,
+      links:          finalLinks.length > 0 ? finalLinks : undefined,
     }
+
+    // Optimistically update store so UI reflects changes immediately
     setProfileOverride(override)
 
-    // Persist to Supabase in background for real (non-mock) users
+    // Persist to Supabase for real (non-mock) users
     if (isAuthUser(person.id)) {
-      supabase.auth.getUser().then(({ data: { user } }) => {
-        if (user) {
-          supabase.from("profiles").upsert({
-            id: user.id,
-            display_name: override.display_name,
-            birth_year: override.birth_year ?? null,
-            riding_since: override.riding_since ?? null,
-            bio: override.bio ?? null,
-            home_resort_id: override.home_resort_id ?? null,
-            privacy_level: override.privacy_level ?? "private",
-            links: override.links ?? null,
-          })
+      setSaving(true)
+      setSaveError(null)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { error } = await supabase.from("profiles").update({
+          display_name:   override.display_name,
+          birth_year:     override.birth_year     ?? null,
+          riding_since:   override.riding_since   ?? null,
+          bio:            override.bio            ?? null,
+          home_resort_id: override.home_resort_id ?? null,
+          privacy_level:  override.privacy_level  ?? "public",
+          links:          override.links          ?? null,
+        }).eq("id", user.id)
+
+        if (error) {
+          console.error("Profile save failed:", error)
+          setSaveError(error.message)
+          setSaving(false)
+          return  // keep modal open so user can see error
         }
-      })
+      }
+      setSaving(false)
     }
 
     onClose()
@@ -301,25 +314,31 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-border-default flex gap-3 flex-shrink-0">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-muted hover:text-foreground border border-border-default hover:border-border-default transition-all"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={!canSave}
-            className={cn(
-              "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
-              canSave
-                ? "bg-blue-600 text-white hover:bg-blue-500"
-                : "bg-surface-active text-muted cursor-not-allowed"
-            )}
-          >
-            Save profile
-          </button>
+        <div className="px-6 py-4 border-t border-border-default flex-shrink-0 space-y-2">
+          {saveError && (
+            <p className="text-red-400 text-xs text-center">{saveError}</p>
+          )}
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              disabled={saving}
+              className="flex-1 px-4 py-2.5 rounded-lg text-sm text-muted hover:text-foreground border border-border-default hover:border-border-default transition-all disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!canSave || saving}
+              className={cn(
+                "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
+                canSave && !saving
+                  ? "bg-blue-600 text-white hover:bg-blue-500"
+                  : "bg-surface-active text-muted cursor-not-allowed"
+              )}
+            >
+              {saving ? "Saving…" : "Save profile"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
