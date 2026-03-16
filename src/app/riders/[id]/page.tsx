@@ -19,13 +19,25 @@ const TIER_BADGE: Record<string, { symbol: string; label: string; color: string 
 
 export default function RiderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { activePersonId, profileOverride, membership } = useLineageStore()
+  const { activePersonId, profileOverride, membership, catalogLoaded, catalog } = useLineageStore()
   const isCurrentUser = id === activePersonId
   const [playingTimeline, setPlayingTimeline] = useState(false)
 
-  const basePerson = getPersonById(id)
-  // Auth user may only exist in profiles table, not catalog.people — fall back to profileOverride
+  // Wait for catalog + session to hydrate before deciding the page doesn't exist.
+  // On hard reload the store isn't populated yet — triggering notFound() too early
+  // sends the user to the sign-in page unnecessarily.
+  if (!catalogLoaded) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-blue-400 text-3xl animate-pulse">⬡</div>
+      </div>
+    )
+  }
+
+  // After catalog loads, look in both catalog.people (covers DB + profiles merge) and mock helper
+  const basePerson = catalog.people.find((p) => p.id === id) ?? getPersonById(id)
   if (!basePerson && !isCurrentUser) notFound()
+
   const person = isCurrentUser
     ? {
         id,
