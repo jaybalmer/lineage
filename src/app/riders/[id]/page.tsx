@@ -24,8 +24,19 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   const [playingTimeline, setPlayingTimeline] = useState(false)
 
   const basePerson = getPersonById(id)
-  if (!basePerson) notFound()
-  const person = isCurrentUser ? { ...basePerson, ...profileOverride } : basePerson
+  // Auth user may only exist in profiles table, not catalog.people — fall back to profileOverride
+  if (!basePerson && !isCurrentUser) notFound()
+  const person = isCurrentUser
+    ? {
+        id,
+        display_name: profileOverride.display_name ?? "Rider",
+        birth_year: profileOverride.birth_year,
+        riding_since: profileOverride.riding_since,
+        privacy_level: (profileOverride.privacy_level ?? "public") as "public" | "private" | "connections",
+        ...(basePerson ?? {}),
+        ...profileOverride,
+      }
+    : basePerson!
 
   const personClaims = CLAIMS.filter((c) => c.subject_id === id)
 

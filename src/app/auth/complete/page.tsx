@@ -4,70 +4,57 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useLineageStore } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
+import type { User } from "@supabase/supabase-js"
 
 export default function AuthCompletePage() {
   const router = useRouter()
   const store = useLineageStore()
-  const [status, setStatus] = useState("Saving your lineage…")
+  const [status, setStatus] = useState("Signing you in…")
 
   useEffect(() => {
-    async function saveAndRedirect() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+    let handled = false
 
-      if (!user) {
-        router.replace("/onboarding?error=no_session")
-        return
-      }
+    async function saveAndRedirect(user: User) {
+      if (handled) return
+      handled = true
 
-      const { onboarding } = store
+      setStatus("Saving your lineage…")
 
-      // 1. Check if profile already exists (returning user via magic link)
+      // ── 1. Profile upsert (new users only) ────────────────────────────────
       const { data: existingProfile } = await supabase
         .from("profiles")
-        .select("id, display_name")
+        .select("id")
         .eq("id", user.id)
         .single()
 
       if (!existingProfile) {
-        // New user — upsert with onboarding data
+        const { onboarding } = store
         const { error: profileError } = await supabase.from("profiles").upsert({
           id: user.id,
           display_name:
             onboarding.display_name?.trim() ||
             user.email?.split("@")[0] ||
             "Rider",
-          birth_year: onboarding.birth_year ?? null,
-          riding_since: onboarding.start_year ?? null,
-          privacy_level: "public",
+          birth_year:     onboarding.birth_year    ?? null,
+          riding_since:   onboarding.start_year    ?? null,
+          privacy_level:  "public",
           home_resort_id: onboarding.first_place_id ?? null,
         })
-        if (profileError) {
-          console.error("Profile save failed:", profileError)
-        }
+        if (profileError) console.error("Profile save failed:", profileError)
       }
-      // Returning user — skip upsert, profile is already correct in DB
 
-      // 2. Migrate any session claims to DB
+      // ── 2. Migrate session claims ─────────────────────────────────────────
       if (store.sessionClaims.length > 0) {
-        const migratedClaims = store.sessionClaims.map((claim) => ({
+        const migrated = store.sessionClaims.map((claim) => ({
           ...claim,
-          subject_id: user.id,
-          asserted_by: user.id,
+          subject_id:   user.id,
+          asserted_by:  user.id,
         }))
-
-        const { error: claimsError } = await supabase
-          .from("claims")
-          .insert(migratedClaims)
-
-        if (!claimsError) {
-          store.clearSessionClaims()
-        }
+        const { error } = await supabase.from("claims").insert(migrated)
+        if (!error) store.clearSessionClaims()
       }
 
-      // 3. Read the saved profile back from DB so we always get canonical values
-      // (onboarding data may be empty if magic link opened on a different origin)
+      // ── 3. Read canonical profile back from DB ────────────────────────────
       const { data: savedProfile } = await supabase
         .from("profiles")
         .select("*")
@@ -75,15 +62,15 @@ export default function AuthCompletePage() {
         .single()
 
       store.setProfileOverride({
-        display_name: savedProfile?.display_name ?? onboarding.display_name?.trim(),
-        birth_year: savedProfile?.birth_year ?? onboarding.birth_year,
-        riding_since: savedProfile?.riding_since ?? onboarding.start_year,
+        display_name:   savedProfile?.display_name  ?? store.onboarding.display_name?.trim(),
+        birth_year:     savedProfile?.birth_year    ?? store.onboarding.birth_year,
+        riding_since:   savedProfile?.riding_since  ?? store.onboarding.start_year,
         privacy_level: (savedProfile?.privacy_level ?? "public") as "private" | "shared" | "public",
       })
       store.setActivePersonId(user.id)
       store.completeOnboarding()
 
-      // 4. Merge rider_xxx record if arriving via invite claim
+      // ── 4. Invite claim merge ─────────────────────────────────────────────
       try {
         let inviteToken: string | null = null
         try {
@@ -100,25 +87,15 @@ export default function AuthCompletePage() {
         if (inviteToken) {
           setStatus("Linking your profile…")
           const { data: invite } = await supabase
-            .from("invites")
-            .select("*")
-            .eq("id", inviteToken)
-            .single()
+            .from("invites").select("*").eq("id", inviteToken).single()
 
           if (invite && !invite.claimed_at) {
             const oldId = invite.person_id as string
-
-            // Migrate all claims where the rider_xxx is subject or object
             await supabase.from("claims").update({ subject_id: user.id }).eq("subject_id", oldId)
             await supabase.from("claims").update({ object_id: user.id }).eq("object_id", oldId)
-
-            // Mark invite as claimed
-            await supabase
-              .from("invites")
+            await supabase.from("invites")
               .update({ claimed_at: new Date().toISOString(), claimed_by: user.id })
               .eq("id", inviteToken)
-
-            // Remove the stale unverified person entry
             await supabase.from("people").delete().eq("id", oldId)
           }
 
@@ -129,14 +106,43 @@ export default function AuthCompletePage() {
         }
       } catch (mergeErr) {
         console.error("Invite merge error:", mergeErr)
-        // Non-fatal — don't block the redirect
       }
 
       setStatus("Done! Opening your lineage…")
       router.replace("/profile")
     }
 
-    saveAndRedirect()
+    // ── Primary path: wait for SIGNED_IN from the auth state machine ────────
+    // This fires once the Supabase client detects and exchanges the token/code
+    // in the URL (hash or query param), however long that takes.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session?.user) {
+        saveAndRedirect(session.user)
+      }
+    })
+
+    // ── Fallback: if client already has a session (e.g. page re-mounted) ───
+    // getSession() is sync-safe: it reads from the in-memory store.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) saveAndRedirect(session.user)
+    })
+
+    // ── Timeout: no session after 8 s → bail out ────────────────────────────
+    const timeout = setTimeout(async () => {
+      if (handled) return
+      // One last try before giving up
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        saveAndRedirect(user)
+      } else {
+        router.replace("/auth/signin?error=link_expired")
+      }
+    }, 8000)
+
+    return () => {
+      subscription.unsubscribe()
+      clearTimeout(timeout)
+    }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
