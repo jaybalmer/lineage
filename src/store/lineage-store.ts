@@ -130,7 +130,7 @@ export const useLineageStore = create<LineageStore>()(
           supabase.from("claims").select("*"),
           // Registered users live in profiles, not people — fetch both and merge
           supabase.from("profiles").select(
-            "id, display_name, birth_year, riding_since, privacy_level, bio, links, home_resort_id"
+            "id, display_name, birth_year, riding_since, privacy_level, bio, links, home_resort_id, membership_tier"
           ),
         ]).then(([p, o, b, e, es, pe, c, pr]) => {
           const catalogPeople = (pe.data?.length ? pe.data : PEOPLE) as Person[]
@@ -140,14 +140,15 @@ export const useLineageStore = create<LineageStore>()(
           const profilePeople: Person[] = (pr.data ?? [])
             .filter((row) => !catalogIds.has(row.id) && row.display_name)
             .map((row) => ({
-              id:             row.id,
-              display_name:   row.display_name,
-              birth_year:     row.birth_year   ?? undefined,
-              riding_since:   row.riding_since  ?? undefined,
-              privacy_level:  (row.privacy_level ?? "public") as Person["privacy_level"],
-              bio:            row.bio           ?? undefined,
-              links:          row.links         ?? undefined,
-              home_resort_id: row.home_resort_id ?? undefined,
+              id:               row.id,
+              display_name:     row.display_name,
+              birth_year:       row.birth_year     ?? undefined,
+              riding_since:     row.riding_since   ?? undefined,
+              privacy_level:    (row.privacy_level ?? "public") as Person["privacy_level"],
+              bio:              row.bio            ?? undefined,
+              links:            row.links          ?? undefined,
+              home_resort_id:   row.home_resort_id ?? undefined,
+              membership_tier:  (row.membership_tier ?? "free") as Person["membership_tier"],
               community_status: "verified" as const,
             }))
 

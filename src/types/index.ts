@@ -41,6 +41,8 @@ export interface Person {
   community_status?: CommunityStatus
   added_by?: string
   links?: ProfileLink[]
+  /** Populated for registered users (profiles table); absent for catalog/mock people */
+  membership_tier?: "free" | "annual" | "lifetime" | "founding"
 }
 
 export interface Place {

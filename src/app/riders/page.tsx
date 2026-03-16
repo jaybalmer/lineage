@@ -21,34 +21,89 @@ const SORT_TABS: { id: SortTab; label: string; title: string }[] = [
   { id: "resort", label: "Resort", title: "Group by home resort" },
 ]
 
-function RiderRow({ person, isMe, onInvite, claims }: { person: Person; isMe: boolean; onInvite?: (p: Person) => void; claims: import("@/types").Claim[] }) {
+// ── Rider type classification ─────────────────────────────────────────────────
+
+type RiderKind = "founding" | "paid" | "free-account" | "unclaimed" | "catalog"
+
+function getRiderKind(person: Person): RiderKind {
+  if (isAuthUser(person.id)) {
+    const tier = person.membership_tier ?? "free"
+    if (tier === "founding")                       return "founding"
+    if (tier === "annual" || tier === "lifetime")   return "paid"
+    return "free-account"
+  }
+  if (person.community_status === "unverified")    return "unclaimed"
+  return "catalog"
+}
+
+const KIND_META: Record<RiderKind, { label: string; color: string; avatarBg: string; badge?: string }> = {
+  founding:     { label: "Founding",     color: "#f59e0b", avatarBg: "#78350f", badge: "✦ Founding" },
+  paid:         { label: "Member",       color: "#3b82f6", avatarBg: "#1e3a8a", badge: "◈ Member"   },
+  "free-account": { label: "Rider",      color: "#10b981", avatarBg: "#064e3b", badge: undefined    },
+  unclaimed:    { label: "Unclaimed",    color: "#f97316", avatarBg: "#431407", badge: undefined    },
+  catalog:      { label: "Catalog",      color: "#52525b", avatarBg: "#27272a", badge: undefined    },
+}
+
+const KIND_ORDER: RiderKind[] = ["founding", "paid", "free-account", "unclaimed", "catalog"]
+
+const SECTION_LABELS: Record<RiderKind, string> = {
+  founding:       "Founding Members",
+  paid:           "Members",
+  "free-account": "Riders",
+  unclaimed:      "Unclaimed Profiles",
+  catalog:        "Catalog",
+}
+
+// ── RiderRow ─────────────────────────────────────────────────────────────────
+
+function RiderRow({ person, isMe, onInvite, claims }: {
+  person: Person
+  isMe: boolean
+  onInvite?: (p: Person) => void
+  claims: import("@/types").Claim[]
+}) {
   const claimCount = claims.filter((c) => c.subject_id === person.id).length
   const placeCount = claims.filter((c) => c.subject_id === person.id && c.predicate === "rode_at").length
   const homeResort = person.home_resort_id ? getPlaceById(person.home_resort_id) : null
   const href = isMe ? "/profile" : `/riders/${person.id}`
-  const isUnverified = person.community_status === "unverified"
   const addedByPerson = person.added_by ? getPersonById(person.added_by) : null
+  const kind = getRiderKind(person)
+  const meta = KIND_META[kind]
 
   return (
     <div className="flex items-center gap-2">
       <Link href={href} className="flex-1 min-w-0 block group">
-        <div className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default rounded-xl hover:bg-surface-hover transition-all">
+        <div
+          className="flex items-center gap-4 px-4 py-3.5 bg-surface rounded-xl hover:bg-surface-hover transition-all border"
+          style={{ borderColor: `${meta.color}30` }}
+        >
           {/* Avatar */}
-          <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold text-foreground shrink-0">
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
+            style={{ background: meta.avatarBg }}
+          >
             {person.display_name[0]}
           </div>
 
           {/* Info */}
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline gap-2 flex-wrap">
-              <span className="font-semibold text-foreground text-sm group-hover:text-blue-400 transition-colors">
+              <span
+                className="font-semibold text-sm transition-colors"
+                style={{ color: kind === "catalog" ? "#71717a" : undefined }}
+              >
                 {person.display_name}
               </span>
               {isMe && (
                 <span className="text-[10px] text-muted border border-border-default rounded px-1.5 py-0.5">you</span>
               )}
-              {isUnverified && (
-                <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5">unverified</span>
+              {meta.badge && (
+                <span
+                  className="text-[10px] rounded px-1.5 py-0.5 font-medium"
+                  style={{ color: meta.color, background: `${meta.color}18`, border: `1px solid ${meta.color}33` }}
+                >
+                  {meta.badge}
+                </span>
               )}
               {person.riding_since && (
                 <span className="text-[11px] text-muted">riding since {person.riding_since}</span>
@@ -60,7 +115,7 @@ function RiderRow({ person, isMe, onInvite, claims }: { person: Person; isMe: bo
             {homeResort && (
               <p className="text-[11px] text-muted mt-0.5">🏔 {homeResort.name}</p>
             )}
-            {isUnverified && addedByPerson && (
+            {kind === "unclaimed" && addedByPerson && (
               <div className="flex items-center gap-1 mt-1 text-[10px] text-muted">
                 <div className="w-3 h-3 rounded-full bg-surface-2 flex items-center justify-center text-[8px] font-bold text-foreground">
                   {addedByPerson.display_name[0]}
@@ -84,9 +139,10 @@ function RiderRow({ person, isMe, onInvite, claims }: { person: Person; isMe: bo
           </div>
         </div>
       </Link>
+
       {!isMe && (
         <div className="flex items-center gap-1.5 shrink-0">
-          {isUnverified && onInvite && (
+          {kind === "unclaimed" && onInvite && (
             <button
               onClick={() => onInvite(person)}
               className="px-2.5 py-1.5 rounded-lg border border-border-default text-[11px] text-muted hover:text-foreground hover:bg-surface-hover transition-colors shrink-0"
@@ -106,12 +162,12 @@ function RiderRow({ person, isMe, onInvite, claims }: { person: Person; isMe: bo
   )
 }
 
-function SectionHeader({ label, count }: { label: string; count: number }) {
+function SectionHeader({ label, count, color }: { label: string; count: number; color: string }) {
   return (
-    <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3 mt-7 first:mt-0 flex items-center gap-3">
-      <span>{label}</span>
-      <span className="h-px flex-1 bg-border-default" />
-      <span className="normal-case tracking-normal font-normal">{count} rider{count !== 1 ? "s" : ""}</span>
+    <div className="flex items-center gap-3 mb-3 mt-7 first:mt-0">
+      <span className="text-xs font-semibold uppercase tracking-widest" style={{ color }}>{label}</span>
+      <span className="h-px flex-1" style={{ background: `${color}30` }} />
+      <span className="text-[11px] text-muted font-normal">{count} rider{count !== 1 ? "s" : ""}</span>
     </div>
   )
 }
@@ -165,8 +221,15 @@ function RidersPageInner() {
     const copy = [...searched]
 
     if (sort === "all") {
-      copy.sort((a, b) => (claimCounts.get(b.id) ?? 0) - (claimCounts.get(a.id) ?? 0))
-      return { type: "flat" as const, items: copy }
+      // Group by rider kind in priority order, sorted by claim count within each group
+      const byKind = new Map<RiderKind, Person[]>()
+      for (const k of KIND_ORDER) byKind.set(k, [])
+      for (const p of copy) byKind.get(getRiderKind(p))!.push(p)
+      for (const [, arr] of byKind) arr.sort((a, b) => (claimCounts.get(b.id) ?? 0) - (claimCounts.get(a.id) ?? 0))
+      const groups = KIND_ORDER
+        .filter((k) => byKind.get(k)!.length > 0)
+        .map((k) => ({ label: SECTION_LABELS[k], kind: k, items: byKind.get(k)! }))
+      return { type: "kind-grouped" as const, groups }
     }
 
     if (sort === "riders") {
@@ -304,11 +367,24 @@ function RidersPageInner() {
               <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} claims={allClaims} />
             ))}
           </div>
+        ) : result.type === "kind-grouped" ? (
+          <div>
+            {result.groups.map(({ label, kind, items }) => (
+              <div key={kind}>
+                <SectionHeader label={label} count={items.length} color={KIND_META[kind].color} />
+                <div className="space-y-2">
+                  {items.map((person) => (
+                    <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} claims={allClaims} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
           <div>
             {result.groups.map(({ label, items }) => (
               <div key={label}>
-                <SectionHeader label={label} count={items.length} />
+                <SectionHeader label={label} count={items.length} color="#52525b" />
                 <div className="space-y-2">
                   {items.map((person) => (
                     <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} claims={allClaims} />
