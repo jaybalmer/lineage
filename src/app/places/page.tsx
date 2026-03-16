@@ -36,11 +36,6 @@ function PlaceCard({ place }: { place: Place }) {
 
   return (
     <div className="flex items-center gap-2">
-      <QuickClaimPopover
-        entityId={place.id}
-        entityType="place"
-        entityName={place.name}
-      />
       <Link href={`/places/${placeSlug(place)}`} className="flex-1 min-w-0 block">
         <div className="bg-surface border-2 border-blue-600 rounded-xl p-4 hover:opacity-90 transition-all">
           <div className="flex items-center gap-3">
@@ -76,6 +71,11 @@ function PlaceCard({ place }: { place: Place }) {
           </div>
         </div>
       </Link>
+      <QuickClaimPopover
+        entityId={place.id}
+        entityType="place"
+        entityName={place.name}
+      />
     </div>
   )
 }

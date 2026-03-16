@@ -44,11 +44,6 @@ function OrgCard({ org }: { org: Org }) {
 
   return (
     <div className="flex items-center gap-2">
-      <QuickClaimPopover
-        entityId={org.id}
-        entityType="org"
-        entityName={org.name}
-      />
       <Link href={`/brands/${orgSlug(org)}`} className="flex-1 min-w-0 block">
         <div className="group bg-surface border-2 border-violet-600 rounded-xl p-4 hover:opacity-90 transition-all">
           <div className="flex items-center gap-3">
@@ -80,6 +75,11 @@ function OrgCard({ org }: { org: Org }) {
           </div>
         </div>
       </Link>
+      <QuickClaimPopover
+        entityId={org.id}
+        entityType="org"
+        entityName={org.name}
+      />
     </div>
   )
 }

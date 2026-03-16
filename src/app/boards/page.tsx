@@ -55,11 +55,6 @@ function BoardCard({ board }: { board: Board }) {
 
   return (
     <div className="flex items-center gap-2">
-      <QuickClaimPopover
-        entityId={board.id}
-        entityType="board"
-        entityName={`${board.brand} ${board.model} '${String(board.model_year).slice(2)}`}
-      />
       <Link href={`/boards/${boardSlug(board)}`} className="flex-1 min-w-0 block">
         <div className="bg-surface border-2 border-emerald-600 rounded-xl p-4 hover:opacity-90 transition-all">
           <div className="flex items-center gap-3">
@@ -99,6 +94,11 @@ function BoardCard({ board }: { board: Board }) {
           </div>
         </div>
       </Link>
+      <QuickClaimPopover
+        entityId={board.id}
+        entityType="board"
+        entityName={`${board.brand} ${board.model} '${String(board.model_year).slice(2)}`}
+      />
     </div>
   )
 }
