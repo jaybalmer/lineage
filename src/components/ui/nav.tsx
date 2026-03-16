@@ -12,6 +12,7 @@ const PRIMARY_NAV = [
   { href: "/profile", label: "Profile" },
   { href: "/compare", label: "Compare" },
   { href: "/connections", label: "Connections" },
+  { href: "/collective", label: "Collective" },
 ]
 
 const SECONDARY_NAV = [
