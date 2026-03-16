@@ -128,16 +128,38 @@ export const useLineageStore = create<LineageStore>()(
           supabase.from("event_series").select("*"),
           supabase.from("people").select("*"),
           supabase.from("claims").select("*"),
-        ]).then(([p, o, b, e, es, pe, c]) => {
+          // Registered users live in profiles, not people — fetch both and merge
+          supabase.from("profiles").select(
+            "id, display_name, birth_year, riding_since, privacy_level, bio, links, home_resort_id"
+          ),
+        ]).then(([p, o, b, e, es, pe, c, pr]) => {
+          const catalogPeople = (pe.data?.length ? pe.data : PEOPLE) as Person[]
+
+          // Map profile rows → Person shape, skip any already in catalog people (dedup by id)
+          const catalogIds = new Set(catalogPeople.map((x) => x.id))
+          const profilePeople: Person[] = (pr.data ?? [])
+            .filter((row) => !catalogIds.has(row.id) && row.display_name)
+            .map((row) => ({
+              id:             row.id,
+              display_name:   row.display_name,
+              birth_year:     row.birth_year   ?? undefined,
+              riding_since:   row.riding_since  ?? undefined,
+              privacy_level:  (row.privacy_level ?? "public") as Person["privacy_level"],
+              bio:            row.bio           ?? undefined,
+              links:          row.links         ?? undefined,
+              home_resort_id: row.home_resort_id ?? undefined,
+              community_status: "verified" as const,
+            }))
+
           set({
             catalog: {
-              places: (p.data?.length ? p.data : PLACES) as Place[],
-              orgs: (o.data?.length ? o.data : ORGS) as Org[],
-              boards: (b.data?.length ? b.data : BOARDS) as Board[],
-              events: (e.data?.length ? e.data : EVENTS) as Event[],
+              places:      (p.data?.length  ? p.data  : PLACES)       as Place[],
+              orgs:        (o.data?.length  ? o.data  : ORGS)         as Org[],
+              boards:      (b.data?.length  ? b.data  : BOARDS)       as Board[],
+              events:      (e.data?.length  ? e.data  : EVENTS)       as Event[],
               eventSeries: (es.data?.length ? es.data : EVENT_SERIES) as EventSeries[],
-              people: (pe.data?.length ? pe.data : PEOPLE) as Person[],
-              claims: (c.data?.length ? c.data : CLAIMS) as Claim[],
+              people:      [...catalogPeople, ...profilePeople],
+              claims:      (c.data?.length  ? c.data  : CLAIMS)       as Claim[],
             },
             catalogLoaded: true,
           })
