@@ -9,6 +9,7 @@ import { getPersonById, PLACES } from "@/lib/mock-data"
 import { EditProfileModal, getLinkIcon } from "@/components/ui/edit-profile-modal"
 import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddDayModal } from "@/components/ui/add-day-modal"
+import { TimelinePlayer } from "@/components/ui/timeline-player"
 import { supabase } from "@/lib/supabase"
 import type { Claim, PrivacyLevel } from "@/types"
 
@@ -18,6 +19,7 @@ export default function ProfilePage() {
   const [editingProfile, setEditingProfile] = useState(false)
   const [addingClaim, setAddingClaim] = useState(false)
   const [addingDay, setAddingDay] = useState(false)
+  const [playingTimeline, setPlayingTimeline] = useState(false)
 
   const basePerson = getPersonById(activePersonId)
   const person = basePerson
@@ -85,6 +87,13 @@ export default function ProfilePage() {
       {addingDay && (
         <AddDayModal onClose={() => setAddingDay(false)} />
       )}
+      {playingTimeline && person && (
+        <TimelinePlayer
+          person={person}
+          claims={personClaims}
+          onClose={() => setPlayingTimeline(false)}
+        />
+      )}
 
       <div className="max-w-3xl mx-auto px-4 py-10">
         {/* Profile header */}
@@ -94,8 +103,16 @@ export default function ProfilePage() {
               {person?.display_name?.[0]?.toUpperCase() ?? "?"}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="flex items-baseline gap-3 flex-wrap">
+              <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-2xl font-bold text-foreground">{person?.display_name ?? "Your profile"}</h1>
+                <button
+                  onClick={() => setPlayingTimeline(true)}
+                  title="Play timeline"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:opacity-80 transition-opacity"
+                >
+                  <span className="text-[10px]">▶</span>
+                  <span>My Timeline</span>
+                </button>
                 <button
                   onClick={() => setEditingProfile(true)}
                   className="text-xs text-muted hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-surface-active"

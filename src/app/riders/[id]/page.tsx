@@ -1,12 +1,13 @@
 "use client"
 
-import { use } from "react"
+import { use, useState } from "react"
 import { Nav } from "@/components/ui/nav"
 import { CLAIMS, getPersonById, getSharedContext } from "@/lib/mock-data"
 import { FeedView } from "@/components/feed/feed-view"
 import { StartCard } from "@/components/feed/start-card"
 import { useLineageStore } from "@/store/lineage-store"
 import { getLinkIcon } from "@/components/ui/edit-profile-modal"
+import { TimelinePlayer } from "@/components/ui/timeline-player"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 
@@ -14,6 +15,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   const { id } = use(params)
   const { activePersonId, profileOverride } = useLineageStore()
   const isCurrentUser = id === activePersonId
+  const [playingTimeline, setPlayingTimeline] = useState(false)
 
   const basePerson = getPersonById(id)
   if (!basePerson) notFound()
@@ -28,6 +30,15 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   return (
     <div className="min-h-screen bg-background">
       <Nav />
+
+      {playingTimeline && (
+        <TimelinePlayer
+          person={person}
+          claims={personClaims}
+          onClose={() => setPlayingTimeline(false)}
+        />
+      )}
+
       <div className="max-w-3xl mx-auto px-4 py-10">
 
         {/* Breadcrumb */}
@@ -44,7 +55,17 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
               {person.display_name[0].toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="text-2xl font-bold text-foreground">{person.display_name}</h1>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-2xl font-bold text-foreground">{person.display_name}</h1>
+                <button
+                  onClick={() => setPlayingTimeline(true)}
+                  title="Play timeline"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:opacity-80 transition-opacity"
+                >
+                  <span className="text-[10px]">▶</span>
+                  <span>{isCurrentUser ? "My Timeline" : `${person.display_name.split(" ")[0]}'s Timeline`}</span>
+                </button>
+              </div>
               <div className="flex items-center gap-3 mt-1 text-xs text-muted flex-wrap">
                 {person.birth_year && <span>b. {person.birth_year}</span>}
                 {person.riding_since && <span>Riding since {person.riding_since}</span>}
@@ -115,7 +136,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
         {/* Origin card */}
         <StartCard person={person} claims={personClaims} isOwn={false} />
 
-        {/* Feed — same styled cards as own profile */}
+        {/* Feed */}
         <FeedView
           claims={personClaims}
           personName={person.display_name}
