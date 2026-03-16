@@ -2,6 +2,7 @@
 
 import { Nav } from "@/components/ui/nav"
 import { PEOPLE, PLACES, ORGS, BOARDS, EVENTS, EVENT_SERIES, CLAIMS, placeSlug, orgSlug, boardSlug, seriesSlug } from "@/lib/mock-data"
+import { RiderAvatar } from "@/components/ui/rider-avatar"
 import Link from "next/link"
 import { useState } from "react"
 
@@ -98,9 +99,7 @@ export default function ExplorePage() {
                   {filteredPeople.map((p) => (
                     <Link key={p.id} href={`/riders/${p.id}`}>
                       <div className="flex items-center gap-3 p-3 bg-surface border border-border-default rounded-lg hover:border-border-default transition-all">
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-muted">
-                          {p.display_name[0]}
-                        </div>
+                        <RiderAvatar person={p} size="md" />
                         <div>
                           <div className="text-sm font-medium text-foreground">{p.display_name}</div>
                           {p.birth_year && <div className="text-xs text-muted">b. {p.birth_year}</div>}
@@ -209,9 +208,7 @@ export default function ExplorePage() {
                   return (
                     <Link key={p.id} href={`/riders/${p.id}`}>
                       <div className="flex items-center gap-3 p-3 bg-surface border border-border-default rounded-lg hover:border-border-default transition-all">
-                        <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-muted flex-shrink-0">
-                          {p.display_name[0]}
-                        </div>
+                        <RiderAvatar person={p} size="md" />
                         <div className="min-w-0">
                           <div className="text-sm font-medium text-foreground truncate">{p.display_name}</div>
                           <div className="text-xs text-muted">{claimCount} claims</div>

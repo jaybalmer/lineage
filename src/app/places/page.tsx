@@ -6,6 +6,7 @@ import { Nav } from "@/components/ui/nav"
 import { placeSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
+import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -57,9 +58,7 @@ function PlaceCard({ place }: { place: Place }) {
               </div>
               {isUnverified && addedByPerson && (
                 <div className="flex items-center gap-1 mt-1 text-[10px] text-muted">
-                  <div className="w-3 h-3 rounded-full bg-zinc-300 flex items-center justify-center text-[8px] font-bold">
-                    {addedByPerson.display_name[0]}
-                  </div>
+                  <RiderAvatar person={addedByPerson} size="xs" />
                   Added by {addedByPerson.display_name}
                 </div>
               )}

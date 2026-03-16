@@ -8,6 +8,7 @@ import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
+import { RiderAvatar, getInitials } from "@/components/ui/rider-avatar"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import type { Person } from "@/types"
@@ -78,12 +79,7 @@ function RiderRow({ person, isMe, onInvite, claims }: {
           style={{ borderColor: `${meta.color}30` }}
         >
           {/* Avatar */}
-          <div
-            className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold text-white shrink-0"
-            style={{ background: meta.avatarBg }}
-          >
-            {person.display_name[0]}
-          </div>
+          <RiderAvatar person={person} size="lg" ring={kind === "founding" || kind === "paid"} />
 
           {/* Info */}
           <div className="min-w-0 flex-1">
@@ -117,9 +113,7 @@ function RiderRow({ person, isMe, onInvite, claims }: {
             )}
             {kind === "unclaimed" && addedByPerson && (
               <div className="flex items-center gap-1 mt-1 text-[10px] text-muted">
-                <div className="w-3 h-3 rounded-full bg-surface-2 flex items-center justify-center text-[8px] font-bold text-foreground">
-                  {addedByPerson.display_name[0]}
-                </div>
+                <RiderAvatar person={addedByPerson} size="xs" />
                 Added by {addedByPerson.display_name}
               </div>
             )}

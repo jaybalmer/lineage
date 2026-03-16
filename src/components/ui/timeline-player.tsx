@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { getEntityName, getPersonById } from "@/lib/mock-data"
+import { RiderAvatar } from "@/components/ui/rider-avatar"
 import type { Claim, Person } from "@/types"
 
 // ─── Slide definitions ─────────────────────────────────────────────────────────
@@ -617,10 +618,7 @@ export function TimelinePlayer({ person, claims, onClose }: TimelinePlayerProps)
         {/* Header */}
         <div className="relative z-10 flex items-center justify-between px-5 py-2 shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold text-white"
-              style={{ background: "linear-gradient(135deg, #3b4fd4, #7c3aed)" }}>
-              {person.display_name[0]}
-            </div>
+            <RiderAvatar person={person} size="sm" ring={!!(person.membership_tier && person.membership_tier !== "free")} />
             <span className="text-white/50 text-xs font-mono tracking-wide">{person.display_name}</span>
           </div>
           <div className="flex items-center gap-1.5">

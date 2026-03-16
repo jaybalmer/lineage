@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { useLineageStore } from "@/store/lineage-store"
+import { RiderAvatar } from "@/components/ui/rider-avatar"
 
 type PlaceTab = "all" | "riders" | "events"
 
@@ -225,9 +226,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                           return (
                             <Link key={`rider-${item.riderId}-${i}`} href={`/riders/${item.riderId}`}>
                               <div className="flex items-center gap-3 px-4 py-3 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all">
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-900 to-blue-950 border border-blue-800/30 flex items-center justify-center text-xs font-bold text-blue-300 shrink-0">
-                                  {rider.display_name[0]}
-                                </div>
+                                <RiderAvatar person={rider} size="md" ring={!!(rider.membership_tier && rider.membership_tier !== "free")} />
                                 <div className="flex-1 min-w-0">
                                   <div className="text-sm font-medium text-foreground">{rider.display_name}</div>
                                   {(item.claim.start_date || item.claim.end_date) && (
@@ -293,9 +292,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                         return (
                           <Link key={riderId} href={`/riders/${riderId}`}>
                             <div className="flex items-center gap-2 p-2.5 bg-surface border border-border-default rounded-lg hover:border-border-default transition-all">
-                              <div className="w-7 h-7 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-muted flex-shrink-0">
-                                {rider.display_name[0]}
-                              </div>
+                              <RiderAvatar person={rider} size="sm" />
                               <div className="min-w-0">
                                 <div className="text-xs font-medium text-foreground truncate">{rider.display_name}</div>
                                 {claim?.start_date && (
@@ -411,9 +408,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                   return (
                     <Link key={sid} href={`/riders/${sid}`}>
                       <div className="flex items-center gap-2 py-2 hover:text-blue-300 transition-colors">
-                        <div className="w-6 h-6 rounded-full bg-zinc-800 flex items-center justify-center text-[10px] font-bold text-muted">
-                          {person.display_name[0]}
-                        </div>
+                        <RiderAvatar person={person} size="sm" />
                         <div>
                           <div className="text-xs text-foreground">{person.display_name}</div>
                           {claim && <div className="text-[10px] text-muted">{formatDateRange(claim.start_date, claim.end_date)}</div>}

@@ -7,6 +7,7 @@ import { Nav } from "@/components/ui/nav"
 import { useLineageStore } from "@/store/lineage-store"
 import { EVENTS, EVENT_SERIES, eventSlug, seriesSlug, placeSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
+import { RiderAvatar } from "@/components/ui/rider-avatar"
 import type { Event } from "@/types"
 
 function formatEventDate(start: string, end?: string): string {
@@ -49,9 +50,7 @@ function AttendeeList({ eventId }: { eventId: string }) {
     return (
       <Link href={`/riders/${claim.subject_id}`}>
         <div className="flex items-center gap-2 px-3 py-2 bg-surface border border-border-default rounded-xl hover:border-blue-500/40 transition-all group">
-          <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-white shrink-0">
-            {person.display_name[0]}
-          </div>
+          <RiderAvatar person={person} size="sm" ring={!!(person.membership_tier && person.membership_tier !== "free")} />
           <div className="min-w-0">
             <div className="text-xs font-medium text-foreground group-hover:text-blue-400 transition-colors leading-tight">
               {person.display_name}

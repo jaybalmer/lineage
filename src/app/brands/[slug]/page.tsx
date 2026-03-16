@@ -8,6 +8,7 @@ import { boardSlug, orgSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 import { cn } from "@/lib/utils"
 import { useLineageStore } from "@/store/lineage-store"
+import { RiderAvatar } from "@/components/ui/rider-avatar"
 import type { Org, ConfidenceLevel, Predicate, Event, Place } from "@/types"
 
 // ─── Label maps ───────────────────────────────────────────────────────────────
@@ -634,9 +635,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                           return (
                             <div key={item.claim.id} className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all">
                               <Link href={`/riders/${person.id}`} className="shrink-0">
-                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-900 to-violet-950 border border-violet-800/30 flex items-center justify-center text-sm font-bold text-violet-300">
-                                  {person.display_name[0].toUpperCase()}
-                                </div>
+                                <RiderAvatar person={person} size="md" ring={!!(person.membership_tier && person.membership_tier !== "free")} />
                               </Link>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-baseline gap-2 flex-wrap">
@@ -745,9 +744,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                   return (
                     <div key={claim.id} className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all">
                       <Link href={`/riders/${person.id}`} className="shrink-0">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-violet-900 to-violet-950 border border-violet-800/30 flex items-center justify-center text-sm font-bold text-violet-300">
-                          {person.display_name[0].toUpperCase()}
-                        </div>
+                        <RiderAvatar person={person} size="md" ring={!!(person.membership_tier && person.membership_tier !== "free")} />
                       </Link>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 flex-wrap">
@@ -948,9 +945,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                     return (
                       <Link key={rid} href={`/riders/${rid}`}>
                         <div className="flex items-center gap-1 px-2 py-1 bg-background border border-border-default rounded-full text-xs text-muted hover:text-foreground hover:border-border-default transition-all">
-                          <span className="w-4 h-4 rounded-full bg-zinc-800 flex items-center justify-center text-[9px] font-bold">
-                            {person.display_name[0]}
-                          </span>
+                          <RiderAvatar person={person} size="xs" />
                           {person.display_name.split(" ")[0]}
                         </div>
                       </Link>

@@ -6,6 +6,7 @@ import { Nav } from "@/components/ui/nav"
 import { eventSlug, seriesSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
+import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
@@ -59,13 +60,8 @@ function AvatarStack({ riderIds }: { riderIds: string[] }) {
         const person = catalog.people.find((p) => p.id === rid)
         if (!person) return null
         return (
-          <div
-            key={rid}
-            style={{ marginLeft: i === 0 ? 0 : -6 }}
-            className="w-5 h-5 rounded-full bg-blue-600 border border-border-default flex items-center justify-center text-[8px] font-bold text-foreground"
-            title={person.display_name}
-          >
-            {person.display_name[0]}
+          <div key={rid} style={{ marginLeft: i === 0 ? 0 : -6 }} title={person.display_name} className="rounded-full border border-background">
+            <RiderAvatar person={person} size="xs" />
           </div>
         )
       })}
@@ -117,9 +113,7 @@ function EventCard({ event }: { event: Event }) {
               </div>
               {isUnverified && addedByPerson && (
                 <div className="flex items-center gap-1 mt-1 text-[10px] text-muted">
-                  <div className="w-3 h-3 rounded-full bg-zinc-300 flex items-center justify-center text-[8px] font-bold">
-                    {addedByPerson.display_name[0]}
-                  </div>
+                  <RiderAvatar person={addedByPerson} size="xs" />
                   Added by {addedByPerson.display_name}
                 </div>
               )}

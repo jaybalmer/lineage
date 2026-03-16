@@ -3,6 +3,7 @@
 import { Nav } from "@/components/ui/nav"
 import { PEOPLE, CLAIMS, getSharedContext, getPersonById } from "@/lib/mock-data"
 import { useLineageStore } from "@/store/lineage-store"
+import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { formatDateRange } from "@/lib/utils"
 import Link from "next/link"
 
@@ -20,9 +21,7 @@ function ConnectionCard({ personId, currentUserId }: { personId: string; current
     <div className="bg-surface border border-border-default rounded-xl p-4 hover:border-border-default transition-all">
       <div className="flex items-start gap-3">
         <Link href={`/riders/${personId}`} className="flex-shrink-0">
-          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 flex items-center justify-center text-sm font-bold text-foreground hover:from-blue-700 hover:to-blue-800 transition-all">
-            {person.display_name[0]}
-          </div>
+          <RiderAvatar person={person} size="lg" ring={!!(person.membership_tier && person.membership_tier !== "free")} />
         </Link>
         <div className="min-w-0 flex-1">
           <Link href={`/riders/${personId}`}>

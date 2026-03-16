@@ -7,6 +7,7 @@ import { FeedView } from "@/components/feed/feed-view"
 import { StartCard } from "@/components/feed/start-card"
 import { useLineageStore, getAllClaims, isAuthUser } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
+import { RiderAvatar } from "@/components/ui/rider-avatar"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import type { Claim, Person } from "@/types"
@@ -94,9 +95,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Profile header */}
         <div className="flex items-start gap-5 mb-6">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-zinc-700 to-zinc-800 flex items-center justify-center text-xl font-bold text-foreground flex-shrink-0">
-            {person.display_name[0]}
-          </div>
+          <RiderAvatar person={person} size="xl" ring={!!(person.membership_tier && person.membership_tier !== "free")} className="flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <div className="flex items-start justify-between gap-3 flex-wrap">
               <h1 className="text-2xl font-bold text-foreground">{person.display_name}</h1>

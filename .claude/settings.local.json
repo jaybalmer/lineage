@@ -78,7 +78,22 @@
       "Bash(sed -n '1,50p' src/app/brands/page.tsx)",
       "Bash(sed -n '1,50p' src/app/places/page.tsx)",
       "Bash(sed -n '1,50p' src/app/riders/page.tsx)",
-      "Bash(find ~/lineage -name *.sql -o -name schema.sql -o -name migrations*)"
+      "Bash(find ~/lineage -name *.sql -o -name schema.sql -o -name migrations*)",
+      "Bash(ls ~/lineage/src/app/favicon.ico ~/lineage/src/app/icon*)",
+      "Bash(rm /Users/jaybalmer/lineage/.git/index.lock)",
+      "Bash(curl -s \"https://lineage.wtf/api/admin/memberships\")",
+      "Bash(grep -n \"save\\\\|update\\\\|submit\\\\|handleSave\\\\|upsert\\\\|setProfile\" /Users/jaybalmer/lineage/src/app/riders/[id]/page.tsx)",
+      "Bash(grep -n \"save\\\\|update\\\\|submit\\\\|upsert\\\\|setProfile\\\\|profileOverride\" /Users/jaybalmer/lineage/src/components/profile-edit*.tsx)",
+      "Bash(grep -n \"save\\\\|Save\\\\|handleSave\\\\|upsert\\\\|display_name\\\\|birth_year\\\\|riding_since\\\\|links\" /Users/jaybalmer/lineage/src/app/riders/[id]/page.tsx)",
+      "Bash(grep -n \"edit\\\\|Edit\\\\|modal\\\\|Modal\\\\|isEdit\" /Users/jaybalmer/lineage/src/app/riders/[id]/page.tsx)",
+      "Bash(curl -s \"https://wwsbfmbmtypeujvjilai.supabase.co/rest/v1/profiles?select=id,display_name,birth_year,riding_since,privacy_level,bio,links,home_resort_id\" -H \"apikey: sb_publishable_noJj_pOsLOvIxwsIAMRtQA_LRFm0V-p\" -H \"Authorization: Bearer sb_publishable_noJj_pOsLOvIxwsIAMRtQA_LRFm0V-p\")",
+      "Bash(curl -s \"https://wwsbfmbmtypeujvjilai.supabase.co/rest/v1/people?select=id,display_name&display_name=ilike.*balmer*\" -H \"apikey: sb_publishable_noJj_pOsLOvIxwsIAMRtQA_LRFm0V-p\" -H \"Authorization: Bearer sb_publishable_noJj_pOsLOvIxwsIAMRtQA_LRFm0V-p\")",
+      "Bash(curl -s -X DELETE \"https://wwsbfmbmtypeujvjilai.supabase.co/rest/v1/people?id=eq.u1\" -H \"apikey: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3c2JmbWJtdHlwZXVqdmppbGFpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjgxMjIxNiwiZXhwIjoyMDg4Mzg4MjE2fQ.RQNp4rbAZfsdGfuN91R1ygaI335vwieeJX8LA0fANio\" -H \"Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind3c2JmbWJtdHlwZXVqdmppbGFpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjgxMjIxNiwiZXhwIjoyMDg4Mzg4MjE2fQ.RQNp4rbAZfsdGfuN91R1ygaI335vwieeJX8LA0fANio\" -H \"Prefer: return=representation\")",
+      "Bash(grep -n \"signin\\\\|sign-in\\\\|redirect\\\\|notFound\\\\|auth\" /Users/jaybalmer/lineage/src/app/riders/[id]/page.tsx)",
+      "Bash(grep -n \"display_name\\\\[0\\\\]\\\\|display_name\\\\[0\\\\]\\\\.toUpperCase\" /Users/jaybalmer/lineage/src/app/riders/[id]/page.tsx /Users/jaybalmer/lineage/src/app/events/[id]/page.tsx /Users/jaybalmer/lineage/src/app/places/[id]/page.tsx /Users/jaybalmer/lineage/src/app/boards/page.tsx /Users/jaybalmer/lineage/src/components/ui/edit-profile-modal.tsx)",
+      "Bash(head -10 /Users/jaybalmer/lineage/src/app/events/[id]/page.tsx)",
+      "Bash(grep -n \"display_name\\\\[0\\\\]\" /Users/jaybalmer/lineage/src/app/places/[id]/page.tsx)",
+      "Bash(grep -n \"^import\" /Users/jaybalmer/lineage/src/app/places/[id]/page.tsx)"
     ]
   }
 }

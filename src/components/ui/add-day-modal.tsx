@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import { PLACES, PEOPLE } from "@/lib/mock-data"
+import { getInitials } from "@/components/ui/rider-avatar"
 import type { PrivacyLevel } from "@/types"
 
 function generateId(prefix: string) {
@@ -158,7 +159,7 @@ export function AddDayModal({ onClose }: AddDayModalProps) {
                       "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold",
                       selected ? "bg-blue-600 text-foreground" : "bg-border-default text-muted"
                     )}>
-                      {rider.display_name[0]}
+                      {getInitials(rider.display_name)}
                     </span>
                     {rider.display_name.split(" ")[0]}
                   </button>

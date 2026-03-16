@@ -7,6 +7,7 @@ import { PREDICATE_ICONS, PREDICATE_LABELS } from "@/lib/utils"
 import { PLACES, ORGS, BOARDS, PEOPLE, EVENTS } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
+import { RiderAvatar, getInitials } from "@/components/ui/rider-avatar"
 import type { Predicate, EntityType, ConfidenceLevel, PrivacyLevel, Board, Person } from "@/types"
 
 const inputCls =
@@ -863,7 +864,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                           className="flex items-center gap-1.5 px-2.5 py-1 bg-violet-950/40 border border-violet-700/50 rounded-full text-xs text-violet-200 hover:bg-violet-950/70 transition-colors"
                         >
                           <span className="w-4 h-4 rounded-full bg-violet-700 flex items-center justify-center text-[9px] font-bold flex-shrink-0">
-                            {(p?.display_name ?? "?")[0].toUpperCase()}
+                            {getInitials(p?.display_name ?? "?")}
                           </span>
                           {p?.display_name ?? pid}
                           <span className="text-violet-400 ml-0.5">×</span>
@@ -889,9 +890,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                         onClick={() => { toggleCompanion(p.id); setCompanionQuery("") }}
                         className="w-full text-left px-3 py-2 text-sm text-muted hover:bg-surface-hover transition-colors flex items-center gap-2"
                       >
-                        <span className="w-5 h-5 rounded-full bg-violet-700 flex items-center justify-center text-[9px] font-bold text-white flex-shrink-0">
-                          {p.display_name[0].toUpperCase()}
-                        </span>
+                        <RiderAvatar person={p} size="xs" />
                         <span>{p.display_name}</span>
                         {p.community_status === "unverified" && (
                           <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-400 border border-amber-800/40">◎ unverified</span>

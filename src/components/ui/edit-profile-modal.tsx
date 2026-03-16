@@ -5,6 +5,7 @@ import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { PLACES } from "@/lib/mock-data"
+import { RiderAvatar } from "@/components/ui/rider-avatar"
 import type { Person, PrivacyLevel, ProfileLink } from "@/types"
 
 interface EditProfileModalProps {
@@ -143,9 +144,12 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
 
         {/* Avatar preview */}
         <div className="px-6 pt-5 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-blue-600 flex items-center justify-center text-xl font-bold text-foreground flex-shrink-0">
-            {(displayName.trim()[0] ?? "?").toUpperCase()}
-          </div>
+          <RiderAvatar
+            person={{ ...person, display_name: displayName.trim() || person.display_name }}
+            size="xl"
+            ring={!!(person.membership_tier && person.membership_tier !== "free")}
+            className="flex-shrink-0"
+          />
           <div>
             <div className="text-sm font-semibold text-foreground">{displayName.trim() || "—"}</div>
             <div className="text-xs text-muted mt-0.5">
