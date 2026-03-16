@@ -112,37 +112,37 @@ export default function AuthCompletePage() {
       router.replace("/profile")
     }
 
-    // ── Primary path: wait for SIGNED_IN from the auth state machine ────────
-    // This fires once the Supabase client detects and exchanges the token/code
-    // in the URL (hash or query param), however long that takes.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        saveAndRedirect(session.user)
+    async function init() {
+      // ── 1. PKCE flow: ?code= query param ────────────────────────────────
+      // Supabase Auth v2 uses PKCE by default for magic links
+      const searchParams = new URLSearchParams(window.location.search)
+      const code = searchParams.get("code")
+      if (code) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+        if (data.session?.user) { saveAndRedirect(data.session.user); return }
+        if (error) console.error("PKCE exchange error:", error)
       }
-    })
 
-    // ── Fallback: if client already has a session (e.g. page re-mounted) ───
-    // getSession() is sync-safe: it reads from the in-memory store.
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) saveAndRedirect(session.user)
-    })
-
-    // ── Timeout: no session after 8 s → bail out ────────────────────────────
-    const timeout = setTimeout(async () => {
-      if (handled) return
-      // One last try before giving up
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        saveAndRedirect(user)
-      } else {
-        router.replace("/auth/signin?error=link_expired")
+      // ── 2. Implicit flow: #access_token hash ────────────────────────────
+      // Older magic links / generateLink admin API use implicit flow
+      const hashParams = new URLSearchParams(window.location.hash.slice(1))
+      const accessToken = hashParams.get("access_token")
+      const refreshToken = hashParams.get("refresh_token")
+      if (accessToken && refreshToken) {
+        const { data, error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+        if (data.session?.user) { saveAndRedirect(data.session.user); return }
+        if (error) console.error("setSession error:", error)
       }
-    }, 8000)
 
-    return () => {
-      subscription.unsubscribe()
-      clearTimeout(timeout)
+      // ── 3. Already signed in (page re-mount / tab revisit) ───────────────
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) { saveAndRedirect(session.user); return }
+
+      // ── 4. Nothing in URL and no session → expired or invalid ───────────
+      router.replace("/auth/signin?error=link_expired")
     }
+
+    init()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
