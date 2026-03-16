@@ -1,12 +1,18 @@
 "use client"
 
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { getPersonById } from "@/lib/mock-data"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
+
+const TIER_BADGE: Record<string, { label: string; color: string; symbol: string }> = {
+  annual:   { label: "MEMBER",          color: "#3b82f6", symbol: "◈" },
+  lifetime: { label: "LIFETIME",        color: "#8b5cf6", symbol: "◆" },
+  founding: { label: "FOUNDING ✦",      color: "#f59e0b", symbol: "✦" },
+}
 
 const PRIMARY_NAV = [
   { href: "/profile", label: "Profile" },
@@ -43,9 +49,11 @@ function isActive(href: string, path: string) {
 
 export function Nav() {
   const path = usePathname()
-  const { activePersonId, profileOverride, loadDbEntities } = useLineageStore()
+  const { activePersonId, profileOverride, loadDbEntities, membership } = useLineageStore()
   const basePerson = getPersonById(activePersonId)
   const loadedForId = useRef<string | null>(null)
+  const [dropOpen, setDropOpen] = useState(false)
+  const dropRef = useRef<HTMLDivElement>(null)
 
   // Load shared entity catalog + riding days once per auth session
   useEffect(() => {
@@ -54,15 +62,87 @@ export function Nav() {
     loadedForId.current = activePersonId
     loadDbEntities()
   }, [activePersonId, loadDbEntities])
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) {
+        setDropOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [])
+
   const displayName = profileOverride.display_name ?? basePerson?.display_name ?? ""
   const initial = displayName[0]?.toUpperCase() ?? "?"
+  const tier = membership.tier
+  const tierBadge = TIER_BADGE[tier] ?? null
+  const totalTokens = membership.token_balance.founder * 2 + membership.token_balance.member + membership.token_balance.contribution
 
-  const avatarLink = (
-    <Link href="/profile">
-      <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-semibold text-white hover:bg-blue-500 transition-colors flex-shrink-0">
-        {initial}
-      </div>
-    </Link>
+  const avatarDropdown = (
+    <div ref={dropRef} className="relative flex-shrink-0">
+      <button
+        onClick={() => setDropOpen(v => !v)}
+        className="flex items-center gap-1.5 rounded-full focus:outline-none"
+        aria-label="User menu"
+      >
+        <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-semibold text-white hover:bg-blue-500 transition-colors">
+          {initial}
+        </div>
+        {tierBadge && (
+          <span className="hidden sm:inline text-xs font-bold px-1.5 py-0.5 rounded-full"
+            style={{ background: `${tierBadge.color}20`, color: tierBadge.color, fontSize: 8, letterSpacing: 0.5 }}>
+            {tierBadge.label}
+          </span>
+        )}
+      </button>
+
+      {dropOpen && (
+        <div className="absolute right-0 top-full mt-2 w-52 bg-surface border border-border-default rounded-xl shadow-lg overflow-hidden z-50"
+          style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+          {/* Name row */}
+          <div className="px-4 py-3 border-b border-border-default">
+            <div className="text-foreground font-semibold" style={{ fontSize: 12 }}>{displayName || "Your Profile"}</div>
+            {tierBadge ? (
+              <div style={{ fontSize: 9, color: tierBadge.color, marginTop: 2 }}>{tierBadge.symbol} {tierBadge.label}</div>
+            ) : (
+              <div className="text-muted" style={{ fontSize: 9, marginTop: 2 }}>Free rider</div>
+            )}
+          </div>
+
+          {/* Links */}
+          <Link href="/profile" onClick={() => setDropOpen(false)}
+            className="flex items-center gap-2 px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
+            style={{ fontSize: 11 }}>
+            My Timeline
+          </Link>
+          <Link href="/account/membership" onClick={() => setDropOpen(false)}
+            className="flex items-center gap-2 px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
+            style={{ fontSize: 11 }}>
+            Membership
+          </Link>
+
+          {/* Divider + membership CTA or token status */}
+          <div className="border-t border-border-default" />
+          {tier === "free" ? (
+            <Link href="/membership" onClick={() => setDropOpen(false)}
+              className="flex items-center justify-between px-4 py-2.5 hover:bg-surface-hover transition-colors"
+              style={{ fontSize: 10, color: "#3b82f6" }}>
+              <span>Become a member</span>
+              <span>→</span>
+            </Link>
+          ) : (
+            <Link href="/account/membership" onClick={() => setDropOpen(false)}
+              className="flex items-center justify-between px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
+              style={{ fontSize: 10 }}>
+              <span>{totalTokens} tokens</span>
+              <span className="text-green-500" style={{ fontSize: 9 }}>● Revenue share active</span>
+            </Link>
+          )}
+        </div>
+      )}
+    </div>
   )
 
   return (
@@ -82,7 +162,7 @@ export function Nav() {
         </div>
         <div className="ml-auto flex items-center gap-3 flex-shrink-0">
           <ThemeToggle />
-          {avatarLink}
+          {avatarDropdown}
         </div>
       </div>
 
@@ -106,7 +186,7 @@ export function Nav() {
               </Link>
             ))}
           </div>
-          {avatarLink}
+          {avatarDropdown}
         </div>
 
         {/* Row 2: secondary nav + theme toggle */}

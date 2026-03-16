@@ -179,6 +179,44 @@ export interface ConnectionSummary {
   longSummaryText: string // ≤600 chars for DMs/email
 }
 
+// ─── Membership ───────────────────────────────────────────────────────────────
+
+export type MembershipTier   = "free" | "annual" | "lifetime" | "founding"
+export type MembershipStatus = "active" | "expired" | "gifted"
+
+export interface TokenBalance {
+  founder:      number
+  member:       number
+  contribution: number
+}
+
+export interface GiftCode {
+  code:        string
+  status:      "unused" | "redeemed"
+  redeemed_by?: string
+}
+
+export interface MembershipState {
+  tier:                    MembershipTier
+  status:                  MembershipStatus
+  founding_badge:          boolean
+  token_balance:           TokenBalance
+  gift_codes:              GiftCode[]
+  stripe_customer_id?:     string
+  stripe_subscription_id?: string
+  membership_expires_at?:  string // ISO date
+  pending_credit:          number // sub-threshold distribution rollover
+}
+
+export interface TriggerPrefs {
+  onboarding_banner_shown?:          boolean
+  first_connection_cta_shown?:       boolean
+  verification_gate_session_shown?:  boolean
+  milestone_card_5_dismissed?:       boolean
+  milestone_card_20_dismissed?:      boolean
+  digest_membership_mentions?:       number
+}
+
 // ─── UI-focused composite types ──────────────────────────────────────────────
 
 export interface TimelineEntry {

@@ -67,7 +67,18 @@
       "Bash(npm install:*)",
       "Bash(supabase --version)",
       "Bash(grep -n \"sponsored_by\\\\|rode_at\\\\|riders\\\\|tab === \" /Users/jaybalmer/lineage/src/app/brands/[slug]/page.tsx)",
-      "Bash(ls -la /Users/jaybalmer/lineage/src/lib/supabase*)"
+      "Bash(ls -la /Users/jaybalmer/lineage/src/lib/supabase*)",
+      "Bash(cat -n ~/lineage/src/app/events/[id]/page.tsx)",
+      "Bash(cat -n ~/lineage/src/app/riders/[id]/page.tsx)",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(ls ~/Downloads/lineage* ~/Downloads/collective*)",
+      "Bash(ls ~/lineage/*.jsx ~/lineage/*.md)",
+      "Bash(sed -n '1,50p' src/app/events/page.tsx)",
+      "Bash(sed -n '1,50p' src/app/boards/page.tsx)",
+      "Bash(sed -n '1,50p' src/app/brands/page.tsx)",
+      "Bash(sed -n '1,50p' src/app/places/page.tsx)",
+      "Bash(sed -n '1,50p' src/app/riders/page.tsx)",
+      "Bash(find ~/lineage -name *.sql -o -name schema.sql -o -name migrations*)"
     ]
   }
 }

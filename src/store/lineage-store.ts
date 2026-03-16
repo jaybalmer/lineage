@@ -2,7 +2,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import type { Claim, OnboardingState, Place, Board, Org, Event, EventSeries, Person, RidingDay } from "@/types"
+import type { Claim, OnboardingState, Place, Board, Org, Event, EventSeries, Person, RidingDay, MembershipState, TriggerPrefs } from "@/types"
 import { PLACES, ORGS, BOARDS, EVENTS, EVENT_SERIES, PEOPLE, CLAIMS } from "@/lib/mock-data"
 import { supabase } from "@/lib/supabase"
 
@@ -95,6 +95,15 @@ interface LineageStore {
   // Active view state
   activePersonId: string
   setActivePersonId: (id: string) => void
+
+  // Membership
+  membership: MembershipState
+  setMembership: (updates: Partial<MembershipState>) => void
+  addContributionToken: (amount?: number) => void
+
+  // Trigger moment suppression
+  triggerPrefs: TriggerPrefs
+  setTriggerPrefs: (updates: Partial<TriggerPrefs>) => void
 }
 
 export const useLineageStore = create<LineageStore>()(
@@ -439,6 +448,31 @@ export const useLineageStore = create<LineageStore>()(
 
       activePersonId: "u1",
       setActivePersonId: (id) => set({ activePersonId: id }),
+
+      membership: {
+        tier: "free",
+        status: "active",
+        founding_badge: false,
+        token_balance: { founder: 0, member: 0, contribution: 0 },
+        gift_codes: [],
+        pending_credit: 0,
+      },
+      setMembership: (updates) =>
+        set((s) => ({ membership: { ...s.membership, ...updates } })),
+      addContributionToken: (amount = 1) =>
+        set((s) => ({
+          membership: {
+            ...s.membership,
+            token_balance: {
+              ...s.membership.token_balance,
+              contribution: s.membership.token_balance.contribution + amount,
+            },
+          },
+        })),
+
+      triggerPrefs: {},
+      setTriggerPrefs: (updates) =>
+        set((s) => ({ triggerPrefs: { ...s.triggerPrefs, ...updates } })),
     }),
     {
       name: "lineage-store-v2",

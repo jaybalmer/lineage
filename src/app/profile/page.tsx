@@ -10,11 +10,18 @@ import { EditProfileModal, getLinkIcon } from "@/components/ui/edit-profile-moda
 import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddDayModal } from "@/components/ui/add-day-modal"
 import { TimelinePlayer } from "@/components/ui/timeline-player"
+import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import type { Claim, PrivacyLevel } from "@/types"
 
+const TIER_BADGE: Record<string, { label: string; color: string; bg: string }> = {
+  annual:   { label: "MEMBER",            color: "#3b82f6", bg: "#3b82f620" },
+  lifetime: { label: "LIFETIME MEMBER",   color: "#8b5cf6", bg: "#8b5cf620" },
+  founding: { label: "FOUNDING MEMBER ✦", color: "#f59e0b", bg: "#f59e0b20" },
+}
+
 export default function ProfilePage() {
-  const { activePersonId, sessionClaims, dbClaims, setDbClaims, deletedClaimIds, claimOverrides, profileOverride, ridingDays } = useLineageStore()
+  const { activePersonId, sessionClaims, dbClaims, setDbClaims, deletedClaimIds, claimOverrides, profileOverride, ridingDays, membership, triggerPrefs, setTriggerPrefs } = useLineageStore()
   const myDays = ridingDays.filter((d) => d.created_by === activePersonId)
   const [editingProfile, setEditingProfile] = useState(false)
   const [addingClaim, setAddingClaim] = useState(false)
@@ -103,6 +110,21 @@ export default function ProfilePage() {
               {person?.display_name?.[0]?.toUpperCase() ?? "?"}
             </div>
             <div className="min-w-0 flex-1">
+              {/* Member badge */}
+              {TIER_BADGE[membership.tier] && (
+                <div className="mb-1">
+                  <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold"
+                    style={{
+                      background: TIER_BADGE[membership.tier].bg,
+                      color: TIER_BADGE[membership.tier].color,
+                      fontSize: 9,
+                      letterSpacing: 1,
+                      fontFamily: "'IBM Plex Mono', monospace",
+                    }}>
+                    {TIER_BADGE[membership.tier].label}
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-3 flex-wrap">
                 <h1 className="text-2xl font-bold text-foreground">{person?.display_name ?? "Your profile"}</h1>
                 <button
@@ -155,6 +177,19 @@ export default function ProfilePage() {
             </div>
           </div>
 
+          {/* Token stats row — members only */}
+          {membership.tier !== "free" && (
+            <div className="flex items-center gap-4 mt-3 flex-wrap">
+              <Link href="/account/membership"
+                className="flex items-center gap-1.5 text-muted hover:text-foreground transition-colors"
+                style={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}>
+                <span style={{ color: "#f59e0b" }}>◆</span>
+                <span>{membership.token_balance.founder * 2 + membership.token_balance.member + membership.token_balance.contribution} tokens</span>
+              </Link>
+              <span className="text-muted" style={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}>· Revenue share active</span>
+            </div>
+          )}
+
           {/* Stats + action row */}
           <div className="flex items-center justify-between mt-5 pt-5 border-t border-border-default">
             <span className="text-sm text-muted">
@@ -176,6 +211,56 @@ export default function ProfilePage() {
             </div>
           </div>
         </div>
+
+        {/* Contribution milestone card — non-members only, on own profile */}
+        {membership.tier === "free" && (
+          (personClaims.length >= 20 && !triggerPrefs.milestone_card_20_dismissed) ? (
+            <div className="mb-4 p-4 rounded-xl border"
+              style={{ borderColor: "#3b82f630", background: "#3b82f608", fontFamily: "'IBM Plex Mono', monospace" }}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-foreground" style={{ fontSize: 11, lineHeight: 1.7 }}>
+                    <strong>You&apos;ve added {personClaims.length} entries to the collective history.</strong><br />
+                    Members earn tokens for every verified entry — including these.
+                  </p>
+                  <Link href="/membership"
+                    className="inline-block mt-2 text-blue-400 hover:text-blue-300 transition-colors"
+                    style={{ fontSize: 10 }}>
+                    What is membership? →
+                  </Link>
+                </div>
+                <button onClick={() => setTriggerPrefs({ milestone_card_20_dismissed: true })}
+                  className="text-muted hover:text-foreground shrink-0 transition-colors"
+                  style={{ fontSize: 14, background: "none", border: "none", cursor: "pointer" }}>
+                  ×
+                </button>
+              </div>
+            </div>
+          ) : personClaims.length >= 5 && !triggerPrefs.milestone_card_5_dismissed ? (
+            <div className="mb-4 p-4 rounded-xl border"
+              style={{ borderColor: "#3b82f630", background: "#3b82f608", fontFamily: "'IBM Plex Mono', monospace" }}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-foreground" style={{ fontSize: 11, lineHeight: 1.7 }}>
+                    <strong>You&apos;ve added {personClaims.length} entries to the collective history.</strong><br />
+                    Your contributions are making the record more complete.<br />
+                    Members earn tokens for every verified entry — including these.
+                  </p>
+                  <Link href="/membership"
+                    className="inline-block mt-2 text-blue-400 hover:text-blue-300 transition-colors"
+                    style={{ fontSize: 10 }}>
+                    What is membership? →
+                  </Link>
+                </div>
+                <button onClick={() => setTriggerPrefs({ milestone_card_5_dismissed: true })}
+                  className="text-muted hover:text-foreground shrink-0 transition-colors"
+                  style={{ fontSize: 14, background: "none", border: "none", cursor: "pointer" }}>
+                  ×
+                </button>
+              </div>
+            </div>
+          ) : null
+        )}
 
         {/* Origin card */}
         {person && <StartCard person={person} claims={personClaims} isOwn={true} />}
