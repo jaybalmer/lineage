@@ -4,7 +4,7 @@ import { useState, useMemo, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { PEOPLE, CLAIMS, getPlaceById, getPersonById } from "@/lib/mock-data"
-import { useLineageStore } from "@/store/lineage-store"
+import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
@@ -120,6 +120,7 @@ function RidersPageInner() {
   const searchParams = useSearchParams()
   const yearParam = searchParams.get("year")
   const { activePersonId, userEntities } = useLineageStore()
+  const isAuth = isAuthUser(activePersonId)
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState<SortTab>(yearParam ? "origin" : "all")
   const [myOnly, setMyOnly] = useState(false)
@@ -271,17 +272,19 @@ function RidersPageInner() {
               </button>
             ))}
           </div>
-          <button
-            onClick={() => setMyOnly(!myOnly)}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border shrink-0",
-              myOnly
-                ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
-                : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
-            )}
-          >
-            My Riders{myOnly && myRiderIds.size > 0 ? ` · ${myRiderIds.size}` : ""}
-          </button>
+          {isAuth && (
+            <button
+              onClick={() => setMyOnly(!myOnly)}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border shrink-0",
+                myOnly
+                  ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
+                  : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
+              )}
+            >
+              My Riders{myOnly && myRiderIds.size > 0 ? ` · ${myRiderIds.size}` : ""}
+            </button>
+          )}
         </div>
 
         {/* List */}

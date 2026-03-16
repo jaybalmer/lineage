@@ -446,7 +446,7 @@ export const useLineageStore = create<LineageStore>()(
         }
       },
 
-      activePersonId: "u1",
+      activePersonId: "",
       setActivePersonId: (id) => set({ activePersonId: id }),
 
       membership: {

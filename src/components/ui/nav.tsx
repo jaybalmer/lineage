@@ -69,7 +69,7 @@ function AvatarDropdown({ initial, displayName, tier, totalTokens }: AvatarDropd
     setOpen(false)
     const { setActivePersonId, setProfileOverride } = useLineageStore.getState()
     await supabase.auth.signOut()
-    setActivePersonId("u1")
+    setActivePersonId("")
     setProfileOverride({})
     router.push("/")
   }
@@ -184,6 +184,7 @@ export function Nav() {
     loadDbEntities()
   }, [activePersonId, loadDbEntities])
 
+  const isAuth      = isAuthUser(activePersonId)
   const displayName = profileOverride.display_name ?? basePerson?.display_name ?? ""
   const initial     = displayName[0]?.toUpperCase() ?? "?"
   const tier        = membership.tier
@@ -208,7 +209,14 @@ export function Nav() {
         </div>
         <div className="ml-auto flex items-center gap-3 flex-shrink-0">
           <ThemeToggle />
-          <AvatarDropdown {...dropdownProps} />
+          {isAuth ? (
+            <AvatarDropdown {...dropdownProps} />
+          ) : (
+            <Link href="/auth/signin"
+              className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-500 transition-colors">
+              Sign in
+            </Link>
+          )}
         </div>
       </div>
 
@@ -232,7 +240,14 @@ export function Nav() {
               </Link>
             ))}
           </div>
-          <AvatarDropdown {...dropdownProps} />
+          {isAuth ? (
+            <AvatarDropdown {...dropdownProps} />
+          ) : (
+            <Link href="/auth/signin"
+              className="px-2.5 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-500 transition-colors flex-shrink-0">
+              Sign in
+            </Link>
+          )}
         </div>
 
         {/* Row 2: secondary nav + theme toggle */}

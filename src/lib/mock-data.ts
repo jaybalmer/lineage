@@ -266,16 +266,6 @@ export const BOARDS: Board[] = [
 
 export const PEOPLE: Person[] = [
   {
-    id: "u1",
-    display_name: "Jay Balmer",
-    birth_year: 1985,
-    riding_since: 1999,
-    privacy_level: "public",
-    bio: "Been riding since '99. Whistler local. Former shop rat at The Snowboard Shop.",
-    home_resort_id: "p1",
-    is_current_user: true,
-  },
-  {
     id: "u2",
     display_name: "Kira Matsuda",
     birth_year: 1987,
@@ -353,20 +343,6 @@ const SOURCES: Source[] = [
 // ─── Claims ──────────────────────────────────────────────────────────────────
 
 export const CLAIMS: Claim[] = [
-  // ── Jay Balmer (u1) ────────────────────────────────────────────────────────
-  { id: "c1",  subject_id: "u1", subject_type: "person", predicate: "rode_at",      object_id: "p2",  object_type: "place", start_date: "1999-01-01", end_date: "2002-12-31", confidence: "self-reported", visibility: "public", asserted_by: "u1", created_at: "2026-03-01" },
-  { id: "c2",  subject_id: "u1", subject_type: "person", predicate: "rode_at",      object_id: "p1",  object_type: "place", start_date: "2003-01-01",                          confidence: "self-reported", visibility: "public", asserted_by: "u1", created_at: "2026-03-01" },
-  { id: "c3",  subject_id: "u1", subject_type: "person", predicate: "worked_at",    object_id: "p7",  object_type: "place", start_date: "2004-09-01", end_date: "2007-04-30",  confidence: "self-reported", visibility: "public", asserted_by: "u1", created_at: "2026-03-01" },
-  { id: "c4",  subject_id: "u1", subject_type: "person", predicate: "sponsored_by", object_id: "o2",  object_type: "org",   start_date: "2008-01-01", end_date: "2011-12-31",  confidence: "documented",    visibility: "public", asserted_by: "u1", created_at: "2026-03-01", sources: [SOURCES[0]] },
-  { id: "c5",  subject_id: "u1", subject_type: "person", predicate: "owned_board",  object_id: "b1",  object_type: "board", start_date: "2003-01-01", end_date: "2004-12-31",  confidence: "self-reported", visibility: "public", asserted_by: "u1", created_at: "2026-03-01" },
-  { id: "c6",  subject_id: "u1", subject_type: "person", predicate: "owned_board",  object_id: "b3",  object_type: "board", start_date: "2012-01-01", end_date: "2014-12-31",  confidence: "self-reported", visibility: "public", asserted_by: "u1", created_at: "2026-03-01" },
-  { id: "c7",  subject_id: "u1", subject_type: "person", predicate: "competed_at",  object_id: "e1",  object_type: "event", start_date: "2004-02-15",                          confidence: "documented",    visibility: "public", asserted_by: "u1", created_at: "2026-03-01", sources: [SOURCES[0]] },
-  { id: "c8",  subject_id: "u1", subject_type: "person", predicate: "rode_with",    object_id: "u2",  object_type: "person",start_date: "2003-01-01", end_date: "2010-12-31",  confidence: "corroborated",  visibility: "public", asserted_by: "u1", created_at: "2026-03-01", sources: [SOURCES[2]] },
-  { id: "c9",  subject_id: "u1", subject_type: "person", predicate: "rode_with",    object_id: "u3",  object_type: "person",start_date: "2005-01-01",                          confidence: "self-reported", visibility: "public", asserted_by: "u1", created_at: "2026-03-01" },
-  { id: "c10", subject_id: "u1", subject_type: "person", predicate: "part_of_team", object_id: "o7",  object_type: "org",   start_date: "2006-01-01", end_date: "2012-12-31",  confidence: "self-reported", visibility: "public", asserted_by: "u1", created_at: "2026-03-01" },
-  { id: "c60", subject_id: "u1", subject_type: "person", predicate: "competed_at",  object_id: "e13", object_type: "event", start_date: "2005-02-13",                          confidence: "self-reported", visibility: "public", asserted_by: "u1", created_at: "2026-03-01" },
-  { id: "c61", subject_id: "u1", subject_type: "person", predicate: "rode_at",      object_id: "p26", object_type: "place", start_date: "2005-01-01", end_date: "2009-12-31",  confidence: "self-reported", visibility: "public", asserted_by: "u1", created_at: "2026-03-01" },
-
   // ── Kira Matsuda (u2) ─────────────────────────────────────────────────────
   { id: "c11", subject_id: "u2", subject_type: "person", predicate: "rode_at",      object_id: "p2",  object_type: "place", start_date: "2001-01-01", end_date: "2008-12-31",  confidence: "self-reported", visibility: "public", asserted_by: "u2", created_at: "2026-03-01" },
   { id: "c12", subject_id: "u2", subject_type: "person", predicate: "rode_at",      object_id: "p1",  object_type: "place", start_date: "2006-01-01",                          confidence: "self-reported", visibility: "public", asserted_by: "u2", created_at: "2026-03-01" },
@@ -440,9 +416,9 @@ export const CLAIMS: Claim[] = [
   { id: "c127", subject_id: "u8", subject_type: "person", predicate: "owned_board",  object_id: "b7",  object_type: "board", start_date: "2018-01-01",                          confidence: "self-reported", visibility: "public", asserted_by: "u8", created_at: "2026-03-01" },
 
   // ── Westbeach org claims ───────────────────────────────────────────────────
-  { id: "c_wb1", subject_id: "o25", subject_type: "org", predicate: "organized",   object_id: "ew1", object_type: "event", start_date: "1996-03-08", confidence: "documented",    visibility: "public", asserted_by: "u1", created_at: "2026-03-01" },
-  { id: "c_wb2", subject_id: "o25", subject_type: "org", predicate: "organized",   object_id: "ew2", object_type: "event", start_date: "1998-03-05", confidence: "documented",    visibility: "public", asserted_by: "u1", created_at: "2026-03-01" },
-  { id: "c_wb3", subject_id: "o25", subject_type: "org", predicate: "organized",   object_id: "ew3", object_type: "event", start_date: "2004-01-15", confidence: "corroborated",  visibility: "public", asserted_by: "u1", created_at: "2026-03-01" },
+  { id: "c_wb1", subject_id: "o25", subject_type: "org", predicate: "organized",   object_id: "ew1", object_type: "event", start_date: "1996-03-08", confidence: "documented",    visibility: "public", asserted_by: "system", created_at: "2026-03-01" },
+  { id: "c_wb2", subject_id: "o25", subject_type: "org", predicate: "organized",   object_id: "ew2", object_type: "event", start_date: "1998-03-05", confidence: "documented",    visibility: "public", asserted_by: "system", created_at: "2026-03-01" },
+  { id: "c_wb3", subject_id: "o25", subject_type: "org", predicate: "organized",   object_id: "ew3", object_type: "event", start_date: "2004-01-15", confidence: "corroborated",  visibility: "public", asserted_by: "system", created_at: "2026-03-01" },
   { id: "c_wb4", subject_id: "o25", subject_type: "org", predicate: "located_at",  object_id: "pw1", object_type: "place", start_date: "1988-01-01", end_date: "2015-12-31",      confidence: "corroborated",  visibility: "public", asserted_by: "u1", created_at: "2026-03-01", note: "Flagship Vancouver retail location on Robson St." },
   { id: "c_wb5", subject_id: "o25", subject_type: "org", predicate: "located_at",  object_id: "pw2", object_type: "place", start_date: "1995-01-01", end_date: "2008-12-31",      confidence: "self-reported", visibility: "public", asserted_by: "u1", created_at: "2026-03-01", note: "Whistler Village store, open seasonally." },
 ]

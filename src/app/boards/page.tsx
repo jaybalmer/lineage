@@ -6,7 +6,7 @@ import { Nav } from "@/components/ui/nav"
 import { boardSlug, orgSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
-import { useLineageStore } from "@/store/lineage-store"
+import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import type { Board } from "@/types"
@@ -144,6 +144,7 @@ function BoardsPageInner() {
   const [addOpen, setAddOpen] = useState(false)
   const [search, setSearch] = useState(yearParam ?? "")
   const { catalog, activePersonId } = useLineageStore()
+  const isAuth = isAuthUser(activePersonId)
 
   // IDs of boards the active user owns
   const myBoardIds = useMemo(() => {
@@ -269,17 +270,19 @@ function BoardsPageInner() {
               </button>
             ))}
           </div>
-          <button
-            onClick={() => setMyOnly(!myOnly)}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border shrink-0",
-              myOnly
-                ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
-                : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
-            )}
-          >
-            My Boards{myOnly && myBoardIds.size > 0 ? ` · ${myBoardIds.size}` : ""}
-          </button>
+          {isAuth && (
+            <button
+              onClick={() => setMyOnly(!myOnly)}
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border shrink-0",
+                myOnly
+                  ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
+                  : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
+              )}
+            >
+              My Boards{myOnly && myBoardIds.size > 0 ? ` · ${myBoardIds.size}` : ""}
+            </button>
+          )}
         </div>
 
         {isEmpty ? (

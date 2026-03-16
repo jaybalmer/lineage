@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
-import { useLineageStore } from "@/store/lineage-store"
+import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 
 const FEATURES = [
@@ -44,7 +44,8 @@ function TimelineNodes() {
 }
 
 export default function Home() {
-  const { onboardingComplete } = useLineageStore()
+  const { activePersonId } = useLineageStore()
+  const isAuth = isAuthUser(activePersonId)
   const [browseHref, setBrowseHref] = useState<string>("/riders")
 
   // Find the rider with the most claims to use as the Browse destination
@@ -65,7 +66,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      {onboardingComplete && <Nav />}
+      <Nav />
 
       {/* Hero */}
       <div className="max-w-3xl mx-auto px-6 pt-20 pb-16 text-center">
@@ -98,37 +99,27 @@ export default function Home() {
 
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          {onboardingComplete ? (
-            <>
-              <Link
-                href="/profile"
-                className="w-full sm:w-auto px-8 py-3 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-500 transition-colors"
-              >
-                My Profile →
-              </Link>
-              <Link
-                href={browseHref}
-                className="w-full sm:w-auto px-8 py-3 rounded-xl border border-border-default text-muted font-semibold text-sm hover:border-border-default hover:text-foreground transition-colors"
-              >
-                Browse
-              </Link>
-            </>
+          {isAuth ? (
+            <Link
+              href="/profile"
+              className="w-full sm:w-auto px-8 py-3 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-500 transition-colors"
+            >
+              My Profile →
+            </Link>
           ) : (
-            <>
-              <Link
-                href="/onboarding"
-                className="w-full sm:w-auto px-8 py-3 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-500 transition-colors"
-              >
-                Start Your Timeline →
-              </Link>
-              <Link
-                href={browseHref}
-                className="w-full sm:w-auto px-8 py-3 rounded-xl border border-border-default text-muted font-semibold text-sm hover:border-border-default hover:text-foreground transition-colors"
-              >
-                Browse
-              </Link>
-            </>
+            <Link
+              href="/onboarding"
+              className="w-full sm:w-auto px-8 py-3 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-500 transition-colors"
+            >
+              Start Your Timeline →
+            </Link>
           )}
+          <Link
+            href={browseHref}
+            className="w-full sm:w-auto px-8 py-3 rounded-xl border border-border-default text-muted font-semibold text-sm hover:border-border-default hover:text-foreground transition-colors"
+          >
+            Browse
+          </Link>
         </div>
       </div>
 

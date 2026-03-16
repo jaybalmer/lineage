@@ -7,9 +7,9 @@ import { supabase } from "@/lib/supabase"
 /**
  * Invisible component mounted at the root layout level.
  * 1. Loads the shared entity catalog (mock + Supabase public tables)
- * 2. Syncs the active person ID with the live Supabase auth session so that
- *    a user with a valid cookie but a stale "u1" in localStorage gets fixed
- *    automatically — no sign-out/sign-in required.
+ * 2. Syncs activePersonId with the live Supabase auth session on mount so
+ *    returning users get the right identity without signing in again.
+ * 3. Listens for auth state changes to handle sign-in and sign-out reactively.
  */
 export function CatalogLoader() {
   const { loadCatalog, activePersonId, setActivePersonId, setProfileOverride, completeOnboarding } = useLineageStore()
@@ -19,15 +19,23 @@ export function CatalogLoader() {
     loadCatalog()
   }, [loadCatalog])
 
-  // ── 2. Sync auth session → activePersonId ───────────────────────────────
+  // ── 2. Sync auth session → activePersonId on mount ──────────────────────
   useEffect(() => {
     async function syncSession() {
       const { data: { session } } = await supabase.auth.getSession()
       const uid = session?.user?.id
-      if (!uid) return                       // not logged in
-      if (activePersonId === uid) return     // already in sync
 
-      // activePersonId is stale (probably "u1") — fix it
+      if (!uid) {
+        // No session — if activePersonId is a stale non-auth value, clear it
+        if (activePersonId && !isAuthUser(activePersonId)) {
+          setActivePersonId("")
+        }
+        return
+      }
+
+      if (activePersonId === uid) return  // already in sync
+
+      // Session exists but store has a stale ID — load profile and fix it
       const { data: profile } = await supabase
         .from("profiles")
         .select("display_name, birth_year, riding_since, privacy_level")
@@ -48,14 +56,13 @@ export function CatalogLoader() {
     }
 
     syncSession()
-  }, []) // run once on mount; intentionally omit deps to avoid re-running on store updates
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── 3. Keep in sync when auth state changes (sign-in / sign-out) ─────────
+  // ── 3. Reactive auth state changes (sign-in / sign-out) ──────────────────
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === "SIGNED_OUT") {
-        // Reset to the mock user so the app still works when logged out
-        setActivePersonId("u1")
+        setActivePersonId("")
         setProfileOverride({})
         return
       }

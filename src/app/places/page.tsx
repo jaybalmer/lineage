@@ -6,7 +6,7 @@ import { Nav } from "@/components/ui/nav"
 import { placeSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
-import { useLineageStore } from "@/store/lineage-store"
+import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import Link from "next/link"
 import type { Place } from "@/types"
@@ -89,6 +89,7 @@ function PlacesPageInner() {
   const [myOnly, setMyOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const { catalog, activePersonId } = useLineageStore()
+  const isAuth = isAuthUser(activePersonId)
 
   // IDs of places the active user rode at
   const myPlaceIds = useMemo(() => {
@@ -151,17 +152,19 @@ function PlacesPageInner() {
                 {t}
               </button>
             ))}
-            <button
-              onClick={() => setMyOnly(!myOnly)}
-              className={cn(
-                "px-3 py-2 rounded-lg text-xs font-medium transition-colors border",
-                myOnly
-                  ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
-                  : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
-              )}
-            >
-              My Places{myOnly && myPlaceIds.size > 0 ? ` · ${myPlaceIds.size}` : ""}
-            </button>
+            {isAuth && (
+              <button
+                onClick={() => setMyOnly(!myOnly)}
+                className={cn(
+                  "px-3 py-2 rounded-lg text-xs font-medium transition-colors border",
+                  myOnly
+                    ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
+                    : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
+                )}
+              >
+                My Places{myOnly && myPlaceIds.size > 0 ? ` · ${myPlaceIds.size}` : ""}
+              </button>
+            )}
           </div>
         </div>
 

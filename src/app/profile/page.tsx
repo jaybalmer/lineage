@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { FeedView } from "@/components/feed/feed-view"
 import { StartCard } from "@/components/feed/start-card"
@@ -21,12 +22,20 @@ const TIER_BADGE: Record<string, { label: string; color: string; bg: string }> =
 }
 
 export default function ProfilePage() {
+  const router = useRouter()
   const { activePersonId, sessionClaims, dbClaims, setDbClaims, deletedClaimIds, claimOverrides, profileOverride, ridingDays, membership, triggerPrefs, setTriggerPrefs } = useLineageStore()
   const myDays = ridingDays.filter((d) => d.created_by === activePersonId)
   const [editingProfile, setEditingProfile] = useState(false)
   const [addingClaim, setAddingClaim] = useState(false)
   const [addingDay, setAddingDay] = useState(false)
   const [playingTimeline, setPlayingTimeline] = useState(false)
+
+  // Redirect to sign-in if not authenticated
+  useEffect(() => {
+    if (!isAuthUser(activePersonId)) {
+      router.replace("/auth/signin")
+    }
+  }, [activePersonId, router])
 
   const basePerson = getPersonById(activePersonId)
   const person = basePerson
@@ -66,7 +75,7 @@ export default function ProfilePage() {
       .then(({ data, error }) => {
         if (!error && data) setDbClaims(data as Claim[])
         if (error?.code === "PGRST301" || error?.message?.includes("JWT")) {
-          store.setActivePersonId("u1")
+          store.setActivePersonId("")
         }
       })
   }, [activePersonId]) // eslint-disable-line react-hooks/exhaustive-deps
