@@ -5,11 +5,9 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 
-
-
 export default function SignInPage() {
   const router  = useRouter()
-  const [email, setEmail]   = useState("")
+  const [email, setEmail]     = useState("")
   const [sending, setSending] = useState(false)
   const [sent, setSent]       = useState(false)
   const [error, setError]     = useState<string | null>(null)
@@ -20,18 +18,36 @@ export default function SignInPage() {
     setSending(true)
     setError(null)
 
-    const { error: authError } = await supabase.auth.signInWithOtp({
-      email: email.trim().toLowerCase(),
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
-    })
+    try {
+      // Try the custom route first — sends a branded Lineage email via Resend
+      const res  = await fetch("/api/auth/magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      })
+      const data = await res.json() as { ok?: boolean; fallback?: boolean; error?: string }
 
-    setSending(false)
-    if (authError) {
-      setError(authError.message)
-    } else {
-      setSent(true)
+      if (data.ok) {
+        setSent(true)
+        return
+      }
+
+      // Fallback: let Supabase send its default email (works without service role key)
+      if (data.fallback) {
+        const { error: otpError } = await supabase.auth.signInWithOtp({
+          email: email.trim().toLowerCase(),
+          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        })
+        if (otpError) throw otpError
+        setSent(true)
+        return
+      }
+
+      throw new Error(data.error ?? "Something went wrong")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong")
+    } finally {
+      setSending(false)
     }
   }
 
