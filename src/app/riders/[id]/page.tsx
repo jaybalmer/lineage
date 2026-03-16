@@ -32,7 +32,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
         display_name: profileOverride.display_name ?? "Rider",
         birth_year: profileOverride.birth_year,
         riding_since: profileOverride.riding_since,
-        privacy_level: (profileOverride.privacy_level ?? "public") as "public" | "private" | "connections",
+        privacy_level: (profileOverride.privacy_level ?? "public") as "public" | "private" | "shared",
         ...(basePerson ?? {}),
         ...profileOverride,
       }
