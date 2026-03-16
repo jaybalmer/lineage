@@ -63,7 +63,9 @@ export function Nav() {
     loadDbEntities()
   }, [activePersonId, loadDbEntities])
 
-  // Close dropdown on outside click
+  // Close dropdown on navigation (path change) or outside click
+  useEffect(() => { setDropOpen(false) }, [path])
+
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (dropRef.current && !dropRef.current.contains(e.target as Node)) {
@@ -112,12 +114,12 @@ export function Nav() {
           </div>
 
           {/* Links */}
-          <Link href="/profile" onClick={() => setDropOpen(false)}
+          <Link href="/profile"
             className="flex items-center gap-2 px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
             style={{ fontSize: 11 }}>
             My Timeline
           </Link>
-          <Link href="/account/membership" onClick={() => setDropOpen(false)}
+          <Link href="/account/membership"
             className="flex items-center gap-2 px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
             style={{ fontSize: 11 }}>
             Membership
@@ -126,14 +128,14 @@ export function Nav() {
           {/* Divider + membership CTA or token status */}
           <div className="border-t border-border-default" />
           {tier === "free" ? (
-            <Link href="/membership" onClick={() => setDropOpen(false)}
+            <Link href="/membership"
               className="flex items-center justify-between px-4 py-2.5 hover:bg-surface-hover transition-colors"
               style={{ fontSize: 10, color: "#3b82f6" }}>
               <span>Become a member</span>
               <span>→</span>
             </Link>
           ) : (
-            <Link href="/account/membership" onClick={() => setDropOpen(false)}
+            <Link href="/account/membership"
               className="flex items-center justify-between px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
               style={{ fontSize: 10 }}>
               <span>{totalTokens} tokens</span>
