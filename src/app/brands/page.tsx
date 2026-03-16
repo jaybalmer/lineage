@@ -43,79 +43,43 @@ function OrgCard({ org }: { org: Org }) {
   const addedByPerson = org.added_by ? catalog.people.find((p) => p.id === org.added_by) : null
 
   return (
-    <div className="relative">
-      <Link href={`/brands/${orgSlug(org)}`}>
-        <div className="group flex flex-col gap-3 p-4 bg-surface border border-border-default rounded-xl hover:border-border-default hover:bg-surface transition-all h-full">
-          <div className="flex items-start gap-3">
-            {/* Logo / initials */}
-            <div
-              className="w-10 h-10 rounded-lg flex items-center justify-center text-base font-bold shrink-0"
-              style={{
-                background: "linear-gradient(145deg, #1c1c1f 0%, #111113 100%)",
-                border: "1px solid rgba(161,161,170,0.12)",
-                backgroundImage: "radial-gradient(circle, rgba(161,161,170,0.12) 1px, transparent 1px)",
-                backgroundSize: "7px 7px",
-                color: "#a1a1aa",
-              }}
-            >
-              <span style={{
-                background: "linear-gradient(140deg, #f4f4f5 0%, #a1a1aa 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}>
-                {initial}
-              </span>
+    <div className="flex items-center gap-2">
+      <QuickClaimPopover
+        entityId={org.id}
+        entityType="org"
+        entityName={org.name}
+      />
+      <Link href={`/brands/${orgSlug(org)}`} className="flex-1 min-w-0 block">
+        <div className="group bg-surface border-2 border-violet-600 rounded-xl p-4 hover:opacity-90 transition-all">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-violet-50 border border-violet-200 flex items-center justify-center text-sm font-bold text-violet-700 shrink-0">
+              {initial}
             </div>
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
-                <div className="text-sm font-semibold text-foreground group-hover:text-blue-300 transition-colors truncate">
+                <span className="text-sm font-semibold text-foreground truncate">
                   {org.name}
-                </div>
+                </span>
                 {isUnverified && (
-                  <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5 shrink-0">unverified</span>
+                  <span className="text-[10px] text-amber-600 border border-amber-500/40 rounded px-1.5 py-0.5 shrink-0">unverified</span>
                 )}
               </div>
-              <div className="text-[11px] text-muted mt-0.5">
+              <div className="text-xs text-muted mt-0.5">
                 {org.founded_year ? `Est. ${org.founded_year}` : ""}
                 {org.founded_year && org.country ? " · " : ""}
                 {org.country ?? ""}
+                {org.description && (
+                  <span className="ml-1 text-muted">· {org.description.slice(0, 60)}{org.description.length > 60 ? "…" : ""}</span>
+                )}
               </div>
             </div>
-          </div>
-
-          {org.description && (
-            <p className="text-xs text-muted leading-relaxed line-clamp-2 flex-1">
-              {org.description}
-            </p>
-          )}
-
-          <div className="flex items-center justify-between text-[11px] text-muted mt-auto pt-1 border-t border-border-default">
-            <div className="flex items-center gap-3">
-              {riders > 0 && <span>{riders} rider{riders !== 1 ? "s" : ""}</span>}
-              {boards > 0 && <span>{boards} board{boards !== 1 ? "s" : ""}</span>}
-              {riders === 0 && boards === 0 && (
-                <span className="text-muted">No claims yet</span>
-              )}
+            <div className="shrink-0 text-right">
+              {riders > 0 && <div className="text-[11px] text-muted">{riders} rider{riders !== 1 ? "s" : ""}</div>}
+              {boards > 0 && <div className="text-[11px] text-muted">{boards} board{boards !== 1 ? "s" : ""}</div>}
             </div>
-            {isUnverified && addedByPerson && (
-              <div className="flex items-center gap-1 text-[10px] text-muted">
-                <div className="w-3 h-3 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold">
-                  {addedByPerson.display_name[0]}
-                </div>
-                {addedByPerson.display_name.split(" ")[0]}
-              </div>
-            )}
           </div>
         </div>
       </Link>
-      <div className="absolute bottom-3.5 right-3">
-        <QuickClaimPopover
-          entityId={org.id}
-          entityType="org"
-          entityName={org.name}
-        />
-      </div>
     </div>
   )
 }
@@ -165,7 +129,7 @@ export default function BrandsPage() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Nav />
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-3xl mx-auto px-4 py-8">
 
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
@@ -217,7 +181,7 @@ export default function BrandsPage() {
               <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-4">
                 {CATEGORY_LABELS[cat] ?? cat}
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="space-y-2">
                 {orgs.map((org) => (
                   <OrgCard key={org.id} org={org} />
                 ))}
@@ -230,7 +194,7 @@ export default function BrandsPage() {
               <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-4">
                 Teams & Collectives
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="space-y-2">
                 {teams.map((org) => (
                   <OrgCard key={org.id} org={org} />
                 ))}

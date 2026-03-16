@@ -55,52 +55,50 @@ function BoardCard({ board }: { board: Board }) {
 
   return (
     <div className="flex items-center gap-2">
+      <QuickClaimPopover
+        entityId={board.id}
+        entityType="board"
+        entityName={`${board.brand} ${board.model} '${String(board.model_year).slice(2)}`}
+      />
       <Link href={`/boards/${boardSlug(board)}`} className="flex-1 min-w-0 block">
-        <div className="bg-surface border border-border-default border-l-2 border-l-emerald-700 rounded-xl p-4 hover:border-border-default transition-colors">
+        <div className="bg-surface border-2 border-emerald-600 rounded-xl p-4 hover:opacity-90 transition-all">
           <div className="flex items-center gap-3">
             <span className="text-xl shrink-0">🏂</span>
             <div className="min-w-0 flex-1">
-              <div className="font-medium text-foreground text-sm leading-snug">
-                {board.brand} {board.model}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-foreground text-sm leading-snug">
+                  {board.brand} {board.model}
+                </span>
+                {isUnverified && (
+                  <span className="text-[10px] text-amber-600 border border-amber-500/40 rounded px-1.5 py-0.5">unverified</span>
+                )}
               </div>
               <div className="text-xs text-muted mt-0.5">
                 &apos;{String(board.model_year).slice(2)}
                 {board.shape && (
-                  <span className="text-muted capitalize">
-                    {" "}· {board.shape.replace("-", " ")}
-                  </span>
+                  <span className="capitalize"> · {board.shape.replace("-", " ")}</span>
                 )}
               </div>
               {isUnverified && addedByPerson && (
                 <div className="flex items-center gap-1 mt-1 text-[10px] text-muted">
-                  <div className="w-3 h-3 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold">
+                  <div className="w-3 h-3 rounded-full bg-zinc-300 flex items-center justify-center text-[8px] font-bold">
                     {addedByPerson.display_name[0]}
                   </div>
                   Added by {addedByPerson.display_name}
                 </div>
               )}
             </div>
-            <div className="shrink-0 flex flex-col items-end gap-2">
-              {isUnverified && (
-                <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5">unverified</span>
-              )}
-              {riderIds.length > 0 && (
-                <>
-                  <AvatarStack riderIds={riderIds} />
-                  <div className="text-[10px] text-muted">
-                    {riderIds.length} rider{riderIds.length !== 1 ? "s" : ""}
-                  </div>
-                </>
-              )}
-            </div>
+            {riderIds.length > 0 && (
+              <div className="shrink-0 flex flex-col items-end gap-1">
+                <AvatarStack riderIds={riderIds} />
+                <div className="text-[10px] text-muted">
+                  {riderIds.length} rider{riderIds.length !== 1 ? "s" : ""}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </Link>
-      <QuickClaimPopover
-        entityId={board.id}
-        entityType="board"
-        entityName={`${board.brand} ${board.model} '${String(board.model_year).slice(2)}`}
-      />
     </div>
   )
 }

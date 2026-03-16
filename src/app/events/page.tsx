@@ -16,11 +16,19 @@ type EventPredicate = (typeof EVENT_PREDICATES)[number]
 type MainTab = "all" | "series"
 
 const ACCENT: Record<EventType, string> = {
-  contest: "border-l-amber-700",
-  "film-shoot": "border-l-violet-700",
-  trip: "border-l-emerald-700",
-  camp: "border-l-blue-700",
-  gathering: "border-l-zinc-600",
+  contest: "border-amber-600",
+  "film-shoot": "border-violet-600",
+  trip: "border-emerald-600",
+  camp: "border-blue-600",
+  gathering: "border-zinc-400",
+}
+
+const ICON: Record<EventType, string> = {
+  contest: "🏆",
+  "film-shoot": "🎬",
+  trip: "🚐",
+  camp: "⛺",
+  gathering: "🤝",
 }
 
 const TYPE_LABEL: Record<EventType, string> = {
@@ -80,35 +88,40 @@ function EventCard({ event }: { event: Event }) {
       (c) => c.object_id === event.id && EVENT_PREDICATES.includes(c.predicate as EventPredicate)
     ).map((c) => c.subject_id)
   )]
-  const accent = ACCENT[event.event_type] ?? "border-l-zinc-600"
+  const accent = ACCENT[event.event_type] ?? "border-zinc-400"
+  const icon = ICON[event.event_type] ?? "📅"
   const addedByPerson = event.added_by ? catalog.people.find((p) => p.id === event.added_by) : null
   const isUnverified = event.community_status === "unverified"
 
   return (
     <div className="flex items-center gap-2">
+      <QuickClaimPopover
+        entityId={event.id}
+        entityType="event"
+        entityName={event.name}
+      />
       <Link href={`/events/${eventSlug(event)}`} className="flex-1 min-w-0 block">
         <div className={cn(
-          "bg-surface border border-border-default border-l-2 rounded-xl p-4 hover:border-border-default transition-colors",
+          "bg-surface border-2 rounded-xl p-4 hover:opacity-90 transition-all",
           accent
         )}>
-          <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-xl shrink-0">{icon}</span>
             <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] text-muted uppercase tracking-widest">
-                  {TYPE_LABEL[event.event_type]}
-                </span>
+              <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                <span className="font-semibold text-foreground text-sm leading-snug">{event.name}</span>
                 {isUnverified && (
-                  <span className="text-[10px] text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5">unverified</span>
+                  <span className="text-[10px] text-amber-600 border border-amber-500/40 rounded px-1.5 py-0.5">unverified</span>
                 )}
               </div>
-              <div className="font-medium text-foreground text-sm leading-snug">{event.name}</div>
-              <div className="text-xs text-muted mt-1">
+              <div className="text-xs text-muted">
+                <span className="uppercase tracking-widest mr-2">{TYPE_LABEL[event.event_type]}</span>
                 {event.year}
-                {place && <span className="text-muted"> · {place.name}</span>}
+                {place && <span> · {place.name}</span>}
               </div>
               {isUnverified && addedByPerson && (
                 <div className="flex items-center gap-1 mt-1 text-[10px] text-muted">
-                  <div className="w-3 h-3 rounded-full bg-zinc-800 flex items-center justify-center text-[8px] font-bold">
+                  <div className="w-3 h-3 rounded-full bg-zinc-300 flex items-center justify-center text-[8px] font-bold">
                     {addedByPerson.display_name[0]}
                   </div>
                   Added by {addedByPerson.display_name}
@@ -116,7 +129,7 @@ function EventCard({ event }: { event: Event }) {
               )}
             </div>
             {riderIds.length > 0 && (
-              <div className="shrink-0 flex flex-col items-end gap-2">
+              <div className="shrink-0 flex flex-col items-end gap-1">
                 <AvatarStack riderIds={riderIds} />
                 <div className="text-[10px] text-muted">
                   {riderIds.length} rider{riderIds.length !== 1 ? "s" : ""}
@@ -126,11 +139,6 @@ function EventCard({ event }: { event: Event }) {
           </div>
         </div>
       </Link>
-      <QuickClaimPopover
-        entityId={event.id}
-        entityType="event"
-        entityName={event.name}
-      />
     </div>
   )
 }

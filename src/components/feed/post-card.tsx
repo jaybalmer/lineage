@@ -20,6 +20,7 @@ import {
 import { useLineageStore } from "@/store/lineage-store"
 import { EditClaimModal } from "@/components/ui/edit-claim-modal"
 import { EditEventModal } from "@/components/ui/edit-event-modal"
+import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { cn } from "@/lib/utils"
 import type { Predicate } from "@/types"
 import { useBoardImage } from "@/hooks/use-board-image"
@@ -617,6 +618,16 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
             )}
             {claim.visibility === "shared" && (
               <span className="text-xs text-muted" title="Shared">👥</span>
+            )}
+
+            {!isOwn && claim.object_type && claim.object_id && (
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                <QuickClaimPopover
+                  entityId={claim.object_id}
+                  entityType={claim.object_type as "person" | "event" | "board" | "org" | "place"}
+                  entityName={entityName}
+                />
+              </div>
             )}
 
             {isOwn && (
