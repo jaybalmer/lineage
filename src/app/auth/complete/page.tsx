@@ -112,37 +112,50 @@ export default function AuthCompletePage() {
       router.replace("/profile")
     }
 
+    // ── Timeout: never hang indefinitely ──────────────────────────────────
+    const timeout = setTimeout(() => {
+      if (!handled) router.replace("/auth/signin?error=link_expired")
+    }, 10000)
+
     async function init() {
       // ── 1. PKCE flow: ?code= query param ────────────────────────────────
-      // Supabase Auth v2 uses PKCE by default for magic links
-      const searchParams = new URLSearchParams(window.location.search)
-      const code = searchParams.get("code")
+      // Admin generateLink uses implicit flow, but handle PKCE defensively.
+      // Wrap in try/catch — throws if no verifier stored locally.
+      const code = new URLSearchParams(window.location.search).get("code")
       if (code) {
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code)
-        if (data.session?.user) { saveAndRedirect(data.session.user); return }
-        if (error) console.error("PKCE exchange error:", error)
+        try {
+          const { data, error } = await supabase.auth.exchangeCodeForSession(code)
+          if (error) console.error("PKCE exchange error:", error)
+          else if (data.session?.user) { clearTimeout(timeout); saveAndRedirect(data.session.user); return }
+        } catch (e) { console.error("exchangeCodeForSession threw:", e) }
       }
 
       // ── 2. Implicit flow: #access_token hash ────────────────────────────
-      // Older magic links / generateLink admin API use implicit flow
       const hashParams = new URLSearchParams(window.location.hash.slice(1))
       const accessToken = hashParams.get("access_token")
       const refreshToken = hashParams.get("refresh_token")
       if (accessToken && refreshToken) {
-        const { data, error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
-        if (data.session?.user) { saveAndRedirect(data.session.user); return }
-        if (error) console.error("setSession error:", error)
+        try {
+          const { data, error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+          if (error) console.error("setSession error:", error)
+          else if (data.session?.user) { clearTimeout(timeout); saveAndRedirect(data.session.user); return }
+        } catch (e) { console.error("setSession threw:", e) }
       }
 
-      // ── 3. Already signed in (page re-mount / tab revisit) ───────────────
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session?.user) { saveAndRedirect(session.user); return }
+      // ── 3. createBrowserClient may have auto-processed the URL already ──
+      // Poll briefly — the SDK processes tokens asynchronously on init.
+      for (let i = 0; i < 10; i++) {
+        const { data: { session } } = await supabase.auth.getSession()
+        if (session?.user) { clearTimeout(timeout); saveAndRedirect(session.user); return }
+        await new Promise(r => setTimeout(r, 300))
+      }
 
-      // ── 4. Nothing in URL and no session → expired or invalid ───────────
+      // ── 4. Nothing worked → expired or invalid ───────────────────────────
+      clearTimeout(timeout)
       router.replace("/auth/signin?error=link_expired")
     }
 
-    init()
+    init().catch(() => { if (!handled) router.replace("/auth/signin?error=link_expired") })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
