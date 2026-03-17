@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
         isGift: tier === "gift_annual" ? "true" : "false",
       },
       // For founding tier: enforce 500-unit cap at app layer (Stripe inventory is backup)
-      success_url: `${origin}/account/membership?success=true&tier=${tier}`,
+      success_url: `${origin}/welcome?tier=${tier}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${origin}/membership`,
       ...(userId && { client_reference_id: userId }),
     })
