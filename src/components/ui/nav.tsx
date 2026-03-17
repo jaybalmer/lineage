@@ -189,9 +189,7 @@ export function Nav() {
   const displayName = profileOverride.display_name ?? basePerson?.display_name ?? ""
   const initial     = displayName[0]?.toUpperCase() ?? "?"
   const tier        = membership.tier
-  const isPaidMember = tier === "annual" || tier === "lifetime" || tier === "founding"
   const totalTokens = membership.token_balance.founder * 2 + membership.token_balance.member + membership.token_balance.contribution
-  const { setShowMemberCard } = useLineageStore()
 
   const dropdownProps = { initial, displayName, tier, totalTokens }
 
@@ -209,15 +207,6 @@ export function Nav() {
               {label}
             </Link>
           ))}
-          {isPaidMember && (
-            <button
-              onClick={() => setShowMemberCard(true)}
-              className="px-3 py-1.5 rounded-md text-sm transition-colors whitespace-nowrap hover:bg-amber-950/30"
-              style={{ color: "#b45309", fontWeight: 500 }}
-            >
-              Member card
-            </button>
-          )}
         </div>
         <div className="ml-auto flex items-center gap-3 flex-shrink-0">
           <ThemeToggle />
@@ -275,15 +264,6 @@ export function Nav() {
                 {label}
               </Link>
             ))}
-            {isPaidMember && (
-              <button
-                onClick={() => setShowMemberCard(true)}
-                className="px-2.5 py-1 rounded-md text-xs transition-colors whitespace-nowrap hover:bg-amber-950/30"
-                style={{ color: "#b45309", fontWeight: 500 }}
-              >
-                Member card
-              </button>
-            )}
           </div>
           <ThemeToggle />
         </div>

@@ -23,7 +23,7 @@ const TIER_BADGE: Record<string, { symbol: string; label: string; color: string 
 export default function RiderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
-  const { activePersonId, profileOverride, membership, catalogLoaded, catalog } = useLineageStore()
+  const { activePersonId, profileOverride, membership, catalogLoaded, catalog, setShowMemberCard } = useLineageStore()
   const [playingTimeline, setPlayingTimeline] = useState(false)
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(false)
   const [milestoneDismissed, setMilestoneDismissed] = useState(false)
@@ -168,6 +168,18 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                       <span>{memberBadge.label}</span>
                     </span>
                   )
+                )}
+
+                {/* Member card trigger — own profile, paid member only */}
+                {isCurrentUser && memberBadge && (
+                  <button
+                    onClick={() => setShowMemberCard(true)}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold transition-opacity hover:opacity-80"
+                    style={{ background: "#f59e0b18", color: "#b45309", border: "1px solid #f59e0b44" }}
+                    title="View your member card"
+                  >
+                    ✦ Member card
+                  </button>
                 )}
               </div>
 
