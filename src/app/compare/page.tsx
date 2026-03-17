@@ -374,19 +374,49 @@ function ComparePageInner() {
   }, [])
 
   // Merge mock people + real profiles (deduplicate by id)
+  // Also ensure the authenticated current user is always present even if their
+  // profile isn't returned by the public query (privacy setting or timing).
   const mockIds = useMemo(() => new Set(PEOPLE.map((p) => p.id)), [])
-  const allPeople = useMemo(
-    () => [...PEOPLE, ...realProfiles.filter((p) => !mockIds.has(p.id))],
-    [realProfiles, mockIds]
-  )
+  const allPeople = useMemo(() => {
+    const base = [...PEOPLE, ...realProfiles.filter((p) => !mockIds.has(p.id))]
+    if (activePersonId && !base.find((p) => p.id === activePersonId)) {
+      base.push({
+        id: activePersonId,
+        display_name: profileOverride.display_name ?? "You",
+        birth_year: profileOverride.birth_year,
+        riding_since: profileOverride.riding_since,
+        privacy_level: (profileOverride.privacy_level ?? "public") as "public" | "private" | "shared",
+        bio: profileOverride.bio,
+        links: profileOverride.links,
+        home_resort_id: profileOverride.home_resort_id,
+      })
+    }
+    return base
+  }, [realProfiles, mockIds, activePersonId, profileOverride])
 
   const allClaims = useMemo(
     () => getAllClaims(sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId),
     [sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId]
   )
 
-  const baseCurrentUser = allPeople.find((p) => p.id === activePersonId) ?? PEOPLE[0]
-  const currentUser = { ...baseCurrentUser, ...profileOverride }
+  // Build the current user's Person object — must preserve `activePersonId` as the id
+  // so that claimsA correctly matches dbClaims (which use the UUID as subject_id).
+  // allPeople only covers mock + public profiles, so auth users may not be in it.
+  const baseCurrentUser = allPeople.find((p) => p.id === activePersonId)
+  const currentUser: Person = baseCurrentUser
+    ? { ...baseCurrentUser, ...profileOverride }
+    : activePersonId
+      ? {
+          id: activePersonId,
+          display_name: profileOverride.display_name ?? "You",
+          birth_year: profileOverride.birth_year,
+          riding_since: profileOverride.riding_since,
+          privacy_level: (profileOverride.privacy_level ?? "public") as "public" | "private" | "shared",
+          bio: profileOverride.bio,
+          links: profileOverride.links,
+          home_resort_id: profileOverride.home_resort_id,
+        }
+      : PEOPLE[0]
   const [personA, setPersonA] = useState<Person>(currentUser)
 
   // Pre-select Person B from ?b= query param
