@@ -6,6 +6,11 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+/** Convert a display name to a URL-safe slug, e.g. "Jay Balmer" → "jay_balmer" */
+export function nameToSlug(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "")
+}
+
 export function formatYear(dateStr?: string): string {
   if (!dateStr) return "present"
   return dateStr.slice(0, 4)

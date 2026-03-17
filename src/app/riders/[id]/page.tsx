@@ -10,13 +10,9 @@ import { useLineageStore } from "@/store/lineage-store"
 import { getLinkIcon } from "@/components/ui/edit-profile-modal"
 import { RiderAvatar, getRiderTier, getInitials } from "@/components/ui/rider-avatar"
 import { TimelinePlayer } from "@/components/ui/timeline-player"
+import { nameToSlug } from "@/lib/utils"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-
-// Convert a display name to URL slug: "Sean Balmer" → "sean_balmer"
-export function nameToSlug(name: string): string {
-  return name.trim().toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "")
-}
 
 const TIER_BADGE: Record<string, { symbol: string; label: string; color: string }> = {
   annual:   { symbol: "◈", label: "MEMBER",    color: "#3b82f6" },

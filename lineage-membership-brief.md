@@ -3,7 +3,7 @@
 **Project:** lineage.wtf  
 **Feature:** Community Membership & Revenue Sharing  
 **Prepared for:** Claude Code  
-**Version:** 1.0
+**Version:** 1.1
 
 ---
 
@@ -594,6 +594,150 @@ All questions resolved. Build to these specs.
 - [ ] Set up webhooks: `customer.subscription.deleted`, `customer.subscription.updated`, `invoice.payment_succeeded`, `invoice.payment_failed`
 - [ ] Handle failed payment grace period: 3-day grace, then lapse + freeze tokens
 - [ ] Founding tier hard cap: enforce 500-unit inventory limit in Stripe (or application layer — application layer preferred for real-time accuracy)
+
+---
+
+## 12. Member Card — The Membership Moment
+
+### Concept
+
+When someone buys a membership, the first thing they see is not a receipt or a confirmation email — it is their member card. A full-screen card reveal with a burst animation, a personal message, and a share prompt. This moment is replayable forever via a "Member card" tab in the main nav, sitting next to "Timeline."
+
+The card is a credential, not a confirmation. It should feel like something worth keeping and showing to people.
+
+---
+
+### The Card — Visual Spec
+
+The member card is a styled tile rendered as both an interactive UI component and an exportable image. Three variants, one per paid tier.
+
+**Shared layout (all tiers):**
+- Dark background (tier-specific colour — see below)
+- Top-left: tier label in small uppercase (`ANNUAL MEMBER` / `LIFETIME MEMBER` / `FOUNDING MEMBER`)
+- Top-right: founding number for founding tier only (`#247 of 500`)
+- Large name (`Jay Balmer`)
+- Tagline line (`Member since March 2026 · Vancouver, BC`)
+- Three stat blocks: Tokens, Riding since, [tier-specific third stat]
+- Row of 5 small dots along the bottom-left (timeline motif — filled dots = years active)
+- Bottom-right: `lineage.wtf` wordmark, low opacity
+- Subtle animated shimmer across the card surface (CSS keyframe, low opacity)
+- Coloured accent line along the very bottom edge (tier colour)
+
+**Tier colour palette:**
+
+| Tier | Card background | Accent line | Burst ring colour | Dot colour |
+|---|---|---|---|---|
+| Annual member | `#1a1f4e` (deep navy) | `#3B5BA5` | `#378ADD` | `#85B7EB` |
+| Lifetime member | `#0c2340` (darker navy) | `#185FA5` | `#185FA5` | `#378ADD` |
+| Founding member | `#412402` (deep amber-brown) | `#854F0B` | `#EF9F27` | `#FAC775` |
+
+**Third stat block by tier:**
+
+| Tier | Label | Value |
+|---|---|---|
+| Annual | Revenue share | Active |
+| Lifetime | Revenue share | Lifetime |
+| Founding | Share weight | 2× premium |
+
+---
+
+### Purchase Confirmation Flow
+
+**Trigger:** Stripe webhook `invoice.payment_succeeded` (annual) or `checkout.session.completed` (lifetime / founding).
+
+**Flow:**
+1. Payment confirmed → redirect to `/welcome` (not a generic success page)
+2. `/welcome` renders full-screen dark overlay over a blurred timeline background
+3. Card animates in: scale from 0.88 → 1.0 with slight overshoot (cubic-bezier spring), fade up from 16px below. Duration: 500ms, delay: 150ms.
+4. Burst animation fires simultaneously: 3 expanding rings + 12 particle dots radiating outward. Tier colour. Duration: 800ms total.
+5. Personal message fades in below the card (400ms, delay 500ms):
+   - Annual: *"You're part of something that's never existed before. The collective history of snowboarding — verified, owned, and built by riders."*
+   - Lifetime: *"This is permanent. Your name and your history are part of the record — for as long as snowboarding exists."*
+   - Founding: *"#[N] of 500. You were here at the start. The founding era is yours — permanently."*
+6. Two action buttons fade in (400ms, delay 650ms):
+   - Primary: **"Share your card"**
+   - Secondary: **"View my timeline"**
+
+**Animation rules:**
+- Use CSS `@keyframes` only — no physics library
+- Animate `transform` and `opacity` only (GPU-composited, no layout thrash)
+- Wrap all animations in `@media (prefers-reduced-motion: no-preference)` — users with reduced motion see the card appear instantly with no burst
+- Burst rings and dots are absolutely positioned, `pointer-events: none`, clipped to the card container
+
+---
+
+### Nav Placement — "Member card" tab
+
+The "Member card" tab lives in the main navigation bar, immediately to the right of "Timeline."
+
+**Visibility rules:**
+- Hidden for free (Rider) accounts — the tab does not exist in the DOM for non-members
+- Visible for all paid tiers (Annual, Lifetime, Founding)
+- Colour: amber-tinted text to distinguish from standard nav tabs (`color: #854F0B` or CSS variable equivalent). On hover: amber-tinted background.
+- Label: `Member card` (no icon needed)
+
+**On click:** Replays the full card moment — overlay, animation, burst, message, share buttons — exactly as experienced at purchase. The overlay sits above the current page content, so it can be triggered from any page in the app. Clicking "View my timeline" or pressing Escape dismisses it.
+
+**Implementation note:** Store a `member_card_seen_at` timestamp on the user record so the first-ever view (at purchase) can be distinguished from replays. No functional difference — just useful analytics.
+
+---
+
+### Share Flow
+
+When a member taps "Share your card":
+
+1. Generate a server-side OG image of the card at `lineage.wtf/member/[username]/card.png`
+   - Static render of the card tile, no animation
+   - Dimensions: 1200 × 630px (standard OG image size)
+   - Card centred on a dark background with subtle noise/texture
+   - Include the LINEAGE wordmark above the card
+2. Copy `lineage.wtf/member/[username]/card` to clipboard
+3. Button label changes to `"Link copied"` for 2 seconds, then resets
+4. The card page at that URL is publicly accessible — no login required to view another rider's card. Shows the static card, their tier, and a CTA: *"Build your own timeline →"*
+
+**OG meta tags on the card page:**
+```html
+<meta property="og:image" content="https://lineage.wtf/member/[username]/card.png" />
+<meta property="og:title" content="Jay Balmer — Lineage Founding Member" />
+<meta property="og:description" content="40 years riding. Part of the collective history of snowboarding." />
+```
+
+---
+
+### Founding Member Card — Extra Details
+
+The founding card is the highest-stakes moment and deserves extra treatment:
+
+- The founding number (`#247 of 500`) is displayed top-right and should be assigned sequentially at time of purchase — first to buy is #1. Store as `founding_sequence_number` on the user record.
+- If the user purchased a founding membership and gifted one annual membership, the welcome screen has an extra step after the card: *"You have one annual membership to gift. Send it to a rider who belongs here."* — with a text input for email or username, or a "I'll do this later" option.
+- The gift code is generated on the server at purchase time and stored against the founder's account at `/account/membership` for later use.
+
+---
+
+### `/welcome` Page — Post-Purchase
+
+Route: `/welcome?tier=[annual|lifetime|founding]`
+
+- Only accessible immediately post-purchase (validate via Stripe session ID in query param, one-time use)
+- After the session is consumed, redirect `/welcome` → `/account/membership`
+- No persistent URL — the replayable experience lives behind the nav tab, not a bookmarkable page
+
+---
+
+### Member Card — Implementation Checklist
+
+- [ ] Card component: three tier variants, correct colours, shimmer animation
+- [ ] `/welcome` page with burst animation, per-tier message, share/dismiss buttons
+- [ ] `@media (prefers-reduced-motion)` fallback — instant card appear, no burst
+- [ ] Nav tab: `Member card` — visible to paid members only, amber styling
+- [ ] Replay trigger: clicking nav tab shows overlay with full animation from any page
+- [ ] Card share URL: `lineage.wtf/member/[username]/card` — public, no auth
+- [ ] OG image generation: `card.png` server-rendered, 1200×630, static
+- [ ] OG meta tags on card share page
+- [ ] Founding sequence number: assign at purchase, store on user record, display on card
+- [ ] Founding gift step: post-card prompt to send gifted annual membership
+- [ ] `member_card_seen_at` timestamp on user record (analytics)
+- [ ] `/welcome` session validation: one-time use via Stripe session ID
 
 ---
 

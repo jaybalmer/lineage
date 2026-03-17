@@ -101,6 +101,10 @@ interface LineageStore {
   setMembership: (updates: Partial<MembershipState>) => void
   addContributionToken: (amount?: number) => void
 
+  // Member card overlay
+  showMemberCard: boolean
+  setShowMemberCard: (v: boolean) => void
+
   // Trigger moment suppression
   triggerPrefs: TriggerPrefs
   setTriggerPrefs: (updates: Partial<TriggerPrefs>) => void
@@ -493,6 +497,9 @@ export const useLineageStore = create<LineageStore>()(
           },
         })),
 
+      showMemberCard: false,
+      setShowMemberCard: (v) => set({ showMemberCard: v }),
+
       triggerPrefs: {},
       setTriggerPrefs: (updates) =>
         set((s) => ({ triggerPrefs: { ...s.triggerPrefs, ...updates } })),
@@ -502,7 +509,7 @@ export const useLineageStore = create<LineageStore>()(
       // Don't persist catalog or dbClaims — catalog always starts from mock data
       // and gets overwritten by loadCatalog(); dbClaims are always reloaded from DB
       partialize: (s) => {
-        const { dbClaims: _db, catalog: _cat, catalogLoaded: _cl, ...rest } = s
+        const { dbClaims: _db, catalog: _cat, catalogLoaded: _cl, showMemberCard: _smc, ...rest } = s
         return rest
       },
     }

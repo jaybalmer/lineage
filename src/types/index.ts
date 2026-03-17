@@ -212,6 +212,7 @@ export interface MembershipState {
   stripe_subscription_id?: string
   membership_expires_at?:  string // ISO date
   pending_credit:          number // sub-threshold distribution rollover
+  member_card_seen_at?:    string // ISO timestamp of first card view (analytics)
 }
 
 export interface TriggerPrefs {

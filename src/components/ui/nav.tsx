@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { getPersonById } from "@/lib/mock-data"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
+import { getInitials } from "@/components/ui/rider-avatar"
 import { supabase } from "@/lib/supabase"
 
 const TIER_BADGE: Record<string, { label: string; color: string; symbol: string }> = {
@@ -94,7 +95,7 @@ function AvatarDropdown({ initial, displayName, tier, totalTokens }: AvatarDropd
         aria-label="User menu"
       >
         <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-semibold text-white hover:bg-blue-500 transition-colors">
-          {initial}
+          {getInitials(displayName || "?")}
         </div>
         {tierBadge && (
           <span className="hidden sm:inline px-1.5 py-0.5 rounded-full"
@@ -188,7 +189,9 @@ export function Nav() {
   const displayName = profileOverride.display_name ?? basePerson?.display_name ?? ""
   const initial     = displayName[0]?.toUpperCase() ?? "?"
   const tier        = membership.tier
+  const isPaidMember = tier === "annual" || tier === "lifetime" || tier === "founding"
   const totalTokens = membership.token_balance.founder * 2 + membership.token_balance.member + membership.token_balance.contribution
+  const { setShowMemberCard } = useLineageStore()
 
   const dropdownProps = { initial, displayName, tier, totalTokens }
 
@@ -206,6 +209,15 @@ export function Nav() {
               {label}
             </Link>
           ))}
+          {isPaidMember && (
+            <button
+              onClick={() => setShowMemberCard(true)}
+              className="px-3 py-1.5 rounded-md text-sm transition-colors whitespace-nowrap hover:bg-amber-950/30"
+              style={{ color: "#b45309", fontWeight: 500 }}
+            >
+              Member card
+            </button>
+          )}
         </div>
         <div className="ml-auto flex items-center gap-3 flex-shrink-0">
           <ThemeToggle />
@@ -263,6 +275,15 @@ export function Nav() {
                 {label}
               </Link>
             ))}
+            {isPaidMember && (
+              <button
+                onClick={() => setShowMemberCard(true)}
+                className="px-2.5 py-1 rounded-md text-xs transition-colors whitespace-nowrap hover:bg-amber-950/30"
+                style={{ color: "#b45309", fontWeight: 500 }}
+              >
+                Member card
+              </button>
+            )}
           </div>
           <ThemeToggle />
         </div>

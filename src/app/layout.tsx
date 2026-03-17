@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import "./globals.css"
 import { CatalogLoader } from "@/components/catalog-loader"
+import { ClientOverlays } from "@/components/ClientOverlays"
 
 export const metadata: Metadata = {
   title: "Lineage — Snowboarding History Graph",
@@ -12,6 +13,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" suppressHydrationWarning>
       <body className="bg-background text-foreground antialiased min-h-screen">
         <CatalogLoader />
+        <ClientOverlays />
         {children}
       </body>
     </html>
