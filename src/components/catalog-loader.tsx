@@ -19,14 +19,19 @@ export function CatalogLoader() {
   }, [loadCatalog])
 
   // ── 2. Sync auth session → activePersonId + membership on mount ──────────
+  // Uses getUser() (server-validated) rather than getSession() (local cache)
+  // so that expired JWTs are refreshed via the refresh token, or properly
+  // signed out, rather than leaving stale UUIDs in the store.
   useEffect(() => {
     async function syncSession() {
-      const { data: { session } } = await supabase.auth.getSession()
-      const uid = session?.user?.id
+      const { data: { user } } = await supabase.auth.getUser()
+      const uid = user?.id
 
       if (!uid) {
-        if (activePersonId && !isAuthUser(activePersonId)) {
+        // No valid session — clear any stale auth state from Zustand
+        if (activePersonId) {
           setActivePersonId("")
+          setProfileOverride({})
         }
         return
       }
@@ -44,7 +49,8 @@ export function CatalogLoader() {
   // ── 3. Reactive auth state changes (sign-in / sign-out) ──────────────────
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === "SIGNED_OUT") {
+      // Clear stale state on sign-out or when the initial session check finds no user
+      if (event === "SIGNED_OUT" || (event === "INITIAL_SESSION" && !session)) {
         setActivePersonId("")
         setProfileOverride({})
         return
