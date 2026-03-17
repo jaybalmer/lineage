@@ -162,6 +162,9 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const [links, setLinks] = useState<BoardLink[]>([])
   const [imageVotes, setImageVotes] = useState<ImageVoteState>({ up: 0, flag: 0, userVote: null, userVoteId: null })
   const [boardImageUrl, setBoardImageUrl] = useState<string | null>(null)
+  // Community-suggested image takes priority over auto-fetched Serper image
+  const [suggestedImageUrl, setSuggestedImageUrl] = useState<string | null>(null)
+  const displayImageUrl = suggestedImageUrl ?? boardImageUrl
 
   // Story form state
   const [storyText, setStoryText] = useState("")
@@ -194,13 +197,18 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     supabase.from("board_links").select("*").eq("board_id", boardId).order("created_at", { ascending: false })
       .then(({ data }) => data && setLinks(data as BoardLink[]))
 
-    supabase.from("board_image_votes").select("id, vote, user_id").eq("board_id", boardId)
+    supabase.from("board_image_votes").select("id, vote, user_id, suggested_image_url").eq("board_id", boardId).order("created_at", { ascending: false })
       .then(({ data }) => {
         if (!data) return
-        const up = data.filter((v) => v.vote === "up").length
-        const flag = data.filter((v) => v.vote === "flag").length
-        const mine = data.find((v) => v.user_id === activePersonId)
+        type VoteRow = { id: string; vote: string; user_id: string; suggested_image_url?: string | null }
+        const rows = data as VoteRow[]
+        const up = rows.filter((v) => v.vote === "up").length
+        const flag = rows.filter((v) => v.vote === "flag").length
+        const mine = rows.find((v) => v.user_id === activePersonId)
         setImageVotes({ up, flag, userVote: (mine?.vote as "up" | "flag") ?? null, userVoteId: mine?.id ?? null })
+        // Use the most recently suggested image URL if one exists
+        const suggested = rows.find((v) => v.suggested_image_url)?.suggested_image_url
+        if (suggested) setSuggestedImageUrl(suggested)
       })
 
     fetch(`/api/board-image?brand=${encodeURIComponent(boardBrand)}&model=${encodeURIComponent(boardModel)}&year=${boardYear}`)
@@ -279,10 +287,14 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     e.preventDefault()
     if (!suggestUrl.trim() || suggesting) return
     setSuggesting(true)
-    await supabase.from("board_image_votes").upsert(
+    const { error } = await supabase.from("board_image_votes").upsert(
       { board_id: boardId, user_id: activePersonId, vote: "up", suggested_image_url: suggestUrl.trim() },
       { onConflict: "board_id,user_id" }
     )
+    if (!error) {
+      // Show the suggested image immediately — no page reload needed
+      setSuggestedImageUrl(suggestUrl.trim())
+    }
     setSuggestUrl(""); setShowSuggestForm(false); setSuggesting(false)
   }
 
@@ -313,10 +325,10 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
           <div className="flex items-start gap-5">
             {/* Board image with vote buttons */}
             <div className="shrink-0">
-              {boardImageUrl ? (
+              {displayImageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={boardImageUrl}
+                  src={displayImageUrl}
                   alt={`${boardBrand} ${boardModel}`}
                   className="w-24 h-24 object-cover rounded-lg bg-surface-hover"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}
@@ -379,7 +391,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
               </div>
 
               {/* Suggest better image (shown when flagged or no image) */}
-              {isAuth && (imageVotes.userVote === "flag" || !boardImageUrl) && (
+              {isAuth && (imageVotes.userVote === "flag" || !displayImageUrl) && (
                 <div className="mt-3">
                   {!showSuggestForm ? (
                     <button onClick={() => setShowSuggestForm(true)} className="text-xs text-muted hover:text-foreground transition-colors">
