@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore } from "@/store/lineage-store"
@@ -136,10 +136,17 @@ export default function MembershipPage() {
   const { membership } = useLineageStore()
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [loading, setLoading] = useState<string | null>(null)
+  const [foundingFilled, setFoundingFilled] = useState(0)
 
-  // TODO: fetch real founding spots remaining from API
-  const foundingRemaining = FOUNDING_TOTAL
-  const foundingFilled = 0
+  // Fetch live founding spots count
+  useEffect(() => {
+    fetch("/api/founding")
+      .then((r) => r.json())
+      .then((data) => setFoundingFilled(data.filled ?? 0))
+      .catch(() => {})
+  }, [])
+
+  const foundingRemaining = FOUNDING_TOTAL - foundingFilled
   const foundingPct = (foundingFilled / FOUNDING_TOTAL) * 100
   const isSoldOut = foundingFilled >= FOUNDING_TOTAL
 

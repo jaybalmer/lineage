@@ -93,7 +93,8 @@
       "Bash(grep -n \"display_name\\\\[0\\\\]\\\\|display_name\\\\[0\\\\]\\\\.toUpperCase\" /Users/jaybalmer/lineage/src/app/riders/[id]/page.tsx /Users/jaybalmer/lineage/src/app/events/[id]/page.tsx /Users/jaybalmer/lineage/src/app/places/[id]/page.tsx /Users/jaybalmer/lineage/src/app/boards/page.tsx /Users/jaybalmer/lineage/src/components/ui/edit-profile-modal.tsx)",
       "Bash(head -10 /Users/jaybalmer/lineage/src/app/events/[id]/page.tsx)",
       "Bash(grep -n \"display_name\\\\[0\\\\]\" /Users/jaybalmer/lineage/src/app/places/[id]/page.tsx)",
-      "Bash(grep -n \"^import\" /Users/jaybalmer/lineage/src/app/places/[id]/page.tsx)"
+      "Bash(grep -n \"^import\" /Users/jaybalmer/lineage/src/app/places/[id]/page.tsx)",
+      "Bash(grep -E \"\\\\.\\(sql|ts|json\\)$\")"
     ]
   }
 }

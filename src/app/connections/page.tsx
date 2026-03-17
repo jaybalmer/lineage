@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Nav } from "@/components/ui/nav"
 import { PEOPLE, CLAIMS, getSharedContext, getPersonById } from "@/lib/mock-data"
 import { useLineageStore } from "@/store/lineage-store"
@@ -67,7 +68,24 @@ function ConnectionCard({ personId, currentUserId }: { personId: string; current
 }
 
 export default function ConnectionsPage() {
-  const { activePersonId } = useLineageStore()
+  const { activePersonId, membership } = useLineageStore()
+  const [connectionCtaDismissed, setConnectionCtaDismissed] = useState(false)
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    if (localStorage.getItem("lineage_connection_cta_dismissed") === "1") {
+      setConnectionCtaDismissed(true)
+    }
+  }, [])
+
+  const dismissConnectionCta = () => {
+    setConnectionCtaDismissed(true)
+    if (typeof window !== "undefined") {
+      localStorage.setItem("lineage_connection_cta_dismissed", "1")
+    }
+  }
+
+  const isMember = membership.tier !== "free"
 
   const directConnections = CLAIMS
     .filter((c) => c.subject_id === activePersonId && c.predicate === "rode_with")
@@ -119,6 +137,31 @@ export default function ConnectionsPage() {
               {sharedPlaceRiders.map((id) => (
                 <ConnectionCard key={id} personId={id} currentUserId={activePersonId} />
               ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Membership CTA (Section 6.2) — shown once when connections exist, non-members only ── */}
+        {!isMember && !connectionCtaDismissed && (directConnections.length > 0 || sharedPlaceRiders.length > 0) && (
+          <div className="mt-8 rounded-xl border border-border-default bg-surface p-5">
+            <div className="h-px bg-border-default mb-4" />
+            <p className="text-sm text-foreground mb-1">
+              Connections like this get stronger when they&apos;re verified.
+            </p>
+            <p className="text-xs text-muted mb-4">
+              Members can confirm shared moments and link your histories officially.
+            </p>
+            <div className="flex items-center gap-3">
+              <Link href="/membership"
+                className="px-4 py-2 rounded-lg text-xs font-semibold transition-colors"
+                style={{ background: "#3b82f6", color: "#fff" }}>
+                Become a member →
+              </Link>
+              <button
+                onClick={dismissConnectionCta}
+                className="text-xs text-muted hover:text-foreground transition-colors">
+                Maybe later
+              </button>
             </div>
           </div>
         )}

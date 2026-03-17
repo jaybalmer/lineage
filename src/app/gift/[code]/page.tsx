@@ -15,28 +15,46 @@ export default function GiftRedemptionPage() {
 
   const [status, setStatus] = useState<CodeStatus>("loading")
   const [giftedBy, setGiftedBy] = useState<string | null>(null)
+  const [redeemError, setRedeemError] = useState<string | null>(null)
 
   const isAuth = isAuthUser(activePersonId)
 
   useEffect(() => {
     if (!code) { setStatus("invalid"); return }
-    // TODO: fetch from /api/gift/validate once Supabase gift_codes table exists
-    // For now, stub: all codes are "valid" if the user is authenticated
-    setTimeout(() => {
-      if (!isAuth) {
-        setStatus("valid") // valid but needs login
-      } else {
-        setStatus("valid")
-        setGiftedBy("a community member") // replace with real data
-      }
-    }, 800)
-  }, [code, isAuth])
+
+    fetch(`/api/gift/validate?code=${encodeURIComponent(code)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.status === "valid") {
+          setStatus("valid")
+          setGiftedBy(data.giftedByName ?? "a community member")
+        } else if (data.status === "already_redeemed") {
+          setStatus("already_redeemed")
+        } else {
+          setStatus("invalid")
+        }
+      })
+      .catch(() => setStatus("invalid"))
+  }, [code])
 
   const handleRedeem = async () => {
     if (!isAuth) return
     setStatus("loading")
-    // TODO: POST to /api/gift/redeem
-    setTimeout(() => setStatus("redeemed"), 800)
+    setRedeemError(null)
+
+    const res = await fetch("/api/gift/redeem", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, userId: activePersonId }),
+    })
+
+    if (res.ok) {
+      setStatus("redeemed")
+    } else {
+      const data = await res.json().catch(() => ({}))
+      setRedeemError(data.error ?? "Something went wrong. Please try again.")
+      setStatus("valid")
+    }
   }
 
   return (
@@ -101,7 +119,7 @@ export default function GiftRedemptionPage() {
                   <p className="text-muted mb-4" style={{ fontSize: 11, lineHeight: 1.7 }}>
                     Create or sign in to your Lineage account to claim your membership.
                   </p>
-                  <Link href="/profile"
+                  <Link href={`/auth/signin?redirect=/gift/${code}`}
                     className="inline-block px-6 py-3 rounded-full font-bold"
                     style={{ background: "#3b82f6", color: "#fff", fontSize: 11, letterSpacing: 1, fontFamily: "'IBM Plex Mono', monospace" }}>
                     Sign in to claim →
@@ -112,6 +130,9 @@ export default function GiftRedemptionPage() {
                   <p className="text-muted mb-6" style={{ fontSize: 11, lineHeight: 1.7 }}>
                     Claim your annual membership — it counts fully toward your status and tokens.
                   </p>
+                  {redeemError && (
+                    <p className="text-red-400 mb-4" style={{ fontSize: 10 }}>{redeemError}</p>
+                  )}
                   <button
                     onClick={handleRedeem}
                     className="px-8 py-3 rounded-full font-bold hover:opacity-80 transition-opacity"
@@ -137,10 +158,10 @@ export default function GiftRedemptionPage() {
               <p className="text-muted mb-6" style={{ fontSize: 11, lineHeight: 1.7 }}>
                 You&apos;re now an annual member of Lineage. Welcome to the community.
               </p>
-              <Link href="/profile"
-                className="inline-block px-6 py-3 rounded-full border border-border-default text-muted hover:text-foreground hover:border-foreground transition-all"
-                style={{ fontSize: 10, letterSpacing: 1, fontFamily: "'IBM Plex Mono', monospace" }}>
-                Go to your profile →
+              <Link href="/account/membership"
+                className="inline-block px-6 py-3 rounded-full font-bold hover:opacity-80 transition-opacity"
+                style={{ background: "#3b82f6", color: "#fff", fontSize: 10, letterSpacing: 1, fontFamily: "'IBM Plex Mono', monospace" }}>
+                View your membership →
               </Link>
             </div>
           )}

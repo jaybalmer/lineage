@@ -570,6 +570,11 @@ export function OnboardingFlow() {
     applyOnboardingClaims(userId)
     completeOnboarding()
 
+    // Flag for post-onboarding membership banner (shown once on first profile visit)
+    if (typeof window !== "undefined") {
+      localStorage.setItem("lineage_onboarding_banner_pending", "1")
+    }
+
     if (data.session) {
       router.replace("/timeline")
     } else {

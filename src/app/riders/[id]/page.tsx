@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState } from "react"
+import { use, useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { CLAIMS, getPersonById, getSharedContext } from "@/lib/mock-data"
@@ -29,6 +29,20 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   const router = useRouter()
   const { activePersonId, profileOverride, membership, catalogLoaded, catalog } = useLineageStore()
   const [playingTimeline, setPlayingTimeline] = useState(false)
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(false)
+  const [milestoneDismissed, setMilestoneDismissed] = useState(false)
+
+  // Show post-onboarding welcome banner (once, on first profile visit after signup)
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const pending = localStorage.getItem("lineage_onboarding_banner_pending")
+    if (pending === "1") {
+      setShowWelcomeBanner(true)
+      localStorage.removeItem("lineage_onboarding_banner_pending")
+    }
+    const dismissed = localStorage.getItem("lineage_milestone_dismissed")
+    if (dismissed === "1") setMilestoneDismissed(true)
+  }, [])
 
   // Wait for catalog + session to hydrate before deciding the page doesn't exist.
   if (!catalogLoaded) {
@@ -205,6 +219,77 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
             </div>
           )}
         </div>
+
+        {/* ── Post-onboarding welcome banner (Section 6.1) ── */}
+        {isCurrentUser && showWelcomeBanner && membership.tier === "free" && (
+          <div className="mb-6 rounded-xl border border-border-default bg-surface p-4 flex items-start gap-3">
+            <span className="text-lg shrink-0">🏂</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground mb-0.5">
+                Your timeline is live. You&apos;re part of 40 years of snowboarding history.
+              </p>
+              <div className="flex items-center gap-4 mt-2">
+                <Link href="/connections" className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
+                  Explore your connections →
+                </Link>
+                <Link href="/membership" className="text-xs text-muted hover:text-foreground transition-colors">
+                  Learn about membership →
+                </Link>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowWelcomeBanner(false)}
+              className="text-muted hover:text-foreground transition-colors shrink-0 text-lg leading-none"
+              aria-label="Dismiss"
+            >×</button>
+          </div>
+        )}
+
+        {/* ── Member token stats row (Section 5.4) — own profile, paid member ── */}
+        {isCurrentUser && membership.tier !== "free" && (
+          <div className="mb-6 rounded-xl border border-border-default bg-surface px-4 py-3 flex items-center gap-4 text-xs text-muted flex-wrap">
+            <span>
+              <span className="font-bold text-foreground">
+                {(membership.token_balance?.founder ?? 0) * 2 +
+                 (membership.token_balance?.member ?? 0) +
+                 (membership.token_balance?.contribution ?? 0)}
+              </span>{" "}
+              weighted tokens
+            </span>
+            <span className="text-border-default">·</span>
+            <span>Next distribution: <span className="text-foreground">April 2026</span></span>
+            <span className="text-border-default">·</span>
+            <Link href="/account/membership" className="text-blue-400 hover:text-blue-300 transition-colors">
+              View dashboard →
+            </Link>
+          </div>
+        )}
+
+        {/* ── Non-member contribution prompt (Section 5.4 / 6.4) ── */}
+        {isCurrentUser && membership.tier === "free" && !milestoneDismissed && personClaims.length >= 5 && (
+          <div className="mb-6 rounded-xl border border-border-default bg-surface p-4 flex items-start gap-3">
+            <span className="text-muted text-base shrink-0">◎</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-foreground mb-0.5">
+                You&apos;ve added <span className="font-bold">{personClaims.length}</span> entries to the collective history.
+              </p>
+              <p className="text-xs text-muted mt-0.5 mb-2">
+                Members earn tokens for every verified entry — including these.
+              </p>
+              <Link href="/membership" className="text-xs text-blue-400 hover:text-blue-300 transition-colors">
+                What is membership? →
+              </Link>
+            </div>
+            <button
+              onClick={() => {
+                setMilestoneDismissed(true)
+                if (typeof window !== "undefined") localStorage.setItem("lineage_milestone_dismissed", "1")
+              }}
+              className="text-muted hover:text-foreground transition-colors shrink-0 text-lg leading-none"
+              aria-label="Dismiss"
+            >×</button>
+          </div>
+        )}
 
         {/* Shared context */}
         {!isCurrentUser && (sharedPlaces.length > 0 || sharedEvents.length > 0) && (

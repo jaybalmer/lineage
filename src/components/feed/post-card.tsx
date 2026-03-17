@@ -526,12 +526,16 @@ function CompanionAvatars({ claim }: { claim: Claim }) {
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 
 export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
-  const { userEntities, removeClaim } = useLineageStore()
+  const { userEntities, removeClaim, membership } = useLineageStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editingEvent, setEditingEvent] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [expanded, setExpanded] = useState(false)
+  const [showVerifyGate, setShowVerifyGate] = useState(false)
+  const [verifyGateShownThisSession, setVerifyGateShownThisSession] = useState(false)
+
+  const isMember = membership.tier !== "free"
 
   const predicateLabel = PREDICATE_LABELS[claim.predicate] ?? claim.predicate
   const dateRange = formatDateRange(claim.start_date, claim.end_date)
@@ -662,9 +666,18 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
                           )}
                           <div className="h-px bg-border-default mx-2" />
                           <button
-                            disabled
-                            title="Coming soon"
-                            className="w-full text-left px-4 py-2.5 text-xs text-muted opacity-40 cursor-not-allowed flex items-center gap-2"
+                            onClick={() => {
+                              setMenuOpen(false)
+                              if (isMember) {
+                                // TODO: member verification flow
+                                alert("Verification coming soon for members!")
+                              } else if (!verifyGateShownThisSession) {
+                                setShowVerifyGate(true)
+                                setVerifyGateShownThisSession(true)
+                              }
+                            }}
+                            title={isMember ? "Verify this entry" : "Members can verify entries"}
+                            className="w-full text-left px-4 py-2.5 text-xs text-muted hover:text-foreground hover:bg-surface-hover flex items-center gap-2 transition-colors"
                           >
                             <span>✓</span> Verify
                           </button>
@@ -742,6 +755,52 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
         {/* Companion avatars — other riders tagged at same place/event/year */}
         <CompanionAvatars claim={claim} />
       </div>
+
+      {/* ── Verification gate modal (Section 6.3) ── */}
+      {showVerifyGate && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4"
+          onClick={(e) => e.target === e.currentTarget && setShowVerifyGate(false)}
+        >
+          <div className="absolute inset-0 bg-black/60" />
+          <div className="relative w-full max-w-sm bg-surface border border-border-default rounded-2xl shadow-2xl p-6 text-center">
+            <div className="text-3xl mb-3">✓</div>
+            <h3 className="text-base font-bold text-foreground mb-2">
+              Verification builds our collective record
+            </h3>
+            <p className="text-xs text-muted leading-relaxed mb-4">
+              Verifying entries is how we keep the history trustworthy.
+              It&apos;s a responsibility — and a recognition that you were there.
+            </p>
+            <p className="text-xs text-muted leading-relaxed mb-5">
+              Members can verify entries and earn contribution tokens.
+              This is the only feature behind membership.
+            </p>
+            <div className="flex flex-col gap-2">
+              <a
+                href="/membership"
+                className="block w-full px-4 py-2.5 rounded-lg text-xs font-bold text-center transition-colors"
+                style={{ background: "#3b82f6", color: "#fff" }}
+              >
+                Become a member — $25/year
+              </a>
+              <a
+                href="/membership"
+                onClick={() => setShowVerifyGate(false)}
+                className="block w-full px-4 py-2 rounded-lg text-xs text-muted hover:text-foreground border border-border-default transition-colors"
+              >
+                Learn more about membership
+              </a>
+              <button
+                onClick={() => setShowVerifyGate(false)}
+                className="block w-full px-4 py-2 text-xs text-muted hover:text-foreground transition-colors"
+              >
+                Not right now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
