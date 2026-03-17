@@ -23,7 +23,7 @@ const TIER_BADGE: Record<string, { label: string; color: string; bg: string }> =
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { activePersonId, sessionClaims, dbClaims, setDbClaims, deletedClaimIds, claimOverrides, profileOverride, ridingDays, membership, triggerPrefs, setTriggerPrefs } = useLineageStore()
+  const { activePersonId, sessionClaims, dbClaims, setDbClaims, deletedClaimIds, claimOverrides, profileOverride, ridingDays, membership, triggerPrefs, setTriggerPrefs, setShowMemberCard } = useLineageStore()
   const myDays = ridingDays.filter((d) => d.created_by === activePersonId)
   const [editingProfile, setEditingProfile] = useState(false)
   const [addingClaim, setAddingClaim] = useState(false)
@@ -119,9 +119,9 @@ export default function ProfilePage() {
               {person?.display_name?.[0]?.toUpperCase() ?? "?"}
             </div>
             <div className="min-w-0 flex-1">
-              {/* Member badge */}
+              {/* Member badge + card trigger */}
               {TIER_BADGE[membership.tier] && (
-                <div className="mb-1">
+                <div className="mb-1 flex items-center gap-2">
                   <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold"
                     style={{
                       background: TIER_BADGE[membership.tier].bg,
@@ -132,6 +132,21 @@ export default function ProfilePage() {
                     }}>
                     {TIER_BADGE[membership.tier].label}
                   </span>
+                  <button
+                    onClick={() => setShowMemberCard(true)}
+                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold transition-opacity hover:opacity-80"
+                    style={{
+                      background: "#f59e0b18",
+                      color: "#b45309",
+                      border: "1px solid #f59e0b44",
+                      fontSize: 9,
+                      letterSpacing: 0.5,
+                      fontFamily: "'IBM Plex Mono', monospace",
+                    }}
+                    title="View your member card"
+                  >
+                    ✦ Member card
+                  </button>
                 </div>
               )}
               <div className="flex items-center gap-3 flex-wrap">
