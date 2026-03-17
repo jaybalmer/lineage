@@ -37,15 +37,18 @@ function setCached(key: string, url: string | null) {
 /**
  * Fetches an auto-searched thumbnail for a snowboard.
  *
+ * Priority: community-suggested image (board_image_votes) > Serper search
+ *
  * Returns:
  *   undefined  — still loading / not a board
  *   null       — searched, nothing found (or API not configured)
  *   string     — image URL
  */
 export function useBoardImage(
-  brand: string | undefined,
-  model: string | undefined,
-  year:  number | undefined,
+  brand:   string | undefined,
+  model:   string | undefined,
+  year:    number | undefined,
+  boardId: string | undefined = undefined,
 ): string | null | undefined {
   const [imageUrl, setImageUrl] = useState<string | null | undefined>(undefined)
 
@@ -55,7 +58,10 @@ export function useBoardImage(
       return
     }
 
-    const cacheKey = `${brand}|${model}|${year ?? ""}`
+    // Include boardId in cache key so community suggestions are fetched separately
+    const cacheKey = boardId
+      ? `${boardId}|${brand}|${model}|${year ?? ""}`
+      : `${brand}|${model}|${year ?? ""}`
 
     // Serve from cache immediately if available
     const cached = getCached(cacheKey)
@@ -66,6 +72,7 @@ export function useBoardImage(
 
     // Fetch from API route
     const params = new URLSearchParams({ brand, model, year: String(year ?? "") })
+    if (boardId) params.set("board_id", boardId)
     let cancelled = false
 
     fetch(`/api/board-image?${params}`)

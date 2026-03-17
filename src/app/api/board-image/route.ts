@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
+import { createServerSupabaseClient } from "@/lib/supabase-server"
 
 /**
  * Auto-fetch a board thumbnail via Serper.dev Google Image Search API.
@@ -6,17 +7,37 @@ import { NextRequest, NextResponse } from "next/server"
  * Required env vars (add to .env.local):
  *   SERPER_API_KEY — API key from serper.dev (2,500 free credits)
  *
+ * Priority: community-suggested image (board_image_votes) > Serper search
  * Free tier: 2,500 queries. Results are cached client-side (7 days) to stay well within limits.
  * Falls back through: brand+model+year → brand+model → brand only
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
-  const brand = searchParams.get("brand") ?? ""
-  const model = searchParams.get("model") ?? ""
-  const year  = searchParams.get("year")  ?? ""
+  const brand   = searchParams.get("brand")    ?? ""
+  const model   = searchParams.get("model")    ?? ""
+  const year    = searchParams.get("year")     ?? ""
+  const boardId = searchParams.get("board_id") ?? ""
 
   if (!brand || !model) {
     return NextResponse.json({ url: null })
+  }
+
+  // ── Priority 1: community-suggested image ──────────────────────────────────
+  if (boardId) {
+    try {
+      const supabase = await createServerSupabaseClient()
+      const { data } = await supabase
+        .from("board_image_votes")
+        .select("suggested_image_url")
+        .eq("board_id", boardId)
+        .not("suggested_image_url", "is", null)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .single()
+      if (data?.suggested_image_url) {
+        return NextResponse.json({ url: data.suggested_image_url, source: "community" })
+      }
+    } catch { /* fall through to Serper */ }
   }
 
   const apiKey = process.env.SERPER_API_KEY

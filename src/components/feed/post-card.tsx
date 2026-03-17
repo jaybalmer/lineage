@@ -346,11 +346,13 @@ function EntityBlock({ claim, entityName, isOwn }: EntityBlockProps) {
     : "#"
 
   // Auto-fetch board image via search API (hook always called; returns null for non-boards)
+  // Passing board.id lets the API check community-suggested images first
   const autoBoard = board as Board | null
   const autoBoardImage = useBoardImage(
     autoBoard?.brand,
     autoBoard?.model,
     autoBoard?.model_year,
+    autoBoard?.id,
   )
 
   // Resolve final image URL: manually-set image takes priority, then auto-fetched
