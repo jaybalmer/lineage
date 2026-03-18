@@ -96,6 +96,12 @@ interface LineageStore {
   activePersonId: string
   setActivePersonId: (id: string) => void
 
+  // True once the server-validated getUser() check has resolved on mount.
+  // Protected pages must not redirect until this is true, to avoid kicking
+  // out a valid user whose JWT was expired but whose refresh token is fine.
+  authReady: boolean
+  setAuthReady: (ready: boolean) => void
+
   // Membership
   membership: MembershipState
   setMembership: (updates: Partial<MembershipState>) => void
@@ -476,6 +482,9 @@ export const useLineageStore = create<LineageStore>()(
       activePersonId: "",
       setActivePersonId: (id) => set({ activePersonId: id }),
 
+      authReady: false,
+      setAuthReady: (ready) => set({ authReady: ready }),
+
       membership: {
         tier: "free",
         status: "active",
@@ -509,7 +518,7 @@ export const useLineageStore = create<LineageStore>()(
       // Don't persist catalog or dbClaims — catalog always starts from mock data
       // and gets overwritten by loadCatalog(); dbClaims are always reloaded from DB
       partialize: (s) => {
-        const { dbClaims: _db, catalog: _cat, catalogLoaded: _cl, showMemberCard: _smc, ...rest } = s
+        const { dbClaims: _db, catalog: _cat, catalogLoaded: _cl, showMemberCard: _smc, authReady: _ar, ...rest } = s
         return rest
       },
     }

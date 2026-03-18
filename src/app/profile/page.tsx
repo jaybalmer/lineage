@@ -23,19 +23,22 @@ const TIER_BADGE: Record<string, { label: string; color: string; bg: string }> =
 
 export default function ProfilePage() {
   const router = useRouter()
-  const { activePersonId, sessionClaims, dbClaims, setDbClaims, deletedClaimIds, claimOverrides, profileOverride, ridingDays, membership, triggerPrefs, setTriggerPrefs, setShowMemberCard } = useLineageStore()
+  const { activePersonId, authReady, sessionClaims, dbClaims, setDbClaims, deletedClaimIds, claimOverrides, profileOverride, ridingDays, membership, triggerPrefs, setTriggerPrefs, setShowMemberCard } = useLineageStore()
   const myDays = ridingDays.filter((d) => d.created_by === activePersonId)
   const [editingProfile, setEditingProfile] = useState(false)
   const [addingClaim, setAddingClaim] = useState(false)
   const [addingDay, setAddingDay] = useState(false)
   const [playingTimeline, setPlayingTimeline] = useState(false)
 
-  // Redirect to sign-in if not authenticated
+  // Redirect to sign-in only after the server-validated auth check completes.
+  // Waiting for authReady prevents false sign-outs when the JWT is expired
+  // but the refresh token is still valid (getUser() handles the refresh).
   useEffect(() => {
+    if (!authReady) return
     if (!isAuthUser(activePersonId)) {
       router.replace("/auth/signin")
     }
-  }, [activePersonId, router])
+  }, [authReady, activePersonId, router])
 
   const basePerson = getPersonById(activePersonId)
   const person = basePerson
@@ -74,9 +77,9 @@ export default function ProfilePage() {
       .eq("subject_id", activePersonId)
       .then(({ data, error }) => {
         if (!error && data) setDbClaims(data as Claim[])
-        if (error?.code === "PGRST301" || error?.message?.includes("JWT")) {
-          store.setActivePersonId("")
-        }
+        // Note: JWT errors here are NOT used to sign the user out.
+        // catalog-loader's getUser() is the authoritative auth check — it
+        // handles token refresh and will clear state if truly unauthenticated.
       })
   }, [activePersonId]) // eslint-disable-line react-hooks/exhaustive-deps
 
