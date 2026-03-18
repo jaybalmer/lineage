@@ -24,6 +24,7 @@ import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { cn } from "@/lib/utils"
 import type { Predicate } from "@/types"
 import { useBoardImage } from "@/hooks/use-board-image"
+import { ImageLightbox } from "@/components/ui/image-lightbox"
 
 // Left border accent color by predicate group
 function accentClass(predicate: Predicate): string {
@@ -318,6 +319,7 @@ interface EntityBlockProps {
 }
 
 function EntityBlock({ claim, entityName, isOwn }: EntityBlockProps) {
+  const [lightboxOpen, setLightboxOpen] = useState(false)
   const type = claim.object_type
   const id = claim.object_id
 
@@ -417,46 +419,65 @@ function EntityBlock({ claim, entityName, isOwn }: EntityBlockProps) {
   })()
 
   return (
-    <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border-default">
-      <Link href={href} className="flex-shrink-0">
-        {graphic}
-      </Link>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0 flex-1">
-            <Link href={href} className="block">
-              <p className="font-bold text-foreground text-base leading-snug hover:text-blue-300 transition-colors truncate">
-                {displayName}
-              </p>
-            </Link>
-            {subtitle && (
-              <p className="text-xs text-muted mt-0.5 capitalize">{subtitle}</p>
-            )}
-          </div>
-          <span className={cn("text-[10px] uppercase tracking-widest font-medium shrink-0 capitalize mt-0.5", badge.cls)}>
-            {badge.label}
-          </span>
-        </div>
-      </div>
-
-      {/* Thumbnail slot */}
-      {imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
+    <>
+      {lightboxOpen && imageUrl && (
+        <ImageLightbox
           src={imageUrl}
           alt={displayName}
-          className="w-14 h-14 rounded-lg object-cover border border-border-default flex-shrink-0"
+          href={href !== "#" ? href : undefined}
+          hrefLabel={type === "board" ? "View board" : type === "place" ? "View resort" : "View page"}
+          onClose={() => setLightboxOpen(false)}
         />
-      ) : isBoardImageLoading ? (
-        // Shimmer while board image search is in-flight
-        <div className="w-14 h-14 rounded-lg border border-border-default flex-shrink-0 bg-surface-hover animate-pulse" />
-      ) : isOwn ? (
-        <div className="w-14 h-14 rounded-lg border border-dashed border-border-default flex items-center justify-center flex-shrink-0">
-          <span className="text-[10px] text-muted text-center leading-tight">Add<br />photo</span>
+      )}
+
+      <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border-default">
+        <Link href={href} className="flex-shrink-0">
+          {graphic}
+        </Link>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <Link href={href} className="block">
+                <p className="font-bold text-foreground text-base leading-snug hover:text-blue-300 transition-colors truncate">
+                  {displayName}
+                </p>
+              </Link>
+              {subtitle && (
+                <p className="text-xs text-muted mt-0.5 capitalize">{subtitle}</p>
+              )}
+            </div>
+            <span className={cn("text-[10px] uppercase tracking-widest font-medium shrink-0 capitalize mt-0.5", badge.cls)}>
+              {badge.label}
+            </span>
+          </div>
         </div>
-      ) : null}
-    </div>
+
+        {/* Thumbnail slot — click to open lightbox */}
+        {imageUrl ? (
+          <button
+            onClick={() => setLightboxOpen(true)}
+            className="w-14 h-14 rounded-lg overflow-hidden border border-border-default flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 group relative"
+            title="Click to enlarge"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={imageUrl}
+              alt={displayName}
+              className="w-full h-full object-cover transition-transform group-hover:scale-110"
+            />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors" />
+          </button>
+        ) : isBoardImageLoading ? (
+          // Shimmer while board image search is in-flight
+          <div className="w-14 h-14 rounded-lg border border-border-default flex-shrink-0 bg-surface-hover animate-pulse" />
+        ) : isOwn ? (
+          <div className="w-14 h-14 rounded-lg border border-dashed border-border-default flex items-center justify-center flex-shrink-0">
+            <span className="text-[10px] text-muted text-center leading-tight">Add<br />photo</span>
+          </div>
+        ) : null}
+      </div>
+    </>
   )
 }
 

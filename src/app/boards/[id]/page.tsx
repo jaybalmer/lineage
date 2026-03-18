@@ -4,6 +4,7 @@ import { use, useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
+import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { boardSlug, orgSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
@@ -165,6 +166,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   // Community-suggested image takes priority over auto-fetched Serper image
   const [suggestedImageUrl, setSuggestedImageUrl] = useState<string | null>(null)
   const displayImageUrl = suggestedImageUrl ?? boardImageUrl
+  const [lightboxOpen, setLightboxOpen] = useState(false)
 
   // Story form state
   const [storyText, setStoryText] = useState("")
@@ -303,6 +305,15 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Nav />
+
+      {/* Image lightbox */}
+      {lightboxOpen && displayImageUrl && (
+        <ImageLightbox
+          src={displayImageUrl}
+          alt={`${boardBrand} ${boardModel}`}
+          onClose={() => setLightboxOpen(false)}
+        />
+      )}
       <div className="max-w-5xl mx-auto px-4 py-8">
 
         {/* Breadcrumb */}
@@ -326,13 +337,22 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
             {/* Board image with vote buttons */}
             <div className="shrink-0">
               {displayImageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={displayImageUrl}
-                  alt={`${boardBrand} ${boardModel}`}
-                  className="w-24 h-24 object-cover rounded-lg bg-surface-hover"
-                  onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}
-                />
+                <button
+                  onClick={() => setLightboxOpen(true)}
+                  className="block w-24 h-24 rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500 group relative"
+                  title="Click to enlarge"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={displayImageUrl}
+                    alt={`${boardBrand} ${boardModel}`}
+                    className="w-full h-full object-cover bg-surface-hover transition-transform group-hover:scale-105"
+                    onError={(e) => { (e.target as HTMLImageElement).closest("button")!.style.display = "none" }}
+                  />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                    <span className="opacity-0 group-hover:opacity-100 text-white text-xs font-medium transition-opacity drop-shadow">⤢ enlarge</span>
+                  </div>
+                </button>
               ) : (
                 <div className="w-24 h-24 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-4xl">🏂</div>
               )}
