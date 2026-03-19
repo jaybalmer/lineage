@@ -181,10 +181,13 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const [linkError, setLinkError] = useState("")
   const [showLinkForm, setShowLinkForm] = useState(false)
 
-  // Image suggestion state
+  // Image suggestion / upload state
   const [suggestUrl, setSuggestUrl] = useState("")
   const [suggesting, setSuggesting] = useState(false)
   const [showSuggestForm, setShowSuggestForm] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const fetchedForBoard = useRef<string | null>(null)
 
@@ -285,19 +288,70 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     }))
   }
 
+  // Saves a permanent image URL to board_image_votes and updates display
+  async function saveImageUrl(permanentUrl: string) {
+    const { error } = await supabase.from("board_image_votes").upsert(
+      { board_id: boardId, user_id: activePersonId, vote: "up", suggested_image_url: permanentUrl },
+      { onConflict: "board_id,user_id" }
+    )
+    if (!error) setSuggestedImageUrl(permanentUrl)
+  }
+
+  // URL submission — archives the image to Supabase Storage first so it never expires
   async function handleSuggestImage(e: React.FormEvent) {
     e.preventDefault()
     if (!suggestUrl.trim() || suggesting) return
     setSuggesting(true)
-    const { error } = await supabase.from("board_image_votes").upsert(
-      { board_id: boardId, user_id: activePersonId, vote: "up", suggested_image_url: suggestUrl.trim() },
-      { onConflict: "board_id,user_id" }
-    )
-    if (!error) {
-      // Show the suggested image immediately — no page reload needed
-      setSuggestedImageUrl(suggestUrl.trim())
+    setPhotoError(null)
+    try {
+      const res = await fetch("/api/boards/archive-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: suggestUrl.trim(), board_id: boardId }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? "Archive failed")
+      await saveImageUrl(json.url)
+      setSuggestUrl("")
+      setShowSuggestForm(false)
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : "Failed to save image")
+    } finally {
+      setSuggesting(false)
     }
-    setSuggestUrl(""); setShowSuggestForm(false); setSuggesting(false)
+  }
+
+  // File upload — uploads directly to Supabase Storage from the browser
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) {
+      setPhotoError("File too large — max 10 MB")
+      return
+    }
+    if (!file.type.startsWith("image/")) {
+      setPhotoError("Please select an image file")
+      return
+    }
+    setUploadingPhoto(true)
+    setPhotoError(null)
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg"
+      const path = `boards/${boardId}/${activePersonId}-${Date.now()}.${ext}`
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("board-images")
+        .upload(path, file, { contentType: file.type, upsert: false })
+      if (uploadError || !uploadData) throw new Error(uploadError?.message ?? "Upload failed")
+      const { data: { publicUrl } } = supabase.storage.from("board-images").getPublicUrl(uploadData.path)
+      await saveImageUrl(publicUrl)
+      setShowSuggestForm(false)
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : "Upload failed")
+    } finally {
+      setUploadingPhoto(false)
+      // Reset the file input so the same file can be re-selected if needed
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
   }
 
   const initials = (name: string) => name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
@@ -410,26 +464,78 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 )}
               </div>
 
-              {/* Suggest better image (shown when flagged or no image) */}
-              {isAuth && (imageVotes.userVote === "flag" || !displayImageUrl) && (
+              {/* Photo upload / URL suggestion */}
+              {isAuth && (
                 <div className="mt-3">
+                  {/* Hidden file input */}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+
                   {!showSuggestForm ? (
-                    <button onClick={() => setShowSuggestForm(true)} className="text-xs text-muted hover:text-foreground transition-colors">
-                      + Suggest a better image URL
+                    <button
+                      onClick={() => { setShowSuggestForm(true); setPhotoError(null) }}
+                      className="text-xs text-muted hover:text-foreground transition-colors"
+                    >
+                      {displayImageUrl ? "+ Update photo" : "+ Add a photo"}
                     </button>
                   ) : (
-                    <form onSubmit={handleSuggestImage} className="flex gap-2 mt-1">
-                      <input
-                        value={suggestUrl}
-                        onChange={(e) => setSuggestUrl(e.target.value)}
-                        placeholder="https://…"
-                        className="flex-1 bg-surface-hover border border-border-default rounded-lg px-3 py-1.5 text-xs text-foreground placeholder-zinc-600 outline-none focus:border-blue-600"
-                      />
-                      <button type="submit" disabled={suggesting} className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors">
-                        Submit
+                    <div className="space-y-2 mt-1">
+                      {/* Upload button */}
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploadingPhoto || suggesting}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-dashed border-border-default text-xs text-muted hover:text-foreground hover:border-blue-600 disabled:opacity-50 transition-colors w-full justify-center"
+                      >
+                        {uploadingPhoto ? (
+                          <span className="animate-pulse">Uploading…</span>
+                        ) : (
+                          <><span>📁</span> Upload a photo from your device</>
+                        )}
                       </button>
-                      <button type="button" onClick={() => setShowSuggestForm(false)} className="px-2 py-1.5 text-xs text-muted hover:text-foreground">Cancel</button>
-                    </form>
+
+                      {/* Divider */}
+                      <div className="flex items-center gap-2 text-[10px] text-muted">
+                        <div className="flex-1 h-px bg-border-default" />
+                        <span>or paste an image URL</span>
+                        <div className="flex-1 h-px bg-border-default" />
+                      </div>
+
+                      {/* URL form */}
+                      <form onSubmit={handleSuggestImage} className="flex gap-2">
+                        <input
+                          value={suggestUrl}
+                          onChange={(e) => setSuggestUrl(e.target.value)}
+                          placeholder="https://…"
+                          className="flex-1 bg-surface-hover border border-border-default rounded-lg px-3 py-1.5 text-xs text-foreground placeholder-zinc-600 outline-none focus:border-blue-600"
+                        />
+                        <button
+                          type="submit"
+                          disabled={suggesting || uploadingPhoto || !suggestUrl.trim()}
+                          className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors"
+                        >
+                          {suggesting ? "Saving…" : "Save"}
+                        </button>
+                      </form>
+
+                      {/* Error */}
+                      {photoError && (
+                        <p className="text-xs text-red-400">{photoError}</p>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => { setShowSuggestForm(false); setPhotoError(null) }}
+                        className="text-xs text-muted hover:text-foreground transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
                   )}
                 </div>
               )}
