@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
@@ -34,7 +34,7 @@ export function getLinkIcon(url: string): string {
 }
 
 export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
-  const { setProfileOverride, onboarding } = useLineageStore()
+  const { setProfileOverride, onboarding, activePersonId } = useLineageStore()
 
   const [displayName, setDisplayName] = useState(person.display_name ?? "")
   const [birthYear, setBirthYear] = useState(person.birth_year ? String(person.birth_year) : "")
@@ -51,6 +51,38 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
   const [links, setLinks] = useState<ProfileLink[]>(person.links ?? [])
   const [newLinkUrl, setNewLinkUrl] = useState("")
   const [newLinkLabel, setNewLinkLabel] = useState("")
+
+  // Avatar upload
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(person.avatar_url ?? null)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [avatarError, setAvatarError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !activePersonId) return
+    if (file.size > 5 * 1024 * 1024) { setAvatarError("Max 5 MB"); return }
+    if (!file.type.startsWith("image/")) { setAvatarError("Images only"); return }
+    setUploadingAvatar(true)
+    setAvatarError(null)
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg"
+      const path = `avatars/${activePersonId}-${Date.now()}.${ext}`
+      const { data, error } = await supabase.storage
+        .from("board-images")
+        .upload(path, file, { contentType: file.type, upsert: false })
+      if (error || !data) throw new Error(error?.message ?? "Upload failed")
+      const { data: { publicUrl } } = supabase.storage.from("board-images").getPublicUrl(data.path)
+      await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", activePersonId)
+      setAvatarUrl(publicUrl)
+      setProfileOverride({ avatar_url: publicUrl })
+    } catch (err) {
+      setAvatarError(err instanceof Error ? err.message : "Upload failed")
+    } finally {
+      setUploadingAvatar(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
 
   const canSave = displayName.trim().length > 0
 
@@ -142,14 +174,30 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
           <p className="text-xs text-muted mt-0.5">Your details are private by default</p>
         </div>
 
-        {/* Avatar preview */}
+        {/* Avatar preview + upload */}
         <div className="px-6 pt-5 flex items-center gap-4">
-          <RiderAvatar
-            person={{ ...person, display_name: displayName.trim() || person.display_name }}
-            size="xl"
-            ring={!!(person.membership_tier && person.membership_tier !== "free")}
-            className="flex-shrink-0"
-          />
+          <div className="relative flex-shrink-0">
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt="Avatar" className="w-14 h-14 rounded-full object-cover border-2 border-border-default" />
+            ) : (
+              <RiderAvatar
+                person={{ ...person, display_name: displayName.trim() || person.display_name }}
+                size="xl"
+                ring={!!(person.membership_tier && person.membership_tier !== "free")}
+              />
+            )}
+            <button
+              type="button"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              title="Change photo"
+              className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-surface border border-border-default flex items-center justify-center text-[11px] hover:bg-surface-active transition-colors shadow-md"
+            >
+              {uploadingAvatar ? <span className="animate-pulse">…</span> : "📷"}
+            </button>
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarUpload} />
+          </div>
           <div>
             <div className="text-sm font-semibold text-foreground">{displayName.trim() || "—"}</div>
             <div className="text-xs text-muted mt-0.5">
@@ -157,6 +205,7 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
               {birthYear && ridingSince && " · "}
               {ridingSince && `riding since ${ridingSince}`}
             </div>
+            {avatarError && <p className="text-[11px] text-red-400 mt-1">{avatarError}</p>}
           </div>
         </div>
 

@@ -123,8 +123,11 @@ export function RiderCard({
 }: RiderCardProps) {
   // Stats derived from claims
   const boardCount  = claims.filter((c) => c.predicate === "owned_board").length
-  const resortCount = new Set(
+  const placeCount  = new Set(
     claims.filter((c) => ["rode_at", "worked_at"].includes(c.predicate)).map((c) => c.object_id)
+  ).size
+  const eventCount  = new Set(
+    claims.filter((c) => ["competed_at", "spectated_at", "organized_at"].includes(c.predicate)).map((c) => c.object_id)
   ).size
   const yearsRiding = person.riding_since
     ? new Date().getFullYear() - person.riding_since
@@ -188,8 +191,11 @@ export function RiderCard({
     <div className="rounded-2xl overflow-hidden border border-border-default shadow-xl mb-8">
 
       {/* ── Header / photo area ────────────────────────────────────────────── */}
-      <div className="relative h-44 flex items-center justify-center" style={{ background: grad, overflow: "hidden" }}>
-        <MountainHeader accent={t.accent} />
+      {/* Note: no overflow:hidden here so the avatar circle (-bottom-10) isn't clipped */}
+      <div className="relative h-44 flex items-center justify-center" style={{ background: grad }}>
+        <div className="absolute inset-0 overflow-hidden rounded-t-2xl">
+          <MountainHeader accent={t.accent} />
+        </div>
 
         {/* Theme colour dots — top right */}
         {isOwn && (
@@ -297,12 +303,12 @@ export function RiderCard({
           className="grid grid-cols-4 gap-px mt-5 rounded-xl overflow-hidden border border-border-default"
           style={{ background: "var(--color-border-default)" }}
         >
-          <Stat value={claims.length} label="Claims"  />
-          <Stat value={boardCount}    label="Boards"  />
-          <Stat value={resortCount}   label="Resorts" />
+          <Stat value={boardCount}  label="Boards"  />
+          <Stat value={placeCount}  label="Places"  />
+          <Stat value={eventCount}  label="Events"  />
           <Stat
             value={yearsRiding != null ? `${yearsRiding}y` : (person.riding_since ?? "—")}
-            label={yearsRiding != null ? "Riding" : "Since"}
+            label="Riding"
           />
         </div>
 
@@ -362,6 +368,11 @@ export function RiderCard({
             onClick={() => {
               if (navigator.share) {
                 navigator.share({ title: `${name} on Lineage`, url: shareUrl })
+                  .catch((err: unknown) => {
+                    // AbortError = user cancelled the share sheet — not a real error
+                    if (err instanceof Error && err.name === "AbortError") return
+                    navigator.clipboard.writeText(shareUrl).catch(() => null)
+                  })
               } else {
                 navigator.clipboard.writeText(shareUrl).then(() =>
                   alert("Profile link copied to clipboard!")
