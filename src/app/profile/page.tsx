@@ -7,19 +7,14 @@ import { FeedView } from "@/components/feed/feed-view"
 import { StartCard } from "@/components/feed/start-card"
 import { useLineageStore, getAllClaims, isAuthUser } from "@/store/lineage-store"
 import { getPersonById, PLACES } from "@/lib/mock-data"
-import { EditProfileModal, getLinkIcon } from "@/components/ui/edit-profile-modal"
+import { EditProfileModal } from "@/components/ui/edit-profile-modal"
+import { RiderCard } from "@/components/ui/rider-card"
 import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddDayModal } from "@/components/ui/add-day-modal"
 import { TimelinePlayer } from "@/components/ui/timeline-player"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import type { Claim, PrivacyLevel } from "@/types"
-
-const TIER_BADGE: Record<string, { label: string; color: string; bg: string }> = {
-  annual:   { label: "MEMBER",            color: "#3b82f6", bg: "#3b82f620" },
-  lifetime: { label: "LIFETIME MEMBER",   color: "#8b5cf6", bg: "#8b5cf620" },
-  founding: { label: "FOUNDING MEMBER ✦", color: "#f59e0b", bg: "#f59e0b20" },
-}
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -115,128 +110,49 @@ export default function ProfilePage() {
       )}
 
       <div className="max-w-3xl mx-auto px-4 py-10">
-        {/* Profile header */}
-        <div className="mb-8">
-          <div className="flex items-start gap-5">
-            <div className="w-16 h-16 rounded-full bg-blue-600 flex items-center justify-center text-xl font-bold text-foreground flex-shrink-0">
-              {person?.display_name?.[0]?.toUpperCase() ?? "?"}
-            </div>
-            <div className="min-w-0 flex-1">
-              {/* Member badge + card trigger */}
-              {TIER_BADGE[membership.tier] && (
-                <div className="mb-1 flex items-center gap-2">
-                  <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold"
-                    style={{
-                      background: TIER_BADGE[membership.tier].bg,
-                      color: TIER_BADGE[membership.tier].color,
-                      fontSize: 9,
-                      letterSpacing: 1,
-                      fontFamily: "'IBM Plex Mono', monospace",
-                    }}>
-                    {TIER_BADGE[membership.tier].label}
-                  </span>
-                  <button
-                    onClick={() => setShowMemberCard(true)}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-bold transition-opacity hover:opacity-80"
-                    style={{
-                      background: "#f59e0b18",
-                      color: "#b45309",
-                      border: "1px solid #f59e0b44",
-                      fontSize: 9,
-                      letterSpacing: 0.5,
-                      fontFamily: "'IBM Plex Mono', monospace",
-                    }}
-                    title="View your member card"
-                  >
-                    ✦ Member card
-                  </button>
-                </div>
-              )}
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl font-bold text-foreground">{person?.display_name ?? "Your profile"}</h1>
-                <button
-                  onClick={() => setPlayingTimeline(true)}
-                  title="Play timeline"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:opacity-80 transition-opacity"
-                >
-                  <span className="text-[10px]">▶</span>
-                  <span>My Timeline</span>
-                </button>
-                <button
-                  onClick={() => setEditingProfile(true)}
-                  className="text-xs text-muted hover:text-foreground transition-colors px-2 py-1 rounded hover:bg-surface-active"
-                >
-                  Edit
-                </button>
-              </div>
-              <div className="flex items-center gap-3 mt-1 text-xs text-muted flex-wrap">
-                {person?.birth_year && <span>b. {person.birth_year}</span>}
-                {person?.riding_since && <span>Riding since {person.riding_since}</span>}
-                {homeResort && <span>🏔 {homeResort.name}</span>}
-              </div>
-              {person?.bio && (
-                <p className="text-sm text-muted mt-2 leading-relaxed max-w-lg">{person.bio}</p>
-              )}
-              {!person?.bio && (
-                <button
-                  onClick={() => setEditingProfile(true)}
-                  className="mt-2 text-xs text-muted hover:text-muted transition-colors"
-                >
-                  + Add a bio
-                </button>
-              )}
-              {person?.links && person.links.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {person.links.map((link, i) => (
-                    <a
-                      key={i}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-hover border border-border-default rounded-lg text-xs text-muted hover:text-foreground hover:border-border-default transition-all"
-                    >
-                      <span>{getLinkIcon(link.url)}</span>
-                      <span>{link.label}</span>
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
 
-          {/* Token stats row — members only */}
-          {membership.tier !== "free" && (
-            <div className="flex items-center gap-4 mt-3 flex-wrap">
-              <Link href="/account/membership"
-                className="flex items-center gap-1.5 text-muted hover:text-foreground transition-colors"
-                style={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}>
-                <span style={{ color: "#f59e0b" }}>◆</span>
-                <span>{membership.token_balance.founder * 2 + membership.token_balance.member + membership.token_balance.contribution} tokens</span>
-              </Link>
-              <span className="text-muted" style={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}>· Revenue share active</span>
-            </div>
-          )}
+        {/* ── Rider Card ── */}
+        {person && (
+          <RiderCard
+            person={person}
+            claims={personClaims}
+            membership={membership}
+            homeResort={homeResort ?? null}
+            isOwn
+            userId={activePersonId}
+            onEdit={() => setEditingProfile(true)}
+            onPlayTimeline={() => setPlayingTimeline(true)}
+            onMemberCard={() => setShowMemberCard(true)}
+          />
+        )}
 
-          {/* Stats + action row */}
-          <div className="flex items-center justify-between mt-5 pt-5 border-t border-border-default">
-            <span className="text-sm text-muted">
-              <span className="text-foreground font-bold">{personClaims.length}</span> claims
-            </span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setAddingDay(true)}
-                className="px-3 py-2 rounded-lg bg-emerald-800 text-white text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-1.5"
-              >
-                ☀️ Log day
-              </button>
-              <button
-                onClick={() => setAddingClaim(true)}
-                className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
-              >
-                + Add claim
-              </button>
-            </div>
+        {/* Token stats — members only */}
+        {membership.tier !== "free" && (
+          <div className="flex items-center gap-4 mb-4 flex-wrap">
+            <Link href="/account/membership"
+              className="flex items-center gap-1.5 text-muted hover:text-foreground transition-colors"
+              style={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}>
+              <span style={{ color: "#f59e0b" }}>◆</span>
+              <span>{membership.token_balance.founder * 2 + membership.token_balance.member + membership.token_balance.contribution} tokens</span>
+            </Link>
+            <span className="text-muted" style={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}>· Revenue share active</span>
           </div>
+        )}
+
+        {/* Quick-action row */}
+        <div className="flex items-center justify-end gap-2 mb-6">
+          <button
+            onClick={() => setAddingDay(true)}
+            className="px-3 py-2 rounded-lg bg-emerald-800 text-white text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-1.5"
+          >
+            ☀️ Log day
+          </button>
+          <button
+            onClick={() => setAddingClaim(true)}
+            className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
+          >
+            + Add claim
+          </button>
         </div>
 
         {/* Contribution milestone card — non-members only, on own profile */}
