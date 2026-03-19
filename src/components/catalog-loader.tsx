@@ -13,7 +13,7 @@ async function loadProfileAndMembership(uid: string) {
     .from("profiles")
     .select(`
       display_name, birth_year, riding_since, privacy_level,
-      bio, links, home_resort_id, avatar_url,
+      bio, links, home_resort_id, avatar_url, card_bg_url,
       membership_tier, membership_status, founding_badge, founding_member_number,
       token_founder, token_member, token_contribution,
       stripe_customer_id, stripe_subscription_id, membership_expires_at, pending_credit
@@ -32,6 +32,7 @@ async function loadProfileAndMembership(uid: string) {
     links:          (profile as Record<string, unknown>).links          as ProfileLink[] | undefined ?? undefined,
     home_resort_id: (profile as Record<string, unknown>).home_resort_id as string | undefined ?? undefined,
     avatar_url:     (profile as Record<string, unknown>).avatar_url     as string | undefined ?? undefined,
+    card_bg_url:    (profile as Record<string, unknown>).card_bg_url    as string | undefined ?? undefined,
   })
 
   // Only update membership if DB has a non-free tier (respect local contribution tokens otherwise)

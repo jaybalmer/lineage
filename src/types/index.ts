@@ -36,6 +36,7 @@ export interface Person {
   wikidata_qid?: string
   bio?: string
   avatar_url?: string
+  card_bg_url?: string
   home_resort_id?: string
   is_current_user?: boolean
   community_status?: CommunityStatus

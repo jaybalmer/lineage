@@ -4,7 +4,9 @@ import { useState, useRef } from "react"
 import type { Claim, Person, MembershipState } from "@/types"
 import type { ProfileLink } from "@/types"
 import { getLinkIcon } from "@/components/ui/edit-profile-modal"
+import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { supabase } from "@/lib/supabase"
+import { useLineageStore } from "@/store/lineage-store"
 
 // ── Card themes ───────────────────────────────────────────────────────────────
 
@@ -94,6 +96,17 @@ function Stat({ value, label }: { value: string | number; label: string }) {
   )
 }
 
+// ── Upload helper shared by avatar + card bg ──────────────────────────────────
+
+async function uploadToStorage(file: File, path: string): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from("board-images")
+    .upload(path, file, { contentType: file.type, upsert: false })
+  if (error || !data) throw new Error(error?.message ?? "Upload failed")
+  const { data: { publicUrl } } = supabase.storage.from("board-images").getPublicUrl(data.path)
+  return publicUrl
+}
+
 // ── RiderCard ─────────────────────────────────────────────────────────────────
 
 interface Place { id: string; name: string }
@@ -121,6 +134,8 @@ export function RiderCard({
   onPlayTimeline,
   onMemberCard,
 }: RiderCardProps) {
+  const { setProfileOverride } = useLineageStore()
+
   // Stats derived from claims
   const boardCount  = claims.filter((c) => c.predicate === "owned_board").length
   const placeCount  = new Set(
@@ -145,13 +160,14 @@ export function RiderCard({
     localStorage.setItem("lineage_card_theme", key)
   }
 
-  // Avatar upload
+  // ── Avatar ────────────────────────────────────────────────────────────────
   const [avatarUrl, setAvatarUrl] = useState<string | null>(
     (person as Person).avatar_url ?? null
   )
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
-  const [avatarError, setAvatarError] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [avatarError, setAvatarError]         = useState<string | null>(null)
+  const [avatarLightbox, setAvatarLightbox]   = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -162,229 +178,351 @@ export function RiderCard({
     setAvatarError(null)
     try {
       const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg"
-      const path = `avatars/${userId}-${Date.now()}.${ext}`
-      const { data, error } = await supabase.storage
-        .from("board-images")
-        .upload(path, file, { contentType: file.type, upsert: false })
-      if (error || !data) throw new Error(error?.message ?? "Upload failed")
-      const { data: { publicUrl } } = supabase.storage.from("board-images").getPublicUrl(data.path)
-      await supabase.from("profiles").update({ avatar_url: publicUrl }).eq("id", userId)
-      setAvatarUrl(publicUrl)
+      const url = await uploadToStorage(file, `avatars/${userId}-${Date.now()}.${ext}`)
+      await supabase.from("profiles").update({ avatar_url: url }).eq("id", userId)
+      setAvatarUrl(url)
+      setProfileOverride({ avatar_url: url })
     } catch (err) {
       setAvatarError(err instanceof Error ? err.message : "Upload failed")
     } finally {
       setUploadingAvatar(false)
-      if (fileInputRef.current) fileInputRef.current.value = ""
+      if (avatarInputRef.current) avatarInputRef.current.value = ""
     }
   }
 
-  const tier      = TIER_LABEL[membership.tier]
-  const name      = person.display_name ?? "Rider"
-  const initials  = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
-  const shareUrl  = typeof window !== "undefined"
+  // ── Card background photo ──────────────────────────────────────────────────
+  const [cardBgUrl, setCardBgUrl]         = useState<string | null>(
+    (person as Person).card_bg_url ?? null
+  )
+  const [uploadingBg, setUploadingBg]     = useState(false)
+  const [bgError, setBgError]             = useState<string | null>(null)
+  const bgInputRef = useRef<HTMLInputElement>(null)
+
+  async function handleBgUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !userId) return
+    if (file.size > 10 * 1024 * 1024) { setBgError("Max 10 MB"); return }
+    if (!file.type.startsWith("image/")) { setBgError("Images only"); return }
+    setUploadingBg(true)
+    setBgError(null)
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg"
+      const url = await uploadToStorage(file, `avatars/bg-${userId}-${Date.now()}.${ext}`)
+      await supabase.from("profiles").update({ card_bg_url: url }).eq("id", userId)
+      setCardBgUrl(url)
+      setProfileOverride({ card_bg_url: url })
+    } catch (err) {
+      setBgError(err instanceof Error ? err.message : "Upload failed")
+    } finally {
+      setUploadingBg(false)
+      if (bgInputRef.current) bgInputRef.current.value = ""
+    }
+  }
+
+  async function clearCardBg() {
+    if (!userId) return
+    await supabase.from("profiles").update({ card_bg_url: null }).eq("id", userId)
+    setCardBgUrl(null)
+    setProfileOverride({ card_bg_url: undefined })
+  }
+
+  // ── Derived display values ─────────────────────────────────────────────────
+  const tier     = TIER_LABEL[membership.tier]
+  const name     = person.display_name ?? "Rider"
+  const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+  const shareUrl = typeof window !== "undefined"
     ? (userId ? `${window.location.origin}/riders/${userId}` : window.location.href)
     : ""
 
   const grad = `linear-gradient(170deg, ${t.grad[0]} 0%, ${t.grad[1]} 55%, ${t.grad[2]} 100%)`
 
   return (
-    <div className="rounded-2xl overflow-hidden border border-border-default shadow-xl mb-8">
+    <>
+      {avatarLightbox && avatarUrl && (
+        <ImageLightbox
+          src={avatarUrl}
+          alt={name}
+          hrefLabel="Open full size"
+          href={avatarUrl}
+          onClose={() => setAvatarLightbox(false)}
+        />
+      )}
 
-      {/* ── Header / photo area ────────────────────────────────────────────── */}
-      {/* Note: no overflow:hidden here so the avatar circle (-bottom-10) isn't clipped */}
-      <div className="relative h-44 flex items-center justify-center" style={{ background: grad }}>
-        <div className="absolute inset-0 overflow-hidden rounded-t-2xl">
-          <MountainHeader accent={t.accent} />
-        </div>
+      <div className="rounded-2xl overflow-hidden border border-border-default shadow-xl mb-8">
 
-        {/* Theme colour dots — top right */}
-        {isOwn && (
-          <div className="absolute top-3 right-3 flex gap-1.5 z-10">
-            {(Object.keys(THEMES) as ThemeKey[]).map((key) => (
-              <button
-                key={key}
-                onClick={() => pickTheme(key)}
-                title={THEMES[key].label}
-                className="rounded-full border transition-transform"
-                style={{
-                  width: 14, height: 14,
-                  background: THEMES[key].accent,
-                  borderColor: theme === key ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.2)",
-                  transform: theme === key ? "scale(1.35)" : "scale(1)",
-                }}
-              />
-            ))}
-          </div>
-        )}
+        {/* ── Header / scene area ─────────────────────────────────────────── */}
+        {/* No overflow:hidden on this div so the -bottom-10 avatar isn't clipped */}
+        <div
+          className="relative h-44 flex items-center justify-center"
+          style={{ background: cardBgUrl ? "transparent" : grad }}
+        >
+          {cardBgUrl ? (
+            /* Custom background photo */
+            <div className="absolute inset-0 overflow-hidden rounded-t-2xl">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={cardBgUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              {/* Dark vignette so avatar + controls stay readable */}
+              <div className="absolute inset-0" style={{
+                background: "linear-gradient(to bottom, rgba(0,0,0,0.30) 0%, rgba(0,0,0,0.55) 100%)"
+              }} />
+              {/* Accent colour tint at bottom edge */}
+              <div className="absolute inset-0" style={{
+                background: `linear-gradient(to top, ${t.accent}40 0%, transparent 55%)`
+              }} />
+            </div>
+          ) : (
+            /* Mountain SVG illustration */
+            <div className="absolute inset-0 overflow-hidden rounded-t-2xl">
+              <MountainHeader accent={t.accent} />
+            </div>
+          )}
 
-        {/* Avatar — sits at centre of header, overlaps the body below */}
-        <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 z-10">
-          <div
-            className="w-20 h-20 rounded-full border-4 overflow-hidden flex items-center justify-center select-none"
-            style={{
-              borderColor: "var(--color-background)",
-              background: `linear-gradient(145deg, ${t.accent}40, ${t.accent}10)`,
-              boxShadow: `0 0 24px ${t.accent}50, 0 4px 12px rgba(0,0,0,0.4)`,
-            }}
-          >
-            {avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
-            ) : (
-              <span style={{ fontSize: 26, fontWeight: 800, color: t.accent, letterSpacing: -1, lineHeight: 1 }}>
-                {initials}
-              </span>
-            )}
-          </div>
-
-          {/* Photo upload trigger (own profile) */}
+          {/* ── Header controls (own profile only) ── */}
           {isOwn && (
             <>
-              <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handleAvatarUpload} />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploadingAvatar}
-                title="Change photo"
-                className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full bg-surface border border-border-default flex items-center justify-center text-xs hover:bg-surface-active transition-colors shadow-md"
-              >
-                {uploadingAvatar ? <span className="animate-pulse text-[10px]">…</span> : "📷"}
-              </button>
+              {/* Top-left: bg photo upload / clear */}
+              <div className="absolute top-3 left-3 z-10 flex items-center gap-1.5">
+                <input
+                  ref={bgInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleBgUpload}
+                />
+                {cardBgUrl ? (
+                  <button
+                    onClick={clearCardBg}
+                    title="Remove background photo"
+                    className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-colors"
+                    style={{
+                      background: "rgba(0,0,0,0.45)",
+                      color: "rgba(255,255,255,0.75)",
+                      border: "1px solid rgba(255,255,255,0.2)",
+                    }}
+                  >
+                    ✕ photo
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => bgInputRef.current?.click()}
+                    disabled={uploadingBg}
+                    title="Upload background photo"
+                    className="flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-medium transition-colors"
+                    style={{
+                      background: "rgba(0,0,0,0.35)",
+                      color: "rgba(255,255,255,0.65)",
+                      border: "1px solid rgba(255,255,255,0.15)",
+                    }}
+                  >
+                    {uploadingBg ? <span className="animate-pulse">uploading…</span> : "🖼 photo"}
+                  </button>
+                )}
+                {bgError && (
+                  <span className="text-[10px] text-red-400">{bgError}</span>
+                )}
+              </div>
+
+              {/* Top-right: theme colour dots */}
+              <div className="absolute top-3 right-3 flex gap-1.5 z-10">
+                {(Object.keys(THEMES) as ThemeKey[]).map((key) => (
+                  <button
+                    key={key}
+                    onClick={() => pickTheme(key)}
+                    title={THEMES[key].label}
+                    className="rounded-full border transition-transform"
+                    style={{
+                      width: 14, height: 14,
+                      background: THEMES[key].accent,
+                      borderColor: theme === key ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.2)",
+                      transform: theme === key ? "scale(1.35)" : "scale(1)",
+                    }}
+                  />
+                ))}
+              </div>
             </>
           )}
-        </div>
-      </div>
 
-      {/* ── Card body ─────────────────────────────────────────────────────── */}
-      <div className="pt-12 px-5 pb-5 bg-surface">
-
-        {/* Member tier badge */}
-        {tier && (
-          <div className="flex justify-center mb-2">
+          {/* ── Avatar — hangs below header into body ── */}
+          <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 z-10">
+            {/* Avatar circle — click to lightbox if photo set */}
             <button
-              onClick={onMemberCard}
-              className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[10px] font-bold tracking-widest hover:opacity-80 transition-opacity"
+              type="button"
+              disabled={!avatarUrl}
+              onClick={() => avatarUrl && setAvatarLightbox(true)}
+              className="block w-20 h-20 rounded-full border-4 overflow-hidden flex items-center justify-center select-none focus:outline-none"
               style={{
-                background: tier.bg,
-                color: tier.color,
-                border: `1px solid ${tier.color}55`,
-                fontFamily: "'IBM Plex Mono', monospace",
+                borderColor: "var(--color-background)",
+                background: `linear-gradient(145deg, ${t.accent}40, ${t.accent}10)`,
+                boxShadow: `0 0 24px ${t.accent}50, 0 4px 12px rgba(0,0,0,0.4)`,
+                cursor: avatarUrl ? "zoom-in" : "default",
               }}
+              aria-label={avatarUrl ? "View photo" : undefined}
             >
-              {tier.text}
+              {avatarUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+              ) : (
+                <span style={{ fontSize: 26, fontWeight: 800, color: t.accent, letterSpacing: -1, lineHeight: 1 }}>
+                  {initials}
+                </span>
+              )}
             </button>
-          </div>
-        )}
 
-        {/* Name */}
-        <h1 className="text-2xl font-bold text-foreground text-center leading-tight">
-          {name}
-        </h1>
-
-        {/* Sub-info line */}
-        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 mt-1">
-          {homeResort && (
-            <span className="text-xs text-muted flex items-center gap-1">🏔 {homeResort.name}</span>
-          )}
-          {person.birth_year && (
-            <span className="text-xs text-muted">b. {person.birth_year}</span>
-          )}
-          {person.riding_since && (
-            <span className="text-xs text-muted">Since {person.riding_since}</span>
-          )}
-        </div>
-
-        {/* Avatar upload error */}
-        {avatarError && (
-          <p className="text-xs text-red-400 text-center mt-1">{avatarError}</p>
-        )}
-
-        {/* ── Stats row ── */}
-        <div
-          className="grid grid-cols-4 gap-px mt-5 rounded-xl overflow-hidden border border-border-default"
-          style={{ background: "var(--color-border-default)" }}
-        >
-          <Stat value={boardCount}  label="Boards"  />
-          <Stat value={placeCount}  label="Places"  />
-          <Stat value={eventCount}  label="Events"  />
-          <Stat
-            value={yearsRiding != null ? `${yearsRiding}y` : (person.riding_since ?? "—")}
-            label="Riding"
-          />
-        </div>
-
-        {/* Bio */}
-        {(person as Person).bio ? (
-          <p className="text-sm text-muted mt-4 leading-relaxed text-center max-w-sm mx-auto">
-            {(person as Person).bio}
-          </p>
-        ) : isOwn ? (
-          <button
-            onClick={onEdit}
-            className="w-full mt-4 text-xs text-muted hover:text-foreground transition-colors text-center py-1"
-          >
-            + Add a bio
-          </button>
-        ) : null}
-
-        {/* Social links */}
-        {(person as Person).links && (person as Person).links!.length > 0 && (
-          <div className="flex flex-wrap justify-center gap-2 mt-4">
-            {(person as Person).links!.map((link: ProfileLink, i: number) => (
-              <a
-                key={i}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-hover border border-border-default rounded-lg text-xs text-muted hover:text-foreground hover:border-blue-600 transition-all"
-              >
-                <span>{getLinkIcon(link.url)}</span>
-                <span>{link.label}</span>
-              </a>
-            ))}
-          </div>
-        )}
-
-        {/* ── Action bar ── */}
-        <div className="flex items-center justify-between gap-2 mt-5 pt-4 border-t border-border-default flex-wrap">
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={onPlayTimeline}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:opacity-80 transition-opacity"
-            >
-              <span className="text-[10px]">▶</span> My Timeline
-            </button>
+            {/* Avatar upload trigger (own profile) */}
             {isOwn && (
+              <>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={handleAvatarUpload}
+                />
+                <button
+                  onClick={() => avatarInputRef.current?.click()}
+                  disabled={uploadingAvatar}
+                  title="Change photo"
+                  className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full bg-surface border border-border-default flex items-center justify-center text-xs hover:bg-surface-active transition-colors shadow-md"
+                >
+                  {uploadingAvatar ? <span className="animate-pulse text-[10px]">…</span> : "📷"}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* ── Card body ─────────────────────────────────────────────────────── */}
+        <div className="pt-12 px-5 pb-5 bg-surface">
+
+          {/* Member tier badge */}
+          {tier && (
+            <div className="flex justify-center mb-2">
               <button
-                onClick={onEdit}
-                className="text-xs text-muted hover:text-foreground transition-colors px-2 py-1.5 rounded hover:bg-surface-active"
+                onClick={onMemberCard}
+                className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[10px] font-bold tracking-widest hover:opacity-80 transition-opacity"
+                style={{
+                  background: tier.bg,
+                  color: tier.color,
+                  border: `1px solid ${tier.color}55`,
+                  fontFamily: "'IBM Plex Mono', monospace",
+                }}
               >
-                Edit profile
+                {tier.text}
               </button>
+            </div>
+          )}
+
+          {/* Name */}
+          <h1 className="text-2xl font-bold text-foreground text-center leading-tight">
+            {name}
+          </h1>
+
+          {/* Sub-info line */}
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-0.5 mt-1">
+            {homeResort && (
+              <span className="text-xs text-muted flex items-center gap-1">🏔 {homeResort.name}</span>
+            )}
+            {person.birth_year && (
+              <span className="text-xs text-muted">b. {person.birth_year}</span>
+            )}
+            {person.riding_since && (
+              <span className="text-xs text-muted">Since {person.riding_since}</span>
             )}
           </div>
 
-          {/* Share */}
-          <button
-            onClick={() => {
-              if (navigator.share) {
-                navigator.share({ title: `${name} on Lineage`, url: shareUrl })
-                  .catch((err: unknown) => {
-                    // AbortError = user cancelled the share sheet — not a real error
-                    if (err instanceof Error && err.name === "AbortError") return
-                    navigator.clipboard.writeText(shareUrl).catch(() => null)
-                  })
-              } else {
-                navigator.clipboard.writeText(shareUrl).then(() =>
-                  alert("Profile link copied to clipboard!")
-                )
-              }
-            }}
-            className="text-xs text-muted hover:text-foreground transition-colors px-2 py-1.5 rounded hover:bg-surface-active flex items-center gap-1"
+          {/* Upload errors */}
+          {avatarError && (
+            <p className="text-xs text-red-400 text-center mt-1">{avatarError}</p>
+          )}
+
+          {/* ── Stats row ── */}
+          <div
+            className="grid grid-cols-4 gap-px mt-5 rounded-xl overflow-hidden border border-border-default"
+            style={{ background: "var(--color-border-default)" }}
           >
-            <span>↗</span> Share
-          </button>
+            <Stat value={boardCount}  label="Boards"  />
+            <Stat value={placeCount}  label="Places"  />
+            <Stat value={eventCount}  label="Events"  />
+            <Stat
+              value={yearsRiding != null ? `${yearsRiding}y` : (person.riding_since ?? "—")}
+              label="Riding"
+            />
+          </div>
+
+          {/* Bio */}
+          {(person as Person).bio ? (
+            <p className="text-sm text-muted mt-4 leading-relaxed text-center max-w-sm mx-auto">
+              {(person as Person).bio}
+            </p>
+          ) : isOwn ? (
+            <button
+              onClick={onEdit}
+              className="w-full mt-4 text-xs text-muted hover:text-foreground transition-colors text-center py-1"
+            >
+              + Add a bio
+            </button>
+          ) : null}
+
+          {/* Social links */}
+          {(person as Person).links && (person as Person).links!.length > 0 && (
+            <div className="flex flex-wrap justify-center gap-2 mt-4">
+              {(person as Person).links!.map((link: ProfileLink, i: number) => (
+                <a
+                  key={i}
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-hover border border-border-default rounded-lg text-xs text-muted hover:text-foreground hover:border-blue-600 transition-all"
+                >
+                  <span>{getLinkIcon(link.url)}</span>
+                  <span>{link.label}</span>
+                </a>
+              ))}
+            </div>
+          )}
+
+          {/* ── Action bar ── */}
+          <div className="flex items-center justify-between gap-2 mt-5 pt-4 border-t border-border-default flex-wrap">
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={onPlayTimeline}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:opacity-80 transition-opacity"
+              >
+                <span className="text-[10px]">▶</span> My Timeline
+              </button>
+              {isOwn && (
+                <button
+                  onClick={onEdit}
+                  className="text-xs text-muted hover:text-foreground transition-colors px-2 py-1.5 rounded hover:bg-surface-active"
+                >
+                  Edit profile
+                </button>
+              )}
+            </div>
+
+            {/* Share */}
+            <button
+              onClick={() => {
+                if (navigator.share) {
+                  navigator.share({ title: `${name} on Lineage`, url: shareUrl })
+                    .catch((err: unknown) => {
+                      // AbortError = user cancelled the share sheet — not a real error
+                      if (err instanceof Error && err.name === "AbortError") return
+                      navigator.clipboard.writeText(shareUrl).catch(() => null)
+                    })
+                } else {
+                  navigator.clipboard.writeText(shareUrl).then(() =>
+                    alert("Profile link copied to clipboard!")
+                  )
+                }
+              }}
+              className="text-xs text-muted hover:text-foreground transition-colors px-2 py-1.5 rounded hover:bg-surface-active flex items-center gap-1"
+            >
+              <span>↗</span> Share
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
