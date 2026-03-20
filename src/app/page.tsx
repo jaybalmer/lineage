@@ -131,8 +131,9 @@ export default function Home() {
       </div>
 
       <div className="max-w-3xl mx-auto px-6 pb-4 text-center">
-        <p className="text-foreground text-sm font-semibold">
-          Every community has a history. Lineage helps you map it.
+        <p className="text-foreground text-xl font-semibold italic leading-snug">
+          Every community has a history.<br />
+          Lineage helps map it.
         </p>
       </div>
 
