@@ -127,6 +127,10 @@ export default function Home() {
             Browse
           </Link>
         </div>
+
+        <p className="text-muted text-xs mt-8">
+          Every community has a history. Lineage helps you map it.
+        </p>
       </div>
 
       {/* Feature cards — postcard style */}
