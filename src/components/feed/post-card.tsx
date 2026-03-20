@@ -339,7 +339,9 @@ function EntityBlock({ claim, entityName, isOwn }: EntityBlockProps) {
   const event  = type === "event"
     ? (catalog.events.find((e) => e.id === id) ?? userEntities.events.find((e) => e.id === id) ?? getEventById(id) ?? null)
     : null
-  const person = type === "person" ? getPersonById(id) : null
+  const person = type === "person"
+    ? (catalog.people.find((p) => p.id === id) ?? getPersonById(id) ?? null)
+    : null
 
   // Generate href from catalog-resolved entity (avoids mock-data ID mismatches)
   const href = place  ? `/places/${placeSlug(place)}`
@@ -557,7 +559,7 @@ function CompanionAvatars({ claim }: { claim: Claim }) {
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 
 export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
-  const { userEntities, removeClaim, membership } = useLineageStore()
+  const { catalog, userEntities, removeClaim, membership } = useLineageStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editingEvent, setEditingEvent] = useState(false)
@@ -581,11 +583,18 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
   const userEntity = allUserEntities.find((e) => e.id === claim.object_id)
   const isUnverified = userEntity?.community_status === "unverified"
 
-  const entityName = userEntity
-    ? ("brand" in userEntity
-        ? `${userEntity.brand} ${userEntity.model} '${String(userEntity.model_year).slice(2)}`
-        : (userEntity as { name: string }).name)
-    : getEntityName(claim.object_id, claim.object_type)
+  // For person-type claims, look in Supabase catalog first (real users won't be in mock PEOPLE)
+  const catalogPerson = claim.object_type === "person"
+    ? catalog.people.find((p) => p.id === claim.object_id)
+    : null
+
+  const entityName = catalogPerson
+    ? catalogPerson.display_name
+    : userEntity
+      ? ("brand" in userEntity
+          ? `${userEntity.brand} ${userEntity.model} '${String(userEntity.model_year).slice(2)}`
+          : (userEntity as { name: string }).name)
+      : getEntityName(claim.object_id, claim.object_type)
 
   const userEvent = userEntities.events.find((e) => e.id === claim.object_id) as Event | undefined
 
