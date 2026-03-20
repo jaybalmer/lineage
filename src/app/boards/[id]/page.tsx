@@ -163,10 +163,19 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const [links, setLinks] = useState<BoardLink[]>([])
   const [imageVotes, setImageVotes] = useState<ImageVoteState>({ up: 0, flag: 0, userVote: null, userVoteId: null })
   const [boardImageUrl, setBoardImageUrl] = useState<string | null>(null)
-  // Community-suggested image takes priority over auto-fetched Serper image
-  const [suggestedImageUrl, setSuggestedImageUrl] = useState<string | null>(null)
+
+  // All vote rows that carry a suggested_image_url — used to find next image after deletion
+  type VoteRow = { id: string; vote: string; user_id: string; suggested_image_url?: string | null }
+  const [imageVoteRows, setImageVoteRows] = useState<VoteRow[]>([])
+
+  // Community-suggested image: most recent row with a suggested_image_url
+  const suggestedImageUrl = imageVoteRows.find((r) => r.suggested_image_url)?.suggested_image_url ?? null
+  // Row from the current user that has an image suggestion (enables delete)
+  const myImageVoteRow = imageVoteRows.find((r) => r.user_id === activePersonId && r.suggested_image_url)
+
   const displayImageUrl = suggestedImageUrl ?? boardImageUrl
   const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [removingPhoto, setRemovingPhoto] = useState(false)
 
   // Story form state
   const [storyText, setStoryText] = useState("")
@@ -205,15 +214,12 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
     supabase.from("board_image_votes").select("id, vote, user_id, suggested_image_url").eq("board_id", boardId).order("created_at", { ascending: false })
       .then(({ data }) => {
         if (!data) return
-        type VoteRow = { id: string; vote: string; user_id: string; suggested_image_url?: string | null }
         const rows = data as VoteRow[]
         const up = rows.filter((v) => v.vote === "up").length
         const flag = rows.filter((v) => v.vote === "flag").length
         const mine = rows.find((v) => v.user_id === activePersonId)
         setImageVotes({ up, flag, userVote: (mine?.vote as "up" | "flag") ?? null, userVoteId: mine?.id ?? null })
-        // Use the most recently suggested image URL if one exists
-        const suggested = rows.find((v) => v.suggested_image_url)?.suggested_image_url
-        if (suggested) setSuggestedImageUrl(suggested)
+        setImageVoteRows(rows)
       })
 
     fetch(`/api/board-image?brand=${encodeURIComponent(boardBrand)}&model=${encodeURIComponent(boardModel)}&year=${boardYear}`)
@@ -290,11 +296,32 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
 
   // Saves a permanent image URL to board_image_votes and updates display
   async function saveImageUrl(permanentUrl: string) {
-    const { error } = await supabase.from("board_image_votes").upsert(
+    const { data, error } = await supabase.from("board_image_votes").upsert(
       { board_id: boardId, user_id: activePersonId, vote: "up", suggested_image_url: permanentUrl },
       { onConflict: "board_id,user_id" }
-    )
-    if (!error) setSuggestedImageUrl(permanentUrl)
+    ).select("id, vote, user_id, suggested_image_url").single()
+    if (!error && data) {
+      // Merge/replace the current user's row in imageVoteRows and sort it to front
+      setImageVoteRows((prev) => {
+        const without = prev.filter((r) => r.user_id !== activePersonId)
+        return [data as VoteRow, ...without]
+      })
+    }
+  }
+
+  // Remove the current user's suggested image (clears it, keeps their vote row)
+  async function handleRemovePhoto() {
+    if (!myImageVoteRow || removingPhoto) return
+    setRemovingPhoto(true)
+    const { error } = await supabase.from("board_image_votes")
+      .update({ suggested_image_url: null })
+      .eq("id", myImageVoteRow.id)
+    if (!error) {
+      setImageVoteRows((prev) =>
+        prev.map((r) => r.id === myImageVoteRow.id ? { ...r, suggested_image_url: null } : r)
+      )
+    }
+    setRemovingPhoto(false)
   }
 
   // URL submission — archives the image to Supabase Storage first so it never expires
@@ -426,6 +453,19 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                     className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] transition-colors ${imageVotes.userVote === "flag" ? "bg-red-900/60 text-red-300 border border-red-800/50" : "bg-surface border border-border-default text-muted hover:text-foreground"}`}
                   >
                     🚩{imageVotes.flag > 0 && <span className="ml-0.5">{imageVotes.flag}</span>}
+                  </button>
+                </div>
+              )}
+              {/* Remove my photo — only shown to the user who submitted it */}
+              {isAuth && myImageVoteRow && (
+                <div className="mt-1.5 flex justify-center">
+                  <button
+                    onClick={handleRemovePhoto}
+                    disabled={removingPhoto}
+                    title="Remove the photo you suggested"
+                    className="text-[10px] text-muted hover:text-red-400 transition-colors disabled:opacity-50"
+                  >
+                    {removingPhoto ? "removing…" : "remove my photo"}
                   </button>
                 </div>
               )}
