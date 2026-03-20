@@ -256,8 +256,12 @@ export function FeedView({
                     : `riding-start-${item.year}`
                   return (
                     <div key={key} className="relative pl-9">
-                      {/* Node circle — omitted for riding_start (StartCard has its own icon) */}
-                      {item.kind !== "riding_start" && (
+                      {/* Node — amber star for riding_start, coloured circle for everything else */}
+                      {item.kind === "riding_start" ? (
+                        <div className="absolute left-[7px] top-[18px] w-[22px] h-[22px] flex items-center justify-center z-10 text-amber-400 text-[17px] leading-none">
+                          ★
+                        </div>
+                      ) : (
                         <div className={cn(
                           "absolute left-[7px] top-[20px] w-[22px] h-[22px] rounded-full border-[3px] border-background z-10",
                           nodeColor(item)
