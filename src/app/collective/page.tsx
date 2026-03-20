@@ -284,6 +284,47 @@ export default function CollectivePage() {
   const decadeData = useMemo(() => buildDecadeData(catalog, extraRidersByYear), [catalog, extraRidersByYear])
   const data = mode === "decade" ? decadeData : yearData
 
+  // ── Auto-select best year/decade when panel is empty ─────────────────────
+  // Runs whenever activeIdx resets to null (page load + mode switch).
+  // Priority: year/decade with most user claims → fall back to most riders overall.
+  useEffect(() => {
+    if (activeIdx !== null) return   // user already selected something
+    if (data.length === 0) return
+
+    let bestIdx = -1
+
+    if (myYears.size > 0) {
+      if (mode === "year") {
+        // Count how many of the user's claim-years land on each chart year
+        const counts = data.map(dp => (myYears.has(dp.year) ? 1 : 0))
+        // For ties (most chart years have at most 1 match), prefer the most recent
+        // year that has a match so the info panel shows something recent/relevant
+        for (let i = data.length - 1; i >= 0; i--) {
+          if (counts[i] > 0) { bestIdx = i; break }
+        }
+      } else {
+        // Decade mode — find the decade range that contains the most user years
+        const DECADE_RANGES: [number, number][] = [
+          [1970, 1982], [1983, 1989], [1990, 1999],
+          [2000, 2009], [2010, 2019], [2020, 2029],
+        ]
+        const counts = DECADE_RANGES.map(([start, end]) =>
+          [...myYears].filter(y => y >= start && y <= end).length
+        )
+        const maxCount = Math.max(...counts)
+        if (maxCount > 0) bestIdx = counts.indexOf(maxCount)
+      }
+    }
+
+    // Fall back: most riders overall (most historically active point)
+    if (bestIdx === -1) {
+      const maxRiders = Math.max(...data.map(d => d.rider))
+      bestIdx = data.findIndex(d => d.rider === maxRiders)
+    }
+
+    if (bestIdx >= 0) setActiveIdx(bestIdx)
+  }, [data, mode, activeIdx, myYears])
+
   // ── Theme-aware colors ────────────────────────────────────────────────────
   const typeColors  = isDark ? TYPE_COLORS_DARK  : TYPE_COLORS_LIGHT
   const accentColor = isDark ? "#00d4ff" : "#2563eb"
