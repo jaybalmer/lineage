@@ -492,7 +492,7 @@ export function RiderCard({
             <div className="flex gap-2 flex-wrap">
               <button
                 onClick={onPlayTimeline}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:opacity-80 transition-opacity"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:opacity-80 transition-opacity"
               >
                 <span className="text-[10px]">▶</span> My Timeline
               </button>

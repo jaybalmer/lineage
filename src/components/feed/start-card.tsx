@@ -285,7 +285,7 @@ export function StartCard({ person, claims, isOwn = false }: StartCardProps) {
 
   return (
     <div className={cn(
-      "group bg-surface border-2 rounded-xl p-5 mb-4 transition-all",
+      "postcard group bg-surface border-2 rounded-xl p-5 mb-4 transition-all",
       editing ? "border-blue-700" : "border-zinc-600"
     )}>
       {/* ── Entity block (display mode) ── */}
