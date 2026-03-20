@@ -47,6 +47,9 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
   )
   const [bio, setBio] = useState(person.bio ?? "")
   const [homeResortId, setHomeResortId] = useState(person.home_resort_id ?? "")
+  const [city, setCity]       = useState(person.city    ?? "")
+  const [region, setRegion]   = useState(person.region  ?? "")
+  const [country, setCountry] = useState(person.country ?? "")
   const [privacyLevel, setPrivacyLevel] = useState<PrivacyLevel>(person.privacy_level ?? "private")
   const [links, setLinks] = useState<ProfileLink[]>(person.links ?? [])
   const [newLinkUrl, setNewLinkUrl] = useState("")
@@ -125,6 +128,9 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
       riding_since:   ridingSince ? parseInt(ridingSince) : undefined,
       bio:            bio.trim()  || undefined,
       home_resort_id: homeResortId || undefined,
+      city:           city.trim()    || undefined,
+      region:         region.trim()  || undefined,
+      country:        country.trim() || undefined,
       privacy_level:  privacyLevel,
       links:          finalLinks.length > 0 ? finalLinks : undefined,
     }
@@ -144,6 +150,9 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
           riding_since:   override.riding_since   ?? null,
           bio:            override.bio            ?? null,
           home_resort_id: override.home_resort_id ?? null,
+          city:           override.city           ?? null,
+          region:         override.region         ?? null,
+          country:        override.country        ?? null,
           privacy_level:  override.privacy_level  ?? "public",
           links:          override.links          ?? null,
         }).eq("id", user.id)
@@ -268,6 +277,40 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
+          </Field>
+
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="City">
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="e.g. Vancouver"
+                maxLength={100}
+                className={inputCls}
+              />
+            </Field>
+            <Field label="Region / Province / State">
+              <input
+                type="text"
+                value={region}
+                onChange={(e) => setRegion(e.target.value)}
+                placeholder="e.g. BC"
+                maxLength={100}
+                className={inputCls}
+              />
+            </Field>
+          </div>
+
+          <Field label="Country">
+            <input
+              type="text"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              placeholder="e.g. Canada"
+              maxLength={100}
+              className={inputCls}
+            />
           </Field>
 
           {/* Links */}

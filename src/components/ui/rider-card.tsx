@@ -423,9 +423,14 @@ export function RiderCard({
             {homeResort && (
               <span className="text-xs text-muted flex items-center gap-1">🏔 {homeResort.name}</span>
             )}
-            {person.birth_year && (
+            {/* Show location if set, otherwise fall back to birth year */}
+            {(person.city || person.region || person.country) ? (
+              <span className="text-xs text-muted flex items-center gap-1">
+                📍 {[person.city, person.region, person.country].filter(Boolean).join(", ")}
+              </span>
+            ) : person.birth_year ? (
               <span className="text-xs text-muted">b. {person.birth_year}</span>
-            )}
+            ) : null}
             {person.riding_since && (
               <span className="text-xs text-muted">Since {person.riding_since}</span>
             )}

@@ -38,6 +38,9 @@ export interface Person {
   avatar_url?: string
   card_bg_url?: string
   home_resort_id?: string
+  city?: string
+  region?: string
+  country?: string
   is_current_user?: boolean
   community_status?: CommunityStatus
   added_by?: string
