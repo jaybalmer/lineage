@@ -2,26 +2,35 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { cn } from "@/lib/utils"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 
 const FEATURES = [
   {
-    title: "Your riding history, mapped",
-    desc: "Every resort, backcountry zone, and season — logged and searchable. A personal record of where the sport took you.",
+    icon: "📍",
+    title: "Map your personal timeline",
+    desc: "Log every place, event, person, and piece of gear that shaped your journey. A meaningful record of your history inside the community — from your first day to where you are now.",
+    accent: "border-blue-700",
   },
   {
-    title: "Who else was there",
-    desc: "Rode Baldface in 2004? Baker every January for a decade? Surface connections with other riders you never knew you shared.",
+    icon: "✕",
+    title: "Find where your lines cross",
+    desc: "Same mountain in '04? Same event the year everything changed? Lineage surfaces the unexpected overlaps — events, places, and moments you shared with people you didn't know you had history with.",
+    accent: "border-violet-700",
   },
   {
-    title: "Boards, sponsors, crews",
-    desc: "The gear you rode, the brands you repped, the teams you were part of. All of it is part of the story.",
+    icon: "🌍",
+    title: "Build collective timelines",
+    desc: "Individual timelines weave together into a shared community history. The more people contribute, the richer and more trusted the collective record becomes.",
+    accent: "border-emerald-700",
   },
   {
-    title: "Yours until you say otherwise",
-    desc: "Your lineage is private by default. Share it with connections, make it public, or keep it to yourself.",
+    icon: "💛",
+    title: "Community economies",
+    desc: "Revenue shared with contributors, creators, and members. The people who build the history share in the value it creates.",
+    accent: "border-amber-700",
   },
 ]
 
@@ -79,15 +88,12 @@ export default function Home() {
           >
             LINEAGE
           </div>
-          <div className="text-[0.7rem] font-semibold tracking-[0.35em] text-muted uppercase mt-1 mb-4">
-            SNOWBOARDING
-          </div>
           <TimelineNodes />
         </div>
 
         {/* Headline */}
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-snug mb-5 mt-8">
-          The collective timeline of snowboarding
+          Collective timelines for communities
         </h1>
 
         {/* Body */}
@@ -123,28 +129,45 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Divider */}
-      <div className="max-w-3xl mx-auto px-6">
-        <div className="border-t border-border-default" />
+      {/* "Starting with snowboarding" banner */}
+      <div className="max-w-3xl mx-auto px-6 mb-10">
+        <div className="flex items-center gap-3 rounded-xl border border-border-default bg-surface px-5 py-3.5">
+          <span className="text-xl">🏂</span>
+          <div>
+            <span className="text-sm font-semibold text-foreground">Starting with snowboarding.</span>
+            <span className="text-sm text-muted ml-2">More communities coming soon.</span>
+          </div>
+        </div>
       </div>
 
-      {/* Feature list */}
-      <div className="max-w-3xl mx-auto px-6 py-12">
-        <div className="divide-y divide-[#1e1e1e]">
-          {FEATURES.map(({ title, desc }, i) => (
-            <div key={title} className="grid grid-cols-[2rem_1fr] sm:grid-cols-[2rem_11rem_1fr] gap-x-6 gap-y-1 py-6 items-baseline">
-              <span className="text-[11px] text-muted font-mono pt-px">{String(i + 1).padStart(2, "0")}</span>
-              <div className="text-sm font-semibold text-foreground leading-snug">{title}</div>
-              <div className="col-start-2 sm:col-start-3 text-muted text-sm leading-relaxed">{desc}</div>
+      {/* Feature cards — postcard style */}
+      <div className="max-w-3xl mx-auto px-6 pb-16">
+        <div className="flex flex-col gap-4">
+          {FEATURES.map(({ icon, title, desc, accent }, i) => (
+            <div
+              key={title}
+              className={cn("postcard bg-surface border-2 rounded-xl p-5", accent)}
+            >
+              <div className="flex items-start gap-3">
+                <span className="text-2xl leading-none mt-0.5">{icon}</span>
+                <div>
+                  <div className="text-[10px] font-mono text-muted mb-1 tabular-nums">
+                    {String(i + 1).padStart(2, "0")}
+                  </div>
+                  <div className="text-sm font-bold text-foreground leading-snug mb-2">{title}</div>
+                  <div className="text-muted text-sm leading-relaxed">{desc}</div>
+                </div>
+              </div>
             </div>
           ))}
         </div>
       </div>
 
       {/* Footer line */}
+
       <div className="text-center pb-16">
         <p className="text-muted text-xs">
-          Snowboarding has 40 years of history — let&apos;s map it.
+          Every community has a history. Lineage helps you map it.
         </p>
       </div>
     </div>
