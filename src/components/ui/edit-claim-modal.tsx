@@ -6,6 +6,8 @@ import { cn } from "@/lib/utils"
 import type { Claim, ConfidenceLevel, PrivacyLevel } from "@/types"
 import { PREDICATE_LABELS, PREDICATE_ICONS } from "@/lib/utils"
 
+const EVENT_PREDICATES = new Set(["competed_at", "spectated_at", "organized_at"])
+
 const CONFIDENCE_OPTIONS: { value: ConfidenceLevel; label: string; desc: string }[] = [
   { value: "self-reported", label: "Self-reported", desc: "You remember it" },
   { value: "corroborated", label: "Corroborated", desc: "Someone else confirms it" },
@@ -34,30 +36,51 @@ function yearToDate(year: string): string | undefined {
   return `${year}-01-01`
 }
 
+function fmtDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-")
+  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+  return `${parseInt(d)} ${months[parseInt(m) - 1]} ${y}`
+}
+
+function fmtEventDateRange(start?: string, end?: string): string | null {
+  if (!start) return null
+  if (!end || end === start) return fmtDate(start)
+  return `${fmtDate(start)} – ${fmtDate(end)}`
+}
+
 export function EditClaimModal({ claim, entityName, onClose }: EditClaimModalProps) {
   const { updateClaim } = useLineageStore()
 
+  const isEventClaim = EVENT_PREDICATES.has(claim.predicate)
+
   const [startYear, setStartYear] = useState(parseYear(claim.start_date))
-  const [endYear, setEndYear] = useState(parseYear(claim.end_date))
-  const [note, setNote] = useState(claim.note ?? "")
+  const [endYear, setEndYear]     = useState(parseYear(claim.end_date))
+  const [note, setNote]           = useState(claim.note ?? "")
   const [confidence, setConfidence] = useState<ConfidenceLevel>(claim.confidence)
   const [visibility, setVisibility] = useState<PrivacyLevel>(claim.visibility)
 
-  const canSave = startYear.length === 4 || startYear.length === 0
+  const canSave = isEventClaim || startYear.length === 4 || startYear.length === 0
 
   const handleSave = () => {
     updateClaim(claim.id, {
-      start_date: yearToDate(startYear) ?? claim.start_date,
-      end_date: yearToDate(endYear),
-      note: note.trim() || undefined,
+      // Event claims: dates are owned by the event — never let the user override them
+      ...(isEventClaim
+        ? {}
+        : {
+            start_date: yearToDate(startYear) ?? claim.start_date,
+            end_date:   yearToDate(endYear),
+          }),
+      note:       note.trim() || undefined,
       confidence,
       visibility,
     })
     onClose()
   }
 
-  const icon = PREDICATE_ICONS[claim.predicate] ?? "•"
+  const icon  = PREDICATE_ICONS[claim.predicate] ?? "•"
   const label = PREDICATE_LABELS[claim.predicate] ?? claim.predicate
+
+  const eventDateRange = fmtEventDateRange(claim.start_date, claim.end_date)
 
   return (
     <div
@@ -77,33 +100,48 @@ export function EditClaimModal({ claim, entityName, onClose }: EditClaimModalPro
         </div>
 
         <div className="space-y-4">
-          {/* Date range */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-muted mb-1.5">Start year</label>
-              <input
-                type="number"
-                value={startYear}
-                onChange={(e) => setStartYear(e.target.value)}
-                placeholder="e.g. 2003"
-                min={1965}
-                max={2030}
-                className={inputCls}
-              />
+          {/* Event claims: show locked date from the event record */}
+          {isEventClaim ? (
+            <div className="flex items-start gap-3 px-4 py-3 rounded-lg bg-surface-hover border border-border-default">
+              <span className="text-base mt-0.5">📅</span>
+              <div>
+                <div className="text-xs font-medium text-foreground">
+                  {eventDateRange ?? parseYear(claim.start_date)}
+                </div>
+                <div className="text-[11px] text-muted mt-0.5">
+                  Date set by the event — not editable
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="block text-xs text-muted mb-1.5">End year <span className="text-muted">(optional)</span></label>
-              <input
-                type="number"
-                value={endYear}
-                onChange={(e) => setEndYear(e.target.value)}
-                placeholder="present"
-                min={1965}
-                max={2030}
-                className={inputCls}
-              />
+          ) : (
+            /* Non-event claims: editable year range */
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs text-muted mb-1.5">Start year</label>
+                <input
+                  type="number"
+                  value={startYear}
+                  onChange={(e) => setStartYear(e.target.value)}
+                  placeholder="e.g. 2003"
+                  min={1965}
+                  max={2030}
+                  className={inputCls}
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-muted mb-1.5">End year <span className="text-muted">(optional)</span></label>
+                <input
+                  type="number"
+                  value={endYear}
+                  onChange={(e) => setEndYear(e.target.value)}
+                  placeholder="present"
+                  min={1965}
+                  max={2030}
+                  className={inputCls}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Note */}
           <div>
