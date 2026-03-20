@@ -25,7 +25,7 @@ const FILTER_LABELS: Record<FilterType, string> = {
   places: "Places",
   gear: "Boards",
   people: "Riders",
-  orgs: "Orgs & Sponsors",
+  orgs: "Brands",
   events: "Events",
   days: "Days",
 }
