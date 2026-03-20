@@ -39,11 +39,14 @@ async function loadProfileAndMembership(uid: string) {
     card_bg_url:    (profile as Record<string, unknown>).card_bg_url    as string | undefined ?? undefined,
   })
 
-  // Always sync is_editor (can be granted independently of membership tier)
-  setMembership({ is_editor: (profile as Record<string, unknown>).is_editor === true })
-
   // Only update membership tier/tokens if DB has a non-free tier (respect local contribution tokens otherwise)
   const dbTier = profile.membership_tier ?? "free"
+  // is_editor: true if the DB column is set OR if tier is founding (belt-and-suspenders
+  // so the column migration not being applied never locks out founding members)
+  const isEditorFromDb  = (profile as Record<string, unknown>).is_editor === true
+  const isEditorByTier  = dbTier === "founding"
+  setMembership({ is_editor: isEditorFromDb || isEditorByTier })
+
   if (dbTier !== "free" || profile.token_founder || profile.token_member) {
     setMembership({
       tier:                   dbTier as "free" | "annual" | "lifetime" | "founding",
