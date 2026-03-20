@@ -106,9 +106,10 @@ export function CatalogLoader() {
         return
       }
 
-      // Update store only if the uid has changed (avoids redundant profile fetches)
+      // Always re-fetch profile on mount so persisted store values (e.g. is_editor,
+      // membership tier) are never stale after a DB change.
+      await loadProfileAndMembership(uid)
       if (useLineageStore.getState().activePersonId !== uid) {
-        await loadProfileAndMembership(uid)
         setActivePersonId(uid)
         completeOnboarding()
       }
