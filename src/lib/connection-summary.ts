@@ -36,8 +36,10 @@ export function computeConnectionSummary(
   personA: Person,
   personB: Person,
   claimsA: Claim[],
-  claimsB: Claim[]
+  claimsB: Claim[],
+  resolveName?: (id: string, type: string) => string
 ): ConnectionSummary {
+  const getName = resolveName ?? getEntityName
   const raw: OverlapFact[] = []
 
   // 1. Direct rode_with (+8)
@@ -74,7 +76,7 @@ export function computeConnectionSummary(
       if (!overlap) continue
       const years = overlap.end - overlap.start + 1
       const score = Math.min(years * 2, 8)
-      const name = getEntityName(cA.object_id, "place")
+      const name = getName(cA.object_id, "place")
       raw.push({
         type: "resort",
         label: `Both rode ${name}`,
@@ -95,7 +97,7 @@ export function computeConnectionSummary(
     if (seenEvents.has(cA.object_id)) continue
     for (const cB of eventB) {
       if (cA.object_id !== cB.object_id) continue
-      const name = getEntityName(cA.object_id, "event")
+      const name = getName(cA.object_id, "event")
       const wA = claimWindow(cA)
       raw.push({
         type: "event",
@@ -121,7 +123,7 @@ export function computeConnectionSummary(
       const wB = claimWindow(cB)
       const overlap = overlappingRange(wA.start, wA.end, wB.start, wB.end)
       if (!overlap) continue
-      const name = getEntityName(cA.object_id, "org")
+      const name = getName(cA.object_id, "org")
       raw.push({
         type: "sponsor",
         label: `Both sponsored by ${name}`,
@@ -146,7 +148,7 @@ export function computeConnectionSummary(
       const wB = claimWindow(cB)
       if (!overlappingRange(wA.start, wA.end, wB.start, wB.end)) continue
       const overlap = overlappingRange(wA.start, wA.end, wB.start, wB.end)!
-      const name = getEntityName(cA.object_id, "board")
+      const name = getName(cA.object_id, "board")
       raw.push({
         type: "board",
         label: `Both rode ${name}`,
@@ -171,7 +173,7 @@ export function computeConnectionSummary(
       const wB = claimWindow(cB)
       const overlap = overlappingRange(wA.start, wA.end, wB.start, wB.end)
       if (!overlap) continue
-      const name = getEntityName(cA.object_id, "org")
+      const name = getName(cA.object_id, "org")
       raw.push({
         type: "team",
         label: `Both part of ${name}`,

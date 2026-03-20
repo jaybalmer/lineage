@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore, getAllClaims } from "@/store/lineage-store"
-import { PEOPLE, getEntityName, getPlaceById } from "@/lib/mock-data"
+import { PEOPLE, CLAIMS, getEntityName, getPlaceById } from "@/lib/mock-data"
 import { supabase } from "@/lib/supabase"
 import { computeConnectionSummary } from "@/lib/connection-summary"
 import { PREDICATE_ICONS, PREDICATE_LABELS, formatDateRange } from "@/lib/utils"
@@ -138,12 +138,16 @@ function PersonPicker({
 function CompactClaimRow({
   claim,
   shared,
+  resolveName,
 }: {
   claim: Claim
   shared: boolean
+  resolveName?: (id: string, type: string) => string
 }) {
   const icon = PREDICATE_ICONS[claim.predicate] ?? "●"
-  const entityName = getEntityName(claim.object_id, claim.object_type)
+  const entityName = resolveName
+    ? resolveName(claim.object_id, claim.object_type)
+    : getEntityName(claim.object_id, claim.object_type)
   const years = formatDateRange(claim.start_date, claim.end_date)
 
   return (
@@ -175,12 +179,14 @@ function SideBySideTimeline({
   claimsA,
   claimsB,
   sharedEntityIds,
+  resolveName,
 }: {
   personA: Person
   personB: Person
   claimsA: Claim[]
   claimsB: Claim[]
   sharedEntityIds: Set<string>
+  resolveName?: (id: string, type: string) => string
 }) {
   function getDecade(c: Claim) {
     const y = parseInt((c.start_date ?? "").slice(0, 4))
@@ -257,6 +263,7 @@ function SideBySideTimeline({
                         key={c.id}
                         claim={c}
                         shared={sharedEntityIds.has(c.object_id)}
+                        resolveName={resolveName}
                       />
                     ))
                   )}
@@ -271,6 +278,7 @@ function SideBySideTimeline({
                         key={c.id}
                         claim={c}
                         shared={sharedEntityIds.has(c.object_id)}
+                        resolveName={resolveName}
                       />
                     ))
                   )}
@@ -347,8 +355,33 @@ function CopyButton({ text, label }: { text: string; label: string }) {
 // ─── Main Page (inner, reads search params) ───────────────────────────────────
 
 function ComparePageInner() {
-  const { sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId, profileOverride } =
+  const { sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId, profileOverride, catalog } =
     useLineageStore()
+
+  // Catalog-aware entity name resolver — checks Supabase-loaded catalog before
+  // falling back to the static mock-data arrays. Fixes "Unknown" for DB entity IDs.
+  const resolveName = (id: string, type: string): string => {
+    switch (type) {
+      case "place": {
+        const p = catalog.places.find((x) => x.id === id)
+        return p?.name ?? getEntityName(id, type)
+      }
+      case "board": {
+        const b = catalog.boards.find((x) => x.id === id)
+        return b ? `${b.brand} ${b.model} '${String(b.model_year).slice(2)}` : getEntityName(id, type)
+      }
+      case "org": {
+        const o = catalog.orgs.find((x) => x.id === id)
+        return o?.name ?? getEntityName(id, type)
+      }
+      case "event": {
+        const e = catalog.events.find((x) => x.id === id)
+        return e?.name ?? getEntityName(id, type)
+      }
+      default:
+        return getEntityName(id, type)
+    }
+  }
   const searchParams = useSearchParams()
 
   // Real profiles from Supabase
@@ -446,15 +479,17 @@ function ComparePageInner() {
   )
   const claimsB = useMemo(() => {
     if (!personB) return []
-    if (mockIds.has(personB.id)) return allClaims.filter((c) => c.subject_id === personB.id)
+    // Mock riders' claims live in the static CLAIMS array, not in the store
+    if (mockIds.has(personB.id)) return CLAIMS.filter((c) => c.subject_id === personB.id)
     return personBDbClaims
-  }, [allClaims, personB, personBDbClaims, mockIds])
+  }, [personB, personBDbClaims, mockIds])
 
   const summary = useMemo(
     () =>
       personB
-        ? computeConnectionSummary(personA, personB, claimsA, claimsB)
+        ? computeConnectionSummary(personA, personB, claimsA, claimsB, resolveName)
         : null,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [personA, personB, claimsA, claimsB]
   )
 
@@ -591,6 +626,7 @@ function ComparePageInner() {
                   claimsA={claimsA}
                   claimsB={claimsB}
                   sharedEntityIds={sharedEntityIds}
+                  resolveName={resolveName}
                 />
               )}
             </div>

@@ -48,20 +48,25 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
     )
   }
 
-  // ── Slug resolution ─────────────────────────────────────────────────────────
-  // If id looks like a slug (not a UUID), find the matching person and redirect
+  // ── Slug / short-ID resolution ───────────────────────────────────────────────
+  // If id doesn't look like a UUID it might be a name-slug ("kira-matsuda")
+  // or a short mock ID ("u2", "u3" …). Try each in order.
   const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(id)
   if (!isUuid) {
-    const matched = catalog.people.find((p) => nameToSlug(p.display_name) === id)
-    if (matched) {
-      router.replace(`/riders/${matched.id}`)
+    // 1. Name-slug match → redirect to canonical UUID/short-id URL
+    const slugMatched = catalog.people.find((p) => nameToSlug(p.display_name) === id)
+    if (slugMatched) {
+      router.replace(`/riders/${slugMatched.id}`)
       return (
         <div className="min-h-screen bg-background flex items-center justify-center">
           <div className="text-blue-400 text-3xl animate-pulse">⬡</div>
         </div>
       )
     }
-    notFound()
+    // 2. Direct short-ID match (e.g. "u2") — catalog people includes mock people
+    const directMatch = catalog.people.find((p) => p.id === id) ?? getPersonById(id)
+    if (!directMatch) notFound()
+    // Fall through — basePerson lookup below will resolve it
   }
 
   const isCurrentUser = id === activePersonId
