@@ -258,7 +258,7 @@ export function FeedView({
                     <div key={key} className="relative pl-9">
                       {/* Node — amber star for riding_start, coloured circle for everything else */}
                       {item.kind === "riding_start" ? (
-                        <div className="absolute left-[7px] top-[18px] w-[22px] h-[22px] flex items-center justify-center z-10 text-amber-400 text-[17px] leading-none">
+                        <div className="absolute left-[7px] top-[18px] w-[22px] h-[22px] rounded-full bg-background border-[3px] border-amber-500 flex items-center justify-center z-10 text-amber-400 text-[11px] leading-none">
                           ★
                         </div>
                       ) : (
