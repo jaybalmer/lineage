@@ -166,6 +166,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
           claims={personClaims}
           personName={person.display_name}
           isOwn={isCurrentUser}
+          ridingSince={person.riding_since}
         />
       </div>
     </div>

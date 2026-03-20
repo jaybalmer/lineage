@@ -32,9 +32,11 @@ const FILTER_LABELS: Record<FilterType, string> = {
 type FeedItem =
   | { kind: "claim"; claim: Claim; sortDate: number }
   | { kind: "day"; day: RidingDay; sortDate: number }
+  | { kind: "riding_start"; year: number; sortDate: number }
 
 // Timeline node color keyed to predicate category
 function nodeColor(item: FeedItem): string {
+  if (item.kind === "riding_start") return "bg-amber-500"
   if (item.kind === "day") return "bg-emerald-600"
   const p = item.claim.predicate
   if (p === "owned_board") return "bg-emerald-700"
@@ -45,8 +47,9 @@ function nodeColor(item: FeedItem): string {
   return "bg-zinc-600"
 }
 
-// Within the same date, boards appear first, then places, people, events, orgs
+// Within the same date, riding_start (-1) comes before boards (0), then places, people, events, orgs
 function predicateRank(item: FeedItem): number {
+  if (item.kind === "riding_start") return -1
   if (item.kind === "day") return 9
   const p = item.claim.predicate
   if (p === "owned_board") return 0
@@ -79,12 +82,14 @@ export function FeedView({
   personName,
   isOwn,
   hideActionButtons = false,
+  ridingSince,
 }: {
   claims: Claim[]
   days?: RidingDay[]
   personName: string
   isOwn?: boolean
   hideActionButtons?: boolean
+  ridingSince?: number
 }) {
   const [filter, setFilter] = useState<FilterType>("all")
   const [addingClaim, setAddingClaim] = useState(false)
@@ -112,12 +117,18 @@ export function FeedView({
         }))
       : []
 
-    return [...claimItems, ...dayItems].sort((a, b) =>
+    // Inject "Riding Since" milestone at Jan 1 of that year — visible on "all" filter only
+    const ridingStartItem: FeedItem[] =
+      ridingSince && filter === "all"
+        ? [{ kind: "riding_start" as const, year: ridingSince, sortDate: ridingSince * 10000 + 101 }]
+        : []
+
+    return [...claimItems, ...dayItems, ...ridingStartItem].sort((a, b) =>
       a.sortDate !== b.sortDate
         ? a.sortDate - b.sortDate
         : predicateRank(a) - predicateRank(b)
     )
-  }, [claims, days, filter])
+  }, [claims, days, filter, ridingSince])
 
   const grouped = useMemo(() => groupByDecade(items), [items])
   const decades = Object.keys(grouped).sort()
@@ -237,18 +248,35 @@ export function FeedView({
               {/* Items with timeline nodes */}
               <div>
                 {grouped[decade].map((item) => {
-                  const key = item.kind === "claim" ? item.claim.id : item.day.id
+                  const key = item.kind === "claim" ? item.claim.id
+                    : item.kind === "day" ? item.day.id
+                    : `riding-start-${item.year}`
                   return (
                     <div key={key} className="relative pl-9">
-                      {/* Node circle */}
-                      <div className={cn(
-                        "absolute left-[7px] top-[20px] w-[22px] h-[22px] rounded-full border-[3px] border-background z-10",
-                        nodeColor(item)
-                      )} />
+                      {/* Node circle — star shape for riding_start */}
+                      {item.kind === "riding_start" ? (
+                        <div className="absolute left-[7px] top-[14px] w-[22px] h-[22px] flex items-center justify-center z-10 text-amber-400 text-base">
+                          ★
+                        </div>
+                      ) : (
+                        <div className={cn(
+                          "absolute left-[7px] top-[20px] w-[22px] h-[22px] rounded-full border-[3px] border-background z-10",
+                          nodeColor(item)
+                        )} />
+                      )}
                       {item.kind === "claim" ? (
                         <PostCard claim={item.claim} isOwn={isOwn} />
-                      ) : (
+                      ) : item.kind === "day" ? (
                         <DayPostCard day={item.day} isOwn={isOwn} />
+                      ) : (
+                        /* Riding Since milestone card */
+                        <div className="mb-1 py-3 px-4 rounded-xl border border-amber-500/30 bg-amber-500/5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-amber-400 font-semibold text-sm">Started riding</span>
+                            <span className="text-xs text-muted">· {item.year}</span>
+                          </div>
+                          <p className="text-xs text-muted mt-0.5">First year on snow</p>
+                        </div>
                       )}
                     </div>
                   )

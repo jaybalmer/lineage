@@ -327,6 +327,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
           personName={person.display_name}
           isOwn={false}
           hideActionButtons={true}
+          ridingSince={person.riding_since}
         />
 
       </div>

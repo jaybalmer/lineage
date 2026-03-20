@@ -215,6 +215,7 @@ export default function ProfilePage() {
           personName={person?.display_name ?? "Your"}
           isOwn={true}
           hideActionButtons={true}
+          ridingSince={person?.riding_since}
         />
       </div>
     </div>
