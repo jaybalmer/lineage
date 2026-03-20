@@ -23,8 +23,8 @@ const FILTER_PREDICATES: Record<Exclude<FilterType, "days">, string[]> = {
 const FILTER_LABELS: Record<FilterType, string> = {
   all: "All",
   places: "Places",
-  gear: "Gear",
-  people: "People",
+  gear: "Boards",
+  people: "Riders",
   orgs: "Orgs & Sponsors",
   events: "Events",
   days: "Days",
