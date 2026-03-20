@@ -196,6 +196,7 @@ export function RiderCard({
   )
   const [uploadingBg, setUploadingBg]     = useState(false)
   const [bgError, setBgError]             = useState<string | null>(null)
+  const [shareCopied, setShareCopied]     = useState(false)
   const bgInputRef = useRef<HTMLInputElement>(null)
 
   async function handleBgUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -503,22 +504,14 @@ export function RiderCard({
             {/* Share */}
             <button
               onClick={() => {
-                if (navigator.share) {
-                  navigator.share({ title: `${name} on Lineage`, url: shareUrl })
-                    .catch((err: unknown) => {
-                      // AbortError = user cancelled the share sheet — not a real error
-                      if (err instanceof Error && err.name === "AbortError") return
-                      navigator.clipboard.writeText(shareUrl).catch(() => null)
-                    })
-                } else {
-                  navigator.clipboard.writeText(shareUrl).then(() =>
-                    alert("Profile link copied to clipboard!")
-                  )
-                }
+                navigator.clipboard.writeText(shareUrl).then(() => {
+                  setShareCopied(true)
+                  setTimeout(() => setShareCopied(false), 2000)
+                }).catch(() => null)
               }}
               className="text-xs text-muted hover:text-foreground transition-colors px-2 py-1.5 rounded hover:bg-surface-active flex items-center gap-1"
             >
-              <span>↗</span> Share
+              <span>↗</span> {shareCopied ? "Copied link ✓" : "Share"}
             </button>
           </div>
         </div>
