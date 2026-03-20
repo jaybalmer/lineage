@@ -4,7 +4,6 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { FeedView } from "@/components/feed/feed-view"
-import { StartCard } from "@/components/feed/start-card"
 import { useLineageStore, getAllClaims, isAuthUser } from "@/store/lineage-store"
 import { getPersonById, PLACES } from "@/lib/mock-data"
 import { EditProfileModal } from "@/components/ui/edit-profile-modal"
@@ -205,10 +204,7 @@ export default function ProfilePage() {
           ) : null
         )}
 
-        {/* Origin card */}
-        {person && <StartCard person={person} claims={personClaims} isOwn={true} />}
-
-        {/* Feed */}
+        {/* Feed — StartCard is injected inside at the riding_start milestone position */}
         <FeedView
           claims={personClaims}
           days={myDays}
@@ -216,6 +212,7 @@ export default function ProfilePage() {
           isOwn={true}
           hideActionButtons={true}
           ridingSince={person?.riding_since}
+          person={person ?? undefined}
         />
       </div>
     </div>

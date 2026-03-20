@@ -4,7 +4,6 @@ import { use, useState, useEffect } from "react"
 import { Nav } from "@/components/ui/nav"
 import { PEOPLE, CLAIMS, getPersonById, getSharedContext } from "@/lib/mock-data"
 import { FeedView } from "@/components/feed/feed-view"
-import { StartCard } from "@/components/feed/start-card"
 import { useLineageStore, getAllClaims, isAuthUser } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
@@ -158,15 +157,13 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
           </div>
         )}
 
-        {/* Origin card */}
-        <StartCard person={person} claims={personClaims} />
-
-        {/* Feed */}
+        {/* Feed — StartCard injected at riding_start milestone position */}
         <FeedView
           claims={personClaims}
           personName={person.display_name}
           isOwn={isCurrentUser}
           ridingSince={person.riding_since}
+          person={person}
         />
       </div>
     </div>

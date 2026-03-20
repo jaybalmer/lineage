@@ -1,9 +1,10 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import type { Claim, RidingDay } from "@/types"
+import type { Claim, Person, RidingDay } from "@/types"
 import { PostCard } from "@/components/feed/post-card"
 import { DayPostCard } from "@/components/feed/day-post-card"
+import { StartCard } from "@/components/feed/start-card"
 import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddDayModal } from "@/components/ui/add-day-modal"
 import { cn } from "@/lib/utils"
@@ -83,6 +84,7 @@ export function FeedView({
   isOwn,
   hideActionButtons = false,
   ridingSince,
+  person,
 }: {
   claims: Claim[]
   days?: RidingDay[]
@@ -90,6 +92,7 @@ export function FeedView({
   isOwn?: boolean
   hideActionButtons?: boolean
   ridingSince?: number
+  person?: Person
 }) {
   const [filter, setFilter] = useState<FilterType>("all")
   const [addingClaim, setAddingClaim] = useState(false)
@@ -253,12 +256,8 @@ export function FeedView({
                     : `riding-start-${item.year}`
                   return (
                     <div key={key} className="relative pl-9">
-                      {/* Node circle — star shape for riding_start */}
-                      {item.kind === "riding_start" ? (
-                        <div className="absolute left-[7px] top-[14px] w-[22px] h-[22px] flex items-center justify-center z-10 text-amber-400 text-base">
-                          ★
-                        </div>
-                      ) : (
+                      {/* Node circle — omitted for riding_start (StartCard has its own icon) */}
+                      {item.kind !== "riding_start" && (
                         <div className={cn(
                           "absolute left-[7px] top-[20px] w-[22px] h-[22px] rounded-full border-[3px] border-background z-10",
                           nodeColor(item)
@@ -268,16 +267,9 @@ export function FeedView({
                         <PostCard claim={item.claim} isOwn={isOwn} />
                       ) : item.kind === "day" ? (
                         <DayPostCard day={item.day} isOwn={isOwn} />
-                      ) : (
-                        /* Riding Since milestone card */
-                        <div className="mb-1 py-3 px-4 rounded-xl border border-amber-500/30 bg-amber-500/5">
-                          <div className="flex items-center gap-2">
-                            <span className="text-amber-400 font-semibold text-sm">Started riding</span>
-                            <span className="text-xs text-muted">· {item.year}</span>
-                          </div>
-                          <p className="text-xs text-muted mt-0.5">First year on snow</p>
-                        </div>
-                      )}
+                      ) : person ? (
+                        <StartCard person={person} claims={claims} isOwn={isOwn} />
+                      ) : null}
                     </div>
                   )
                 })}

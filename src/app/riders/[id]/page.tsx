@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { CLAIMS, getPersonById, getSharedContext } from "@/lib/mock-data"
 import { FeedView } from "@/components/feed/feed-view"
-import { StartCard } from "@/components/feed/start-card"
 import { useLineageStore } from "@/store/lineage-store"
 import { getLinkIcon } from "@/components/ui/edit-profile-modal"
 import { RiderAvatar, getRiderTier, getInitials } from "@/components/ui/rider-avatar"
@@ -318,16 +317,14 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
           </div>
         )}
 
-        {/* Origin card */}
-        <StartCard person={person} claims={personClaims} isOwn={false} />
-
-        {/* Feed */}
+        {/* Feed — StartCard injected at riding_start milestone position */}
         <FeedView
           claims={personClaims}
           personName={person.display_name}
           isOwn={false}
           hideActionButtons={true}
           ridingSince={person.riding_since}
+          person={person}
         />
 
       </div>
