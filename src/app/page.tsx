@@ -129,20 +129,22 @@ export default function Home() {
         </div>
       </div>
 
-      {/* "Starting with snowboarding" banner */}
-      <div className="max-w-3xl mx-auto px-6 mb-10">
-        <div className="flex items-center gap-3 rounded-xl border border-border-default bg-surface px-5 py-3.5">
-          <span className="text-xl">🏂</span>
-          <div>
-            <span className="text-sm font-semibold text-foreground">Starting with snowboarding.</span>
-            <span className="text-sm text-muted ml-2">More communities coming soon.</span>
-          </div>
-        </div>
-      </div>
-
       {/* Feature cards — postcard style */}
-      <div className="max-w-3xl mx-auto px-6 pb-16">
+      <div className="max-w-3xl mx-auto px-6 pb-6">
         <div className="flex flex-col gap-4">
+
+          {/* Snowboarding community card — always first */}
+          <div className="postcard bg-surface border-2 rounded-xl p-5 border-zinc-600">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl leading-none mt-0.5">🏂</span>
+              <div>
+                <div className="text-[10px] font-mono text-muted mb-1 tabular-nums">00</div>
+                <div className="text-sm font-bold text-foreground leading-snug mb-2">Starting with snowboarding</div>
+                <div className="text-muted text-sm leading-relaxed">The first community on Lineage. More communities coming soon.</div>
+              </div>
+            </div>
+          </div>
+
           {FEATURES.map(({ icon, title, desc, accent }, i) => (
             <div
               key={title}
@@ -163,11 +165,10 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Footer line */}
-
-      <div className="text-center pb-16">
+      {/* Footer */}
+      <div className="text-center py-10">
         <p className="text-muted text-xs">
-          Every community has a history. Lineage helps you map it.
+          Lineage Community Technologies Ltd.
         </p>
       </div>
     </div>
