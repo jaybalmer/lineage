@@ -33,7 +33,7 @@ export async function GET() {
       id, display_name,
       membership_tier, membership_status, founding_badge, founding_member_number,
       token_founder, token_member, token_contribution,
-      stripe_customer_id, membership_expires_at, created_at
+      stripe_customer_id, membership_expires_at, created_at, is_editor
     `)
     .order("created_at", { ascending: true })
 
@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
     founding_member_number?: number | null
     founding_badge?: boolean
     membership_status?: string
+    is_editor?: boolean
     // If true, auto-set tokens to tier defaults
     apply_tier_tokens?: boolean
   }
@@ -106,6 +107,7 @@ export async function POST(req: NextRequest) {
   if (rest.founding_member_number !== undefined) updates.founding_member_number = rest.founding_member_number
   if (rest.founding_badge !== undefined) updates.founding_badge = rest.founding_badge
   if (rest.membership_status !== undefined) updates.membership_status = rest.membership_status
+  if (rest.is_editor !== undefined) updates.is_editor = rest.is_editor
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No updates specified" }, { status: 400 })

@@ -1360,6 +1360,7 @@ type MemberRow = {
   stripe_customer_id: string | null
   membership_expires_at: string | null
   created_at: string | null
+  is_editor: boolean | null
 }
 
 const TIER_COLOR: Record<string, string> = {
@@ -1468,6 +1469,20 @@ function MembersTable() {
     if (data.ok) load()
   }
 
+  async function toggleEditor(m: MemberRow) {
+    setSaving(true)
+    const res = await fetch("/api/admin/memberships", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: m.id, is_editor: !m.is_editor }),
+    })
+    const data = await res.json()
+    setSaving(false)
+    setMsg({ id: m.id, text: data.ok ? (m.is_editor ? "✓ Editor removed" : "✓ Editor granted") : (data.error ?? "Error"), ok: !!data.ok })
+    setTimeout(() => setMsg(null), 3000)
+    if (data.ok) load()
+  }
+
   if (loading) {
     return <div className="py-12 text-center text-muted text-sm">Loading members…</div>
   }
@@ -1505,6 +1520,7 @@ function MembersTable() {
               <th className={thCls}>#</th>
               <th className={thCls}>Tokens</th>
               <th className={thCls}>Status</th>
+              <th className={thCls}>Editor</th>
               <th className={thCls}>Actions</th>
             </tr>
           </thead>
@@ -1566,6 +1582,9 @@ function MembersTable() {
                           <option value="gifted">Gifted</option>
                         </select>
                       </td>
+                      <td className={cn(cellCls, "text-xs text-muted")}>
+                        {m.is_editor ? <span className="text-emerald-400">✓</span> : "—"}
+                      </td>
                       <td className="py-1 px-2">
                         <div className="flex gap-1">
                           <button onClick={() => save(m.id)} disabled={saving}
@@ -1611,6 +1630,21 @@ function MembersTable() {
                         <span style={{ color: m.membership_status === "expired" ? "#ef4444" : m.membership_tier !== "free" ? "#10b981" : "#52525b" }}>
                           {m.membership_status ?? "free"}
                         </span>
+                      </td>
+                      <td className={cn(cellCls, "text-xs")}>
+                        <button
+                          onClick={() => toggleEditor(m)}
+                          disabled={saving}
+                          title={m.is_editor ? "Revoke editor access" : "Grant editor access"}
+                          className={cn(
+                            "px-2 py-0.5 rounded border text-[10px] transition-colors disabled:opacity-40",
+                            m.is_editor
+                              ? "border-emerald-700/50 text-emerald-400 hover:bg-red-900/20 hover:text-red-400 hover:border-red-700/50"
+                              : "border-border-default text-muted hover:border-emerald-700/50 hover:text-emerald-400"
+                          )}
+                        >
+                          {m.is_editor ? "✓ Editor" : "+ Editor"}
+                        </button>
                       </td>
                       <td className={cn(cellCls, "text-right")}>
                         {rowMsg ? (
