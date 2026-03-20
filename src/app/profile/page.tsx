@@ -139,7 +139,8 @@ export default function ProfilePage() {
         )}
 
         {/* Quick-action row */}
-        <div className="flex items-center justify-end gap-2 mb-6">
+        <div className="flex items-center justify-between gap-2 mb-6">
+          <h2 className="text-2xl font-black tracking-widest uppercase text-foreground">Timeline</h2>
           <button
             onClick={() => setAddingDay(true)}
             className="px-3 py-2 rounded-lg bg-emerald-800 text-white text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-1.5"
