@@ -1663,16 +1663,31 @@ function MembersTable() {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
+const EDITOR_PASSWORD = "outland"
+
 export default function AdminPage() {
   const router = useRouter()
   const [tab, setTab] = useState<Tab>("brands")
+  const [pwInput, setPwInput] = useState("")
+  const [pwError, setPwError] = useState(false)
+  const [sessionUnlocked, setSessionUnlocked] = useState(false)
   const { catalog, membership, authReady } = useLineageStore()
 
-  // Redirect non-editors once auth state is confirmed
-  useEffect(() => {
-    if (!authReady) return
-    if (!membership.is_editor) router.replace("/")
-  }, [authReady, membership.is_editor, router])
+  const isEditor = membership.is_editor || sessionUnlocked
+
+  // If auth is confirmed and user isn't an editor and hasn't entered the password, show the gate
+  const showGate = authReady && !isEditor
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (pwInput === EDITOR_PASSWORD) {
+      setSessionUnlocked(true)
+      setPwError(false)
+    } else {
+      setPwError(true)
+      setPwInput("")
+    }
+  }
 
   const counts: Record<Tab, number> = {
     brands:  catalog.orgs.filter((o) => o.org_type === "brand").length,
@@ -1682,6 +1697,39 @@ export default function AdminPage() {
     orgs:    catalog.orgs.length,
     series:  catalog.eventSeries.length,
     members: 0, // loaded async in MembersTable
+  }
+
+  if (showGate) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+        <div className="w-full max-w-xs">
+          <div className="text-center mb-6">
+            <div className="text-2xl mb-2">🔒</div>
+            <h1 className="text-sm font-semibold text-foreground">Editor access required</h1>
+            <p className="text-xs text-muted mt-1">Enter the editor password to continue</p>
+          </div>
+          <form onSubmit={handlePasswordSubmit} className="space-y-3">
+            <input
+              type="password"
+              value={pwInput}
+              onChange={(e) => { setPwInput(e.target.value); setPwError(false) }}
+              placeholder="Password"
+              autoFocus
+              className="w-full bg-surface border border-border-default rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+            />
+            {pwError && (
+              <p className="text-xs text-red-400">Incorrect password</p>
+            )}
+            <button
+              type="submit"
+              className="w-full px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
+            >
+              Unlock
+            </button>
+          </form>
+        </div>
+      </div>
+    )
   }
 
   return (
