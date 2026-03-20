@@ -24,6 +24,8 @@ import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { cn } from "@/lib/utils"
 import type { Predicate } from "@/types"
 import { useBoardImage } from "@/hooks/use-board-image"
+import { usePlaceImage } from "@/hooks/use-place-image"
+import { useEventImage } from "@/hooks/use-event-image"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 
 // Left border accent color by predicate group
@@ -357,7 +359,11 @@ function EntityBlock({ claim, entityName, isOwn }: EntityBlockProps) {
     autoBoard?.id,
   )
 
-  // Resolve final image URL: manually-set image takes priority, then auto-fetched
+  // Auto-fetch community images for places and events
+  const autoPlaceImage = usePlaceImage(type === "place" ? id : undefined)
+  const autoEventImage = useEventImage(type === "event" ? id : undefined)
+
+  // Resolve final image URL: manually-set image takes priority, then community-suggested, then auto-fetched
   const manualImageUrl: string | undefined =
     (board as Board | null)?.image_url ??
     (org as Org | null)?.logo_url ??
@@ -367,7 +373,9 @@ function EntityBlock({ claim, entityName, isOwn }: EntityBlockProps) {
 
   const imageUrl: string | undefined =
     manualImageUrl ??
-    (type === "board" && autoBoardImage ? autoBoardImage : undefined)
+    (type === "board" && autoBoardImage ? autoBoardImage : undefined) ??
+    (type === "place" && autoPlaceImage ? autoPlaceImage : undefined) ??
+    (type === "event" && autoEventImage ? autoEventImage : undefined)
 
   const isBoardImageLoading = type === "board" && !manualImageUrl && autoBoardImage === undefined
 

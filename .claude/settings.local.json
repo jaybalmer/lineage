@@ -94,7 +94,28 @@
       "Bash(head -10 /Users/jaybalmer/lineage/src/app/events/[id]/page.tsx)",
       "Bash(grep -n \"display_name\\\\[0\\\\]\" /Users/jaybalmer/lineage/src/app/places/[id]/page.tsx)",
       "Bash(grep -n \"^import\" /Users/jaybalmer/lineage/src/app/places/[id]/page.tsx)",
-      "Bash(grep -E \"\\\\.\\(sql|ts|json\\)$\")"
+      "Bash(grep -E \"\\\\.\\(sql|ts|json\\)$\")",
+      "Bash(grep -n \"board\\\\.id\\\\|board\\\\.brand\\\\|board\\\\.model\\\\|board\\\\.model_year\\\\|board\\\\.shape\" src/app/boards/[id]/page.tsx)",
+      "Bash(node -e \":*)",
+      "Bash(grep -n \"boardImageUrl\\\\|img.*board\\\\|image.*src\\\\|thumbnail\" /Users/jaybalmer/lineage/src/app/boards/[id]/page.tsx)",
+      "Bash(tail -10 /Users/jaybalmer/lineage/src/app/boards/[id]/page.tsx)",
+      "Bash(find /Users/jaybalmer/lineage -name *.sql)",
+      "Bash(find /Users/jaybalmer/lineage -name schema* -o -name seed*)",
+      "Bash(cat /Users/jaybalmer/lineage/src/app/boards/[id]/page.tsx)",
+      "Bash(grep -n \"TimelineView\\\\|riding_since\\\\|person\\\\.\" src/app/profile/[id]/page.tsx)",
+      "Bash(grep -n \"TimelineView\\\\|riding_since\\\\|person\\\\.\" src/app/connections/[id]/page.tsx)",
+      "Bash(grep -n \"TimelineView\" src/app/profile/[id]/page.tsx src/app/profile/page.tsx src/app/connections/[id]/page.tsx src/app/riders/[id]/page.tsx)",
+      "Bash(grep -n \"FeedView\\\\|person\\\\.\\\\|riding_since\" src/app/profile/[id]/page.tsx)",
+      "Bash(grep -n \"StartCard\" src/app/profile/page.tsx src/app/profile/[id]/page.tsx src/app/riders/[id]/page.tsx)",
+      "Bash(/Users/jaybalmer/lineage/supabase/migrations/20260319000001_profile_location.sql:*)",
+      "Bash(grep -rn \"riders\\\\|profile\" /Users/jaybalmer/lineage/src/app/riders/[id]/page.tsx)",
+      "Bash(grep -n \"u1\\\\|jay\\\\|Jay\\\\|activePersonId\\\\|isAuthUser\\\\|slug\\\\|nameSlug\\\\|personSlug\" src/app/riders/[id]/page.tsx)",
+      "Bash(grep -n \"nameToSlug\\\\|nameSlug\" src/app/riders/[id]/page.tsx src/lib/mock-data.ts)",
+      "Bash(grep -l \"places\\\\|boards\\\\|events\\\\|orgs\" supabase/migrations/*.sql)",
+      "Bash(grep -n \"photo\\\\|image\\\\|delete\\\\|remove\\\\|photo_url\\\\|board_image\" /Users/jaybalmer/lineage/src/app/boards/[id]/page.tsx)",
+      "Bash(grep -n \"myImageVoteRow\\\\|deleteMyPhoto\\\\|Remove photo\\\\|Delete photo\\\\|remove photo\" /Users/jaybalmer/lineage/src/app/boards/[id]/page.tsx)",
+      "Bash(find /Users/jaybalmer/lineage -type f \\\\\\(-name *.sql -o -name *migration* -o -name *schema* \\\\\\) ! -path */node_modules/*)",
+      "Bash(wc -l /Users/jaybalmer/lineage/src/app/boards/[id]/page.tsx /Users/jaybalmer/lineage/src/hooks/use-board-image.ts /Users/jaybalmer/lineage/src/app/api/board-image/route.ts /Users/jaybalmer/lineage/src/app/api/boards/archive-image/route.ts)"
     ]
   }
 }

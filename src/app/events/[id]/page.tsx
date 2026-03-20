@@ -1,10 +1,12 @@
 "use client"
 
-import { use, useState } from "react"
+import { use, useState, useRef, useMemo } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
-import { useLineageStore } from "@/store/lineage-store"
+import { ImageLightbox } from "@/components/ui/image-lightbox"
+import { useLineageStore, isAuthUser } from "@/store/lineage-store"
+import { supabase } from "@/lib/supabase"
 import { EVENTS, EVENT_SERIES, eventSlug, seriesSlug, placeSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
@@ -138,9 +140,264 @@ function InstanceRow({ event }: { event: Event }) {
   )
 }
 
+// ─── Photo system for individual event instances ──────────────────────────────
+
+type VoteRow = { id: string; vote: string; user_id: string; suggested_image_url?: string | null }
+
+function EventInstancePhotoBlock({ eventId, eventName, activePersonId }: {
+  eventId: string
+  eventName: string
+  activePersonId: string
+}) {
+  const isAuth = isAuthUser(activePersonId)
+
+  const [imageVoteRows, setImageVoteRows] = useState<VoteRow[]>([])
+  const [imageVotes, setImageVotes] = useState<{ up: number; flag: number; userVote: "up" | "flag" | null; userVoteId: string | null }>({ up: 0, flag: 0, userVote: null, userVoteId: null })
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [showSuggestForm, setShowSuggestForm] = useState(false)
+  const [suggestUrl, setSuggestUrl] = useState("")
+  const [suggesting, setSuggesting] = useState(false)
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
+  const [removingPhoto, setRemovingPhoto] = useState(false)
+  const [photoError, setPhotoError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const fetchedForEvent = useRef<string | null>(null)
+
+  const suggestedImageUrl = imageVoteRows.find((r) => r.suggested_image_url)?.suggested_image_url ?? null
+  const myImageVoteRow = imageVoteRows.find((r) => r.user_id === activePersonId && r.suggested_image_url)
+  const displayImageUrl = suggestedImageUrl ?? null
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useMemo(() => {
+    if (fetchedForEvent.current === eventId) return
+    fetchedForEvent.current = eventId
+    supabase.from("event_image_votes").select("id, vote, user_id, suggested_image_url")
+      .eq("event_id", eventId).order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (!data) return
+        const rows = data as VoteRow[]
+        const up = rows.filter((v) => v.vote === "up").length
+        const flag = rows.filter((v) => v.vote === "flag").length
+        const mine = rows.find((v) => v.user_id === activePersonId)
+        setImageVotes({ up, flag, userVote: (mine?.vote as "up" | "flag") ?? null, userVoteId: mine?.id ?? null })
+        setImageVoteRows(rows)
+      })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventId])
+
+  async function handleVote(vote: "up" | "flag") {
+    if (!isAuth) return
+    if (imageVotes.userVote === vote) {
+      if (imageVotes.userVoteId) {
+        await supabase.from("event_image_votes").delete().eq("id", imageVotes.userVoteId)
+        setImageVotes((v) => ({ ...v, [vote]: v[vote] - 1, userVote: null, userVoteId: null }))
+      }
+      return
+    }
+    const prev = imageVotes.userVote
+    const { data } = await supabase.from("event_image_votes").upsert(
+      { event_id: eventId, user_id: activePersonId, vote },
+      { onConflict: "event_id,user_id" }
+    ).select("id").single()
+    setImageVotes((v) => ({
+      up:   vote === "up"   ? v.up + 1   : prev === "up"   ? v.up - 1   : v.up,
+      flag: vote === "flag" ? v.flag + 1 : prev === "flag" ? v.flag - 1 : v.flag,
+      userVote: vote,
+      userVoteId: (data as { id: string } | null)?.id ?? v.userVoteId,
+    }))
+  }
+
+  async function saveImageUrl(permanentUrl: string) {
+    const { data, error } = await supabase.from("event_image_votes").upsert(
+      { event_id: eventId, user_id: activePersonId, vote: "up", suggested_image_url: permanentUrl },
+      { onConflict: "event_id,user_id" }
+    ).select("id, vote, user_id, suggested_image_url").single()
+    if (!error && data) {
+      setImageVoteRows((prev) => {
+        const without = prev.filter((r) => r.user_id !== activePersonId)
+        return [data as VoteRow, ...without]
+      })
+    }
+  }
+
+  async function handleRemovePhoto() {
+    if (!myImageVoteRow || removingPhoto) return
+    setRemovingPhoto(true)
+    const { error } = await supabase.from("event_image_votes")
+      .update({ suggested_image_url: null }).eq("id", myImageVoteRow.id)
+    if (!error) {
+      setImageVoteRows((prev) =>
+        prev.map((r) => r.id === myImageVoteRow.id ? { ...r, suggested_image_url: null } : r)
+      )
+    }
+    setRemovingPhoto(false)
+  }
+
+  async function handleSuggestImage(e: React.FormEvent) {
+    e.preventDefault()
+    if (!suggestUrl.trim() || suggesting) return
+    setSuggesting(true)
+    setPhotoError(null)
+    try {
+      const res = await fetch("/api/events/archive-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: suggestUrl.trim(), event_id: eventId }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? "Archive failed")
+      await saveImageUrl(json.url)
+      setSuggestUrl("")
+      setShowSuggestForm(false)
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : "Failed to save image")
+    } finally {
+      setSuggesting(false)
+    }
+  }
+
+  async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) { setPhotoError("File too large — max 10 MB"); return }
+    if (!file.type.startsWith("image/")) { setPhotoError("Please select an image file"); return }
+    setUploadingPhoto(true)
+    setPhotoError(null)
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg"
+      const path = `events/${eventId}/${activePersonId}-${Date.now()}.${ext}`
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("event-images").upload(path, file, { contentType: file.type, upsert: false })
+      if (uploadError || !uploadData) throw new Error(uploadError?.message ?? "Upload failed")
+      const { data: { publicUrl } } = supabase.storage.from("event-images").getPublicUrl(uploadData.path)
+      await saveImageUrl(publicUrl)
+      setShowSuggestForm(false)
+    } catch (err) {
+      setPhotoError(err instanceof Error ? err.message : "Upload failed")
+    } finally {
+      setUploadingPhoto(false)
+      if (fileInputRef.current) fileInputRef.current.value = ""
+    }
+  }
+
+  return (
+    <>
+      {lightboxOpen && displayImageUrl && (
+        <ImageLightbox src={displayImageUrl} alt={eventName} onClose={() => setLightboxOpen(false)} />
+      )}
+      <div className="shrink-0">
+        {displayImageUrl ? (
+          <button
+            onClick={() => setLightboxOpen(true)}
+            className="block w-24 h-24 rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500 group relative"
+            title="Click to enlarge"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={displayImageUrl}
+              alt={eventName}
+              className="w-full h-full object-cover bg-surface-hover transition-transform group-hover:scale-105"
+              onError={(e) => { (e.target as HTMLImageElement).closest("button")!.style.display = "none" }}
+            />
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+              <span className="opacity-0 group-hover:opacity-100 text-white text-xs font-medium transition-opacity drop-shadow">⤢ enlarge</span>
+            </div>
+          </button>
+        ) : (
+          <div className="w-24 h-24 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-4xl">🏆</div>
+        )}
+        {isAuth && (
+          <div className="flex gap-1 mt-2 justify-center">
+            <button
+              onClick={() => handleVote("up")}
+              title="Confirm image is correct"
+              className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] transition-colors ${imageVotes.userVote === "up" ? "bg-emerald-800/60 text-emerald-300 border border-emerald-700/50" : "bg-surface border border-border-default text-muted hover:text-foreground"}`}
+            >
+              👍{imageVotes.up > 0 && <span className="ml-0.5">{imageVotes.up}</span>}
+            </button>
+            <button
+              onClick={() => handleVote("flag")}
+              title="Flag as wrong image"
+              className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] transition-colors ${imageVotes.userVote === "flag" ? "bg-red-900/60 text-red-300 border border-red-800/50" : "bg-surface border border-border-default text-muted hover:text-foreground"}`}
+            >
+              🚩{imageVotes.flag > 0 && <span className="ml-0.5">{imageVotes.flag}</span>}
+            </button>
+          </div>
+        )}
+        {isAuth && myImageVoteRow && (
+          <div className="mt-1.5 flex justify-center">
+            <button
+              onClick={handleRemovePhoto}
+              disabled={removingPhoto}
+              className="text-[10px] text-muted hover:text-red-400 transition-colors disabled:opacity-50"
+            >
+              {removingPhoto ? "removing…" : "remove my photo"}
+            </button>
+          </div>
+        )}
+        {isAuth && (
+          <div className="mt-2">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              className="hidden"
+              onChange={handleFileUpload}
+            />
+            {!showSuggestForm ? (
+              <button
+                onClick={() => { setShowSuggestForm(true); setPhotoError(null) }}
+                className="text-[10px] text-muted hover:text-foreground transition-colors w-full text-center"
+              >
+                {displayImageUrl ? "+ Update" : "+ Add photo"}
+              </button>
+            ) : (
+              <div className="space-y-1.5 mt-1">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingPhoto || suggesting}
+                  className="flex items-center gap-1 px-2 py-1 rounded border border-dashed border-border-default text-[10px] text-muted hover:text-foreground hover:border-blue-600 disabled:opacity-50 transition-colors w-full justify-center"
+                >
+                  {uploadingPhoto ? <span className="animate-pulse">Uploading…</span> : <><span>📁</span> Upload</>}
+                </button>
+                <form onSubmit={handleSuggestImage} className="flex gap-1">
+                  <input
+                    value={suggestUrl}
+                    onChange={(e) => setSuggestUrl(e.target.value)}
+                    placeholder="https://…"
+                    className="flex-1 bg-surface-hover border border-border-default rounded px-2 py-1 text-[10px] text-foreground placeholder-zinc-600 outline-none focus:border-blue-600 min-w-0"
+                  />
+                  <button
+                    type="submit"
+                    disabled={suggesting || uploadingPhoto || !suggestUrl.trim()}
+                    className="px-2 py-1 rounded bg-blue-600 text-white text-[10px] font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors"
+                  >
+                    {suggesting ? "…" : "Save"}
+                  </button>
+                </form>
+                {photoError && <p className="text-[10px] text-red-400">{photoError}</p>}
+                <button
+                  type="button"
+                  onClick={() => { setShowSuggestForm(false); setPhotoError(null) }}
+                  className="text-[10px] text-muted hover:text-foreground transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
+
+// ─── Main page ─────────────────────────────────────────────────────────────────
+
 export default function EventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { catalog, userEntities } = useLineageStore()
+  const { catalog, userEntities, activePersonId } = useLineageStore()
   const [showAddEdition, setShowAddEdition] = useState(false)
 
   // Look up from all sources: mock-data, catalog (Supabase), and user-added entities
@@ -199,25 +456,36 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
 
           {/* Header */}
           <div className="bg-surface border border-border-default rounded-xl p-6 mb-6">
-            <div className="text-xs text-muted uppercase tracking-widest mb-1 flex items-center gap-2">
-              <span>{instance.event_type}</span>
-              {instance.year && <span className="text-muted">· {instance.year}</span>}
-            </div>
-            <h1 className="text-2xl font-bold text-foreground">{instance.name}</h1>
-            {place && (
-              <Link href={`/places/${placeSlug(place)}`}>
-                <p className="text-muted text-sm mt-1 hover:text-blue-300 transition-colors">
-                  🏔 {place.name}
+            <div className="flex items-start gap-5">
+              {/* Photo block */}
+              <EventInstancePhotoBlock
+                eventId={instance.id}
+                eventName={instance.name}
+                activePersonId={activePersonId ?? ""}
+              />
+
+              <div className="flex-1 min-w-0">
+                <div className="text-xs text-muted uppercase tracking-widest mb-1 flex items-center gap-2">
+                  <span>{instance.event_type}</span>
+                  {instance.year && <span className="text-muted">· {instance.year}</span>}
+                </div>
+                <h1 className="text-2xl font-bold text-foreground">{instance.name}</h1>
+                {place && (
+                  <Link href={`/places/${placeSlug(place)}`}>
+                    <p className="text-muted text-sm mt-1 hover:text-blue-300 transition-colors">
+                      🏔 {place.name}
+                    </p>
+                  </Link>
+                )}
+                <p className="text-muted text-sm mt-0.5">
+                  {formatEventDate(instance.start_date, instance.end_date)}
                 </p>
-              </Link>
-            )}
-            <p className="text-muted text-sm mt-0.5">
-              {formatEventDate(instance.start_date, instance.end_date)}
-            </p>
-            <div className="mt-4 flex gap-6">
-              <div>
-                <div className="font-bold text-foreground text-xl">{totalAttendees}</div>
-                <div className="text-muted text-xs">documented participants</div>
+                <div className="mt-4 flex gap-6">
+                  <div>
+                    <div className="font-bold text-foreground text-xl">{totalAttendees}</div>
+                    <div className="text-muted text-xs">documented participants</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
