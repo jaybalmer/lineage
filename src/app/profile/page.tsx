@@ -143,7 +143,7 @@ export default function ProfilePage() {
           <h2 className="text-2xl font-black tracking-widest uppercase text-foreground">Timeline</h2>
           <button
             onClick={() => setAddingDay(true)}
-            className="px-3 py-2 rounded-lg bg-emerald-800 text-white text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-1.5"
+            className="px-3 py-1 rounded-full text-xs font-medium border border-border-default text-muted hover:text-foreground transition-all flex items-center gap-1.5"
           >
             ☀️ Log day
           </button>
