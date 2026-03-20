@@ -617,7 +617,7 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
       )}
 
       <div className={cn(
-        "group bg-surface border-2 rounded-xl p-5 mb-4 transition-all",
+        "postcard group bg-surface border-2 rounded-xl p-5 mb-4 transition-all",
         accentClass(claim.predicate)
       )}>
         {/* Entity visual block */}

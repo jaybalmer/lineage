@@ -249,7 +249,7 @@ export function RiderCard({
         />
       )}
 
-      <div className="rounded-2xl overflow-hidden border border-border-default shadow-xl mb-8">
+      <div className="postcard rounded-2xl overflow-hidden border border-border-default shadow-xl mb-8">
 
         {/* ── Header / scene area ─────────────────────────────────────────── */}
         {/* No overflow:hidden on this div so the -bottom-10 avatar isn't clipped */}

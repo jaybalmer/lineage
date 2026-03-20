@@ -48,6 +48,18 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Postcards and player cards always use light-theme tokens regardless of dark mode */
+.postcard {
+  --surface:         #ffffff;
+  --surface-hover:   #e8f0fa;
+  --surface-active:  #dde8f5;
+  --surface-2:       #e0ecf8;
+  --border:          #c5d5ea;
+  --foreground:      #0f172a;
+  --muted:           #5a7090;
+  color: #0f172a;
+}
+
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--background); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
