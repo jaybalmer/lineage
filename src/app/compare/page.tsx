@@ -133,22 +133,35 @@ function PersonPicker({
   )
 }
 
+const EVENT_PREDICATES = new Set(["competed_at", "spectated_at", "organized_at"])
+
 // ─── Compact claim row for side-by-side timeline ──────────────────────────────
 
 function CompactClaimRow({
   claim,
   shared,
   resolveName,
+  resolveEventDate,
 }: {
   claim: Claim
   shared: boolean
   resolveName?: (id: string, type: string) => string
+  resolveEventDate?: (id: string) => { start_date: string; end_date?: string } | null
 }) {
   const icon = PREDICATE_ICONS[claim.predicate] ?? "●"
   const entityName = resolveName
     ? resolveName(claim.object_id, claim.object_type)
     : getEntityName(claim.object_id, claim.object_type)
-  const years = formatDateRange(claim.start_date, claim.end_date)
+
+  // For event claims pull the canonical date from the event record, not the claim
+  const isEventClaim = EVENT_PREDICATES.has(claim.predicate)
+  const eventRecord = isEventClaim && resolveEventDate
+    ? resolveEventDate(claim.object_id)
+    : null
+  const years = formatDateRange(
+    eventRecord?.start_date ?? claim.start_date,
+    eventRecord?.end_date   ?? claim.end_date,
+  )
 
   return (
     <div
@@ -180,6 +193,7 @@ function SideBySideTimeline({
   claimsB,
   sharedEntityIds,
   resolveName,
+  resolveEventDate,
 }: {
   personA: Person
   personB: Person
@@ -187,6 +201,7 @@ function SideBySideTimeline({
   claimsB: Claim[]
   sharedEntityIds: Set<string>
   resolveName?: (id: string, type: string) => string
+  resolveEventDate?: (id: string) => { start_date: string; end_date?: string } | null
 }) {
   function getDecade(c: Claim) {
     const y = parseInt((c.start_date ?? "").slice(0, 4))
@@ -264,6 +279,7 @@ function SideBySideTimeline({
                         claim={c}
                         shared={sharedEntityIds.has(c.object_id)}
                         resolveName={resolveName}
+                        resolveEventDate={resolveEventDate}
                       />
                     ))
                   )}
@@ -279,6 +295,7 @@ function SideBySideTimeline({
                         claim={c}
                         shared={sharedEntityIds.has(c.object_id)}
                         resolveName={resolveName}
+                        resolveEventDate={resolveEventDate}
                       />
                     ))
                   )}
@@ -381,6 +398,14 @@ function ComparePageInner() {
       default:
         return getEntityName(id, type)
     }
+  }
+
+  // Resolve canonical dates for an event — always from the event record, never from the claim
+  const resolveEventDate = (id: string): { start_date: string; end_date?: string } | null => {
+    const ev = catalog.events.find((e) => e.id === id)
+    if (!ev) return null
+    return ev.end_date ? { start_date: ev.start_date, end_date: ev.end_date }
+                       : { start_date: ev.start_date }
   }
   const searchParams = useSearchParams()
 
@@ -627,6 +652,7 @@ function ComparePageInner() {
                   claimsB={claimsB}
                   sharedEntityIds={sharedEntityIds}
                   resolveName={resolveName}
+                  resolveEventDate={resolveEventDate}
                 />
               )}
             </div>
