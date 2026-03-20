@@ -1,17 +1,18 @@
 "use client"
 
 import { use, useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { CLAIMS, getPersonById, getSharedContext } from "@/lib/mock-data"
 import { FeedView } from "@/components/feed/feed-view"
 import { useLineageStore } from "@/store/lineage-store"
 import { getLinkIcon } from "@/components/ui/edit-profile-modal"
-import { RiderAvatar, getRiderTier, getInitials } from "@/components/ui/rider-avatar"
+import { RiderAvatar, getRiderTier } from "@/components/ui/rider-avatar"
 import { TimelinePlayer } from "@/components/ui/timeline-player"
 import { nameToSlug } from "@/lib/utils"
+import { supabase } from "@/lib/supabase"
 import Link from "next/link"
 import { notFound } from "next/navigation"
+import type { Claim } from "@/types"
 
 const TIER_BADGE: Record<string, { symbol: string; label: string; color: string }> = {
   annual:   { symbol: "◈", label: "MEMBER",    color: "#3b82f6" },
@@ -21,11 +22,11 @@ const TIER_BADGE: Record<string, { symbol: string; label: string; color: string 
 
 export default function RiderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const router = useRouter()
   const { activePersonId, profileOverride, membership, catalogLoaded, catalog, setShowMemberCard } = useLineageStore()
   const [playingTimeline, setPlayingTimeline] = useState(false)
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(false)
   const [milestoneDismissed, setMilestoneDismissed] = useState(false)
+  const [dbClaims, setDbClaims] = useState<Claim[]>([])
 
   // Show post-onboarding welcome banner (once, on first profile visit after signup)
   useEffect(() => {
@@ -39,7 +40,38 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
     if (dismissed === "1") setMilestoneDismissed(true)
   }, [])
 
-  // Wait for catalog + session to hydrate before deciding the page doesn't exist.
+  // ── Resolve person from slug, short-ID, or UUID ─────────────────────────────
+  // slug  e.g. "jay_balmer"  → match by nameToSlug(display_name)
+  // uuid  e.g. "0394914d-…"  → direct catalog lookup
+  // short e.g. "u2"          → mock-data fallback
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(id)
+
+  const resolvedPerson = catalogLoaded
+    ? (isUuid
+        ? (catalog.people.find((p) => p.id === id) ?? getPersonById(id) ?? null)
+        : (catalog.people.find((p) => nameToSlug(p.display_name) === id) ??
+           catalog.people.find((p) => p.id === id) ??
+           getPersonById(id) ??
+           null))
+    : null
+
+  // The canonical UUID (or short mock ID) used for DB queries and store checks
+  const resolvedId = resolvedPerson?.id ?? id
+
+  // Fetch Supabase claims for real (UUID) users — fires once resolved UUID is known
+  useEffect(() => {
+    if (!catalogLoaded) return
+    const isProperUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(resolvedId)
+    if (!isProperUuid) return
+    supabase
+      .from("claims")
+      .select("*")
+      .eq("subject_id", resolvedId)
+      .eq("visibility", "public")
+      .then(({ data }) => setDbClaims((data ?? []) as Claim[]))
+  }, [catalogLoaded, resolvedId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Wait for catalog to hydrate before 404-ing
   if (!catalogLoaded) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -48,51 +80,26 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
     )
   }
 
-  // ── Slug / short-ID resolution ───────────────────────────────────────────────
-  // If id doesn't look like a UUID it might be a name-slug ("kira-matsuda")
-  // or a short mock ID ("u2", "u3" …). Try each in order.
-  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(id)
-  if (!isUuid) {
-    // 1. Name-slug match → redirect to canonical UUID/short-id URL
-    const slugMatched = catalog.people.find((p) => nameToSlug(p.display_name) === id)
-    if (slugMatched) {
-      router.replace(`/riders/${slugMatched.id}`)
-      return (
-        <div className="min-h-screen bg-background flex items-center justify-center">
-          <div className="text-blue-400 text-3xl animate-pulse">⬡</div>
-        </div>
-      )
-    }
-    // 2. Direct short-ID match (e.g. "u2") — catalog people includes mock people
-    const directMatch = catalog.people.find((p) => p.id === id) ?? getPersonById(id)
-    if (!directMatch) notFound()
-    // Fall through — basePerson lookup below will resolve it
-  }
+  if (!resolvedPerson) notFound()
 
-  const isCurrentUser = id === activePersonId
-
-  // Look in catalog.people first (covers DB people + registered profiles)
-  const basePerson = catalog.people.find((p) => p.id === id) ?? getPersonById(id)
-  if (!basePerson && !isCurrentUser) notFound()
+  const isCurrentUser = resolvedId === activePersonId
 
   const person = isCurrentUser
     ? {
-        id,
-        display_name:   profileOverride.display_name ?? "Rider",
-        birth_year:     profileOverride.birth_year,
-        riding_since:   profileOverride.riding_since,
-        privacy_level:  (profileOverride.privacy_level ?? "public") as "public" | "private" | "shared",
-        membership_tier: membership.tier !== "free" ? membership.tier : undefined,
-        ...(basePerson ?? {}),
+        ...(resolvedPerson ?? {}),
         ...profileOverride,
+        ...(membership.tier !== "free" ? { membership_tier: membership.tier } : {}),
       }
-    : basePerson!
+    : resolvedPerson
 
-  const personClaims = CLAIMS.filter((c) => c.subject_id === id)
+  // Merge Supabase claims + mock claims (DB takes priority, deduplicate by id)
+  const mockClaims = CLAIMS.filter((c) => c.subject_id === resolvedId)
+  const dbIds = new Set(dbClaims.map((c) => c.id))
+  const personClaims = [...dbClaims, ...mockClaims.filter((c) => !dbIds.has(c.id))]
 
   const { sharedPlaces, sharedEvents } = isCurrentUser
     ? { sharedPlaces: [], sharedEvents: [] }
-    : getSharedContext(activePersonId, id)
+    : getSharedContext(activePersonId, resolvedId)
 
   const tier = getRiderTier(person)
   const memberBadge = person.membership_tier && TIER_BADGE[person.membership_tier]
@@ -137,7 +144,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                 <button
                   onClick={() => setPlayingTimeline(true)}
                   title="Play timeline"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:opacity-80 transition-opacity"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:opacity-80 transition-opacity"
                 >
                   <span className="text-[10px]">▶</span>
                   <span>{isCurrentUser ? "My Timeline" : `${person.display_name.split(" ")[0]}'s Timeline`}</span>
@@ -217,12 +224,12 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                 <span className="text-foreground font-bold">{personClaims.length}</span> claims
               </span>
               <div className="flex gap-2">
-                <Link href={`/compare?b=${id}`}>
+                <Link href={`/compare?b=${resolvedId}`}>
                   <button className="px-3 py-2 rounded-lg bg-surface-hover border border-border-default text-xs text-muted hover:text-foreground transition-all">
                     Compare ⬡
                   </button>
                 </Link>
-                <Link href={`/connections/${id}`}>
+                <Link href={`/connections/${resolvedId}`}>
                   <button className="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-500 transition-all">
                     View connection →
                   </button>
@@ -232,7 +239,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
           )}
         </div>
 
-        {/* ── Post-onboarding welcome banner (Section 6.1) ── */}
+        {/* ── Post-onboarding welcome banner ── */}
         {isCurrentUser && showWelcomeBanner && membership.tier === "free" && (
           <div className="mb-6 rounded-xl border border-border-default bg-surface p-4 flex items-start gap-3">
             <span className="text-lg shrink-0">🏂</span>
@@ -257,7 +264,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
           </div>
         )}
 
-        {/* ── Member token stats row (Section 5.4) — own profile, paid member ── */}
+        {/* ── Member token stats row — own profile, paid member ── */}
         {isCurrentUser && membership.tier !== "free" && (
           <div className="mb-6 rounded-xl border border-border-default bg-surface px-4 py-3 flex items-center gap-4 text-xs text-muted flex-wrap">
             <span>
@@ -277,7 +284,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
           </div>
         )}
 
-        {/* ── Non-member contribution prompt (Section 5.4 / 6.4) ── */}
+        {/* ── Non-member contribution prompt ── */}
         {isCurrentUser && membership.tier === "free" && !milestoneDismissed && personClaims.length >= 5 && (
           <div className="mb-6 rounded-xl border border-border-default bg-surface p-4 flex items-start gap-3">
             <span className="text-muted text-base shrink-0">◎</span>
@@ -322,7 +329,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
           </div>
         )}
 
-        {/* Feed — StartCard injected at riding_start milestone position */}
+        {/* Feed */}
         <FeedView
           claims={personClaims}
           personName={person.display_name}

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
-import { cn } from "@/lib/utils"
+import { cn, nameToSlug } from "@/lib/utils"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
@@ -57,19 +57,30 @@ export default function Home() {
   const isAuth = isAuthUser(activePersonId)
   const [browseHref, setBrowseHref] = useState<string>("/riders")
 
-  // Find the rider with the most claims to use as the Browse destination
+  // Find the rider with the most claims → build a slug URL for Browse
   useEffect(() => {
     supabase
       .from("claims")
       .select("subject_id")
-      .then(({ data }) => {
+      .then(async ({ data }) => {
         if (!data || data.length === 0) return
         const counts: Record<string, number> = {}
         for (const row of data) {
           if (row.subject_id) counts[row.subject_id] = (counts[row.subject_id] ?? 0) + 1
         }
         const topId = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0]
-        if (topId) setBrowseHref(`/riders/${topId}`)
+        if (!topId) return
+        // Resolve display_name so we can build a pretty slug URL
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("display_name")
+          .eq("id", topId)
+          .single()
+        if (profile?.display_name) {
+          setBrowseHref(`/riders/${nameToSlug(profile.display_name)}`)
+        } else {
+          setBrowseHref(`/riders/${topId}`)
+        }
       })
   }, [])
 
