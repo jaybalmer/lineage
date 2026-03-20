@@ -16,7 +16,8 @@ async function loadProfileAndMembership(uid: string) {
       bio, links, home_resort_id, city, region, country, avatar_url, card_bg_url,
       membership_tier, membership_status, founding_badge, founding_member_number,
       token_founder, token_member, token_contribution,
-      stripe_customer_id, stripe_subscription_id, membership_expires_at, pending_credit
+      stripe_customer_id, stripe_subscription_id, membership_expires_at, pending_credit,
+      is_editor
     `)
     .eq("id", uid)
     .single()
@@ -38,7 +39,10 @@ async function loadProfileAndMembership(uid: string) {
     card_bg_url:    (profile as Record<string, unknown>).card_bg_url    as string | undefined ?? undefined,
   })
 
-  // Only update membership if DB has a non-free tier (respect local contribution tokens otherwise)
+  // Always sync is_editor (can be granted independently of membership tier)
+  setMembership({ is_editor: (profile as Record<string, unknown>).is_editor === true })
+
+  // Only update membership tier/tokens if DB has a non-free tier (respect local contribution tokens otherwise)
   const dbTier = profile.membership_tier ?? "free"
   if (dbTier !== "free" || profile.token_founder || profile.token_member) {
     setMembership({

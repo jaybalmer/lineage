@@ -492,6 +492,7 @@ export const useLineageStore = create<LineageStore>()(
         token_balance: { founder: 0, member: 0, contribution: 0 },
         gift_codes: [],
         pending_credit: 0,
+        is_editor: false,
       },
       setMembership: (updates) =>
         set((s) => ({ membership: { ...s.membership, ...updates } })),

@@ -29,7 +29,6 @@ const SECONDARY_NAV = [
   { href: "/boards", label: "Boards" },
   { href: "/brands", label: "Brands" },
   { href: "/places", label: "Places" },
-  { href: "/admin",  label: "Editor" },
 ]
 
 const ALL_NAV = [...PRIMARY_NAV, ...SECONDARY_NAV]
@@ -186,6 +185,7 @@ export function Nav() {
   }, [activePersonId, loadDbEntities])
 
   const isAuth      = isAuthUser(activePersonId)
+  const isEditor    = membership.is_editor
   const displayName = profileOverride.display_name ?? basePerson?.display_name ?? ""
   const initial     = displayName[0]?.toUpperCase() ?? "?"
   const tier        = membership.tier
@@ -207,6 +207,11 @@ export function Nav() {
               {label}
             </Link>
           ))}
+          {isEditor && (
+            <Link href="/admin" className={navLinkClass("/admin", path, isActive("/admin", path))}>
+              Editor
+            </Link>
+          )}
         </div>
         <div className="ml-auto flex items-center gap-3 flex-shrink-0">
           <ThemeToggle />
@@ -264,6 +269,16 @@ export function Nav() {
                 {label}
               </Link>
             ))}
+            {isEditor && (
+              <Link href="/admin" className={cn(
+                "px-2.5 py-1 rounded-md text-xs transition-colors whitespace-nowrap",
+                isActive("/admin", path)
+                  ? "bg-surface-active text-foreground"
+                  : "text-muted hover:text-foreground hover:bg-surface-hover"
+              )}>
+                Editor
+              </Link>
+            )}
           </div>
           <ThemeToggle />
         </div>

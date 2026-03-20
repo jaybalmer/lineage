@@ -217,6 +217,7 @@ export interface MembershipState {
   membership_expires_at?:  string // ISO date
   pending_credit:          number // sub-threshold distribution rollover
   member_card_seen_at?:    string // ISO timestamp of first card view (analytics)
+  is_editor:               boolean // can access /admin editor — granted to founding members + selected users
 }
 
 export interface TriggerPrefs {

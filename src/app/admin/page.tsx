@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import type React from "react"
+import { useRouter } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
@@ -1663,8 +1664,15 @@ function MembersTable() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AdminPage() {
+  const router = useRouter()
   const [tab, setTab] = useState<Tab>("brands")
-  const { catalog } = useLineageStore()
+  const { catalog, membership, authReady } = useLineageStore()
+
+  // Redirect non-editors once auth state is confirmed
+  useEffect(() => {
+    if (!authReady) return
+    if (!membership.is_editor) router.replace("/")
+  }, [authReady, membership.is_editor, router])
 
   const counts: Record<Tab, number> = {
     brands:  catalog.orgs.filter((o) => o.org_type === "brand").length,
