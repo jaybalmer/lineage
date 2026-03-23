@@ -34,23 +34,6 @@ const FEATURES = [
   },
 ]
 
-// Inline SVG timeline — mirrors the logo's ○──○──○──○──○──○──○ motif
-function TimelineNodes() {
-  return (
-    <svg
-      viewBox="0 0 520 36"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className="w-full max-w-[520px] mx-auto"
-      aria-hidden="true"
-    >
-      <line x1="0" y1="18" x2="520" y2="18" stroke="currentColor" strokeWidth="2.5" className="text-foreground opacity-20" />
-      {[26, 112, 198, 260, 322, 408, 494].map((cx) => (
-        <circle key={cx} cx={cx} cy={18} r={9} stroke="currentColor" strokeWidth="2.5" fill="transparent" className="text-foreground opacity-30" />
-      ))}
-    </svg>
-  )
-}
 
 export default function Home() {
   const { activePersonId } = useLineageStore()
@@ -92,14 +75,19 @@ export default function Home() {
       <div className="max-w-3xl mx-auto px-6 pt-20 pb-16 text-center">
 
         {/* Wordmark */}
-        <div className="mb-8">
+        <div className="mb-8 select-none">
           <div
-            className="font-black text-foreground leading-none tracking-tight select-none"
-            style={{ fontSize: "clamp(4rem, 14vw, 8rem)", letterSpacing: "-0.02em" }}
+            className="font-bold text-foreground leading-none tracking-tight"
+            style={{ fontSize: "clamp(4rem, 14vw, 7.5rem)", letterSpacing: "-0.03em" }}
           >
-            LINEAGE
+            Lineage<span style={{ color: "#60a5fa" }}>.</span>
           </div>
-          <TimelineNodes />
+          <div
+            className="text-muted font-medium tracking-[0.25em] mt-2"
+            style={{ fontSize: "clamp(0.75rem, 2vw, 1rem)", letterSpacing: "0.25em" }}
+          >
+            .community
+          </div>
         </div>
 
         {/* Headline */}
