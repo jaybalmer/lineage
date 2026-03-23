@@ -82,12 +82,6 @@ export default function Home() {
           >
             Lineage<span style={{ color: "#60a5fa" }}>.</span>
           </div>
-          <div
-            className="text-muted font-medium tracking-[0.25em] mt-2"
-            style={{ fontSize: "clamp(0.75rem, 2vw, 1rem)", letterSpacing: "0.25em" }}
-          >
-            .community
-          </div>
         </div>
 
         {/* Headline */}
