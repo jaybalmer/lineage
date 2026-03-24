@@ -126,7 +126,10 @@
       "Skill(update-config)",
       "Skill(update-config:*)",
       "Bash(wc -l /Users/jaybalmer/lineage/src/app/boards/[id]/page.tsx)",
-      "Bash(wc -l /Users/jaybalmer/lineage/src/app/boards/[id]/page.tsx /Users/jaybalmer/lineage/src/app/places/[id]/page.tsx /Users/jaybalmer/lineage/src/app/events/[id]/page.tsx)"
+      "Bash(wc -l /Users/jaybalmer/lineage/src/app/boards/[id]/page.tsx /Users/jaybalmer/lineage/src/app/places/[id]/page.tsx /Users/jaybalmer/lineage/src/app/events/[id]/page.tsx)",
+      "Bash(ls -la /Users/jaybalmer/lineage/*.*)",
+      "Bash(grep -n \"MONTHS\\\\|formatDayDate\\\\|formatStoryDate\\\\|formatEventDate\" /Users/jaybalmer/lineage/src/app/events/[id]/page.tsx)",
+      "Bash(grep -c \"import.*DayCard\\\\|import.*TimelineView\\\\|from.*timeline\" /Users/jaybalmer/lineage/src/app/riders/[id]/page.tsx)"
     ]
   }
 }
