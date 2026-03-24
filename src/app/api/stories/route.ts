@@ -138,6 +138,95 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// ── PATCH /api/stories ───────────────────────────────────────────────────────
+// Body: { id, title?, body, story_date, visibility?, linked_event_id?,
+//         linked_place_id?, board_ids?, rider_ids?,
+//         keep_photo_ids?, new_photos? }
+export async function PATCH(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const {
+      id,
+      title, body: storyBody, story_date, visibility,
+      linked_event_id, linked_place_id,
+      board_ids = [], rider_ids = [],
+      keep_photo_ids = [],
+      new_photos = [],
+    } = body
+
+    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })
+
+    // Update story row
+    const { error: updateErr } = await supabase
+      .from("stories")
+      .update({
+        title: title || null,
+        body: storyBody ?? "",
+        story_date,
+        visibility,
+        linked_event_id: linked_event_id || null,
+        linked_place_id: linked_place_id || null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", id)
+
+    if (updateErr) throw updateErr
+
+    // Delete photos not in keep list
+    if (keep_photo_ids.length === 0) {
+      await supabase.from("story_photos").delete().eq("story_id", id)
+    } else {
+      await supabase
+        .from("story_photos")
+        .delete()
+        .eq("story_id", id)
+        .not("id", "in", `(${keep_photo_ids.join(",")})`)
+    }
+
+    // Append new photos after existing ones
+    if (new_photos.length > 0) {
+      const { data: existing } = await supabase
+        .from("story_photos")
+        .select("sort_order")
+        .eq("story_id", id)
+        .order("sort_order", { ascending: false })
+        .limit(1)
+      const maxOrder = (existing?.[0]?.sort_order ?? -1) as number
+      await supabase.from("story_photos").insert(
+        (new_photos as { url: string; caption?: string }[]).map((p, i) => ({
+          story_id: id, url: p.url, caption: p.caption ?? null,
+          sort_order: maxOrder + 1 + i,
+        }))
+      )
+    }
+
+    // Replace junction rows
+    await supabase.from("story_boards").delete().eq("story_id", id)
+    await supabase.from("story_riders").delete().eq("story_id", id)
+    if (board_ids.length > 0) {
+      await supabase.from("story_boards").insert(
+        (board_ids as string[]).map((bid) => ({ story_id: id, board_id: bid }))
+      )
+    }
+    if (rider_ids.length > 0) {
+      await supabase.from("story_riders").insert(
+        (rider_ids as string[]).map((rid) => ({ story_id: id, rider_id: rid }))
+      )
+    }
+
+    // Return updated photos list
+    const { data: photos } = await supabase
+      .from("story_photos")
+      .select("id, url, caption, sort_order")
+      .eq("story_id", id)
+      .order("sort_order")
+
+    return NextResponse.json({ ok: true, photos: photos ?? [] })
+  } catch (err) {
+    return NextResponse.json({ error: String(err) }, { status: 500 })
+  }
+}
+
 // ── DELETE /api/stories?id=xxx ───────────────────────────────────────────────
 export async function DELETE(req: NextRequest) {
   const id = new URL(req.url).searchParams.get("id")

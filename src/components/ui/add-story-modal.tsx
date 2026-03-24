@@ -4,7 +4,10 @@ import { useState, useRef, useCallback } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
+import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import type { Story, PrivacyLevel } from "@/types"
+
+type AddableEntity = "place" | "event" | "board" | "person"
 
 const inputCls =
   "w-full bg-background border border-border-default rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
@@ -18,6 +21,8 @@ function SearchPicker<T extends { id: string }>({
   getLabel,
   placeholder,
   single = false,
+  onAddNew,
+  addNewLabel,
 }: {
   items: T[]
   selected: string[]
@@ -25,11 +30,14 @@ function SearchPicker<T extends { id: string }>({
   getLabel: (item: T) => string
   placeholder: string
   single?: boolean
+  onAddNew?: () => void
+  addNewLabel?: string
 }) {
   const [query, setQuery] = useState("")
   const filtered = items
     .filter((i) => getLabel(i).toLowerCase().includes(query.toLowerCase()))
     .slice(0, 8)
+  const noResults = filtered.length === 0
 
   return (
     <div>
@@ -59,8 +67,24 @@ function SearchPicker<T extends { id: string }>({
             </button>
           )
         })}
-        {filtered.length === 0 && (
-          <div className="px-3 py-2 text-xs text-muted">No results</div>
+        {noResults && (
+          <div className="px-3 py-2 text-xs text-muted italic">
+            {query ? "No matches" : "None yet"}
+          </div>
+        )}
+        {onAddNew && (
+          <button
+            type="button"
+            onClick={onAddNew}
+            className={cn(
+              "w-full text-left px-3 py-2 text-xs transition-colors font-medium",
+              noResults && query
+                ? "text-blue-400 hover:bg-blue-500/10"
+                : "text-muted hover:text-blue-400 hover:bg-surface-hover"
+            )}
+          >
+            + {addNewLabel ?? "Add new…"}
+          </button>
         )}
       </div>
       {selected.length > 0 && (
@@ -100,30 +124,47 @@ interface AddStoryModalProps {
     linkedEventId?: string
     boardId?: string
   }
+  editStory?: Story   // if provided, modal is in edit mode
 }
 
 type UploadState = { file: File; preview: string; uploading: boolean; url?: string }
 
-export function AddStoryModal({ onClose, onSaved, defaults }: AddStoryModalProps) {
+export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStoryModalProps) {
   const { activePersonId, profileOverride, catalog } = useLineageStore()
+  const isEditing = !!editStory
 
-  const [title, setTitle]       = useState("")
-  const [body, setBody]         = useState("")
-  const [date, setDate]         = useState("")
-  const [visibility, setVisibility] = useState<PrivacyLevel>("public")
+  const [title, setTitle]       = useState(editStory?.title ?? "")
+  const [body, setBody]         = useState(editStory?.body ?? "")
+  const [date, setDate]         = useState(editStory?.story_date ?? "")
+  const [visibility, setVisibility] = useState<PrivacyLevel>(editStory?.visibility ?? "public")
   const [saving, setSaving]     = useState(false)
   const [error, setError]       = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<"details" | "links">("details")
+  const [addingEntity, setAddingEntity] = useState<AddableEntity | null>(null)
 
-  // Photo uploads
+  // Existing photos (edit mode) — track which ones to keep by ID
+  const [existingPhotos]        = useState(editStory?.photos ?? [])
+  const [keepPhotoIds, setKeepPhotoIds] = useState<Set<string>>(
+    () => new Set((editStory?.photos ?? []).map((p) => p.id))
+  )
+
+  // New photo uploads
   const [uploads, setUploads]   = useState<UploadState[]>([])
   const fileInputRef            = useRef<HTMLInputElement>(null)
 
-  // Link selections — may be pre-populated via defaults prop
-  const [selectedPlaceId, setSelectedPlaceId]   = useState<string | null>(defaults?.linkedPlaceId ?? null)
-  const [selectedEventId, setSelectedEventId]   = useState<string | null>(defaults?.linkedEventId ?? null)
-  const [selectedBoardIds, setSelectedBoardIds] = useState<string[]>(defaults?.boardId ? [defaults.boardId] : [])
-  const [selectedRiderIds, setSelectedRiderIds] = useState<string[]>([])
+  // Link selections
+  const [selectedPlaceId, setSelectedPlaceId]   = useState<string | null>(
+    editStory?.linked_place_id ?? defaults?.linkedPlaceId ?? null
+  )
+  const [selectedEventId, setSelectedEventId]   = useState<string | null>(
+    editStory?.linked_event_id ?? defaults?.linkedEventId ?? null
+  )
+  const [selectedBoardIds, setSelectedBoardIds] = useState<string[]>(
+    editStory?.board_ids ?? (defaults?.boardId ? [defaults.boardId] : [])
+  )
+  const [selectedRiderIds, setSelectedRiderIds] = useState<string[]>(
+    editStory?.rider_ids ?? []
+  )
 
   const allPlaces  = catalog.places
   const allEvents  = catalog.events
@@ -136,7 +177,7 @@ export function AddStoryModal({ onClose, onSaved, defaults }: AddStoryModalProps
     if (!files) return
     const newUploads: UploadState[] = Array.from(files)
       .filter((f) => f.type.startsWith("image/"))
-      .slice(0, 6 - uploads.length)
+      .slice(0, 6 - uploads.length - [...keepPhotoIds].length)
       .map((file) => ({
         file,
         preview: URL.createObjectURL(file),
@@ -173,78 +214,119 @@ export function AddStoryModal({ onClose, onSaved, defaults }: AddStoryModalProps
 
   async function handleSave() {
     if (!date) { setError("Please pick a date for this story."); return }
-    if (!body.trim() && uploads.length === 0) { setError("Add some text or at least one photo."); return }
+    const keptCount = existingPhotos.filter((p) => keepPhotoIds.has(p.id)).length
+    if (!body.trim() && uploads.length === 0 && keptCount === 0) {
+      setError("Add some text or at least one photo."); return
+    }
     setSaving(true)
     setError(null)
 
-    const readyPhotos = uploads
-      .filter((u) => u.url)
-      .map((u, i) => ({ url: u.url!, sort_order: i }))
-
-    const res = await fetch("/api/stories", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        author_id:       activePersonId,
-        title:           title.trim() || undefined,
-        body:            body.trim(),
-        story_date:      date,
-        visibility,
-        linked_place_id: selectedPlaceId || undefined,
-        linked_event_id: selectedEventId || undefined,
-        board_ids:       selectedBoardIds,
-        rider_ids:       selectedRiderIds,
-        photos:          readyPhotos,
-      }),
-    })
-
-    if (!res.ok) {
-      const { error: msg } = await res.json()
-      setError(msg ?? "Save failed")
-      setSaving(false)
-      return
-    }
-
-    const { id } = await res.json()
-
-    // Build a local Story object so the timeline updates immediately
-    const story: Story = {
-      id,
-      author_id:       activePersonId!,
+    const newPhotos = uploads.filter((u) => u.url).map((u) => ({ url: u.url! }))
+    const commonFields = {
       title:           title.trim() || undefined,
       body:            body.trim(),
       story_date:      date,
       visibility,
-      linked_place_id: selectedPlaceId ?? undefined,
-      linked_event_id: selectedEventId ?? undefined,
+      linked_place_id: selectedPlaceId || undefined,
+      linked_event_id: selectedEventId || undefined,
       board_ids:       selectedBoardIds,
       rider_ids:       selectedRiderIds,
-      created_at:      new Date().toISOString(),
-      updated_at:      new Date().toISOString(),
-      photos:          readyPhotos.map((p, i) => ({
-        id: `local-${i}`,
-        story_id: id,
-        url: p.url,
-        sort_order: p.sort_order,
-        created_at: new Date().toISOString(),
-      })),
-      author: {
-        display_name: profileOverride.display_name ?? "Rider",
-        avatar_url:   profileOverride.avatar_url,
-      },
     }
 
-    onSaved(story)
+    if (isEditing && editStory) {
+      // ── PATCH ────────────────────────────────────────────────────────────
+      const res = await fetch("/api/stories", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id:             editStory.id,
+          ...commonFields,
+          keep_photo_ids: [...keepPhotoIds],
+          new_photos:     newPhotos,
+        }),
+      })
+
+      if (!res.ok) {
+        const { error: msg } = await res.json()
+        setError(msg ?? "Save failed")
+        setSaving(false)
+        return
+      }
+
+      const { photos: updatedPhotos } = await res.json()
+
+      const updated: Story = {
+        ...editStory,
+        ...commonFields,
+        updated_at: new Date().toISOString(),
+        photos: updatedPhotos,
+      }
+      onSaved(updated)
+    } else {
+      // ── POST ─────────────────────────────────────────────────────────────
+      const res = await fetch("/api/stories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          author_id: activePersonId,
+          ...commonFields,
+          photos: newPhotos.map((p, i) => ({ ...p, sort_order: i })),
+        }),
+      })
+
+      if (!res.ok) {
+        const { error: msg } = await res.json()
+        setError(msg ?? "Save failed")
+        setSaving(false)
+        return
+      }
+
+      const { id } = await res.json()
+
+      const story: Story = {
+        id,
+        author_id:   activePersonId!,
+        ...commonFields,
+        created_at:  new Date().toISOString(),
+        updated_at:  new Date().toISOString(),
+        photos:      newPhotos.map((p, i) => ({
+          id: `local-${i}`, story_id: id, url: p.url,
+          sort_order: i, created_at: new Date().toISOString(),
+        })),
+        author: {
+          display_name: profileOverride.display_name ?? "Rider",
+          avatar_url:   profileOverride.avatar_url,
+        },
+      }
+      onSaved(story)
+    }
     onClose()
   }
 
+  // Called by AddEntityModal after a new entity is created — auto-selects it
+  function handleEntityAdded(type: AddableEntity, id: string) {
+    if (type === "place")  setSelectedPlaceId(id)
+    if (type === "event")  setSelectedEventId(id)
+    if (type === "board")  setSelectedBoardIds((prev) => [...prev, id])
+    if (type === "person") setSelectedRiderIds((prev) => [...prev, id])
+    setAddingEntity(null)
+  }
+
   return (
+    <>
+    {addingEntity && (
+      <AddEntityModal
+        entityType={addingEntity}
+        onClose={() => setAddingEntity(null)}
+        onAdded={(id) => handleEntityAdded(addingEntity, id)}
+      />
+    )}
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
       <div className="bg-surface border border-border-default rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border-default">
-          <h2 className="text-base font-bold text-foreground">Add a Story</h2>
+          <h2 className="text-base font-bold text-foreground">{isEditing ? "Edit Story" : "Add a Story"}</h2>
           <button onClick={onClose} className="text-muted hover:text-foreground transition-colors text-xl leading-none">×</button>
         </div>
 
@@ -309,51 +391,73 @@ export function AddStoryModal({ onClose, onSaved, defaults }: AddStoryModalProps
 
               {/* Photos */}
               <div>
-                <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">
-                  Photos ({uploads.length}/6)
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {uploads.map((up) => (
-                    <div key={up.preview} className="relative aspect-square rounded-lg overflow-hidden bg-surface-hover">
-                      <img src={up.preview} alt="" className="w-full h-full object-cover" />
-                      {up.uploading && (
-                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                          <span className="text-white text-xs">Uploading…</span>
-                        </div>
-                      )}
-                      {!up.uploading && !up.url && (
-                        <div className="absolute inset-0 bg-red-900/50 flex items-center justify-center">
-                          <span className="text-white text-xs">Failed</span>
-                        </div>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => removeUpload(up.preview)}
-                        className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                  {uploads.length < 6 && (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="aspect-square rounded-lg border-2 border-dashed border-border-default flex flex-col items-center justify-center gap-1 text-muted hover:text-foreground hover:border-blue-500 transition-colors"
-                    >
-                      <span className="text-xl">+</span>
-                      <span className="text-[10px]">Add photo</span>
-                    </button>
-                  )}
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => handleFileSelect(e.target.files)}
-                />
+                {(() => {
+                  const keptExisting = existingPhotos.filter((p) => keepPhotoIds.has(p.id))
+                  const totalCount = keptExisting.length + uploads.length
+                  return (
+                    <>
+                      <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">
+                        Photos ({totalCount}/6)
+                      </label>
+                      <div className="grid grid-cols-3 gap-2">
+                        {/* Existing photos (edit mode) */}
+                        {keptExisting.map((photo) => (
+                          <div key={photo.id} className="relative aspect-square rounded-lg overflow-hidden bg-surface-hover">
+                            <img src={photo.url} alt="" className="w-full h-full object-cover" />
+                            <button
+                              type="button"
+                              onClick={() => setKeepPhotoIds((prev) => { const s = new Set(prev); s.delete(photo.id); return s })}
+                              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                        {/* New uploads */}
+                        {uploads.map((up) => (
+                          <div key={up.preview} className="relative aspect-square rounded-lg overflow-hidden bg-surface-hover">
+                            <img src={up.preview} alt="" className="w-full h-full object-cover" />
+                            {up.uploading && (
+                              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                                <span className="text-white text-xs">Uploading…</span>
+                              </div>
+                            )}
+                            {!up.uploading && !up.url && (
+                              <div className="absolute inset-0 bg-red-900/50 flex items-center justify-center">
+                                <span className="text-white text-xs">Failed</span>
+                              </div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => removeUpload(up.preview)}
+                              className="absolute top-1 right-1 w-5 h-5 rounded-full bg-black/70 text-white text-xs flex items-center justify-center hover:bg-red-600 transition-colors"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                        {totalCount < 6 && (
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="aspect-square rounded-lg border-2 border-dashed border-border-default flex flex-col items-center justify-center gap-1 text-muted hover:text-foreground hover:border-blue-500 transition-colors"
+                          >
+                            <span className="text-xl">+</span>
+                            <span className="text-[10px]">Add photo</span>
+                          </button>
+                        )}
+                      </div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        className="hidden"
+                        onChange={(e) => handleFileSelect(e.target.files)}
+                      />
+                    </>
+                  )
+                })()}
               </div>
 
               {/* Visibility */}
@@ -394,6 +498,8 @@ export function AddStoryModal({ onClose, onSaved, defaults }: AddStoryModalProps
                   getLabel={(p) => p.name}
                   placeholder="Search places…"
                   single
+                  onAddNew={() => setAddingEntity("place")}
+                  addNewLabel="Add a new place"
                 />
               </div>
 
@@ -407,6 +513,8 @@ export function AddStoryModal({ onClose, onSaved, defaults }: AddStoryModalProps
                   getLabel={(e) => `${e.name} ${e.year ?? ""}`}
                   placeholder="Search events…"
                   single
+                  onAddNew={() => setAddingEntity("event")}
+                  addNewLabel="Add a new event"
                 />
               </div>
 
@@ -421,6 +529,8 @@ export function AddStoryModal({ onClose, onSaved, defaults }: AddStoryModalProps
                   )}
                   getLabel={(b) => `${b.brand} ${b.model} '${String(b.model_year).slice(2)}`}
                   placeholder="Search boards…"
+                  onAddNew={() => setAddingEntity("board")}
+                  addNewLabel="Add a new board"
                 />
               </div>
 
@@ -435,6 +545,8 @@ export function AddStoryModal({ onClose, onSaved, defaults }: AddStoryModalProps
                   )}
                   getLabel={(r) => r.display_name}
                   placeholder="Search riders…"
+                  onAddNew={() => setAddingEntity("person")}
+                  addNewLabel="Add a rider"
                 />
               </div>
             </>
@@ -462,10 +574,11 @@ export function AddStoryModal({ onClose, onSaved, defaults }: AddStoryModalProps
             disabled={saving || uploads.some((u) => u.uploading)}
             className="px-5 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors"
           >
-            {saving ? "Saving…" : "Save Story"}
+            {saving ? "Saving…" : isEditing ? "Save Changes" : "Save Story"}
           </button>
         </div>
       </div>
     </div>
+    </>
   )
 }

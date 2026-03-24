@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { cn, nameToSlug } from "@/lib/utils"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
+import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { useLineageStore } from "@/store/lineage-store"
 import type { Story } from "@/types"
 
@@ -20,24 +21,26 @@ function formatStoryDate(dateStr: string): string {
 
 export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
   const { catalog } = useLineageStore()
+  const [displayStory, setDisplayStory] = useState(story)
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [editing, setEditing] = useState(false)
 
-  const photos = story.photos ?? []
+  const photos = displayStory.photos ?? []
 
   // Resolve linked entities for chips
-  const linkedPlace = story.linked_place_id
-    ? catalog.places.find((p) => p.id === story.linked_place_id)
+  const linkedPlace = displayStory.linked_place_id
+    ? catalog.places.find((p) => p.id === displayStory.linked_place_id)
     : null
-  const linkedEvent = story.linked_event_id
-    ? catalog.events.find((e) => e.id === story.linked_event_id)
+  const linkedEvent = displayStory.linked_event_id
+    ? catalog.events.find((e) => e.id === displayStory.linked_event_id)
     : null
-  const linkedBoards = (story.board_ids ?? [])
+  const linkedBoards = (displayStory.board_ids ?? [])
     .map((id) => catalog.boards.find((b) => b.id === id))
     .filter(Boolean)
-  const taggedRiders = (story.rider_ids ?? [])
+  const taggedRiders = (displayStory.rider_ids ?? [])
     .map((id) => catalog.people.find((p) => p.id === id))
     .filter(Boolean)
 
@@ -45,33 +48,42 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
 
   async function handleDelete() {
     setDeleting(true)
-    await fetch(`/api/stories?id=${story.id}`, { method: "DELETE" })
-    onDelete?.(story.id)
+    await fetch(`/api/stories?id=${displayStory.id}`, { method: "DELETE" })
+    onDelete?.(displayStory.id)
     setDeleting(false)
     setConfirmDelete(false)
   }
 
   return (
+    <>
+    {editing && (
+      <AddStoryModal
+        editStory={displayStory}
+        onClose={() => setEditing(false)}
+        onSaved={(updated) => { setDisplayStory(updated); setEditing(false) }}
+      />
+    )}
+
     <div className="postcard group bg-surface border-2 border-violet-700 rounded-xl p-5 mb-4 transition-all">
 
       {/* ── Header row ── */}
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 min-w-0">
           {/* Author avatar */}
-          {story.author?.avatar_url ? (
+          {displayStory.author?.avatar_url ? (
             <img
-              src={story.author.avatar_url}
-              alt={story.author.display_name}
+              src={displayStory.author.avatar_url}
+              alt={displayStory.author.display_name}
               className="w-7 h-7 rounded-full object-cover flex-shrink-0"
             />
           ) : (
             <div className="w-7 h-7 rounded-full bg-violet-100 flex items-center justify-center flex-shrink-0 text-[10px] font-bold text-violet-600">
-              {(story.author?.display_name ?? "?")[0].toUpperCase()}
+              {(displayStory.author?.display_name ?? "?")[0].toUpperCase()}
             </div>
           )}
           <div className="min-w-0">
             <span className="text-xs font-medium text-muted">
-              {story.author?.display_name ?? "Rider"}
+              {displayStory.author?.display_name ?? "Rider"}
             </span>
           </div>
         </div>
@@ -80,7 +92,7 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
           <span className="text-[10px] uppercase tracking-widest font-semibold text-muted bg-surface-hover border border-border-default rounded px-1.5 py-0.5">
             Story
           </span>
-          <span className="text-xs text-muted">{formatStoryDate(story.story_date)}</span>
+          <span className="text-xs text-muted">{formatStoryDate(displayStory.story_date)}</span>
 
           {isOwn && (
             <div className="relative">
@@ -92,7 +104,14 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
                 ⋯
               </button>
               {menuOpen && (
-                <div className="absolute right-0 top-6 z-50 bg-surface border border-border-default rounded-lg shadow-xl min-w-[120px] py-1">
+                <div className="absolute right-0 top-6 z-50 bg-surface border border-border-default rounded-lg shadow-xl min-w-[130px] py-1">
+                  <button
+                    onClick={() => { setMenuOpen(false); setEditing(true) }}
+                    className="w-full text-left px-3 py-2 text-xs text-foreground hover:bg-surface-hover transition-colors"
+                  >
+                    Edit story
+                  </button>
+                  <div className="border-t border-border-default mx-2" />
                   <button
                     onClick={() => { setMenuOpen(false); setConfirmDelete(true) }}
                     className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-surface-hover transition-colors"
@@ -107,13 +126,13 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
       </div>
 
       {/* ── Title ── */}
-      {story.title && (
-        <h3 className="font-bold text-foreground text-base leading-snug mb-2">{story.title}</h3>
+      {displayStory.title && (
+        <h3 className="font-bold text-foreground text-base leading-snug mb-2">{displayStory.title}</h3>
       )}
 
       {/* ── Body text ── */}
-      {story.body && (
-        <p className="text-sm text-muted leading-relaxed mb-3 whitespace-pre-wrap">{story.body}</p>
+      {displayStory.body && (
+        <p className="text-sm text-muted leading-relaxed mb-3 whitespace-pre-wrap">{displayStory.body}</p>
       )}
 
       {/* ── Photo grid ── */}
@@ -219,5 +238,6 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
         />
       )}
     </div>
+    </>
   )
 }
