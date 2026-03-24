@@ -9,6 +9,9 @@ import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { boardSlug, orgSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
+import { StoryCard as RichStoryCard } from "@/components/feed/story-card"
+import { AddStoryModal } from "@/components/ui/add-story-modal"
+import type { Story } from "@/types"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -183,6 +186,8 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   const [storyLocation, setStoryLocation] = useState("")
   const [storySubmitting, setStorySubmitting] = useState(false)
   const [showStoryForm, setShowStoryForm] = useState(false)
+  const [richStories, setRichStories] = useState<Story[]>([])
+  const [addingRichStory, setAddingRichStory] = useState(false)
 
   // Link form state
   const [linkUrl, setLinkUrl] = useState("")
@@ -226,6 +231,10 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
       .then((r) => r.json())
       .then(({ url }) => url && setBoardImageUrl(url))
       .catch(() => {})
+
+    fetch(`/api/stories?board_id=${boardId}&limit=50`)
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setRichStories(data as Story[]) })
   }, [boardId, boardBrand, boardModel, boardYear, activePersonId])
 
   // ── Handlers ─────────────────────────────────────────────────────────────
@@ -386,6 +395,14 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Nav />
+
+      {addingRichStory && board && (
+        <AddStoryModal
+          onClose={() => setAddingRichStory(false)}
+          onSaved={(s) => { setRichStories((prev) => [s, ...prev]); setAddingRichStory(false) }}
+          defaults={{ boardId: board.id }}
+        />
+      )}
 
       {/* Image lightbox */}
       {lightboxOpen && displayImageUrl && (
@@ -698,6 +715,39 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                 </div>
               )}
             </div>
+
+            {/* ── Rich Stories ──────────────────────────────────────────────── */}
+            {(richStories.length > 0 || isAuth) && (
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">Stories</h2>
+                  {isAuth && (
+                    <button onClick={() => setAddingRichStory(true)} className="text-xs text-violet-400 hover:text-violet-300 transition-colors">
+                      ✍ Add a story
+                    </button>
+                  )}
+                </div>
+                {richStories.length === 0 ? (
+                  <div className="py-6 text-center border border-dashed border-border-default rounded-xl">
+                    <div className="text-xs text-muted">No stories yet.</div>
+                    <button onClick={() => setAddingRichStory(true)} className="text-xs text-violet-400 hover:text-violet-300 transition-colors mt-1">
+                      Be the first to share one →
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {richStories.map((s) => (
+                      <RichStoryCard
+                        key={s.id}
+                        story={s}
+                        isOwn={s.author_id === activePersonId}
+                        onDelete={(sid) => setRichStories((prev) => prev.filter((x) => x.id !== sid))}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* ── Links ─────────────────────────────────────────────────────── */}
             <div>

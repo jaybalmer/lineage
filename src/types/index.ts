@@ -229,6 +229,36 @@ export interface TriggerPrefs {
   digest_membership_mentions?:       number
 }
 
+// ─── Stories ─────────────────────────────────────────────────────────────────
+
+export interface StoryPhoto {
+  id: string
+  story_id: string
+  url: string
+  caption?: string
+  sort_order: number
+  created_at: string
+}
+
+export interface Story {
+  id: string
+  author_id: string
+  title?: string
+  body: string
+  story_date: string   // YYYY-MM-DD — positions it on the timeline
+  visibility: PrivacyLevel
+  linked_event_id?: string
+  linked_place_id?: string
+  created_at: string
+  updated_at: string
+  // Joined relations (populated by API)
+  photos?: StoryPhoto[]
+  board_ids?: string[]
+  rider_ids?: string[]
+  // Denormalised author info (joined from profiles)
+  author?: { display_name: string; avatar_url?: string }
+}
+
 // ─── UI-focused composite types ──────────────────────────────────────────────
 
 export interface TimelineEntry {

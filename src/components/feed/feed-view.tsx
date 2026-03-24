@@ -1,17 +1,18 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import type { Claim, Person, RidingDay } from "@/types"
+import type { Claim, Person, RidingDay, Story } from "@/types"
 import { PostCard } from "@/components/feed/post-card"
 import { DayPostCard } from "@/components/feed/day-post-card"
+import { StoryCard } from "@/components/feed/story-card"
 import { StartCard } from "@/components/feed/start-card"
 import { AddClaimModal } from "@/components/ui/add-claim-modal"
-import { AddDayModal } from "@/components/ui/add-day-modal"
+import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { cn } from "@/lib/utils"
 
-type FilterType = "all" | "places" | "gear" | "people" | "orgs" | "events" | "days"
+type FilterType = "all" | "places" | "gear" | "people" | "orgs" | "events" | "stories"
 
-const FILTER_PREDICATES: Record<Exclude<FilterType, "days">, string[]> = {
+const FILTER_PREDICATES: Record<Exclude<FilterType, "stories">, string[]> = {
   all: [],
   places: ["rode_at", "worked_at"],
   gear: ["owned_board"],
@@ -27,18 +28,20 @@ const FILTER_LABELS: Record<FilterType, string> = {
   people: "Riders",
   orgs: "Brands",
   events: "Events",
-  days: "Days",
+  stories: "Stories",
 }
 
 type FeedItem =
   | { kind: "claim"; claim: Claim; sortDate: number }
   | { kind: "day"; day: RidingDay; sortDate: number }
+  | { kind: "story"; story: Story; sortDate: number }
   | { kind: "riding_start"; year: number; sortDate: number }
 
 // Timeline node color keyed to predicate category
 function nodeColor(item: FeedItem): string {
   if (item.kind === "riding_start") return "bg-amber-500"
   if (item.kind === "day") return "bg-emerald-600"
+  if (item.kind === "story") return "bg-violet-600"
   const p = item.claim.predicate
   if (p === "owned_board") return "bg-emerald-700"
   if (p === "rode_at" || p === "worked_at") return "bg-blue-700"
@@ -52,6 +55,7 @@ function nodeColor(item: FeedItem): string {
 function predicateRank(item: FeedItem): number {
   if (item.kind === "riding_start") return -1
   if (item.kind === "day") return 9
+  if (item.kind === "story") return 8
   const p = item.claim.predicate
   if (p === "owned_board") return 0
   if (p === "rode_at" || p === "worked_at") return 2
@@ -80,28 +84,34 @@ function groupByDecade(items: FeedItem[]): Record<string, FeedItem[]> {
 export function FeedView({
   claims,
   days = [],
+  stories = [],
   personName,
   isOwn,
   hideActionButtons = false,
   ridingSince,
   person,
+  onStoryAdded,
+  onStoryDeleted,
 }: {
   claims: Claim[]
   days?: RidingDay[]
+  stories?: Story[]
   personName: string
   isOwn?: boolean
   hideActionButtons?: boolean
   ridingSince?: number
   person?: Person
+  onStoryAdded?: (s: Story) => void
+  onStoryDeleted?: (id: string) => void
 }) {
   const [filter, setFilter] = useState<FilterType>("all")
   const [addingClaim, setAddingClaim] = useState(false)
-  const [addingDay, setAddingDay] = useState(false)
+  const [addingStory, setAddingStory] = useState(false)
 
   const items = useMemo((): FeedItem[] => {
     const claimItems: FeedItem[] = (() => {
-      if (filter === "days") return []
-      const predicates = filter !== "all" ? FILTER_PREDICATES[filter] : []
+      if (filter === "stories") return []
+      const predicates = filter !== "all" ? FILTER_PREDICATES[filter as Exclude<FilterType, "stories">] : []
       const filtered = predicates.length > 0
         ? claims.filter((c) => predicates.includes(c.predicate))
         : claims
@@ -112,11 +122,19 @@ export function FeedView({
       }))
     })()
 
-    const dayItems: FeedItem[] = filter === "all" || filter === "days"
+    const dayItems: FeedItem[] = filter === "all"
       ? days.map((day) => ({
           kind: "day" as const,
           day,
           sortDate: parseInt(day.date.replace(/-/g, "")),
+        }))
+      : []
+
+    const storyItems: FeedItem[] = filter === "all" || filter === "stories"
+      ? stories.map((story) => ({
+          kind: "story" as const,
+          story,
+          sortDate: parseInt(story.story_date.replace(/-/g, "")),
         }))
       : []
 
@@ -126,12 +144,12 @@ export function FeedView({
         ? [{ kind: "riding_start" as const, year: ridingSince, sortDate: ridingSince * 10000 + 101 }]
         : []
 
-    return [...claimItems, ...dayItems, ...ridingStartItem].sort((a, b) =>
+    return [...claimItems, ...dayItems, ...storyItems, ...ridingStartItem].sort((a, b) =>
       a.sortDate !== b.sortDate
         ? a.sortDate - b.sortDate
         : predicateRank(a) - predicateRank(b)
     )
-  }, [claims, days, filter, ridingSince])
+  }, [claims, days, stories, filter, ridingSince])
 
   const grouped = useMemo(() => groupByDecade(items), [items])
   const decades = Object.keys(grouped).sort()
@@ -140,41 +158,41 @@ export function FeedView({
   const filterCounts = useMemo((): Record<FilterType, number> => {
     const countFor = (preds: string[]) => claims.filter((c) => preds.includes(c.predicate)).length
     return {
-      all: claims.length + days.length,
+      all: claims.length + days.length + stories.length,
       places: countFor(FILTER_PREDICATES.places),
       gear: countFor(FILTER_PREDICATES.gear),
       people: countFor(FILTER_PREDICATES.people),
       orgs: countFor(FILTER_PREDICATES.orgs),
       events: countFor(FILTER_PREDICATES.events),
-      days: days.length,
+      stories: stories.length,
     }
-  }, [claims, days])
+  }, [claims, days, stories])
 
   return (
     <div>
       {addingClaim && isOwn && (
         <AddClaimModal
-          defaultFilter={filter === "days" ? "all" : filter}
+          defaultFilter={filter}
           onClose={() => setAddingClaim(false)}
         />
       )}
-      {addingDay && isOwn && (
-        <AddDayModal onClose={() => setAddingDay(false)} />
+      {addingStory && isOwn && onStoryAdded && (
+        <AddStoryModal onClose={() => setAddingStory(false)} onSaved={(s) => { onStoryAdded(s); setAddingStory(false) }} />
       )}
 
       {/* Header — only shown when action buttons are present (non-profile contexts) */}
       {!hideActionButtons && (
         <div className="mb-6 flex items-center justify-between gap-3">
           <p className="text-sm text-muted">
-            {claims.length} claims · {days.length} day{days.length !== 1 ? "s" : ""}
+            {claims.length} claims · {stories.length} stor{stories.length !== 1 ? "ies" : "y"}
           </p>
           {isOwn && (
             <div className="flex gap-2 flex-shrink-0">
               <button
-                onClick={() => setAddingDay(true)}
-                className="px-3 py-2 rounded-lg bg-emerald-800 text-white text-sm font-medium hover:bg-emerald-700 transition-colors flex items-center gap-1.5"
+                onClick={() => setAddingStory(true)}
+                className="px-3 py-2 rounded-lg bg-violet-700 text-white text-sm font-medium hover:bg-violet-600 transition-colors"
               >
-                ☀️ Log day
+                ✍ Add story
               </button>
               <button
                 onClick={() => setAddingClaim(true)}
@@ -190,7 +208,7 @@ export function FeedView({
       {/* Filter chips with counts */}
       <div className="flex gap-2 flex-wrap mb-6">
         {(Object.keys(FILTER_LABELS) as FilterType[]).map((f) => {
-          const isDaysChip = f === "days"
+          const isStoriesChip = f === "stories"
           const count = filterCounts[f]
           const active = filter === f
           return (
@@ -199,18 +217,16 @@ export function FeedView({
               onClick={() => setFilter(f)}
               className={`px-3 py-1 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 ${
                 active
-                  ? isDaysChip
-                    ? "bg-emerald-700 border-emerald-700 text-foreground"
+                  ? isStoriesChip
+                    ? "bg-violet-700 border-violet-700 text-foreground"
                     : "bg-blue-600 border-blue-600 text-foreground"
                   : "border-border-default text-muted hover:border-border-default hover:text-foreground"
               }`}
             >
-              {isDaysChip && "☀️ "}{FILTER_LABELS[f]}
+              {FILTER_LABELS[f]}
               {count > 0 && (
                 <span className={`text-[10px] tabular-nums ${
-                  active
-                    ? isDaysChip ? "text-emerald-200" : "text-blue-200"
-                    : "text-muted"
+                  active ? "text-blue-200" : "text-muted"
                 }`}>
                   {count}
                 </span>
@@ -225,11 +241,11 @@ export function FeedView({
         <div className="text-center text-muted py-16">
           <div className="text-3xl mb-3">🏂</div>
           <div className="text-sm">
-            {filter === "days"
-              ? "No days logged yet. Hit ☀️ Log day to start."
-              : isOwn
-                ? "No claims yet. Start building your lineage."
-                : `${personName} hasn't added any claims yet.`}
+            {filter === "stories"
+                ? isOwn ? "No stories yet. Add one to capture a moment." : `${personName} hasn't added any stories yet.`
+                : isOwn
+                  ? "No claims yet. Start building your lineage."
+                  : `${personName} hasn't added any claims yet.`}
           </div>
         </div>
       )}
@@ -253,6 +269,7 @@ export function FeedView({
                 {grouped[decade].map((item) => {
                   const key = item.kind === "claim" ? item.claim.id
                     : item.kind === "day" ? item.day.id
+                    : item.kind === "story" ? `story-${item.story.id}`
                     : `riding-start-${item.year}`
                   return (
                     <div key={key} className="relative pl-9">
@@ -271,6 +288,8 @@ export function FeedView({
                         <PostCard claim={item.claim} isOwn={isOwn} />
                       ) : item.kind === "day" ? (
                         <DayPostCard day={item.day} isOwn={isOwn} />
+                      ) : item.kind === "story" ? (
+                        <StoryCard story={item.story} isOwn={isOwn} onDelete={onStoryDeleted} />
                       ) : person ? (
                         <StartCard person={person} claims={claims} isOwn={isOwn} />
                       ) : null}

@@ -115,7 +115,18 @@
       "Bash(grep -n \"photo\\\\|image\\\\|delete\\\\|remove\\\\|photo_url\\\\|board_image\" /Users/jaybalmer/lineage/src/app/boards/[id]/page.tsx)",
       "Bash(grep -n \"myImageVoteRow\\\\|deleteMyPhoto\\\\|Remove photo\\\\|Delete photo\\\\|remove photo\" /Users/jaybalmer/lineage/src/app/boards/[id]/page.tsx)",
       "Bash(find /Users/jaybalmer/lineage -type f \\\\\\(-name *.sql -o -name *migration* -o -name *schema* \\\\\\) ! -path */node_modules/*)",
-      "Bash(wc -l /Users/jaybalmer/lineage/src/app/boards/[id]/page.tsx /Users/jaybalmer/lineage/src/hooks/use-board-image.ts /Users/jaybalmer/lineage/src/app/api/board-image/route.ts /Users/jaybalmer/lineage/src/app/api/boards/archive-image/route.ts)"
+      "Bash(wc -l /Users/jaybalmer/lineage/src/app/boards/[id]/page.tsx /Users/jaybalmer/lineage/src/hooks/use-board-image.ts /Users/jaybalmer/lineage/src/app/api/board-image/route.ts /Users/jaybalmer/lineage/src/app/api/boards/archive-image/route.ts)",
+      "Bash(grep -n \"bg-surface\\\\|bg-white\\\\|rounded-xl\\\\|rounded-2xl\\\\|card\" /Users/jaybalmer/lineage/src/app/riders/[id]/page.tsx)",
+      "Bash(grep -n \"MemberCard\\\\|member-card\\\\|member_card\\\\|showMemberCard\" /Users/jaybalmer/lineage/src/app/riders/[id]/page.tsx)",
+      "Bash(find /Users/jaybalmer/lineage/src -name *member*card* -o -name *card*member*)",
+      "Bash(grep -rl \"MemberCard\\\\|member.*card\" /Users/jaybalmer/lineage/src --include=*.tsx)",
+      "Bash(grep -n \"ORIGIN\\\\|first_season\\\\|riding_since\\\\|StartCard\\\\|start-card\" /Users/jaybalmer/lineage/src/app/riders/[id]/page.tsx)",
+      "Bash(pip3 install:*)",
+      "Bash(python3 -c \":*)",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(wc -l /Users/jaybalmer/lineage/src/app/boards/[id]/page.tsx)",
+      "Bash(wc -l /Users/jaybalmer/lineage/src/app/boards/[id]/page.tsx /Users/jaybalmer/lineage/src/app/places/[id]/page.tsx /Users/jaybalmer/lineage/src/app/events/[id]/page.tsx)"
     ]
   }
 }

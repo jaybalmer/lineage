@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState, useRef, useMemo } from "react"
+import { use, useState, useEffect, useRef, useMemo } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
@@ -10,7 +10,9 @@ import { supabase } from "@/lib/supabase"
 import { EVENTS, EVENT_SERIES, eventSlug, seriesSlug, placeSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
-import type { Event } from "@/types"
+import type { Event, Story } from "@/types"
+import { StoryCard } from "@/components/feed/story-card"
+import { AddStoryModal } from "@/components/ui/add-story-modal"
 
 function formatEventDate(start: string, end?: string): string {
   const [sy, sm, sd] = start.split("-").map(Number)
@@ -398,7 +400,27 @@ function EventInstancePhotoBlock({ eventId, eventName, activePersonId }: {
 export default function EventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const { catalog, userEntities, activePersonId } = useLineageStore()
+  const isAuth = isAuthUser(activePersonId)
   const [showAddEdition, setShowAddEdition] = useState(false)
+  const [eventStories, setEventStories] = useState<Story[]>([])
+  const [addingStory, setAddingStory] = useState(false)
+
+  // Fetch stories for event instances (not series)
+  const instanceId = (() => {
+    const allSeries = [...EVENT_SERIES, ...catalog.eventSeries]
+    const isSeries = allSeries.some((s) => s.id === id || seriesSlug(s) === id)
+    if (isSeries) return null
+    const allEvts = [...EVENTS, ...catalog.events.filter((e) => !EVENTS.some((m) => m.id === e.id)), ...userEntities.events]
+    const inst = allEvts.find((e) => e.id === id) ?? allEvts.find((e) => eventSlug(e) === id)
+    return inst?.id ?? null
+  })()
+
+  useEffect(() => {
+    if (!instanceId) return
+    fetch(`/api/stories?event_id=${instanceId}&limit=50`)
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setEventStories(data as Story[]) })
+  }, [instanceId])
 
   // Look up from all sources: mock-data, catalog (Supabase), and user-added entities
   const allSeries = [
@@ -440,6 +462,15 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
     return (
       <div className="min-h-screen bg-background text-foreground">
         <Nav />
+
+        {addingStory && (
+          <AddStoryModal
+            onClose={() => setAddingStory(false)}
+            onSaved={(s) => { setEventStories((prev) => [s, ...prev]); setAddingStory(false) }}
+            defaults={{ linkedEventId: instance.id }}
+          />
+        )}
+
         <div className="max-w-3xl mx-auto px-4 py-8">
           {/* Breadcrumb */}
           <div className="text-xs text-muted mb-6">
@@ -497,6 +528,37 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
               <AttendeeList eventId={instance.id} />
             </div>
           </section>
+
+          {/* Stories */}
+          {(eventStories.length > 0 || isAuth) && (
+            <section className="mb-8">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">Stories</h2>
+                {isAuth && (
+                  <button onClick={() => setAddingStory(true)} className="text-xs text-violet-400 hover:text-violet-300 transition-colors">
+                    ✍ Add a story
+                  </button>
+                )}
+              </div>
+              {eventStories.length === 0 ? (
+                <div className="py-8 text-center border border-dashed border-border-default rounded-xl">
+                  <div className="text-xs text-muted">No stories yet.</div>
+                  <button onClick={() => setAddingStory(true)} className="text-xs text-violet-400 hover:text-violet-300 transition-colors mt-1">Share the first one →</button>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {eventStories.map((s) => (
+                    <StoryCard
+                      key={s.id}
+                      story={s}
+                      isOwn={s.author_id === activePersonId}
+                      onDelete={(sid) => setEventStories((prev) => prev.filter((x) => x.id !== sid))}
+                    />
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
 
           {/* Other years in series */}
           {seriesInstances.length > 1 && (

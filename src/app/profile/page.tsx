@@ -9,11 +9,11 @@ import { getPersonById, PLACES } from "@/lib/mock-data"
 import { EditProfileModal } from "@/components/ui/edit-profile-modal"
 import { RiderCard } from "@/components/ui/rider-card"
 import { AddClaimModal } from "@/components/ui/add-claim-modal"
-import { AddDayModal } from "@/components/ui/add-day-modal"
+import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { TimelinePlayer } from "@/components/ui/timeline-player"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
-import type { Claim, PrivacyLevel } from "@/types"
+import type { Claim, PrivacyLevel, Story } from "@/types"
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -21,8 +21,9 @@ export default function ProfilePage() {
   const myDays = ridingDays.filter((d) => d.created_by === activePersonId)
   const [editingProfile, setEditingProfile] = useState(false)
   const [addingClaim, setAddingClaim] = useState(false)
-  const [addingDay, setAddingDay] = useState(false)
+  const [addingStory, setAddingStory] = useState(false)
   const [playingTimeline, setPlayingTimeline] = useState(false)
+  const [stories, setStories] = useState<Story[]>([])
 
   // Redirect to sign-in only after the server-validated auth check completes.
   // Waiting for authReady prevents false sign-outs when the JWT is expired
@@ -75,6 +76,10 @@ export default function ProfilePage() {
         // catalog-loader's getUser() is the authoritative auth check — it
         // handles token refresh and will clear state if truly unauthenticated.
       })
+
+    fetch(`/api/stories?author_id=${activePersonId}&limit=100`)
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setStories(data as Story[]) })
   }, [activePersonId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const allClaims = getAllClaims(sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId)
@@ -97,8 +102,11 @@ export default function ProfilePage() {
       {addingClaim && (
         <AddClaimModal onClose={() => setAddingClaim(false)} />
       )}
-      {addingDay && (
-        <AddDayModal onClose={() => setAddingDay(false)} />
+      {addingStory && (
+        <AddStoryModal
+          onClose={() => setAddingStory(false)}
+          onSaved={(s) => { setStories((prev) => [s, ...prev]); setAddingStory(false) }}
+        />
       )}
       {playingTimeline && person && (
         <TimelinePlayer
@@ -141,18 +149,20 @@ export default function ProfilePage() {
         {/* Quick-action row */}
         <div className="flex items-center justify-between gap-2 mb-6">
           <h2 className="text-2xl font-black tracking-widest uppercase text-foreground">Timeline</h2>
-          <button
-            onClick={() => setAddingDay(true)}
-            className="px-3 py-1 rounded-full text-xs font-medium border border-border-default text-muted hover:text-foreground transition-all flex items-center gap-1.5"
-          >
-            ☀️ Log day
-          </button>
-          <button
-            onClick={() => setAddingClaim(true)}
-            className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
-          >
-            + Add claim
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setAddingStory(true)}
+              className="px-3 py-2 rounded-lg bg-violet-700 text-white text-sm font-medium hover:bg-violet-600 transition-colors"
+            >
+              ✍ Add story
+            </button>
+            <button
+              onClick={() => setAddingClaim(true)}
+              className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
+            >
+              + Add claim
+            </button>
+          </div>
         </div>
 
         {/* Contribution milestone card — non-members only, on own profile */}
@@ -209,11 +219,14 @@ export default function ProfilePage() {
         <FeedView
           claims={personClaims}
           days={myDays}
+          stories={stories}
           personName={person?.display_name ?? "Your"}
           isOwn={true}
           hideActionButtons={true}
           ridingSince={person?.riding_since}
           person={person ?? undefined}
+          onStoryAdded={(s) => setStories((prev) => [s, ...prev])}
+          onStoryDeleted={(id) => setStories((prev) => prev.filter((s) => s.id !== id))}
         />
       </div>
     </div>

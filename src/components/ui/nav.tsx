@@ -17,19 +17,21 @@ const TIER_BADGE: Record<string, { label: string; color: string; symbol: string 
 }
 
 const PRIMARY_NAV = [
-  { href: "/profile",     label: "Profile" },
-  { href: "/compare",     label: "Compare" },
+  { href: "/profile",     label: "Timeline" },
+  { href: "/feed",        label: "Feed" },
   { href: "/connections", label: "Connections" },
   { href: "/collective",  label: "Collective" },
 ]
 
 const SECONDARY_NAV = [
-  { href: "/riders", label: "Riders" },
-  { href: "/events", label: "Events" },
-  { href: "/boards", label: "Boards" },
-  { href: "/brands", label: "Brands" },
-  { href: "/places", label: "Places" },
+  { href: "/riders",  label: "Riders" },
+  { href: "/events",  label: "Events" },
+  { href: "/boards",  label: "Boards" },
+  { href: "/brands",  label: "Brands" },
+  { href: "/places",  label: "Places" },
+  { href: "/stories", label: "Stories" },
 ]
+
 
 const ALL_NAV = [...PRIMARY_NAV, ...SECONDARY_NAV]
 
@@ -168,6 +170,83 @@ function AvatarDropdown({ initial, displayName, tier, totalTokens }: AvatarDropd
   )
 }
 
+const MOBILE_MENU = [
+  { href: "/profile",     label: "Timeline" },
+  { href: "/compare",     label: "Compare" },
+  { href: "/connections", label: "Connects" },
+  { href: "/feed",        label: "Feed" },
+  { href: "/collective",  label: "Collective" },
+]
+
+function AppNav({ path, isAuth, isEditor, dropdownProps }: {
+  path: string
+  isAuth: boolean
+  isEditor: boolean
+  dropdownProps: AvatarDropdownProps
+}) {
+  return (
+    <div>
+      {/* Row 1: logo + avatar */}
+      <div className="flex items-center h-12 px-4 gap-3">
+        <Link href="/" className="font-black text-xl text-foreground tracking-tight flex items-center gap-2 flex-shrink-0">
+          <span className="text-blue-400 text-2xl">⬡</span>
+          <span>Lineage</span>
+        </Link>
+        <div className="flex-1" />
+        <div className="flex items-center gap-4 flex-shrink-0">
+          <ThemeToggle />
+          {isAuth ? (
+            <AvatarDropdown {...dropdownProps} />
+          ) : (
+            <Link href="/auth/signin"
+              className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-500 transition-colors">
+              Sign in
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {/* Row 2: primary nav — scrollable */}
+      <div className="flex items-center px-4 gap-1 overflow-x-auto border-t border-border-default/50 py-1.5 scrollbar-none">
+        {MOBILE_MENU.map(({ href, label }) => (
+          <Link key={href} href={href} className={cn(
+            "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
+            isActive(href, path)
+              ? "bg-blue-600 text-white"
+              : "text-muted hover:text-foreground hover:bg-surface-hover"
+          )}>
+            {label}
+          </Link>
+        ))}
+        {isEditor && (
+          <Link href="/admin" className={cn(
+            "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
+            isActive("/admin", path)
+              ? "bg-blue-600 text-white"
+              : "text-muted hover:text-foreground hover:bg-surface-hover"
+          )}>
+            Editor
+          </Link>
+        )}
+      </div>
+
+      {/* Row 3: catalog nav — always visible */}
+      <div className="flex items-center px-4 gap-1 overflow-x-auto border-t border-border-default/50 py-1.5 scrollbar-none">
+        {SECONDARY_NAV.map(({ href, label }) => (
+          <Link key={href} href={href} className={cn(
+            "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
+            isActive(href, path)
+              ? "bg-surface-active text-foreground"
+              : "text-muted hover:text-foreground hover:bg-surface-hover"
+          )}>
+            {label}
+          </Link>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Nav ─────────────────────────────────────────────────────────────────
 
 export function Nav() {
@@ -195,94 +274,12 @@ export function Nav() {
 
   return (
     <nav className="border-b border-border-default bg-bg-nav sticky top-0 z-50">
-      {/* Desktop: single row */}
-      <div className="hidden md:flex max-w-5xl mx-auto px-4 items-center h-14 gap-6">
-        <Link href="/" className="font-semibold text-foreground tracking-tight flex items-center gap-2 flex-shrink-0">
-          <span className="text-blue-400">⬡</span>
-          <span>Lineage</span>
-        </Link>
-        <div className="flex items-center gap-1">
-          {ALL_NAV.map(({ href, label }) => (
-            <Link key={href} href={href} className={navLinkClass(href, path, isActive(href, path))}>
-              {label}
-            </Link>
-          ))}
-          {isEditor && (
-            <Link href="/admin" className={navLinkClass("/admin", path, isActive("/admin", path))}>
-              Editor
-            </Link>
-          )}
-        </div>
-        <div className="ml-auto flex items-center gap-3 flex-shrink-0">
-          <ThemeToggle />
-          {isAuth ? (
-            <AvatarDropdown {...dropdownProps} />
-          ) : (
-            <Link href="/auth/signin"
-              className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-500 transition-colors">
-              Sign in
-            </Link>
-          )}
-        </div>
-      </div>
-
-      {/* Mobile: two rows */}
-      <div className="md:hidden">
-        {/* Row 1: logo + primary nav + avatar */}
-        <div className="flex items-center h-12 px-3 gap-2">
-          <Link href="/" className="font-semibold text-foreground tracking-tight flex items-center gap-1.5 flex-shrink-0 mr-1">
-            <span className="text-blue-400">⬡</span>
-            <span>Lineage</span>
-          </Link>
-          <div className="flex items-center gap-0.5 flex-1 min-w-0">
-            {PRIMARY_NAV.map(({ href, label }) => (
-              <Link key={href} href={href} className={cn(
-                "px-2 py-1.5 rounded-md text-xs font-medium transition-colors whitespace-nowrap",
-                isActive(href, path)
-                  ? "bg-surface-active text-foreground"
-                  : "text-muted hover:text-foreground hover:bg-surface-hover"
-              )}>
-                {label}
-              </Link>
-            ))}
-          </div>
-          {isAuth ? (
-            <AvatarDropdown {...dropdownProps} />
-          ) : (
-            <Link href="/auth/signin"
-              className="px-2.5 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-500 transition-colors flex-shrink-0">
-              Sign in
-            </Link>
-          )}
-        </div>
-
-        {/* Row 2: secondary nav + theme toggle */}
-        <div className="flex items-center px-3 pb-1.5 border-t border-border-default/50 pt-1">
-          <div className="flex items-center gap-0.5 flex-1">
-            {SECONDARY_NAV.map(({ href, label }) => (
-              <Link key={href} href={href} className={cn(
-                "px-2.5 py-1 rounded-md text-xs transition-colors whitespace-nowrap",
-                isActive(href, path)
-                  ? "bg-surface-active text-foreground"
-                  : "text-muted hover:text-foreground hover:bg-surface-hover"
-              )}>
-                {label}
-              </Link>
-            ))}
-            {isEditor && (
-              <Link href="/admin" className={cn(
-                "px-2.5 py-1 rounded-md text-xs transition-colors whitespace-nowrap",
-                isActive("/admin", path)
-                  ? "bg-surface-active text-foreground"
-                  : "text-muted hover:text-foreground hover:bg-surface-hover"
-              )}>
-                Editor
-              </Link>
-            )}
-          </div>
-          <ThemeToggle />
-        </div>
-      </div>
+      <AppNav
+        path={path}
+        isAuth={isAuth}
+        isEditor={isEditor}
+        dropdownProps={dropdownProps}
+      />
     </nav>
   )
 }

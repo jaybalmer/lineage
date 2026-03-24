@@ -12,7 +12,7 @@ import { nameToSlug } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import type { Claim } from "@/types"
+import type { Claim, Story } from "@/types"
 
 const TIER_BADGE: Record<string, { symbol: string; label: string; color: string }> = {
   annual:   { symbol: "◈", label: "MEMBER",    color: "#3b82f6" },
@@ -27,6 +27,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(false)
   const [milestoneDismissed, setMilestoneDismissed] = useState(false)
   const [dbClaims, setDbClaims] = useState<Claim[]>([])
+  const [stories, setStories] = useState<Story[]>([])
 
   // Show post-onboarding welcome banner (once, on first profile visit after signup)
   useEffect(() => {
@@ -69,6 +70,10 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
       .eq("subject_id", resolvedId)
       .eq("visibility", "public")
       .then(({ data }) => setDbClaims((data ?? []) as Claim[]))
+
+    fetch(`/api/stories?author_id=${resolvedId}&limit=100`)
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setStories(data as Story[]) })
   }, [catalogLoaded, resolvedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Wait for catalog to hydrate before 404-ing
@@ -332,6 +337,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
         {/* Feed */}
         <FeedView
           claims={personClaims}
+          stories={stories}
           personName={person.display_name}
           isOwn={false}
           hideActionButtons={true}

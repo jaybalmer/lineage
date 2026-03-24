@@ -11,8 +11,11 @@ import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { supabase } from "@/lib/supabase"
+import { StoryCard } from "@/components/feed/story-card"
+import { AddStoryModal } from "@/components/ui/add-story-modal"
+import type { Story } from "@/types"
 
-type PlaceTab = "all" | "riders" | "events"
+type PlaceTab = "all" | "riders" | "events" | "stories"
 
 const EVENT_TYPE_ICON: Record<string, string> = {
   contest: "🏆",
@@ -57,6 +60,8 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
   const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [removingPhoto, setRemovingPhoto] = useState(false)
   const [photoError, setPhotoError] = useState<string | null>(null)
+  const [placeStories, setPlaceStories] = useState<Story[]>([])
+  const [addingStory, setAddingStory] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const fetchedForPlace = useRef<string | null>(null)
 
@@ -115,9 +120,10 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
   }, [rideClaims, placeEvents])
 
   const tabs: { key: PlaceTab; label: string; count: number }[] = [
-    { key: "all",    label: "All",    count: riderIds.length + placeEvents.length },
-    { key: "riders", label: "Riders", count: riderIds.length },
-    { key: "events", label: "Events", count: placeEvents.length },
+    { key: "all",     label: "All",     count: riderIds.length + placeEvents.length },
+    { key: "riders",  label: "Riders",  count: riderIds.length },
+    { key: "events",  label: "Events",  count: placeEvents.length },
+    { key: "stories", label: "Stories", count: placeStories.length },
   ]
 
   const sortedDecades = Object.keys(byDecade).sort((a, b) => parseInt(b) - parseInt(a))
@@ -140,6 +146,10 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
         setImageVotes({ up, flag, userVote: (mine?.vote as "up" | "flag") ?? null, userVoteId: mine?.id ?? null })
         setImageVoteRows(rows)
       })
+
+    fetch(`/api/stories?place_id=${placeId}&limit=50`)
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setPlaceStories(data as Story[]) })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [placeId])
 
@@ -241,6 +251,14 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
   return (
     <div className="min-h-screen bg-background">
       <Nav />
+
+      {addingStory && (
+        <AddStoryModal
+          onClose={() => setAddingStory(false)}
+          onSaved={(s) => { setPlaceStories((prev) => [s, ...prev]); setAddingStory(false) }}
+          defaults={{ linkedPlaceId: place.id }}
+        />
+      )}
 
       {/* Image lightbox */}
       {lightboxOpen && displayImageUrl && (
@@ -604,6 +622,38 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                     </Link>
                   )
                 })}
+              </div>
+            )}
+
+            {/* ── Stories tab ── */}
+            {tab === "stories" && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">Stories</h2>
+                  {isAuth && (
+                    <button onClick={() => setAddingStory(true)} className="text-xs text-violet-400 hover:text-violet-300 transition-colors">
+                      ✍ Add a story
+                    </button>
+                  )}
+                </div>
+                {placeStories.length === 0 ? (
+                  <div className="py-10 text-center border border-dashed border-border-default rounded-xl">
+                    <div className="text-sm text-muted mb-1">No stories yet for this place.</div>
+                    {isAuth
+                      ? <button onClick={() => setAddingStory(true)} className="text-xs text-violet-400 hover:text-violet-300 transition-colors">Share the first one →</button>
+                      : <div className="text-xs text-muted"><Link href="/auth/signin" className="text-blue-400 hover:text-blue-300">Sign in</Link> to share your story</div>
+                    }
+                  </div>
+                ) : (
+                  placeStories.map((s) => (
+                    <StoryCard
+                      key={s.id}
+                      story={s}
+                      isOwn={s.author_id === activePersonId}
+                      onDelete={(sid) => setPlaceStories((prev) => prev.filter((x) => x.id !== sid))}
+                    />
+                  ))
+                )}
               </div>
             )}
 
