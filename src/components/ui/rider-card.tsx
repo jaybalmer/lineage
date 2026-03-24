@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import type { Claim, Person, MembershipState } from "@/types"
 import type { ProfileLink } from "@/types"
 import { getLinkIcon } from "@/components/ui/edit-profile-modal"
@@ -169,6 +169,12 @@ export function RiderCard({
   const [avatarLightbox, setAvatarLightbox]   = useState(false)
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
+  // Sync when profileOverride loads from DB after async auth (e.g. fresh session in Safari)
+  useEffect(() => {
+    const url = (person as Person).avatar_url ?? null
+    if (url) setAvatarUrl(url)
+  }, [(person as Person).avatar_url]) // eslint-disable-line react-hooks/exhaustive-deps
+
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file || !userId) return
@@ -194,6 +200,13 @@ export function RiderCard({
   const [cardBgUrl, setCardBgUrl]         = useState<string | null>(
     (person as Person).card_bg_url ?? null
   )
+
+  // Sync when profileOverride loads from DB after async auth (e.g. fresh session in Safari)
+  useEffect(() => {
+    const url = (person as Person).card_bg_url ?? null
+    if (url) setCardBgUrl(url)
+  }, [(person as Person).card_bg_url]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const [uploadingBg, setUploadingBg]     = useState(false)
   const [bgError, setBgError]             = useState<string | null>(null)
   const [shareCopied, setShareCopied]     = useState(false)
