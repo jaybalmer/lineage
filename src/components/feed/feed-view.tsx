@@ -92,6 +92,7 @@ export function FeedView({
   person,
   onStoryAdded,
   onStoryDeleted,
+  order = "desc",
 }: {
   claims: Claim[]
   days?: RidingDay[]
@@ -103,6 +104,7 @@ export function FeedView({
   person?: Person
   onStoryAdded?: (s: Story) => void
   onStoryDeleted?: (id: string) => void
+  order?: "asc" | "desc"
 }) {
   const [filter, setFilter] = useState<FilterType>("all")
   const [addingClaim, setAddingClaim] = useState(false)
@@ -144,15 +146,17 @@ export function FeedView({
         ? [{ kind: "riding_start" as const, year: ridingSince, sortDate: ridingSince * 10000 + 101 }]
         : []
 
-    return [...claimItems, ...dayItems, ...storyItems, ...ridingStartItem].sort((a, b) =>
-      a.sortDate !== b.sortDate
-        ? a.sortDate - b.sortDate
-        : predicateRank(a) - predicateRank(b)
-    )
-  }, [claims, days, stories, filter, ridingSince])
+    return [...claimItems, ...dayItems, ...storyItems, ...ridingStartItem].sort((a, b) => {
+      const dir = order === "asc" ? 1 : -1
+      if (a.sortDate !== b.sortDate) return dir * (a.sortDate - b.sortDate)
+      return predicateRank(a) - predicateRank(b)
+    })
+  }, [claims, days, stories, filter, ridingSince, order])
 
   const grouped = useMemo(() => groupByDecade(items), [items])
-  const decades = Object.keys(grouped).sort()
+  const decades = Object.keys(grouped).sort((a, b) =>
+    order === "asc" ? a.localeCompare(b) : b.localeCompare(a)
+  )
 
   // Count per filter tab
   const filterCounts = useMemo((): Record<FilterType, number> => {

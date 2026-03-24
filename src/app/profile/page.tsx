@@ -23,6 +23,7 @@ export default function ProfilePage() {
   const [addingClaim, setAddingClaim] = useState(false)
   const [addingStory, setAddingStory] = useState(false)
   const [playingTimeline, setPlayingTimeline] = useState(false)
+  const [timelineOrder, setTimelineOrder] = useState<"asc" | "desc">("desc")
   const [stories, setStories] = useState<Story[]>([])
 
   // Redirect to sign-in only after the server-validated auth check completes.
@@ -148,7 +149,16 @@ export default function ProfilePage() {
 
         {/* Quick-action row */}
         <div className="flex items-center justify-between gap-2 mb-6">
-          <h2 className="text-2xl font-black tracking-widest uppercase text-foreground">Timeline</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-2xl font-black tracking-widest uppercase text-foreground">Timeline</h2>
+            <button
+              onClick={() => setTimelineOrder((o) => o === "desc" ? "asc" : "desc")}
+              title={timelineOrder === "desc" ? "Showing newest first" : "Showing oldest first"}
+              className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-muted hover:text-foreground hover:bg-surface-hover border border-border-default transition-colors"
+            >
+              {timelineOrder === "desc" ? "↓ Newest" : "↑ Oldest"}
+            </button>
+          </div>
           <div className="flex gap-2">
             <button
               onClick={() => setAddingStory(true)}
@@ -227,6 +237,7 @@ export default function ProfilePage() {
           person={person ?? undefined}
           onStoryAdded={(s) => setStories((prev) => [s, ...prev])}
           onStoryDeleted={(id) => setStories((prev) => prev.filter((s) => s.id !== id))}
+          order={timelineOrder}
         />
       </div>
     </div>
