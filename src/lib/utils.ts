@@ -71,6 +71,20 @@ export const CONFIDENCE_COLORS: Record<ConfidenceLevel, string> = {
   "partner-verified": "bg-violet-900 text-violet-200",
 }
 
+/** Extract an 11-char YouTube video ID from any common URL format.
+ *  Handles: watch?v=, youtu.be/, /embed/, /shorts/ */
+export function parseYouTubeId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?.*v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([A-Za-z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([A-Za-z0-9_-]{11})/,
+  ]
+  for (const p of patterns) {
+    const m = url.match(p)
+    if (m) return m[1]
+  }
+  return null
+}
+
 export const PREDICATE_ICONS: Record<Predicate, string> = {
   rode_at: "🏔",
   worked_at: "🏪",

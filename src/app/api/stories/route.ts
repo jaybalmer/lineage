@@ -86,6 +86,7 @@ export async function POST(req: NextRequest) {
       linked_event_id, linked_place_id,
       board_ids = [], rider_ids = [],
       photos = [],   // [{ url, caption?, sort_order? }]
+      youtube_url,
     } = body
 
     if (!author_id || !story_date) {
@@ -100,6 +101,7 @@ export async function POST(req: NextRequest) {
         story_date, visibility,
         linked_event_id: linked_event_id || null,
         linked_place_id: linked_place_id || null,
+        youtube_url: youtube_url || null,
       })
       .select()
       .single()
@@ -152,6 +154,7 @@ export async function PATCH(req: NextRequest) {
       board_ids = [], rider_ids = [],
       keep_photo_ids = [],
       new_photos = [],
+      youtube_url,
     } = body
 
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })
@@ -166,6 +169,7 @@ export async function PATCH(req: NextRequest) {
         visibility,
         linked_event_id: linked_event_id || null,
         linked_place_id: linked_place_id || null,
+        youtube_url: youtube_url ?? null,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)

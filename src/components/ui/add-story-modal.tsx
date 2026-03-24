@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
-import { cn } from "@/lib/utils"
+import { cn, parseYouTubeId } from "@/lib/utils"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import type { Story, PrivacyLevel } from "@/types"
 
@@ -148,6 +148,9 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
     () => new Set((editStory?.photos ?? []).map((p) => p.id))
   )
 
+  // YouTube
+  const [youtubeUrl, setYoutubeUrl] = useState(editStory?.youtube_url ?? "")
+
   // New photo uploads
   const [uploads, setUploads]   = useState<UploadState[]>([])
   const fileInputRef            = useRef<HTMLInputElement>(null)
@@ -231,6 +234,7 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
       linked_event_id: selectedEventId || undefined,
       board_ids:       selectedBoardIds,
       rider_ids:       selectedRiderIds,
+      youtube_url:     youtubeUrl.trim() || null,
     }
 
     if (isEditing && editStory) {
@@ -458,6 +462,26 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
                     </>
                   )
                 })()}
+              </div>
+
+              {/* YouTube video */}
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">YouTube video (optional)</label>
+                <input
+                  type="url"
+                  value={youtubeUrl}
+                  onChange={(e) => setYoutubeUrl(e.target.value)}
+                  placeholder="Paste a YouTube link…"
+                  className={inputCls}
+                />
+                {youtubeUrl.trim() && (
+                  <p className={cn(
+                    "mt-1 text-[10px]",
+                    parseYouTubeId(youtubeUrl) ? "text-emerald-400" : "text-amber-400"
+                  )}>
+                    {parseYouTubeId(youtubeUrl) ? "✓ Valid YouTube link" : "⚠ Doesn't look like a YouTube URL"}
+                  </p>
+                )}
               </div>
 
               {/* Visibility */}

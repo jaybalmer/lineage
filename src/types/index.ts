@@ -257,6 +257,7 @@ export interface Story {
   rider_ids?: string[]
   // Denormalised author info (joined from profiles)
   author?: { display_name: string; avatar_url?: string }
+  youtube_url?: string | null
 }
 
 // ─── UI-focused composite types ──────────────────────────────────────────────

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { cn, nameToSlug } from "@/lib/utils"
+import { cn, nameToSlug, parseYouTubeId } from "@/lib/utils"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { useLineageStore } from "@/store/lineage-store"
@@ -133,6 +133,20 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
       {/* ── Body text ── */}
       {displayStory.body && (
         <p className="text-sm text-muted leading-relaxed mb-3 whitespace-pre-wrap">{displayStory.body}</p>
+      )}
+
+      {/* ── YouTube embed ── */}
+      {displayStory.youtube_url && parseYouTubeId(displayStory.youtube_url) && (
+        <div className="mt-3 mb-3 rounded-xl overflow-hidden aspect-video bg-black">
+          <iframe
+            src={`https://www.youtube.com/embed/${parseYouTubeId(displayStory.youtube_url)}`}
+            className="w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+            loading="lazy"
+            title="Story video"
+          />
+        </div>
       )}
 
       {/* ── Photo grid ── */}
