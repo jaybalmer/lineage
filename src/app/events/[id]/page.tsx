@@ -123,7 +123,7 @@ function InstanceRow({ event }: { event: Event }) {
   ).length
 
   return (
-    <Link href={`/events/${eventSlug(event)}`} className="block">
+    <Link href={`/events/${event.id}`} className="block">
       <div className="border border-border-default bg-background rounded-xl overflow-hidden hover:border-blue-500/40 transition-all">
         <div className="px-4 py-3 border-b border-border-default flex items-center justify-between">
           <div>
@@ -815,7 +815,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
                     (c) => c.object_id === e.id && EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number])
                   ).length
                   return (
-                    <Link key={e.id} href={`/events/${eventSlug(e)}`}>
+                    <Link key={e.id} href={`/events/${e.id}`}>
                       <div className="flex items-center justify-between px-4 py-2.5 bg-background border border-border-default rounded-lg hover:border-border-default transition-all">
                         <div>
                           <div className="text-sm text-foreground">{e.name}</div>
