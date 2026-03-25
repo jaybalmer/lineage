@@ -121,6 +121,8 @@ export interface Event {
   image_url?: string
   community_status?: CommunityStatus
   added_by?: string
+  website_url?: string
+  youtube_url?: string
 }
 
 export type EntityType = "person" | "place" | "org" | "board" | "event"

@@ -1,10 +1,15 @@
 "use client"
 
 import { useState } from "react"
-import { useLineageStore } from "@/store/lineage-store"
+import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import { PLACES, EVENT_SERIES } from "@/lib/mock-data"
 import type { Event, EventType, EventSeries } from "@/types"
+
+function isDbEvent(id: string): boolean {
+  // DB-backed events have UUID-style IDs (long strings, not mock prefixes)
+  return id.length > 8 && !id.startsWith("evt_") && !id.startsWith("dev-")
+}
 
 const EVENT_TYPES: { value: EventType; label: string }[] = [
   { value: "contest", label: "Contest" },
@@ -40,13 +45,18 @@ function generateId(prefix: string) {
 interface EditEventModalProps {
   event: Event
   onClose: () => void
+  onSaved?: (updated: Event) => void
 }
 
-export function EditEventModal({ event, onClose }: EditEventModalProps) {
-  const { updateUserEvent, addUserSeries, catalog } = useLineageStore()
+export function EditEventModal({ event, onClose, onSaved }: EditEventModalProps) {
+  const { updateUserEvent, addUserSeries, catalog, activePersonId } = useLineageStore()
 
   const [name, setName] = useState(event.name)
   const [eventType, setEventType] = useState<EventType>(event.event_type)
+  const [description, setDescription] = useState(event.description ?? "")
+  const [websiteUrl, setWebsiteUrl] = useState(event.website_url ?? "")
+  const [youtubeUrl, setYoutubeUrl] = useState(event.youtube_url ?? "")
+  const [saving, setSaving] = useState(false)
 
   // Parse existing start_date into year / month / specific date
   const existingYear = event.year ? String(event.year) : event.start_date?.slice(0, 4) ?? ""
@@ -83,8 +93,9 @@ export function EditEventModal({ event, onClose }: EditEventModalProps) {
     return name.trim().length > 0 && eventYear.length === 4 && y >= 1950 && y <= 2030
   }
 
-  const handleSave = () => {
-    if (!canSubmit()) return
+  const handleSave = async () => {
+    if (!canSubmit() || saving) return
+    setSaving(true)
 
     // Create series inline if needed
     let resolvedSeriesId = eventSeriesId
@@ -105,7 +116,7 @@ export function EditEventModal({ event, onClose }: EditEventModalProps) {
     if (eventMonth) computedStart = `${eventYear}-${eventMonth.padStart(2, "0")}`
     if (showExactDates && startDate) computedStart = startDate
 
-    updateUserEvent(event.id, {
+    const updates: Partial<Event> = {
       name: name.trim(),
       event_type: eventType,
       year,
@@ -113,7 +124,44 @@ export function EditEventModal({ event, onClose }: EditEventModalProps) {
       end_date: showExactDates && endDate ? endDate : undefined,
       place_id: eventPlaceId || undefined,
       series_id: resolvedSeriesId || undefined,
-    })
+      description: description.trim() || undefined,
+      website_url: websiteUrl.trim() || undefined,
+      youtube_url: youtubeUrl.trim() || undefined,
+    }
+
+    updateUserEvent(event.id, updates)
+
+    // Persist to Supabase for DB-backed events
+    if (isDbEvent(event.id) && isAuthUser(activePersonId ?? "")) {
+      try {
+        await fetch("/api/admin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            operation: "update",
+            table: "events",
+            id: event.id,
+            data: {
+              name: updates.name,
+              event_type: updates.event_type,
+              year: updates.year,
+              start_date: updates.start_date,
+              end_date: updates.end_date ?? null,
+              place_id: updates.place_id ?? null,
+              series_id: updates.series_id ?? null,
+              description: updates.description ?? null,
+              website_url: updates.website_url ?? null,
+              youtube_url: updates.youtube_url ?? null,
+            },
+          }),
+        })
+      } catch {
+        // Optimistic update already applied
+      }
+    }
+
+    onSaved?.({ ...event, ...updates })
+    setSaving(false)
     onClose()
   }
 
@@ -313,6 +361,36 @@ export function EditEventModal({ event, onClose }: EditEventModalProps) {
               </div>
             )}
           </Field>
+
+          <Field label="Description">
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="About this event…"
+              rows={3}
+              className={cn(inputCls, "resize-none")}
+            />
+          </Field>
+
+          <Field label="Website URL">
+            <input
+              type="url"
+              value={websiteUrl}
+              onChange={(e) => setWebsiteUrl(e.target.value)}
+              placeholder="https://…"
+              className={inputCls}
+            />
+          </Field>
+
+          <Field label="YouTube URL">
+            <input
+              type="url"
+              value={youtubeUrl}
+              onChange={(e) => setYoutubeUrl(e.target.value)}
+              placeholder="https://youtube.com/watch?v=…"
+              className={inputCls}
+            />
+          </Field>
         </div>
 
         <div className="flex gap-3 mt-5">
@@ -324,15 +402,15 @@ export function EditEventModal({ event, onClose }: EditEventModalProps) {
           </button>
           <button
             onClick={handleSave}
-            disabled={!canSubmit()}
+            disabled={!canSubmit() || saving}
             className={cn(
               "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
-              canSubmit()
+              canSubmit() && !saving
                 ? "bg-blue-600 text-white hover:bg-blue-500"
                 : "bg-surface-active text-muted cursor-not-allowed"
             )}
           >
-            Save
+            {saving ? "Saving…" : "Save"}
           </button>
         </div>
       </div>

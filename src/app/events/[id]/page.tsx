@@ -10,9 +10,11 @@ import { supabase } from "@/lib/supabase"
 import { EVENTS, EVENT_SERIES, eventSlug, seriesSlug, placeSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
-import type { Event, Story } from "@/types"
+import type { Event, Story, Claim } from "@/types"
 import { StoryCard } from "@/components/feed/story-card"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
+import { EditEventModal } from "@/components/ui/edit-event-modal"
+import { parseYouTubeId } from "@/lib/utils"
 
 function formatEventDate(start: string, end?: string): string {
   const [sy, sm, sd] = start.split("-").map(Number)
@@ -121,24 +123,26 @@ function InstanceRow({ event }: { event: Event }) {
   ).length
 
   return (
-    <div className="border border-border-default bg-background rounded-xl overflow-hidden">
-      <div className="px-4 py-3 border-b border-border-default flex items-center justify-between">
-        <div>
-          <div className="text-sm font-semibold text-foreground">{event.name}</div>
-          <div className="text-xs text-muted mt-0.5">
-            {formatEventDate(event.start_date, event.end_date)}
-            {place && <span className="text-muted"> · {place.name}</span>}
+    <Link href={`/events/${eventSlug(event)}`} className="block">
+      <div className="border border-border-default bg-background rounded-xl overflow-hidden hover:border-blue-500/40 transition-all">
+        <div className="px-4 py-3 border-b border-border-default flex items-center justify-between">
+          <div>
+            <div className="text-sm font-semibold text-foreground">{event.name}</div>
+            <div className="text-xs text-muted mt-0.5">
+              {formatEventDate(event.start_date, event.end_date)}
+              {place && <span className="text-muted"> · {place.name}</span>}
+            </div>
+          </div>
+          <div className="text-right shrink-0">
+            <div className="text-lg font-bold text-foreground">{attendeeCount}</div>
+            <div className="text-[10px] text-muted">participant{attendeeCount !== 1 ? "s" : ""}</div>
           </div>
         </div>
-        <div className="text-right shrink-0">
-          <div className="text-lg font-bold text-foreground">{attendeeCount}</div>
-          <div className="text-[10px] text-muted">participant{attendeeCount !== 1 ? "s" : ""}</div>
+        <div className="px-4 py-3">
+          <AttendeeList eventId={event.id} />
         </div>
       </div>
-      <div className="px-4 py-3">
-        <AttendeeList eventId={event.id} />
-      </div>
-    </div>
+    </Link>
   )
 }
 
@@ -395,6 +399,172 @@ function EventInstancePhotoBlock({ eventId, eventName, activePersonId }: {
   )
 }
 
+// ─── Add Rider to Event ────────────────────────────────────────────────────────
+
+const ROLE_OPTIONS = [
+  { value: "competed_at" as const, label: "Competed", icon: "🏆" },
+  { value: "spectated_at" as const, label: "Spectated", icon: "👁" },
+  { value: "organized_at" as const, label: "Organized", icon: "🎬" },
+]
+
+function AddRiderToEvent({
+  eventId, riderQuery, setRiderQuery, riderRole, setRiderRole, addClaim, activePersonId, catalog, onDone,
+}: {
+  eventId: string
+  riderQuery: string
+  setRiderQuery: (q: string) => void
+  riderRole: "competed_at" | "spectated_at" | "organized_at"
+  setRiderRole: (r: "competed_at" | "spectated_at" | "organized_at") => void
+  addClaim: (claim: Claim) => void
+  activePersonId: string | null
+  catalog: { people: { id: string; display_name: string }[]; claims: Claim[] }
+  onDone: () => void
+}) {
+  const { addUserPerson } = useLineageStore()
+  const [showNewRider, setShowNewRider] = useState(false)
+  const [newRiderName, setNewRiderName] = useState("")
+
+  const existingRiderIds = new Set(
+    catalog.claims
+      .filter((c) => c.object_id === eventId && EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number]))
+      .map((c) => c.subject_id)
+  )
+
+  const matches = riderQuery.trim()
+    ? catalog.people
+        .filter((p) => p.display_name.toLowerCase().includes(riderQuery.toLowerCase()))
+        .slice(0, 8)
+    : []
+
+  function addRiderClaim(riderId: string) {
+    const claimId = `claim_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+    addClaim({
+      id: claimId,
+      subject_id: riderId,
+      subject_type: "person",
+      predicate: riderRole,
+      object_id: eventId,
+      object_type: "event",
+      confidence: "self-reported",
+      visibility: "public",
+      asserted_by: activePersonId ?? riderId,
+      created_at: new Date().toISOString(),
+    })
+    setRiderQuery("")
+  }
+
+  function handleCreateRider() {
+    if (!newRiderName.trim()) return
+    const personId = `person_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+    addUserPerson({
+      id: personId,
+      display_name: newRiderName.trim(),
+      privacy_level: "public",
+    } as import("@/types").Person)
+    addRiderClaim(personId)
+    setNewRiderName("")
+    setShowNewRider(false)
+  }
+
+  return (
+    <div className="mb-3 p-3 border border-blue-500/30 rounded-xl bg-blue-950/10 space-y-2">
+      <div className="flex gap-1.5 mb-2">
+        {ROLE_OPTIONS.map(({ value, label, icon }) => (
+          <button
+            key={value}
+            onClick={() => setRiderRole(value)}
+            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all border ${
+              riderRole === value
+                ? "bg-blue-600/20 border-blue-500/50 text-blue-300"
+                : "border-border-default text-muted hover:text-foreground"
+            }`}
+          >
+            {icon} {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Add myself shortcut */}
+      {activePersonId && !existingRiderIds.has(activePersonId) && (
+        <button
+          onClick={() => addRiderClaim(activePersonId)}
+          className="w-full text-left px-3 py-2 text-sm text-blue-400 hover:bg-surface-hover rounded-lg transition-colors"
+        >
+          + Add myself
+        </button>
+      )}
+
+      {/* Search for existing riders */}
+      <div className="relative">
+        <input
+          type="text"
+          value={riderQuery}
+          onChange={(e) => { setRiderQuery(e.target.value); setShowNewRider(false) }}
+          placeholder="Search riders by name…"
+          className="w-full bg-background border border-border-default rounded-lg px-3 py-2 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+          autoFocus
+        />
+        {riderQuery.trim().length > 0 && (
+          <div className="absolute z-10 w-full mt-1 bg-surface border border-border-default rounded-lg shadow-xl max-h-48 overflow-y-auto">
+            {matches.map((p) => (
+              <button
+                key={p.id}
+                onClick={() => addRiderClaim(p.id)}
+                disabled={existingRiderIds.has(p.id)}
+                className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                  existingRiderIds.has(p.id)
+                    ? "text-muted/50 cursor-not-allowed"
+                    : "text-muted hover:bg-surface-hover hover:text-foreground"
+                }`}
+              >
+                {p.display_name}
+                {existingRiderIds.has(p.id) && <span className="text-xs ml-2">(already added)</span>}
+              </button>
+            ))}
+            <button
+              onClick={() => { setShowNewRider(true); setNewRiderName(riderQuery.trim()) }}
+              className="w-full text-left px-3 py-2 text-sm text-blue-400 hover:bg-surface-hover transition-colors flex items-center gap-2"
+            >
+              <span className="font-bold">+</span> Add &ldquo;{riderQuery.trim()}&rdquo; as new rider
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Create new rider inline */}
+      {showNewRider && (
+        <div className="flex gap-2 items-center">
+          <input
+            type="text"
+            value={newRiderName}
+            onChange={(e) => setNewRiderName(e.target.value)}
+            placeholder="Rider name…"
+            className="flex-1 bg-background border border-border-default rounded-lg px-3 py-2 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+            autoFocus
+          />
+          <button
+            onClick={handleCreateRider}
+            disabled={!newRiderName.trim()}
+            className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors"
+          >
+            Add
+          </button>
+          <button
+            onClick={() => setShowNewRider(false)}
+            className="text-xs text-muted hover:text-foreground transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      )}
+
+      <button onClick={onDone} className="text-xs text-muted hover:text-foreground transition-colors">
+        Done
+      </button>
+    </div>
+  )
+}
+
 // ─── Main page ─────────────────────────────────────────────────────────────────
 
 export default function EventPage({ params }: { params: Promise<{ id: string }> }) {
@@ -404,6 +574,11 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
   const [showAddEdition, setShowAddEdition] = useState(false)
   const [eventStories, setEventStories] = useState<Story[]>([])
   const [addingStory, setAddingStory] = useState(false)
+  const [editingEvent, setEditingEvent] = useState(false)
+  const [addingRider, setAddingRider] = useState(false)
+  const [riderQuery, setRiderQuery] = useState("")
+  const [riderRole, setRiderRole] = useState<"competed_at" | "spectated_at" | "organized_at">("competed_at")
+  const { addClaim } = useLineageStore()
 
   // Fetch stories for event instances (not series)
   const instanceId = (() => {
@@ -471,6 +646,13 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
           />
         )}
 
+        {editingEvent && (
+          <EditEventModal
+            event={instance}
+            onClose={() => setEditingEvent(false)}
+          />
+        )}
+
         <div className="max-w-3xl mx-auto px-4 py-8">
           {/* Breadcrumb */}
           <div className="text-xs text-muted mb-6">
@@ -500,7 +682,20 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
                   <span>{instance.event_type}</span>
                   {instance.year && <span className="text-muted">· {instance.year}</span>}
                 </div>
-                <h1 className="text-2xl font-bold text-foreground">{instance.name}</h1>
+                <div className="flex items-start justify-between gap-2">
+                  <h1 className="text-2xl font-bold text-foreground">{instance.name}</h1>
+                  {isAuth && (
+                    <button
+                      onClick={() => setEditingEvent(true)}
+                      className="shrink-0 text-xs text-muted hover:text-foreground transition-colors px-2 py-1 border border-border-default rounded-lg hover:border-blue-500/40"
+                    >
+                      Edit
+                    </button>
+                  )}
+                </div>
+                {instance.description && (
+                  <p className="text-muted text-sm mt-1 leading-relaxed">{instance.description}</p>
+                )}
                 {place && (
                   <Link href={`/places/${placeSlug(place)}`}>
                     <p className="text-muted text-sm mt-1 hover:text-blue-300 transition-colors">
@@ -511,6 +706,16 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
                 <p className="text-muted text-sm mt-0.5">
                   {formatEventDate(instance.start_date, instance.end_date)}
                 </p>
+                {instance.website_url && (
+                  <a
+                    href={instance.website_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300 transition-colors mt-1"
+                  >
+                    🔗 Website
+                  </a>
+                )}
                 <div className="mt-4 flex gap-6">
                   <div>
                     <div className="font-bold text-foreground text-xl">{totalAttendees}</div>
@@ -521,9 +726,47 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
             </div>
           </div>
 
+          {/* YouTube embed */}
+          {instance.youtube_url && parseYouTubeId(instance.youtube_url) && (
+            <section className="mb-6">
+              <div className="aspect-video rounded-xl overflow-hidden border border-border-default">
+                <iframe
+                  src={`https://www.youtube.com/embed/${parseYouTubeId(instance.youtube_url)}`}
+                  title={instance.name}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="w-full h-full"
+                />
+              </div>
+            </section>
+          )}
+
           {/* Participants */}
           <section className="mb-8">
-            <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Participants</h2>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">Participants</h2>
+              {isAuth && (
+                <button
+                  onClick={() => setAddingRider(!addingRider)}
+                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  {addingRider ? "Cancel" : "+ Add rider"}
+                </button>
+              )}
+            </div>
+            {addingRider && (
+              <AddRiderToEvent
+                eventId={instance.id}
+                riderQuery={riderQuery}
+                setRiderQuery={setRiderQuery}
+                riderRole={riderRole}
+                setRiderRole={setRiderRole}
+                addClaim={addClaim}
+                activePersonId={activePersonId}
+                catalog={catalog}
+                onDone={() => { setAddingRider(false); setRiderQuery("") }}
+              />
+            )}
             <div className="bg-background border border-border-default rounded-xl p-4">
               <AttendeeList eventId={instance.id} />
             </div>
