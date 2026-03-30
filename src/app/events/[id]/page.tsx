@@ -412,9 +412,10 @@ const ROLE_OPTIONS = [
 ]
 
 function AddRiderToEvent({
-  eventId, riderQuery, setRiderQuery, riderRole, setRiderRole, addClaim, activePersonId, catalog, onDone,
+  eventId, eventStartDate, riderQuery, setRiderQuery, riderRole, setRiderRole, addClaim, activePersonId, catalog, onDone,
 }: {
   eventId: string
+  eventStartDate?: string | null
   riderQuery: string
   setRiderQuery: (q: string) => void
   riderRole: "competed_at" | "spectated_at" | "organized_at"
@@ -449,6 +450,7 @@ function AddRiderToEvent({
       predicate: riderRole,
       object_id: eventId,
       object_type: "event",
+      start_date: eventStartDate ?? undefined,
       confidence: "self-reported",
       visibility: "public",
       asserted_by: activePersonId ?? riderId,
@@ -761,6 +763,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
             {addingRider && (
               <AddRiderToEvent
                 eventId={instance.id}
+                eventStartDate={instance.start_date}
                 riderQuery={riderQuery}
                 setRiderQuery={setRiderQuery}
                 riderRole={riderRole}
