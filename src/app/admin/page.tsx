@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import type React from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
@@ -1776,10 +1777,21 @@ export default function AdminPage() {
             <span className="text-xs font-semibold text-muted uppercase tracking-widest">Data Editor</span>
             <span className="text-xs px-2 py-0.5 bg-amber-900/30 border border-amber-700/40 text-amber-400 rounded-full">Trusted contributors only</span>
           </div>
-          <h1 className="text-2xl font-bold text-foreground">Dataset Editor</h1>
-          <p className="text-sm text-muted mt-1">
-            Add and edit snowboarding history data. Click any row to edit it. Use &ldquo;Paste rows&rdquo; to bulk import from Google Sheets.
-          </p>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h1 className="text-2xl font-bold text-foreground">Dataset Editor</h1>
+              <p className="text-sm text-muted mt-1">
+                Add and edit snowboarding history data. Click any row to edit it. Use &ldquo;Paste rows&rdquo; to bulk import from Google Sheets.
+              </p>
+            </div>
+            <Link
+              href="/admin/results-scanner"
+              className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-border-default text-xs text-foreground hover:bg-surface-hover transition-colors"
+            >
+              <span>📋</span>
+              Results Scanner
+            </Link>
+          </div>
         </div>
 
         {/* Tabs */}
