@@ -250,7 +250,12 @@ export const useLineageStore = create<LineageStore>()(
           return { deletedClaimIds: [...s.deletedClaimIds, id] }
         })
         if (isAuthUser(activePersonId)) {
-          supabase.from("claims").delete().eq("id", id)
+          // Use service-role API route — browser client RLS may block deletes
+          fetch("/api/admin", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ operation: "delete", table: "claims", id }),
+          })
         }
       },
       updateClaim: (id, updates) => {
