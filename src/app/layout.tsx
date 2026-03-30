@@ -5,7 +5,7 @@ import { ClientOverlays } from "@/components/ClientOverlays"
 import { Analytics } from "@vercel/analytics/next"
 
 export const metadata: Metadata = {
-  title: "Lineage — Snowboarding History Graph",
+  title: "Lineage Community Tech",
   description: "A living, time-aware, community-authored snowboarding lineage graph",
 }
 
