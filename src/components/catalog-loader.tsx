@@ -43,7 +43,7 @@ async function loadProfileAndMembership(uid: string) {
   const dbTier = profile.membership_tier ?? "free"
   // is_editor: true if the DB column is set OR if tier is founding (belt-and-suspenders
   // so the column migration not being applied never locks out founding members)
-  const isEditorFromDb  = (profile as Record<string, unknown>).is_editor === true
+  const isEditorFromDb  = !!(profile as Record<string, unknown>).is_editor
   const isEditorByTier  = dbTier === "founding"
   setMembership({ is_editor: isEditorFromDb || isEditorByTier })
 
