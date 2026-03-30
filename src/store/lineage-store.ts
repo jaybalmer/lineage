@@ -142,9 +142,13 @@ export const useLineageStore = create<LineageStore>()(
           supabase.from("profiles").select(
             "id, display_name, birth_year, riding_since, privacy_level, bio, links, home_resort_id, membership_tier"
           ),
-          supabase.from("event_brands").select("event_id, org_id"),
-          supabase.from("event_series_brands").select("series_id, org_id"),
-        ]).then(([p, o, b, e, es, pe, c, pr, eb, esb]) => {
+          // Junction tables fetched via service-role API route (RLS blocks anon reads)
+          fetch("/api/catalog-junctions").then((r) => r.json()).catch(() => ({ eventBrands: [], seriesBrands: [] })),
+        ]).then(([p, o, b, e, es, pe, c, pr, junctions]) => {
+          const { eventBrands: ebData, seriesBrands: esbData } = junctions as {
+            eventBrands: { event_id: string; org_id: string }[]
+            seriesBrands: { series_id: string; org_id: string }[]
+          }
           const catalogPeople = (pe.data?.length ? pe.data : PEOPLE) as Person[]
 
           // Map profile rows → Person shape, skip any already in catalog people (dedup by id)
@@ -166,12 +170,12 @@ export const useLineageStore = create<LineageStore>()(
 
           // Build brand_ids maps from junction tables
           const eventBrandMap = new Map<string, string[]>()
-          for (const row of (eb.data ?? []) as { event_id: string; org_id: string }[]) {
+          for (const row of ebData) {
             if (!eventBrandMap.has(row.event_id)) eventBrandMap.set(row.event_id, [])
             eventBrandMap.get(row.event_id)!.push(row.org_id)
           }
           const seriesBrandMap = new Map<string, string[]>()
-          for (const row of (esb.data ?? []) as { series_id: string; org_id: string }[]) {
+          for (const row of esbData) {
             if (!seriesBrandMap.has(row.series_id)) seriesBrandMap.set(row.series_id, [])
             seriesBrandMap.get(row.series_id)!.push(row.org_id)
           }
@@ -224,7 +228,7 @@ export const useLineageStore = create<LineageStore>()(
         if (isAuthUser(activePersonId)) {
           supabase
             .from("claims")
-            .insert({ ...claim, subject_id: activePersonId, asserted_by: activePersonId })
+            .insert({ ...claim, asserted_by: activePersonId })
             .then(({ error }) => {
               if (!error) {
                 // Move from sessionClaims → dbClaims
@@ -401,7 +405,9 @@ export const useLineageStore = create<LineageStore>()(
           },
         }))
         if (isAuthUser(get().activePersonId)) {
-          supabase.from("events").update(updates).eq("id", id)
+          // Strip brand_ids — it's a denormalized field from the event_brands junction table, not a column
+          const { brand_ids: _, ...dbUpdates } = updates
+          supabase.from("events").update(dbUpdates).eq("id", id)
             .then(({ error }) => { if (error) console.error("event update:", error) })
         }
       },

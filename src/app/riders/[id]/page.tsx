@@ -22,7 +22,8 @@ const TIER_BADGE: Record<string, { symbol: string; label: string; color: string 
 
 export default function RiderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { activePersonId, profileOverride, membership, catalogLoaded, catalog, setShowMemberCard } = useLineageStore()
+  const { activePersonId, profileOverride, membership, catalogLoaded, catalog, userEntities, setShowMemberCard } = useLineageStore()
+  const allPeople = [...catalog.people, ...(userEntities.people ?? [])]
   const [playingTimeline, setPlayingTimeline] = useState(false)
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(false)
   const [milestoneDismissed, setMilestoneDismissed] = useState(false)
@@ -49,9 +50,9 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
 
   const resolvedPerson = catalogLoaded
     ? (isUuid
-        ? (catalog.people.find((p) => p.id === id) ?? getPersonById(id) ?? null)
-        : (catalog.people.find((p) => nameToSlug(p.display_name) === id) ??
-           catalog.people.find((p) => p.id === id) ??
+        ? (allPeople.find((p) => p.id === id) ?? getPersonById(id) ?? null)
+        : (allPeople.find((p) => nameToSlug(p.display_name) === id) ??
+           allPeople.find((p) => p.id === id) ??
            getPersonById(id) ??
            null))
     : null
@@ -59,11 +60,9 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   // The canonical UUID (or short mock ID) used for DB queries and store checks
   const resolvedId = resolvedPerson?.id ?? id
 
-  // Fetch Supabase claims for real (UUID) users — fires once resolved UUID is known
+  // Fetch Supabase claims for this rider — fires once resolved ID is known
   useEffect(() => {
-    if (!catalogLoaded) return
-    const isProperUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(resolvedId)
-    if (!isProperUuid) return
+    if (!catalogLoaded || !resolvedId) return
     supabase
       .from("claims")
       .select("*")
@@ -71,9 +70,12 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
       .eq("visibility", "public")
       .then(({ data }) => setDbClaims((data ?? []) as Claim[]))
 
-    fetch(`/api/stories?author_id=${resolvedId}&limit=100`)
-      .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setStories(data as Story[]) })
+    const isProperUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(resolvedId)
+    if (isProperUuid) {
+      fetch(`/api/stories?author_id=${resolvedId}&limit=100`)
+        .then((r) => r.json())
+        .then((data) => { if (Array.isArray(data)) setStories(data as Story[]) })
+    }
   }, [catalogLoaded, resolvedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Wait for catalog to hydrate before 404-ing

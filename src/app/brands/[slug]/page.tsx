@@ -53,7 +53,8 @@ const inputCls =
 type ClaimMode = "person" | "event" | "place"
 
 function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void }) {
-  const { addClaim, activePersonId, catalog } = useLineageStore()
+  const { addClaim, activePersonId, catalog, userEntities } = useLineageStore()
+  const allPeople = [...catalog.people, ...(userEntities.people ?? [])]
 
   const [mode, setMode] = useState<ClaimMode>("person")
   const [predicate, setPredicate] = useState<Predicate>("sponsored_by")
@@ -200,7 +201,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
                 className={cn(inputCls, "appearance-none")}
               >
                 <option value="">Select a rider…</option>
-                {catalog.people.map((p) => (
+                {allPeople.map((p) => (
                   <option key={p.id} value={p.id}>{p.display_name}</option>
                 ))}
               </select>
@@ -363,6 +364,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
   const { slug } = use(params)
   const { catalog, sessionClaims, dbClaims, userEntities } = useLineageStore()
   const allOrgs = [...catalog.orgs, ...userEntities.orgs]
+  const allPeople = [...catalog.people, ...(userEntities.people ?? [])]
   const org = allOrgs.find((o) => o.id === slug || orgSlug(o) === slug)
   if (!org) notFound()
 
@@ -647,7 +649,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                     <div className="space-y-2">
                       {entries.map((item, i) => {
                         if (item.kind === "person") {
-                          const person = catalog.people.find((p) => p.id === item.claim.subject_id)
+                          const person = allPeople.find((p) => p.id === item.claim.subject_id)
                           if (!person) return null
                           const relLabel = PREDICATE_LABEL[item.claim.predicate] ?? item.claim.predicate
                           const confColor = CONFIDENCE_COLORS[item.claim.confidence] ?? "text-muted"
@@ -773,7 +775,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                     No people claims yet. <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
                   </div>
                 ) : peopleClaims.map((claim) => {
-                  const person = catalog.people.find((p) => p.id === claim.subject_id)
+                  const person = allPeople.find((p) => p.id === claim.subject_id)
                   if (!person) return null
                   const relLabel = PREDICATE_LABEL[claim.predicate] ?? claim.predicate
                   const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-muted"
