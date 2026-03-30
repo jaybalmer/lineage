@@ -9,59 +9,52 @@ import type { ProfileLink } from "@/types"
 async function loadProfileAndMembership(uid: string) {
   const { setProfileOverride, setMembership, membership } = useLineageStore.getState()
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select(`
-      display_name, birth_year, riding_since, privacy_level,
-      bio, links, home_resort_id, city, region, country, avatar_url, card_bg_url,
-      membership_tier, membership_status, founding_badge, founding_member_number,
-      token_founder, token_member, token_contribution,
-      stripe_customer_id, stripe_subscription_id, membership_expires_at, pending_credit,
-      is_editor
-    `)
-    .eq("id", uid)
-    .single()
-
+  // Fetch via /api/me which uses the service role key — bypasses RLS entirely.
+  // Direct browser-client reads of profiles can silently return null if RLS
+  // policies don't permit the anon/user key to read certain columns.
+  const res = await fetch("/api/me")
+  if (!res.ok) return
+  const { profile } = await res.json() as { uid: string; profile: Record<string, unknown> }
   if (!profile) return
 
+  const p = profile  // already Record<string, unknown> from /api/me
+
   setProfileOverride({
-    display_name:   profile.display_name  ?? undefined,
-    birth_year:     profile.birth_year    ?? undefined,
-    riding_since:   profile.riding_since  ?? undefined,
-    privacy_level:  (profile.privacy_level ?? "public") as "private" | "shared" | "public",
-    bio:            (profile as Record<string, unknown>).bio            as string | undefined ?? undefined,
-    links:          (profile as Record<string, unknown>).links          as ProfileLink[] | undefined ?? undefined,
-    home_resort_id: (profile as Record<string, unknown>).home_resort_id as string | undefined ?? undefined,
-    city:           (profile as Record<string, unknown>).city           as string | undefined ?? undefined,
-    region:         (profile as Record<string, unknown>).region         as string | undefined ?? undefined,
-    country:        (profile as Record<string, unknown>).country        as string | undefined ?? undefined,
-    avatar_url:     (profile as Record<string, unknown>).avatar_url     as string | undefined ?? undefined,
-    card_bg_url:    (profile as Record<string, unknown>).card_bg_url    as string | undefined ?? undefined,
+    display_name:   p.display_name   as string  | undefined ?? undefined,
+    birth_year:     p.birth_year     as number  | undefined ?? undefined,
+    riding_since:   p.riding_since   as number  | undefined ?? undefined,
+    privacy_level:  ((p.privacy_level ?? "public") as "private" | "shared" | "public"),
+    bio:            p.bio            as string  | undefined ?? undefined,
+    links:          p.links          as ProfileLink[] | undefined ?? undefined,
+    home_resort_id: p.home_resort_id as string  | undefined ?? undefined,
+    city:           p.city           as string  | undefined ?? undefined,
+    region:         p.region         as string  | undefined ?? undefined,
+    country:        p.country        as string  | undefined ?? undefined,
+    avatar_url:     p.avatar_url     as string  | undefined ?? undefined,
+    card_bg_url:    p.card_bg_url    as string  | undefined ?? undefined,
   })
 
-  // Only update membership tier/tokens if DB has a non-free tier (respect local contribution tokens otherwise)
-  const dbTier = profile.membership_tier ?? "free"
-  // is_editor: true if the DB column is set OR if tier is founding (belt-and-suspenders
-  // so the column migration not being applied never locks out founding members)
-  const isEditorFromDb  = !!(profile as Record<string, unknown>).is_editor
-  const isEditorByTier  = dbTier === "founding"
+  // is_editor: true if DB column set OR if tier is founding
+  const dbTier        = (p.membership_tier as string) ?? "free"
+  const isEditorFromDb = !!p.is_editor
+  const isEditorByTier = dbTier === "founding"
   setMembership({ is_editor: isEditorFromDb || isEditorByTier })
 
-  if (dbTier !== "free" || profile.token_founder || profile.token_member) {
+  if (dbTier !== "free" || p.token_founder || p.token_member) {
     setMembership({
       tier:                   dbTier as "free" | "annual" | "lifetime" | "founding",
-      status:                 (profile.membership_status ?? "active") as "active" | "expired" | "gifted",
-      founding_badge:         profile.founding_badge ?? false,
-      founding_member_number: profile.founding_member_number ?? undefined,
+      status:                 ((p.membership_status ?? "active") as "active" | "expired" | "gifted"),
+      founding_badge:          (p.founding_badge as boolean) ?? false,
+      founding_member_number:  p.founding_member_number as number | undefined ?? undefined,
       token_balance: {
-        founder:      profile.token_founder      ?? 0,
-        member:       profile.token_member       ?? 0,
-        contribution: profile.token_contribution ?? membership.token_balance.contribution,
+        founder:      (p.token_founder      as number) ?? 0,
+        member:       (p.token_member       as number) ?? 0,
+        contribution: (p.token_contribution as number) ?? membership.token_balance.contribution,
       },
-      stripe_customer_id:     profile.stripe_customer_id     ?? undefined,
-      stripe_subscription_id: profile.stripe_subscription_id ?? undefined,
-      membership_expires_at:  profile.membership_expires_at  ?? undefined,
-      pending_credit:         profile.pending_credit         ?? 0,
+      stripe_customer_id:      p.stripe_customer_id     as string | undefined ?? undefined,
+      stripe_subscription_id:  p.stripe_subscription_id as string | undefined ?? undefined,
+      membership_expires_at:   p.membership_expires_at  as string | undefined ?? undefined,
+      pending_credit:          (p.pending_credit as number) ?? 0,
     })
   }
 }
