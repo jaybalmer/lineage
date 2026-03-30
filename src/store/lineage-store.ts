@@ -142,7 +142,9 @@ export const useLineageStore = create<LineageStore>()(
           supabase.from("profiles").select(
             "id, display_name, birth_year, riding_since, privacy_level, bio, links, home_resort_id, membership_tier"
           ),
-        ]).then(([p, o, b, e, es, pe, c, pr]) => {
+          supabase.from("event_brands").select("event_id, org_id"),
+          supabase.from("event_series_brands").select("series_id, org_id"),
+        ]).then(([p, o, b, e, es, pe, c, pr, eb, esb]) => {
           const catalogPeople = (pe.data?.length ? pe.data : PEOPLE) as Person[]
 
           // Map profile rows → Person shape, skip any already in catalog people (dedup by id)
@@ -162,13 +164,34 @@ export const useLineageStore = create<LineageStore>()(
               community_status: "verified" as const,
             }))
 
+          // Build brand_ids maps from junction tables
+          const eventBrandMap = new Map<string, string[]>()
+          for (const row of (eb.data ?? []) as { event_id: string; org_id: string }[]) {
+            if (!eventBrandMap.has(row.event_id)) eventBrandMap.set(row.event_id, [])
+            eventBrandMap.get(row.event_id)!.push(row.org_id)
+          }
+          const seriesBrandMap = new Map<string, string[]>()
+          for (const row of (esb.data ?? []) as { series_id: string; org_id: string }[]) {
+            if (!seriesBrandMap.has(row.series_id)) seriesBrandMap.set(row.series_id, [])
+            seriesBrandMap.get(row.series_id)!.push(row.org_id)
+          }
+
+          const events = ((e.data?.length ? e.data : EVENTS) as Event[]).map((ev) => ({
+            ...ev,
+            brand_ids: eventBrandMap.get(ev.id),
+          }))
+          const eventSeries = ((es.data?.length ? es.data : EVENT_SERIES) as EventSeries[]).map((s) => ({
+            ...s,
+            brand_ids: seriesBrandMap.get(s.id),
+          }))
+
           set({
             catalog: {
               places:      (p.data?.length  ? p.data  : PLACES)       as Place[],
               orgs:        (o.data?.length  ? o.data  : ORGS)         as Org[],
               boards:      (b.data?.length  ? b.data  : BOARDS)       as Board[],
-              events:      (e.data?.length  ? e.data  : EVENTS)       as Event[],
-              eventSeries: (es.data?.length ? es.data : EVENT_SERIES) as EventSeries[],
+              events,
+              eventSeries,
               people:      [...catalogPeople, ...profilePeople],
               claims:      (c.data?.length  ? c.data  : CLAIMS)       as Claim[],
             },

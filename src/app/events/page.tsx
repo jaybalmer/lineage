@@ -133,6 +133,7 @@ function EventCard({ event }: { event: Event }) {
         entityId={event.id}
         entityType="event"
         entityName={event.name}
+        entityYear={event.year}
       />
     </div>
   )

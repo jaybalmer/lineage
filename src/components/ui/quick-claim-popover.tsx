@@ -39,9 +39,10 @@ interface QuickClaimPopoverProps {
   entityId: string
   entityType: "person" | "event" | "board" | "org" | "place"
   entityName: string
+  entityYear?: number | null
 }
 
-export function QuickClaimPopover({ entityId, entityType, entityName }: QuickClaimPopoverProps) {
+export function QuickClaimPopover({ entityId, entityType, entityName, entityYear }: QuickClaimPopoverProps) {
   const { activePersonId, addClaim, catalog, sessionClaims, dbClaims } = useLineageStore()
   const [open, setOpen] = useState(false)
   const [predicate, setPredicate] = useState<Predicate | null>(null)
@@ -80,7 +81,8 @@ export function QuickClaimPopover({ entityId, entityType, entityName }: QuickCla
 
   function handleAdd() {
     if (!predicate || !activePersonId) return
-    const startDate = year.length === 4 ? `${year}-01-01` : `${new Date().getFullYear()}-01-01`
+    const effectiveYear = entityYear ?? (year.length === 4 ? Number(year) : new Date().getFullYear())
+    const startDate = `${effectiveYear}-01-01`
     addClaim({
       id: generateId(),
       subject_id: activePersonId,
@@ -154,16 +156,18 @@ export function QuickClaimPopover({ entityId, entityType, entityName }: QuickCla
             </div>
           )}
 
-          {/* Year input */}
-          <input
-            type="text"
-            inputMode="numeric"
-            maxLength={4}
-            placeholder={`${new Date().getFullYear()}`}
-            value={year}
-            onChange={(e) => setYear(e.target.value.replace(/\D/g, "").slice(0, 4))}
-            className="w-full px-2.5 py-1.5 bg-surface-hover border border-border-default rounded-lg text-xs text-foreground placeholder:text-muted focus:outline-none focus:border-accent mb-3"
-          />
+          {/* Year input (hidden when year is known from entity) */}
+          {!entityYear && (
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={4}
+              placeholder={`${new Date().getFullYear()}`}
+              value={year}
+              onChange={(e) => setYear(e.target.value.replace(/\D/g, "").slice(0, 4))}
+              className="w-full px-2.5 py-1.5 bg-surface-hover border border-border-default rounded-lg text-xs text-foreground placeholder:text-muted focus:outline-none focus:border-accent mb-3"
+            />
+          )}
 
           {/* Add button */}
           <button

@@ -54,7 +54,6 @@ export const EVENT_SERIES: EventSeries[] = [
   { id: "es4", name: "Kootenay Powder Trip",     place_id: "p4",  frequency: "irregular", start_year: 2005 },
   { id: "es5", name: "Revelstoke Film Project",  place_id: "p4",  frequency: "irregular", start_year: 2008 },
   { id: "es6", name: "North Shore Sessions",     place_id: "p2",  frequency: "annual", start_year: 2002 },
-  { id: "es7", name: "Westbeach Classic",        place_id: "p1",  frequency: "annual", start_year: 1988, end_year: 1995, description: "Whistler's premier early-era snowboard contest, organized by Westbeach. A defining event of Canadian snowboarding's formative years, drawing the sport's top names through the late '80s and early '90s." },
 ]
 
 // ─── Events (instances) ───────────────────────────────────────────────────────
@@ -91,15 +90,6 @@ export const EVENTS: Event[] = [
   { id: "e4",  name: "Revelstoke Film Shoot '10",event_type: "film-shoot",start_date: "2010-02-01", end_date: "2010-02-10", place_id: "p4", series_id: "es5", year: 2010 },
   { id: "e50", name: "Revelstoke Film Shoot '13",event_type: "film-shoot",start_date: "2013-01-28", end_date: "2013-02-05", place_id: "p4", series_id: "es5", year: 2013 },
   { id: "e51", name: "Revelstoke Film Shoot '16",event_type: "film-shoot",start_date: "2016-02-10", end_date: "2016-02-18", place_id: "p4", series_id: "es5", year: 2016 },
-  // Westbeach Classic (es7) — Whistler, 1988–1995
-  { id: "ewc1", name: "Westbeach Classic '88",    event_type: "contest",   start_date: "1988-03-20", end_date: "1988-03-20", place_id: "p1", series_id: "es7", year: 1988, description: "Inaugural Westbeach Classic at Whistler. One of the first major snowboard contests in Canada." },
-  { id: "ewc2", name: "Westbeach Classic '89",    event_type: "contest",   start_date: "1989-03-19", end_date: "1989-03-19", place_id: "p1", series_id: "es7", year: 1989 },
-  { id: "ewc3", name: "Westbeach Classic '90",    event_type: "contest",   start_date: "1990-03-18", end_date: "1990-03-18", place_id: "p1", series_id: "es7", year: 1990 },
-  { id: "ewc4", name: "Westbeach Classic '91",    event_type: "contest",   start_date: "1991-03-17", end_date: "1991-03-17", place_id: "p1", series_id: "es7", year: 1991 },
-  { id: "ewc5", name: "Westbeach Classic '92",    event_type: "contest",   start_date: "1992-03-22", end_date: "1992-03-22", place_id: "p1", series_id: "es7", year: 1992 },
-  { id: "ewc6", name: "Westbeach Classic '93",    event_type: "contest",   start_date: "1993-03-21", end_date: "1993-03-21", place_id: "p1", series_id: "es7", year: 1993 },
-  { id: "ewc7", name: "Westbeach Classic '94",    event_type: "contest",   start_date: "1994-03-20", end_date: "1994-03-20", place_id: "p1", series_id: "es7", year: 1994 },
-  { id: "ewc8", name: "Westbeach Classic '95",    event_type: "contest",   start_date: "1995-03-19", end_date: "1995-03-19", place_id: "p1", series_id: "es7", year: 1995, description: "Final edition of the Westbeach Classic as the contest circuit shifted to larger commercial events." },
   // Westbeach Cup & other events
   { id: "ew1", name: "Westbeach Cup '96",         event_type: "contest",   start_date: "1996-03-08", end_date: "1996-03-08", place_id: "p1", year: 1996, description: "Annual BC snowboarding contest hosted by Westbeach at Whistler." },
   { id: "ew2", name: "Westbeach Cup '98",         event_type: "contest",   start_date: "1998-03-05", end_date: "1998-03-06", place_id: "p1", year: 1998, description: "Third edition of the Westbeach Cup — riders' choice format with cash prizes." },

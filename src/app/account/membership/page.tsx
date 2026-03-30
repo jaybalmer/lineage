@@ -362,30 +362,29 @@ function MembershipDashboard() {
 
   const refreshMembership = useCallback(async () => {
     if (!activePersonId || !isAuthUser(activePersonId)) return
-    const { data } = await supabase
-      .from("profiles")
-      .select(`
-        membership_tier, membership_status, founding_badge, founding_member_number,
-        token_founder, token_member, token_contribution,
-        stripe_customer_id, stripe_subscription_id, membership_expires_at, pending_credit
-      `)
-      .eq("id", activePersonId)
-      .single()
+    // Use /api/me (service role) to bypass RLS — browser client may not return
+    // columns like is_editor depending on RLS policies.
+    const res = await fetch("/api/me")
+    if (!res.ok) return
+    const { profile: data } = await res.json() as { uid: string; profile: Record<string, unknown> }
     if (!data) return
+    const dbTier = (data.membership_tier as string) ?? "free"
+    const isEditor = !!data.is_editor || dbTier === "founding"
     setMembership({
-      tier:                   (data.membership_tier ?? "free") as "free" | "annual" | "lifetime" | "founding",
-      status:                 (data.membership_status ?? "active") as "active" | "expired" | "gifted",
-      founding_badge:          data.founding_badge ?? false,
-      founding_member_number:  data.founding_member_number ?? undefined,
+      is_editor:               isEditor,
+      tier:                   dbTier as "free" | "annual" | "lifetime" | "founding",
+      status:                 ((data.membership_status ?? "active") as "active" | "expired" | "gifted"),
+      founding_badge:          (data.founding_badge as boolean) ?? false,
+      founding_member_number:  data.founding_member_number as number | undefined ?? undefined,
       token_balance: {
-        founder:      data.token_founder      ?? 0,
-        member:       data.token_member       ?? 0,
-        contribution: data.token_contribution ?? membership.token_balance.contribution,
+        founder:      (data.token_founder      as number) ?? 0,
+        member:       (data.token_member       as number) ?? 0,
+        contribution: (data.token_contribution as number) ?? membership.token_balance.contribution,
       },
-      stripe_customer_id:      data.stripe_customer_id     ?? undefined,
-      stripe_subscription_id:  data.stripe_subscription_id ?? undefined,
-      membership_expires_at:   data.membership_expires_at  ?? undefined,
-      pending_credit:          data.pending_credit         ?? 0,
+      stripe_customer_id:      data.stripe_customer_id     as string | undefined ?? undefined,
+      stripe_subscription_id:  data.stripe_subscription_id as string | undefined ?? undefined,
+      membership_expires_at:   data.membership_expires_at  as string | undefined ?? undefined,
+      pending_credit:          (data.pending_credit as number) ?? 0,
     })
     return data
   }, [activePersonId, setMembership]) // eslint-disable-line react-hooks/exhaustive-deps

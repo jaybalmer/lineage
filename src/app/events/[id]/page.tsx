@@ -54,25 +54,27 @@ function AttendeeList({ eventId }: { eventId: string }) {
     const person = catalog.people.find((p) => p.id === claim.subject_id)
     if (!person) return null
     return (
-      <Link href={`/riders/${claim.subject_id}`}>
-        <div className="flex items-center gap-2 px-3 py-2 bg-surface border border-border-default rounded-xl hover:border-blue-500/40 transition-all group">
-          <RiderAvatar person={person} size="sm" ring={!!(person.membership_tier && person.membership_tier !== "free")} />
-          <div className="min-w-0">
-            <div className="text-xs font-medium text-foreground group-hover:text-blue-400 transition-colors leading-tight">
-              {person.display_name}
-            </div>
-            {(claim.division || claim.result) && (
-              <div className="text-[10px] text-muted leading-tight mt-0.5 flex items-center gap-1">
-                {claim.result && (
-                  <span className="font-semibold text-amber-400">{claim.result}</span>
-                )}
-                {claim.result && claim.division && <span>·</span>}
-                {claim.division && <span>{claim.division}</span>}
-              </div>
-            )}
+      <div
+        role="link"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/riders/${claim.subject_id}` }}
+        className="flex items-center gap-2 px-3 py-2 bg-surface border border-border-default rounded-xl hover:border-blue-500/40 transition-all group cursor-pointer"
+      >
+        <RiderAvatar person={person} size="sm" ring={!!(person.membership_tier && person.membership_tier !== "free")} />
+        <div className="min-w-0">
+          <div className="text-xs font-medium text-foreground group-hover:text-blue-400 transition-colors leading-tight">
+            {person.display_name}
           </div>
+          {(claim.division || claim.result) && (
+            <div className="text-[10px] text-muted leading-tight mt-0.5 flex items-center gap-1">
+              {claim.result && (
+                <span className="font-semibold text-amber-400">{claim.result}</span>
+              )}
+              {claim.result && claim.division && <span>·</span>}
+              {claim.division && <span>{claim.division}</span>}
+            </div>
+          )}
         </div>
-      </Link>
+      </div>
     )
   }
 
@@ -123,26 +125,28 @@ function InstanceRow({ event }: { event: Event }) {
   ).length
 
   return (
-    <Link href={`/events/${event.id}`} className="block">
-      <div className="border border-border-default bg-background rounded-xl overflow-hidden hover:border-blue-500/40 transition-all">
-        <div className="px-4 py-3 border-b border-border-default flex items-center justify-between">
-          <div>
-            <div className="text-sm font-semibold text-foreground">{event.name}</div>
-            <div className="text-xs text-muted mt-0.5">
-              {formatEventDate(event.start_date, event.end_date)}
-              {place && <span className="text-muted"> · {place.name}</span>}
-            </div>
-          </div>
-          <div className="text-right shrink-0">
-            <div className="text-lg font-bold text-foreground">{attendeeCount}</div>
-            <div className="text-[10px] text-muted">participant{attendeeCount !== 1 ? "s" : ""}</div>
+    <div
+      role="link"
+      onClick={() => { window.location.href = `/events/${event.id}` }}
+      className="block cursor-pointer border border-border-default bg-background rounded-xl overflow-hidden hover:border-blue-500/40 transition-all"
+    >
+      <div className="px-4 py-3 border-b border-border-default flex items-center justify-between">
+        <div>
+          <div className="text-sm font-semibold text-foreground">{event.name}</div>
+          <div className="text-xs text-muted mt-0.5">
+            {formatEventDate(event.start_date, event.end_date)}
+            {place && <span className="text-muted"> · {place.name}</span>}
           </div>
         </div>
-        <div className="px-4 py-3">
-          <AttendeeList eventId={event.id} />
+        <div className="text-right shrink-0">
+          <div className="text-lg font-bold text-foreground">{attendeeCount}</div>
+          <div className="text-[10px] text-muted">participant{attendeeCount !== 1 ? "s" : ""}</div>
         </div>
       </div>
-    </Link>
+      <div className="px-4 py-3">
+        <AttendeeList eventId={event.id} />
+      </div>
+    </div>
   )
 }
 

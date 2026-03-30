@@ -31,17 +31,18 @@ async function loadProfileAndMembership(uid: string) {
     region:         p.region         as string  | undefined ?? undefined,
     country:        p.country        as string  | undefined ?? undefined,
     avatar_url:     p.avatar_url     as string  | undefined ?? undefined,
-    card_bg_url:    p.card_bg_url    as string  | undefined ?? undefined,
+    card_bg_url:    p.card_bg_url    as string | undefined,
   })
 
   // is_editor: true if DB column set OR if tier is founding
   const dbTier        = (p.membership_tier as string) ?? "free"
   const isEditorFromDb = !!p.is_editor
   const isEditorByTier = dbTier === "founding"
-  setMembership({ is_editor: isEditorFromDb || isEditorByTier })
+  const isEditor       = isEditorFromDb || isEditorByTier
 
   if (dbTier !== "free" || p.token_founder || p.token_member) {
     setMembership({
+      is_editor:               isEditor,
       tier:                   dbTier as "free" | "annual" | "lifetime" | "founding",
       status:                 ((p.membership_status ?? "active") as "active" | "expired" | "gifted"),
       founding_badge:          (p.founding_badge as boolean) ?? false,
@@ -56,6 +57,8 @@ async function loadProfileAndMembership(uid: string) {
       membership_expires_at:   p.membership_expires_at  as string | undefined ?? undefined,
       pending_credit:          (p.pending_credit as number) ?? 0,
     })
+  } else {
+    setMembership({ is_editor: isEditor })
   }
 }
 

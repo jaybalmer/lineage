@@ -384,6 +384,13 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
   const organizedClaims = allClaims.filter((c) => c.subject_id === org.id && c.predicate === "organized")
   const locatedAtClaims = allClaims.filter((c) => c.subject_id === org.id && c.predicate === "located_at")
 
+  // Events and series directly linked via brand_ids junction
+  const brandEvents = catalog.events.filter((e) => e.brand_ids?.includes(org.id))
+  const brandSeries = catalog.eventSeries.filter((s) => s.brand_ids?.includes(org.id))
+  // Deduplicate: events already linked via organized claims
+  const organizedEventIds = new Set(organizedClaims.map((c) => c.object_id))
+  const extraBrandEvents = brandEvents.filter((e) => !organizedEventIds.has(e.id))
+
   const uniqueRiderIds = [...new Set(peopleClaims.map((c) => c.subject_id))]
 
   // Boards by this brand
@@ -401,8 +408,9 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
   type AllItem =
     | { kind: "person"; year: number; claim: typeof peopleClaims[0] }
     | { kind: "board";  year: number; board: typeof orgBoards[0] }
-    | { kind: "event";  year: number; claim: typeof organizedClaims[0]; event: Event }
+    | { kind: "event";  year: number; claim?: typeof organizedClaims[0]; event: Event }
     | { kind: "place";  year: number; claim: typeof locatedAtClaims[0]; place: Place }
+    | { kind: "series"; year: number; series: typeof brandSeries[0] }
 
   const decadeGroups = useMemo(() => {
     const items: AllItem[] = []
@@ -418,6 +426,16 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
       const event = catalog.events.find((e) => e.id === claim.object_id)
       if (!event?.year) return
       items.push({ kind: "event", year: event.year, claim, event })
+    })
+    // Brand-linked events (not already in organized claims)
+    extraBrandEvents.forEach((event) => {
+      if (!event.year) return
+      items.push({ kind: "event", year: event.year, event })
+    })
+    // Brand-linked series
+    brandSeries.forEach((series) => {
+      const y = series.start_year
+      if (y) items.push({ kind: "series", year: y, series })
     })
     locatedAtClaims.forEach((claim) => {
       const place = catalog.places.find((p) => p.id === claim.object_id)
@@ -439,7 +457,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
         label: `${decade}s`,
         entries: [...entries].sort((a, b) => b.year - a.year),
       }))
-  }, [peopleClaims, orgBoards, organizedClaims, locatedAtClaims])
+  }, [peopleClaims, orgBoards, organizedClaims, extraBrandEvents, brandSeries, locatedAtClaims])
 
   const typeLabel = org.brand_category
     ? BRAND_CAT_LABEL[org.brand_category]
@@ -447,13 +465,14 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
 
   const initials = org.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
 
-  const hasNoContent = peopleClaims.length === 0 && orgBoards.length === 0 && organizedClaims.length === 0 && locatedAtClaims.length === 0
+  const totalEvents = organizedClaims.length + extraBrandEvents.length + brandSeries.length
+  const hasNoContent = peopleClaims.length === 0 && orgBoards.length === 0 && totalEvents === 0 && locatedAtClaims.length === 0
 
   const tabs: { key: FeedTab; label: string; count?: number }[] = [
     { key: "all", label: "All" },
     { key: "people", label: "People", count: uniqueRiderIds.length },
     { key: "boards", label: "Boards", count: orgBoards.length },
-    { key: "events", label: "Events", count: organizedClaims.length },
+    { key: "events", label: "Events", count: totalEvents },
     { key: "places", label: "Places", count: locatedAtClaims.length },
   ]
 
@@ -549,12 +568,12 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                 </div>
               </>
             )}
-            {organizedClaims.length > 0 && (
+            {totalEvents > 0 && (
               <>
                 <div className="w-px bg-border-default" />
                 <div>
-                  <div className="font-bold text-foreground text-xl">{organizedClaims.length}</div>
-                  <div className="text-muted text-xs">events organized</div>
+                  <div className="font-bold text-foreground text-xl">{totalEvents}</div>
+                  <div className="text-muted text-xs">events</div>
                 </div>
               </>
             )}
@@ -678,9 +697,8 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
 
                         if (item.kind === "event") {
                           const accentColor = EVENT_TYPE_COLOR[item.event.event_type] ?? "border-l-zinc-600"
-                          const confColor = CONFIDENCE_COLORS[item.claim.confidence] ?? "text-muted"
                           return (
-                            <Link key={item.claim.id} href={`/events/${item.event.id}`}>
+                            <Link key={item.claim?.id ?? item.event.id} href={`/events/${item.event.id}`}>
                               <div className={cn(
                                 "flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 rounded-xl hover:border-border-default transition-all group",
                                 accentColor
@@ -690,11 +708,29 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">{item.event.name}</div>
-                                  <div className="text-xs text-muted capitalize mt-0.5">{item.event.event_type.replace("-", " ")}</div>
+                                  <div className="text-xs text-muted capitalize mt-0.5">{item.event.event_type.replace("-", " ")}{item.event.year ? ` · ${item.event.year}` : ""}</div>
                                 </div>
-                                <span className={cn("text-[11px] shrink-0", confColor)}>
-                                  {item.claim.confidence === "self-reported" ? "unverified" : item.claim.confidence}
-                                </span>
+                                {item.claim && (
+                                  <span className={cn("text-[11px] shrink-0", CONFIDENCE_COLORS[item.claim.confidence] ?? "text-muted")}>
+                                    {item.claim.confidence === "self-reported" ? "unverified" : item.claim.confidence}
+                                  </span>
+                                )}
+                              </div>
+                            </Link>
+                          )
+                        }
+
+                        if (item.kind === "series") {
+                          return (
+                            <Link key={item.series.id} href={`/events/${item.series.id}`}>
+                              <div className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 border-l-amber-700 rounded-xl hover:border-border-default transition-all group">
+                                <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">📅</div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">{item.series.name}</div>
+                                  <div className="text-xs text-muted mt-0.5">
+                                    Series{item.series.start_year ? ` · since ${item.series.start_year}` : ""}
+                                  </div>
+                                </div>
                               </div>
                             </Link>
                           )
@@ -814,39 +850,78 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
             {/* ── Events tab ── */}
             {tab === "events" && (
               <div className="space-y-2">
-                {organizedClaims.length === 0 ? (
+                {totalEvents === 0 ? (
                   <div className="py-12 text-center text-muted text-sm">
                     No events yet. <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
                   </div>
-                ) : organizedClaims.map((claim) => {
-                  const event = catalog.events.find((e) => e.id === claim.object_id)
-                  if (!event) return null
-                  const accentColor = EVENT_TYPE_COLOR[event.event_type] ?? "border-l-zinc-600"
-                  const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-muted"
-                  return (
-                    <Link key={claim.id} href={`/events/${event.id}`}>
-                      <div className={cn(
-                        "flex items-start gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 rounded-xl hover:border-border-default transition-all group",
-                        accentColor
-                      )}>
-                        <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">
-                          {event.event_type === "contest" ? "🏆" : event.event_type === "film-shoot" ? "🎬" : event.event_type === "trip" ? "🏔" : "📅"}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">{event.name}</div>
-                          <div className="flex items-center gap-2 mt-0.5">
-                            <span className="text-xs text-muted capitalize">{event.event_type.replace("-", " ")}</span>
-                            {event.year && <span className="text-xs text-muted">· {event.year}</span>}
+                ) : (
+                  <>
+                    {organizedClaims.map((claim) => {
+                      const event = catalog.events.find((e) => e.id === claim.object_id)
+                      if (!event) return null
+                      const accentColor = EVENT_TYPE_COLOR[event.event_type] ?? "border-l-zinc-600"
+                      const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-muted"
+                      return (
+                        <Link key={claim.id} href={`/events/${event.id}`}>
+                          <div className={cn(
+                            "flex items-start gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 rounded-xl hover:border-border-default transition-all group",
+                            accentColor
+                          )}>
+                            <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">
+                              {event.event_type === "contest" ? "🏆" : event.event_type === "film-shoot" ? "🎬" : event.event_type === "trip" ? "🏔" : "📅"}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">{event.name}</div>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-xs text-muted capitalize">{event.event_type.replace("-", " ")}</span>
+                                {event.year && <span className="text-xs text-muted">· {event.year}</span>}
+                              </div>
+                              {claim.note && <div className="text-[11px] text-muted mt-1 truncate">{claim.note}</div>}
+                            </div>
+                            <span className={cn("text-[11px] shrink-0", confColor)}>
+                              {claim.confidence === "self-reported" ? "unverified" : claim.confidence}
+                            </span>
                           </div>
-                          {claim.note && <div className="text-[11px] text-muted mt-1 truncate">{claim.note}</div>}
+                        </Link>
+                      )
+                    })}
+                    {extraBrandEvents.map((event) => {
+                      const accentColor = EVENT_TYPE_COLOR[event.event_type] ?? "border-l-zinc-600"
+                      return (
+                        <Link key={event.id} href={`/events/${event.id}`}>
+                          <div className={cn(
+                            "flex items-start gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 rounded-xl hover:border-border-default transition-all group",
+                            accentColor
+                          )}>
+                            <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">
+                              {event.event_type === "contest" ? "🏆" : event.event_type === "film-shoot" ? "🎬" : event.event_type === "trip" ? "🏔" : "📅"}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">{event.name}</div>
+                              <div className="flex items-center gap-2 mt-0.5">
+                                <span className="text-xs text-muted capitalize">{event.event_type.replace("-", " ")}</span>
+                                {event.year && <span className="text-xs text-muted">· {event.year}</span>}
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      )
+                    })}
+                    {brandSeries.map((series) => (
+                      <Link key={series.id} href={`/events/${series.id}`}>
+                        <div className="flex items-start gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 border-l-amber-700 rounded-xl hover:border-border-default transition-all group">
+                          <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">📅</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">{series.name}</div>
+                            <div className="text-xs text-muted mt-0.5">
+                              Series{series.start_year ? ` · since ${series.start_year}` : ""}
+                            </div>
+                          </div>
                         </div>
-                        <span className={cn("text-[11px] shrink-0", confColor)}>
-                          {claim.confidence === "self-reported" ? "unverified" : claim.confidence}
-                        </span>
-                      </div>
-                    </Link>
-                  )
-                })}
+                      </Link>
+                    ))}
+                  </>
+                )}
               </div>
             )}
 

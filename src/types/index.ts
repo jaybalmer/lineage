@@ -105,6 +105,7 @@ export interface EventSeries {
   start_year?: number
   end_year?: number
   description?: string
+  brand_ids?: string[]
 }
 
 export interface Event {
@@ -123,6 +124,7 @@ export interface Event {
   added_by?: string
   website_url?: string
   youtube_url?: string
+  brand_ids?: string[]
 }
 
 export type EntityType = "person" | "place" | "org" | "board" | "event"

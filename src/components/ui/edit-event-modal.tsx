@@ -82,11 +82,18 @@ export function EditEventModal({ event, onClose, onSaved }: EditEventModalProps)
   const [newSeriesFreq, setNewSeriesFreq] = useState<EventSeries["frequency"]>("annual")
   const [newSeriesStartYear, setNewSeriesStartYear] = useState("")
 
+  // Brands (up to 3)
+  const [brandIds, setBrandIds] = useState<string[]>(event.brand_ids ?? [])
+  const [brandQuery, setBrandQuery] = useState("")
+
   // Combined series list (mock + catalog)
   const allSeries = catalog.eventSeries?.length ? catalog.eventSeries : EVENT_SERIES
 
   // Combined places list (mock + catalog)
   const allPlaces = catalog.places?.length ? catalog.places : PLACES
+
+  // All brands (orgs with org_type "brand" or any brand_category)
+  const allBrands = catalog.orgs.filter((o) => o.org_type === "brand" || o.brand_category)
 
   const canSubmit = () => {
     const y = parseInt(eventYear)
@@ -127,6 +134,7 @@ export function EditEventModal({ event, onClose, onSaved }: EditEventModalProps)
       description: description.trim() || undefined,
       website_url: websiteUrl.trim() || undefined,
       youtube_url: youtubeUrl.trim() || undefined,
+      brand_ids: brandIds.length > 0 ? brandIds : undefined,
     }
 
     updateUserEvent(event.id, updates)
@@ -153,6 +161,18 @@ export function EditEventModal({ event, onClose, onSaved }: EditEventModalProps)
               website_url: updates.website_url ?? null,
               youtube_url: updates.youtube_url ?? null,
             },
+          }),
+        })
+        // Persist brand junction rows
+        await fetch("/api/admin", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            operation: "replace_junction",
+            table: "event_brands",
+            fk_column: "event_id",
+            fk_value: event.id,
+            rows: brandIds.map((org_id) => ({ event_id: event.id, org_id })),
           }),
         })
       } catch {
@@ -358,6 +378,50 @@ export function EditEventModal({ event, onClose, onSaved }: EditEventModalProps)
                 <button onClick={() => { setShowCreateSeries(false); setNewSeriesName("") }} className="text-xs text-muted hover:text-foreground transition-colors">
                   ← Cancel
                 </button>
+              </div>
+            )}
+          </Field>
+
+          {/* Brand picker (up to 3) */}
+          <Field label="Brands (up to 3)">
+            {brandIds.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {brandIds.map((bid) => {
+                  const brand = allBrands.find((o) => o.id === bid)
+                  return (
+                    <div key={bid} className="flex items-center gap-1.5 bg-amber-950/30 border border-amber-800/40 rounded-lg px-2.5 py-1.5 text-sm text-foreground">
+                      <span>🏷 {brand?.name ?? bid}</span>
+                      <button onClick={() => setBrandIds(brandIds.filter((id) => id !== bid))} className="text-xs text-muted hover:text-foreground ml-1">×</button>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            {brandIds.length < 3 && (
+              <div className="relative">
+                <input
+                  type="text"
+                  value={brandQuery}
+                  onChange={(e) => setBrandQuery(e.target.value)}
+                  placeholder="Search brands…"
+                  className={inputCls}
+                />
+                {brandQuery.length > 0 && (
+                  <div className="absolute z-10 w-full mt-1 bg-surface border border-border-default rounded-lg shadow-xl max-h-36 overflow-y-auto">
+                    {allBrands
+                      .filter((o) => !brandIds.includes(o.id) && o.name.toLowerCase().includes(brandQuery.toLowerCase()))
+                      .slice(0, 6)
+                      .map((o) => (
+                        <button key={o.id} onClick={() => { setBrandIds([...brandIds, o.id]); setBrandQuery("") }}
+                          className="w-full text-left px-3 py-2 text-sm text-muted hover:bg-surface-hover hover:text-foreground transition-colors">
+                          {o.name}
+                        </button>
+                      ))}
+                    {allBrands.filter((o) => !brandIds.includes(o.id) && o.name.toLowerCase().includes(brandQuery.toLowerCase())).length === 0 && (
+                      <div className="px-3 py-2 text-xs text-muted">No brands found</div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </Field>

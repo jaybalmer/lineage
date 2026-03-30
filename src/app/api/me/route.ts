@@ -27,7 +27,7 @@ export async function GET() {
       .from("profiles")
       .select(`
         display_name, birth_year, riding_since, privacy_level,
-        bio, links, home_resort_id, city, region, country, avatar_url, card_bg_url,
+        bio, links, home_resort_id, city, region, country, avatar_url,
         membership_tier, membership_status, founding_badge, founding_member_number,
         token_founder, token_member, token_contribution,
         stripe_customer_id, stripe_subscription_id, membership_expires_at, pending_credit,
