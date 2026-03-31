@@ -22,7 +22,7 @@ const TIER_BADGE: Record<string, { symbol: string; label: string; color: string 
 
 export default function RiderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const { activePersonId, profileOverride, membership, catalogLoaded, catalog, userEntities, setShowMemberCard } = useLineageStore()
+  const { activePersonId, profileOverride, membership, catalogLoaded, catalog, userEntities, setShowMemberCard, sessionClaims } = useLineageStore()
   const allPeople = [...catalog.people, ...(userEntities.people ?? [])]
   const [playingTimeline, setPlayingTimeline] = useState(false)
   const [showWelcomeBanner, setShowWelcomeBanner] = useState(false)
@@ -99,10 +99,11 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
       }
     : resolvedPerson
 
-  // Merge Supabase claims + mock claims (DB takes priority, deduplicate by id)
+  // Merge Supabase claims + session claims + mock claims (deduplicate by id)
   const mockClaims = CLAIMS.filter((c) => c.subject_id === resolvedId)
-  const dbIds = new Set(dbClaims.map((c) => c.id))
-  const personClaims = [...dbClaims, ...mockClaims.filter((c) => !dbIds.has(c.id))]
+  const riderSessionClaims = sessionClaims.filter((c) => c.subject_id === resolvedId)
+  const allRiderClaims = [...dbClaims, ...riderSessionClaims, ...mockClaims]
+  const personClaims = Array.from(new Map(allRiderClaims.map((c) => [c.id, c])).values())
 
   const { sharedPlaces, sharedEvents } = isCurrentUser
     ? { sharedPlaces: [], sharedEvents: [] }

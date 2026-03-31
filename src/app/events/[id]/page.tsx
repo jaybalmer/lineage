@@ -35,13 +35,25 @@ function parseResult(result?: string): number {
 }
 
 function AttendeeList({ eventId }: { eventId: string }) {
-  const { catalog, sessionClaims, dbClaims } = useLineageStore()
+  const { catalog, sessionClaims, dbClaims, membership, removeClaim } = useLineageStore()
+  const isEditor = membership.is_editor
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
   const allClaims = [...catalog.claims, ...sessionClaims, ...dbClaims]
-  // Deduplicate by claim id
-  const uniqueClaims = Array.from(new Map(allClaims.map((c) => [c.id, c])).values())
-  const claims = uniqueClaims.filter(
+  // Deduplicate by claim id, then by subject+predicate (keep first occurrence)
+  const byId = Array.from(new Map(allClaims.map((c) => [c.id, c])).values())
+  const eventClaims = byId.filter(
     (c) => c.object_id === eventId && EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number])
   )
+  // Deduplicate: same person + same role = keep only first (prevents duplicate entries)
+  const seen = new Set<string>()
+  const claims = eventClaims.filter((c) => {
+    const key = `${c.subject_id}:${c.predicate}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
 
   const competitors = claims
     .filter((c) => c.predicate === "competed_at")
@@ -53,30 +65,70 @@ function AttendeeList({ eventId }: { eventId: string }) {
     return <div className="text-xs text-muted italic py-2">No participants documented</div>
   }
 
+  function handleDelete(claimId: string) {
+    setDeleting(true)
+    removeClaim(claimId)
+    setConfirmDeleteId(null)
+    setDeleting(false)
+  }
+
   const RiderChip = ({ claim }: { claim: typeof claims[0] }) => {
     const person = catalog.people.find((p) => p.id === claim.subject_id)
     if (!person) return null
+    const isConfirming = confirmDeleteId === claim.id
     return (
-      <div
-        role="link"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.location.href = `/riders/${claim.subject_id}` }}
-        className="flex items-center gap-2 px-3 py-2 bg-surface border border-border-default rounded-xl hover:border-blue-500/40 transition-all group cursor-pointer"
-      >
-        <RiderAvatar person={person} size="sm" ring={!!(person.membership_tier && person.membership_tier !== "free")} />
-        <div className="min-w-0">
-          <div className="text-xs font-medium text-foreground group-hover:text-blue-400 transition-colors leading-tight">
-            {person.display_name}
-          </div>
-          {(claim.division || claim.result) && (
-            <div className="text-[10px] text-muted leading-tight mt-0.5 flex items-center gap-1">
-              {claim.result && (
-                <span className="font-semibold text-amber-400">{claim.result}</span>
-              )}
-              {claim.result && claim.division && <span>·</span>}
-              {claim.division && <span>{claim.division}</span>}
+      <div className="relative">
+        <div
+          role="link"
+          onClick={(e) => {
+            if (isConfirming) return
+            e.preventDefault(); e.stopPropagation(); window.location.href = `/riders/${claim.subject_id}`
+          }}
+          className="flex items-center gap-2 px-3 py-2 bg-surface border border-border-default rounded-xl hover:border-blue-500/40 transition-all group cursor-pointer"
+        >
+          <RiderAvatar person={person} size="sm" ring={!!(person.membership_tier && person.membership_tier !== "free")} />
+          <div className="min-w-0 flex-1">
+            <div className="text-xs font-medium text-foreground group-hover:text-blue-400 transition-colors leading-tight">
+              {person.display_name}
             </div>
+            {(claim.division || claim.result) && (
+              <div className="text-[10px] text-muted leading-tight mt-0.5 flex items-center gap-1">
+                {claim.result && (
+                  <span className="font-semibold text-amber-400">{claim.result}</span>
+                )}
+                {claim.result && claim.division && <span>·</span>}
+                {claim.division && <span>{claim.division}</span>}
+              </div>
+            )}
+          </div>
+          {isEditor && !isConfirming && (
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmDeleteId(claim.id) }}
+              className="opacity-0 group-hover:opacity-100 shrink-0 w-5 h-5 flex items-center justify-center rounded-full text-muted hover:text-red-400 hover:bg-red-500/10 transition-all text-xs"
+              title="Remove from event"
+            >
+              ✕
+            </button>
           )}
         </div>
+        {isConfirming && (
+          <div className="mt-1 p-2 bg-surface border border-border-default rounded-lg flex items-center gap-2">
+            <span className="text-[10px] text-muted flex-1">Remove {person.display_name}? This is permanent.</span>
+            <button
+              onClick={() => setConfirmDeleteId(null)}
+              className="text-[10px] text-muted hover:text-foreground transition-colors px-1.5 py-0.5"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleDelete(claim.id)}
+              disabled={deleting}
+              className="text-[10px] text-red-400 hover:text-red-300 font-medium transition-colors px-1.5 py-0.5"
+            >
+              {deleting ? "Deleting\u2026" : "Delete"}
+            </button>
+          </div>
+        )}
       </div>
     )
   }
