@@ -428,6 +428,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
     | { kind: "event";  year: number; claim?: typeof organizedClaims[0]; event: Event }
     | { kind: "place";  year: number; claim: typeof locatedAtClaims[0]; place: Place }
     | { kind: "series"; year: number; series: typeof brandSeries[0] }
+    | { kind: "story";  year: number; story: Story }
 
   const decadeGroups = useMemo(() => {
     const items: AllItem[] = []
@@ -460,6 +461,11 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
       const y = claim.start_date ? parseInt(claim.start_date.slice(0, 4)) : null
       if (y) items.push({ kind: "place", year: y, claim, place })
     })
+    // Stories linked to this brand
+    orgStories.forEach((story) => {
+      const y = story.story_date ? parseInt(story.story_date.slice(0, 4)) : null
+      if (y) items.push({ kind: "story", year: y, story })
+    })
 
     const byDecade = new Map<number, AllItem[]>()
     items.forEach((item) => {
@@ -474,7 +480,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
         label: `${decade}s`,
         entries: [...entries].sort((a, b) => b.year - a.year),
       }))
-  }, [peopleClaims, orgBoards, organizedClaims, extraBrandEvents, brandSeries, locatedAtClaims])
+  }, [peopleClaims, orgBoards, organizedClaims, extraBrandEvents, brandSeries, locatedAtClaims, orgStories])
 
   const typeLabel = org.brand_category
     ? BRAND_CAT_LABEL[org.brand_category]
@@ -772,6 +778,17 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                                 {item.claim.confidence === "self-reported" ? "unverified" : item.claim.confidence}
                               </span>
                             </div>
+                          )
+                        }
+
+                        if (item.kind === "story") {
+                          return (
+                            <StoryCard
+                              key={item.story.id}
+                              story={item.story}
+                              isOwn={item.story.author_id === activePersonId}
+                              onDelete={(sid) => setOrgStories((prev) => prev.filter((x) => x.id !== sid))}
+                            />
                           )
                         }
 

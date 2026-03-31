@@ -667,7 +667,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
   const allEvents = [
     ...EVENTS,
     ...catalog.events.filter((e) => !EVENTS.some((m) => m.id === e.id)),
-    ...userEntities.events,
+    ...userEntities.events.filter((e) => !EVENTS.some((m) => m.id === e.id) && !catalog.events.some((m) => m.id === e.id)),
   ]
 
   const series =
