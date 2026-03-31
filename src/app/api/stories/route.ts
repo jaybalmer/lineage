@@ -70,8 +70,9 @@ export async function GET(req: NextRequest) {
     }))
 
     return NextResponse.json(stories)
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : (err as { message?: string })?.message ?? String(err)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
 
@@ -135,8 +136,9 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ id: storyId }, { status: 201 })
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : (err as { message?: string })?.message ?? String(err)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
 
@@ -226,8 +228,9 @@ export async function PATCH(req: NextRequest) {
       .order("sort_order")
 
     return NextResponse.json({ ok: true, photos: photos ?? [] })
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 })
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : (err as { message?: string })?.message ?? String(err)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
 

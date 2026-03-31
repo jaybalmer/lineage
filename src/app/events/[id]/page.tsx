@@ -584,7 +584,7 @@ function AddRiderToEvent({
               </button>
             ))}
             <button
-              onClick={() => { setShowNewRider(true); setNewRiderName(riderQuery.trim()) }}
+              onClick={() => { setNewRiderName(riderQuery.trim()); setRiderQuery(""); setShowNewRider(true) }}
               className="w-full text-left px-3 py-2 text-sm text-blue-400 hover:bg-surface-hover transition-colors flex items-center gap-2"
             >
               <span className="font-bold">+</span> Add &ldquo;{riderQuery.trim()}&rdquo; as new rider
