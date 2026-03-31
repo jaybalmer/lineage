@@ -35,8 +35,11 @@ function parseResult(result?: string): number {
 }
 
 function AttendeeList({ eventId }: { eventId: string }) {
-  const { catalog } = useLineageStore()
-  const claims = catalog.claims.filter(
+  const { catalog, sessionClaims, dbClaims } = useLineageStore()
+  const allClaims = [...catalog.claims, ...sessionClaims, ...dbClaims]
+  // Deduplicate by claim id
+  const uniqueClaims = Array.from(new Map(allClaims.map((c) => [c.id, c])).values())
+  const claims = uniqueClaims.filter(
     (c) => c.object_id === eventId && EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number])
   )
 
@@ -425,12 +428,13 @@ function AddRiderToEvent({
   catalog: { people: { id: string; display_name: string }[]; claims: Claim[] }
   onDone: () => void
 }) {
-  const { addUserPerson } = useLineageStore()
+  const { addUserPerson, sessionClaims, dbClaims } = useLineageStore()
   const [showNewRider, setShowNewRider] = useState(false)
   const [newRiderName, setNewRiderName] = useState("")
 
+  const allClaims = [...catalog.claims, ...sessionClaims, ...dbClaims]
   const existingRiderIds = new Set(
-    catalog.claims
+    allClaims
       .filter((c) => c.object_id === eventId && EVENT_PREDICATES.includes(c.predicate as typeof EVENT_PREDICATES[number]))
       .map((c) => c.subject_id)
   )

@@ -388,7 +388,10 @@ export const useLineageStore = create<LineageStore>()(
       },
       addUserPerson: (person) => {
         const entity = { ...person, community_status: "unverified" as const }
-        set((s) => ({ userEntities: { ...s.userEntities, people: [...s.userEntities.people, entity] } }))
+        set((s) => ({
+          userEntities: { ...s.userEntities, people: [...s.userEntities.people, entity] },
+          catalog: { ...s.catalog, people: [...s.catalog.people, entity] },
+        }))
         if (isAuthUser(get().activePersonId)) {
           supabase.from("people").insert({
             id: person.id, display_name: person.display_name,
