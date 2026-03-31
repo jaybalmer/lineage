@@ -151,6 +151,7 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
 
   // YouTube
   const [youtubeUrl, setYoutubeUrl] = useState(editStory?.youtube_url ?? "")
+  const [storyUrl, setStoryUrl]     = useState(editStory?.url ?? "")
 
   // New photo uploads
   const [uploads, setUploads]   = useState<UploadState[]>([])
@@ -241,6 +242,7 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
       board_ids:       selectedBoardIds,
       rider_ids:       selectedRiderIds,
       youtube_url:     youtubeUrl.trim() || null,
+      url:             storyUrl.trim() || null,
     }
 
     if (isEditing && editStory) {
@@ -489,6 +491,18 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
                     {parseYouTubeId(youtubeUrl) ? "✓ Valid YouTube link" : "⚠ Doesn't look like a YouTube URL"}
                   </p>
                 )}
+              </div>
+
+              {/* URL link */}
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">Link URL (optional)</label>
+                <input
+                  type="url"
+                  value={storyUrl}
+                  onChange={(e) => setStoryUrl(e.target.value)}
+                  placeholder="https://…"
+                  className={inputCls}
+                />
               </div>
 
               {/* Visibility */}

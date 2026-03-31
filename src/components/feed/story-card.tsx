@@ -139,6 +139,18 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
         <p className="text-sm text-muted leading-relaxed mb-3 whitespace-pre-wrap">{displayStory.body}</p>
       )}
 
+      {/* ── URL link ── */}
+      {displayStory.url && (
+        <a
+          href={displayStory.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300 transition-colors mb-3 break-all"
+        >
+          🔗 {displayStory.url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
+        </a>
+      )}
+
       {/* ── YouTube embed ── */}
       {displayStory.youtube_url && parseYouTubeId(displayStory.youtube_url) && (
         <div className="mt-3 mb-3 rounded-xl overflow-hidden aspect-video bg-black">
