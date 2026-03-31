@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { cn, nameToSlug, parseYouTubeId } from "@/lib/utils"
+import { orgSlug } from "@/lib/mock-data"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { useLineageStore } from "@/store/lineage-store"
@@ -37,6 +38,9 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
   const linkedEvent = displayStory.linked_event_id
     ? catalog.events.find((e) => e.id === displayStory.linked_event_id)
     : null
+  const linkedOrg = displayStory.linked_org_id
+    ? catalog.orgs.find((o) => o.id === displayStory.linked_org_id)
+    : null
   const linkedBoards = (displayStory.board_ids ?? [])
     .map((id) => catalog.boards.find((b) => b.id === id))
     .filter(Boolean)
@@ -44,7 +48,7 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
     .map((id) => catalog.people.find((p) => p.id === id))
     .filter(Boolean)
 
-  const hasLinks = linkedPlace || linkedEvent || linkedBoards.length > 0 || taggedRiders.length > 0
+  const hasLinks = linkedPlace || linkedEvent || linkedOrg || linkedBoards.length > 0 || taggedRiders.length > 0
 
   async function handleDelete() {
     setDeleting(true)
@@ -200,6 +204,14 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
               className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-colors"
             >
               🏆 {linkedEvent.name}
+            </Link>
+          )}
+          {linkedOrg && (
+            <Link
+              href={`/brands/${orgSlug(linkedOrg)}`}
+              className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 transition-colors"
+            >
+              🏷 {linkedOrg.name}
             </Link>
           )}
           {linkedBoards.map((board) => board && (

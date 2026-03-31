@@ -7,7 +7,7 @@ import { cn, parseYouTubeId } from "@/lib/utils"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import type { Story, PrivacyLevel } from "@/types"
 
-type AddableEntity = "place" | "event" | "board" | "person"
+type AddableEntity = "place" | "event" | "org" | "board" | "person"
 
 const inputCls =
   "w-full bg-background border border-border-default rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
@@ -122,6 +122,7 @@ interface AddStoryModalProps {
   defaults?: {
     linkedPlaceId?: string
     linkedEventId?: string
+    linkedOrgId?: string
     boardId?: string
   }
   editStory?: Story   // if provided, modal is in edit mode
@@ -162,6 +163,9 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
   const [selectedEventId, setSelectedEventId]   = useState<string | null>(
     editStory?.linked_event_id ?? defaults?.linkedEventId ?? null
   )
+  const [selectedOrgId, setSelectedOrgId]       = useState<string | null>(
+    editStory?.linked_org_id ?? defaults?.linkedOrgId ?? null
+  )
   const [selectedBoardIds, setSelectedBoardIds] = useState<string[]>(
     editStory?.board_ids ?? (defaults?.boardId ? [defaults.boardId] : [])
   )
@@ -171,6 +175,7 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
 
   const allPlaces  = catalog.places
   const allEvents  = catalog.events
+  const allOrgs    = catalog.orgs
   const allBoards  = catalog.boards
   const allRiders  = catalog.people.filter((p) => p.id !== activePersonId)
 
@@ -232,6 +237,7 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
       visibility,
       linked_place_id: selectedPlaceId || undefined,
       linked_event_id: selectedEventId || undefined,
+      linked_org_id:   selectedOrgId || undefined,
       board_ids:       selectedBoardIds,
       rider_ids:       selectedRiderIds,
       youtube_url:     youtubeUrl.trim() || null,
@@ -311,6 +317,7 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
   function handleEntityAdded(type: AddableEntity, id: string) {
     if (type === "place")  setSelectedPlaceId(id)
     if (type === "event")  setSelectedEventId(id)
+    if (type === "org")    setSelectedOrgId(id)
     if (type === "board")  setSelectedBoardIds((prev) => [...prev, id])
     if (type === "person") setSelectedRiderIds((prev) => [...prev, id])
     setAddingEntity(null)
@@ -539,6 +546,21 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
                   single
                   onAddNew={() => setAddingEntity("event")}
                   addNewLabel="Add a new event"
+                />
+              </div>
+
+              {/* Brand */}
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">Brand</label>
+                <SearchPicker
+                  items={allOrgs}
+                  selected={selectedOrgId ? [selectedOrgId] : []}
+                  onToggle={(id) => setSelectedOrgId((prev) => prev === id ? null : id)}
+                  getLabel={(o) => o.name}
+                  placeholder="Search brands…"
+                  single
+                  onAddNew={() => setAddingEntity("org")}
+                  addNewLabel="Add a new brand"
                 />
               </div>
 

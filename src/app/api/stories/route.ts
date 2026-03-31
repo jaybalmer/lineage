@@ -7,12 +7,13 @@ const supabase = createClient(
 )
 
 // ── GET /api/stories ─────────────────────────────────────────────────────────
-// Query params: author_id | place_id | event_id | board_id | rider_id | limit
+// Query params: author_id | place_id | event_id | org_id | board_id | rider_id | limit
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const authorId  = searchParams.get("author_id")
   const placeId   = searchParams.get("place_id")
   const eventId   = searchParams.get("event_id")
+  const orgId     = searchParams.get("org_id")
   const boardId   = searchParams.get("board_id")
   const riderId   = searchParams.get("rider_id")  // stories that tag this rider
   const limit     = Math.min(parseInt(searchParams.get("limit") ?? "50"), 100)
@@ -35,6 +36,7 @@ export async function GET(req: NextRequest) {
     if (authorId)  query = query.eq("author_id", authorId)
     if (placeId)   query = query.eq("linked_place_id", placeId)
     if (eventId)   query = query.eq("linked_event_id", eventId)
+    if (orgId)     query = query.eq("linked_org_id", orgId)
 
     // board_id and rider_id require a join filter — fetch IDs then filter
     if (boardId) {
@@ -84,7 +86,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const {
       author_id, title, body: storyBody, story_date, visibility = "public",
-      linked_event_id, linked_place_id,
+      linked_event_id, linked_place_id, linked_org_id,
       board_ids = [], rider_ids = [],
       photos = [],   // [{ url, caption?, sort_order? }]
       youtube_url,
@@ -102,6 +104,7 @@ export async function POST(req: NextRequest) {
         story_date, visibility,
         linked_event_id: linked_event_id || null,
         linked_place_id: linked_place_id || null,
+        linked_org_id: linked_org_id || null,
         youtube_url: youtube_url || null,
       })
       .select()
@@ -152,7 +155,7 @@ export async function PATCH(req: NextRequest) {
     const {
       id,
       title, body: storyBody, story_date, visibility,
-      linked_event_id, linked_place_id,
+      linked_event_id, linked_place_id, linked_org_id,
       board_ids = [], rider_ids = [],
       keep_photo_ids = [],
       new_photos = [],
@@ -171,6 +174,7 @@ export async function PATCH(req: NextRequest) {
         visibility,
         linked_event_id: linked_event_id || null,
         linked_place_id: linked_place_id || null,
+        linked_org_id: linked_org_id || null,
         youtube_url: youtube_url ?? null,
         updated_at: new Date().toISOString(),
       })

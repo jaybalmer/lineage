@@ -1,15 +1,17 @@
 "use client"
 
-import { useState, use, useMemo } from "react"
+import { useState, useEffect, useRef, use, useMemo } from "react"
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { boardSlug, orgSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 import { cn } from "@/lib/utils"
-import { useLineageStore } from "@/store/lineage-store"
+import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
-import type { Org, ConfidenceLevel, Predicate, Event, Place } from "@/types"
+import { StoryCard } from "@/components/feed/story-card"
+import { AddStoryModal } from "@/components/ui/add-story-modal"
+import type { Org, ConfidenceLevel, Predicate, Event, Place, Story } from "@/types"
 
 // ─── Label maps ───────────────────────────────────────────────────────────────
 
@@ -358,11 +360,12 @@ const EVENT_TYPE_COLOR: Record<string, string> = {
   gathering: "border-l-zinc-600",
 }
 
-type FeedTab = "all" | "people" | "boards" | "events" | "places"
+type FeedTab = "all" | "people" | "boards" | "events" | "places" | "stories"
 
 export default function BrandPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params)
-  const { catalog, sessionClaims, dbClaims, userEntities } = useLineageStore()
+  const { catalog, sessionClaims, dbClaims, userEntities, activePersonId } = useLineageStore()
+  const isAuth = isAuthUser(activePersonId)
   const allOrgs = [...catalog.orgs, ...userEntities.orgs]
   const allPeople = [...catalog.people, ...(userEntities.people ?? [])]
   const org = allOrgs.find((o) => o.id === slug || orgSlug(o) === slug)
@@ -370,7 +373,19 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
 
   const storeClaims = [...sessionClaims, ...dbClaims]
   const [addOpen, setAddOpen] = useState(false)
+  const [addingStory, setAddingStory] = useState(false)
   const [tab, setTab] = useState<FeedTab>("all")
+
+  // Stories linked to this org
+  const [orgStories, setOrgStories] = useState<Story[]>([])
+  const storiesFetchedRef = useRef(false)
+  useEffect(() => {
+    if (storiesFetchedRef.current) return
+    storiesFetchedRef.current = true
+    fetch(`/api/stories?org_id=${org.id}&limit=50`)
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setOrgStories(data as Story[]) })
+  }, [org.id])
 
   // All claims in catalog + session store
   const allClaims = [...catalog.claims, ...storeClaims]
@@ -468,7 +483,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
   const initials = org.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
 
   const totalEvents = organizedClaims.length + extraBrandEvents.length + brandSeries.length
-  const hasNoContent = peopleClaims.length === 0 && orgBoards.length === 0 && totalEvents === 0 && locatedAtClaims.length === 0
+  const hasNoContent = peopleClaims.length === 0 && orgBoards.length === 0 && totalEvents === 0 && locatedAtClaims.length === 0 && orgStories.length === 0
 
   const tabs: { key: FeedTab; label: string; count?: number }[] = [
     { key: "all", label: "All" },
@@ -476,6 +491,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
     { key: "boards", label: "Boards", count: orgBoards.length },
     { key: "events", label: "Events", count: totalEvents },
     { key: "places", label: "Places", count: locatedAtClaims.length },
+    { key: "stories", label: "Stories", count: orgStories.length },
   ]
 
   return (
@@ -963,6 +979,45 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
               </div>
             )}
 
+            {/* ── Stories tab ── */}
+            {tab === "stories" && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">Stories</h2>
+                  {isAuth && (
+                    <button
+                      onClick={() => setAddingStory(true)}
+                      className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      + Add story
+                    </button>
+                  )}
+                </div>
+                {orgStories.length === 0 ? (
+                  <div className="py-12 text-center">
+                    <div className="text-sm text-muted mb-1">No stories yet for this brand.</div>
+                    {isAuth && (
+                      <button
+                        onClick={() => setAddingStory(true)}
+                        className="text-xs text-blue-500 hover:text-blue-400"
+                      >
+                        Add the first story
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  orgStories.map((s) => (
+                    <StoryCard
+                      key={s.id}
+                      story={s}
+                      isOwn={s.author_id === activePersonId}
+                      onDelete={(sid) => setOrgStories((prev) => prev.filter((x) => x.id !== sid))}
+                    />
+                  ))
+                )}
+              </div>
+            )}
+
           </div>
 
           {/* Sidebar */}
@@ -1050,6 +1105,13 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
       </div>
 
       {addOpen && <AddBrandClaimModal org={org} onClose={() => setAddOpen(false)} />}
+      {addingStory && (
+        <AddStoryModal
+          defaults={{ linkedOrgId: org.id }}
+          onClose={() => setAddingStory(false)}
+          onSaved={(s) => { setOrgStories((prev) => [s, ...prev]); setAddingStory(false) }}
+        />
+      )}
     </div>
   )
 }

@@ -253,6 +253,7 @@ export interface Story {
   visibility: PrivacyLevel
   linked_event_id?: string
   linked_place_id?: string
+  linked_org_id?: string
   created_at: string
   updated_at: string
   // Joined relations (populated by API)
