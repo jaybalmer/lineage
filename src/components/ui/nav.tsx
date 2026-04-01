@@ -170,15 +170,26 @@ const ROW2_NAV_PATHS = [
   { path: "/collective",  label: "Collective",  community: true },
 ]
 
-function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug }: {
+/** Community emoji lookup */
+const COMMUNITY_EMOJI: Record<string, string> = {
+  snowboarding: "🏂", surf: "🏄", skate: "🛹", ski: "⛷️", mtb: "🚵",
+}
+
+function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug, communities }: {
   path: string
   isAuth: boolean
   isEditor: boolean
   dropdownProps: AvatarDropdownProps
   communitySlug: string
+  communities: { slug: string; name: string; emoji?: string; status: string }[]
 }) {
   /** Prefix a path with the community slug */
   const c = (basePath: string) => `/${communitySlug}${basePath}`
+
+  /** Are we inside a community route? (e.g. /snowboarding/riders) */
+  const inCommunity = path.startsWith(`/${communitySlug}/`)
+  /** Are we on the root landing page? */
+  const isLanding = path === "/"
 
   return (
     <div>
@@ -188,6 +199,12 @@ function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug }: {
           <span className="text-blue-400 text-2xl">⬡</span>
           <span>Lineage</span>
         </Link>
+        {inCommunity && (
+          <Link href={`/${communitySlug}`} className="flex items-center gap-1.5 flex-shrink-0">
+            <span className="text-muted font-black text-xl" style={{ letterSpacing: "-0.03em" }}>/</span>
+            <span className="font-black text-xl text-foreground tracking-tight">{communitySlug}</span>
+          </Link>
+        )}
         <div className="flex-1" />
         <div className="flex items-center gap-4 flex-shrink-0">
           <ThemeToggle />
@@ -229,21 +246,52 @@ function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug }: {
         )}
       </div>
 
-      {/* Row 3: catalog nav — always visible */}
+      {/* Row 3: context-dependent — community nodes OR community list */}
       <div className="flex items-center px-4 gap-1 overflow-x-auto border-t border-border-default/50 py-1.5 scrollbar-none">
-        {SECONDARY_NAV_PATHS.map(({ path: navPath, label }) => {
-          const href = c(navPath)
-          return (
-            <Link key={navPath} href={href} className={cn(
-              "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
-              isActive(href, path)
-                ? "bg-surface-active text-foreground"
-                : "text-muted hover:text-foreground hover:bg-surface-hover"
-            )}>
-              {label}
-            </Link>
-          )
-        })}
+        {(inCommunity || path === `/${communitySlug}`) ? (
+          /* Inside a community: show entity nav (Riders, Events, ...) */
+          SECONDARY_NAV_PATHS.map(({ path: navPath, label }) => {
+            const href = c(navPath)
+            return (
+              <Link key={navPath} href={href} className={cn(
+                "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
+                isActive(href, path)
+                  ? "bg-surface-active text-foreground"
+                  : "text-muted hover:text-foreground hover:bg-surface-hover"
+              )}>
+                {label}
+              </Link>
+            )
+          })
+        ) : (
+          /* Landing page or global route: show communities list */
+          communities.map((comm) => {
+            const emoji = comm.emoji ?? COMMUNITY_EMOJI[comm.slug] ?? ""
+            const href = `/${comm.slug}`
+            const isComingSoon = comm.status === "coming_soon"
+            return (
+              <Link
+                key={comm.slug}
+                href={isComingSoon ? "#" : href}
+                onClick={isComingSoon ? (e: React.MouseEvent) => e.preventDefault() : undefined}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap flex items-center gap-1.5",
+                  isComingSoon
+                    ? "text-muted/50 cursor-default"
+                    : isActive(href, path)
+                      ? "bg-surface-active text-foreground"
+                      : "text-muted hover:text-foreground hover:bg-surface-hover"
+                )}
+              >
+                <span>{emoji}</span>
+                <span>{comm.name}</span>
+                {isComingSoon && (
+                  <span className="text-[9px] uppercase tracking-wider text-muted/40 ml-0.5">soon</span>
+                )}
+              </Link>
+            )
+          })
+        )}
       </div>
     </div>
   )
@@ -253,7 +301,7 @@ function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug }: {
 
 export function Nav() {
   const path = usePathname()
-  const { activePersonId, profileOverride, loadDbEntities, membership, activeCommunitySlug } = useLineageStore()
+  const { activePersonId, profileOverride, loadDbEntities, membership, activeCommunitySlug, communities } = useLineageStore()
   const basePerson    = getPersonById(activePersonId)
   const loadedForId   = useRef<string | null>(null)
 
@@ -282,6 +330,7 @@ export function Nav() {
         isEditor={isEditor}
         dropdownProps={dropdownProps}
         communitySlug={activeCommunitySlug}
+        communities={communities}
       />
     </nav>
   )

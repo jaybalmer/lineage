@@ -7,24 +7,34 @@ import { cn, nameToSlug } from "@/lib/utils"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
+import { COMMUNITY_SLUGS } from "@/lib/community"
+
+/** Fallback community list used before catalog loads */
+const FALLBACK_COMMUNITIES = [
+  { slug: "snowboarding",  name: "Snowboarding",     emoji: "🏂", status: "active" },
+  { slug: "surf",          name: "Surf",             emoji: "🏄", status: "coming_soon" },
+  { slug: "skate",         name: "Skateboarding",    emoji: "🛹", status: "coming_soon" },
+  { slug: "ski",           name: "Skiing",           emoji: "⛷️", status: "coming_soon" },
+  { slug: "mtb",           name: "Mountain Biking",  emoji: "🚵", status: "coming_soon" },
+] as const
 
 const FEATURES = [
   {
     icon: "📍",
     title: "Map your personal timeline",
-    desc: "Log every place, event, person, and piece of gear that shaped your journey. A meaningful record of your history inside the community — from your first day to where you are now.",
+    desc: "Log every place, event, person, and piece of gear that shaped your journey. A meaningful record of your history inside the community.",
     accent: "border-blue-700",
   },
   {
     icon: "✕",
     title: "Find where your lines cross",
-    desc: "Same mountain in '04? Same event the year everything changed? Lineage surfaces the unexpected overlaps — events, places, and moments you shared with people you didn't know you had history with.",
+    desc: "Same mountain in '04? Same event the year everything changed? Lineage surfaces the unexpected overlaps you didn't know you had.",
     accent: "border-violet-700",
   },
   {
     icon: "🌍",
     title: "Build collective timelines",
-    desc: "Individual timelines weave together into a shared community history. The more people contribute, the richer and more trusted the collective record becomes.",
+    desc: "Individual timelines weave together into a shared community history. The more people contribute, the richer the collective record becomes.",
     accent: "border-emerald-700",
   },
   {
@@ -35,13 +45,17 @@ const FEATURES = [
   },
 ]
 
-
 export default function Home() {
-  const { activePersonId } = useLineageStore()
+  const { activePersonId, communities: storeCommunities } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
   const [browseHref, setBrowseHref] = useState<string>("/riders")
 
-  // Find the rider with the most claims → build a slug URL for Browse
+  // Use store communities if loaded, otherwise fallback
+  const communities = storeCommunities.length > 0
+    ? storeCommunities
+    : FALLBACK_COMMUNITIES
+
+  // Find the rider with the most claims for the browse link
   useEffect(() => {
     supabase
       .from("claims")
@@ -54,7 +68,6 @@ export default function Home() {
         }
         const topId = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0]
         if (!topId) return
-        // Resolve display_name so we can build a pretty slug URL
         const { data: profile } = await supabase
           .from("profiles")
           .select("display_name")
@@ -73,9 +86,7 @@ export default function Home() {
       <Nav />
 
       {/* Hero */}
-      <div className="max-w-3xl mx-auto px-6 pt-20 pb-16 text-center">
-
-        {/* Wordmark */}
+      <div className="max-w-3xl mx-auto px-6 pt-20 pb-12 text-center">
         <div className="mb-8 select-none">
           <div
             className="font-bold text-foreground leading-none tracking-tight"
@@ -85,68 +96,97 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Headline */}
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-snug mb-5 mt-8">
           Collective timelines for communities
         </h1>
 
-        {/* Body */}
-        <p className="text-muted text-base leading-relaxed max-w-xl mx-auto mb-10">
+        <p className="text-muted text-base leading-relaxed max-w-xl mx-auto mb-6">
           Lineage is a new kind of social platform where people build personal timelines
-          of their experiences, and together those timelines form a collective timeline
+          of their experiences, and together those timelines form a collective record
           that connects us.
         </p>
-
-        {/* CTAs */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-          {isAuth ? (
-            <CommunityLink
-              href="/profile"
-              className="w-full sm:w-auto px-8 py-3 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-500 transition-colors"
-            >
-              My Profile →
-            </CommunityLink>
-          ) : (
-            <Link
-              href="/onboarding"
-              className="w-full sm:w-auto px-8 py-3 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-500 transition-colors"
-            >
-              Start Your Timeline →
-            </Link>
-          )}
-          <CommunityLink
-            href={browseHref}
-            className="w-full sm:w-auto px-8 py-3 rounded-xl border border-border-default text-muted font-semibold text-sm hover:border-border-default hover:text-foreground transition-colors"
-          >
-            Browse
-          </CommunityLink>
-        </div>
-
       </div>
 
-      <div className="max-w-3xl mx-auto px-6 pb-4 text-center">
+      {/* Community cards */}
+      <div className="max-w-3xl mx-auto px-6 pb-6">
+        <div className="flex flex-col gap-3">
+          {communities.map((comm) => {
+            const isActive = comm.status === "active"
+            return (
+              <div
+                key={comm.slug}
+                className={cn(
+                  "relative rounded-xl border-2 p-5 transition-all",
+                  isActive
+                    ? "bg-surface border-foreground/20 hover:border-foreground/40"
+                    : "bg-surface/50 border-border-default/50 opacity-60"
+                )}
+              >
+                <div className="flex items-start gap-4">
+                  {/* Emoji */}
+                  <span className="text-3xl leading-none mt-0.5">{comm.emoji}</span>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-bold text-foreground text-lg leading-snug">
+                        {comm.name}
+                      </span>
+                      {!isActive && (
+                        <span className="text-[10px] font-mono uppercase tracking-widest text-muted px-2 py-0.5 rounded-full bg-surface-hover border border-border-default">
+                          Coming soon
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-muted text-sm font-mono">
+                      lineage.wtf/<span className="text-foreground">{comm.slug}</span>
+                    </div>
+
+                    {/* CTAs — only for active communities */}
+                    {isActive && (
+                      <div className="flex flex-wrap items-center gap-2 mt-4">
+                        {isAuth ? (
+                          <Link
+                            href={`/${comm.slug}/profile`}
+                            className="px-5 py-2 rounded-lg bg-blue-600 text-white font-semibold text-xs hover:bg-blue-500 transition-colors"
+                          >
+                            My Timeline
+                          </Link>
+                        ) : (
+                          <Link
+                            href="/onboarding"
+                            className="px-5 py-2 rounded-lg bg-blue-600 text-white font-semibold text-xs hover:bg-blue-500 transition-colors"
+                          >
+                            Start Your Timeline
+                          </Link>
+                        )}
+                        <Link
+                          href={`/${comm.slug}`}
+                          className="px-5 py-2 rounded-lg border border-border-default text-muted font-semibold text-xs hover:text-foreground hover:border-foreground/30 transition-colors"
+                        >
+                          Browse
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Tagline */}
+      <div className="max-w-3xl mx-auto px-6 py-6 text-center">
         <p className="text-foreground text-xl font-semibold italic leading-snug">
           Every community has a history.<br />
           Lineage helps map it.
         </p>
       </div>
 
-      {/* Feature cards — postcard style */}
+      {/* Feature cards */}
       <div className="max-w-3xl mx-auto px-6 pb-6">
         <div className="flex flex-col gap-4">
-
-          {/* Snowboarding community card — always first */}
-          <div className="postcard bg-surface border-2 rounded-xl p-5 border-zinc-600">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl leading-none mt-0.5">🏂</span>
-              <div>
-                <div className="text-[10px] font-mono text-muted mb-1 tabular-nums">00</div>
-                <div className="text-sm font-bold text-foreground leading-snug mb-2">Starting with snowboarding</div>
-                <div className="text-muted text-sm leading-relaxed">The first community on Lineage. More communities coming soon.</div>
-              </div>
-            </div>
-          </div>
-
           {FEATURES.map(({ icon, title, desc, accent }, i) => (
             <div
               key={title}
