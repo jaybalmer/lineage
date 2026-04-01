@@ -123,8 +123,13 @@ export default function Home() {
                 )}
               >
                 <div className="flex items-start gap-4">
-                  {/* Emoji */}
-                  <span className="text-3xl leading-none mt-0.5">{comm.emoji}</span>
+                  {/* Marker dot */}
+                  <div className={cn(
+                    "w-10 h-10 rounded-full flex-shrink-0 mt-0.5",
+                    isActive
+                      ? "bg-blue-600"
+                      : "bg-muted/20 border border-border-default"
+                  )} />
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
