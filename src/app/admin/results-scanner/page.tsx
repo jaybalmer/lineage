@@ -74,7 +74,7 @@ function Summary({ rows }: { rows: ReviewEntry[] }) {
 
 export default function ResultsScannerPage() {
   const router = useRouter()
-  const { catalog, membership, authReady, activePersonId } = useLineageStore()
+  const { catalog, membership, authReady, activePersonId, activeCommunitySlug } = useLineageStore()
 
   // Auth gate
   const [pwInput, setPwInput] = useState("")
@@ -323,7 +323,7 @@ export default function ResultsScannerPage() {
             </button>
             {selectedEventId && (
               <button
-                onClick={() => router.push(`/events/${selectedEventId}`)}
+                onClick={() => router.push(`/${activeCommunitySlug}/events/${selectedEventId}`)}
                 className="px-5 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
               >
                 View event

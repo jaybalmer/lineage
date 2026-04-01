@@ -16,38 +16,29 @@ const TIER_BADGE: Record<string, { label: string; color: string; symbol: string 
   founding: { label: "FOUNDING ✦",  color: "#f59e0b", symbol: "✦" },
 }
 
-const PRIMARY_NAV = [
-  { href: "/profile",     label: "Timeline" },
-  { href: "/feed",        label: "Feed" },
-  { href: "/connections", label: "Connections" },
-  { href: "/collective",  label: "Collective" },
+/** Base paths for community-scoped nav links (prefixed at render time) */
+const PRIMARY_NAV_PATHS = [
+  { path: "/profile",     label: "Timeline" },
+  { path: "/feed",        label: "Feed" },
+  { path: "/connections", label: "Connections" },
+  { path: "/collective",  label: "Collective" },
 ]
 
-const SECONDARY_NAV = [
-  { href: "/riders",  label: "Riders" },
-  { href: "/events",  label: "Events" },
-  { href: "/boards",  label: "Boards" },
-  { href: "/brands",  label: "Brands" },
-  { href: "/places",  label: "Places" },
-  { href: "/stories", label: "Stories" },
+const SECONDARY_NAV_PATHS = [
+  { path: "/riders",  label: "Riders" },
+  { path: "/events",  label: "Events" },
+  { path: "/boards",  label: "Boards" },
+  { path: "/brands",  label: "Brands" },
+  { path: "/places",  label: "Places" },
+  { path: "/stories", label: "Stories" },
 ]
 
-
-const ALL_NAV = [...PRIMARY_NAV, ...SECONDARY_NAV]
-
-function navLinkClass(href: string, path: string, active: boolean) {
-  return cn(
-    "px-3 py-1.5 rounded-md text-sm transition-colors whitespace-nowrap",
-    active
-      ? "bg-surface-active text-foreground"
-      : "text-muted hover:text-foreground hover:bg-surface-hover"
-  )
-}
-
-function isActive(href: string, path: string) {
-  return href === "/profile"
-    ? path === "/profile" || path.startsWith("/profile/")
-    : path.startsWith(href)
+/** Check if pathname matches a nav link (accounting for community prefix) */
+function isActive(navHref: string, pathname: string) {
+  if (navHref.endsWith("/profile")) {
+    return pathname === navHref || pathname.startsWith(navHref + "/")
+  }
+  return pathname.startsWith(navHref)
 }
 
 // ─── Avatar dropdown — isolated component so each desktop/mobile instance
@@ -126,7 +117,7 @@ function AvatarDropdown({ initial, displayName, tier, totalTokens }: AvatarDropd
           </div>
 
           {/* Links */}
-          <Link href="/profile"
+          <Link href={`/${useLineageStore.getState().activeCommunitySlug}/profile`}
             className="flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
             style={{ fontSize: 11 }}>
             My Timeline
@@ -170,20 +161,25 @@ function AvatarDropdown({ initial, displayName, tier, totalTokens }: AvatarDropd
   )
 }
 
-const MOBILE_MENU = [
-  { href: "/profile",     label: "Timeline" },
-  { href: "/compare",     label: "Compare" },
-  { href: "/connections", label: "Connects" },
-  { href: "/feed",        label: "Feed" },
-  { href: "/collective",  label: "Collective" },
+/** Primary nav paths for Row 2 (includes compare which is global) */
+const ROW2_NAV_PATHS = [
+  { path: "/profile",     label: "Timeline",    community: true },
+  { path: "/compare",     label: "Compare",     community: false },
+  { path: "/connections", label: "Connects",    community: true },
+  { path: "/feed",        label: "Feed",        community: true },
+  { path: "/collective",  label: "Collective",  community: true },
 ]
 
-function AppNav({ path, isAuth, isEditor, dropdownProps }: {
+function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug }: {
   path: string
   isAuth: boolean
   isEditor: boolean
   dropdownProps: AvatarDropdownProps
+  communitySlug: string
 }) {
+  /** Prefix a path with the community slug */
+  const c = (basePath: string) => `/${communitySlug}${basePath}`
+
   return (
     <div>
       {/* Row 1: logo + avatar */}
@@ -208,16 +204,19 @@ function AppNav({ path, isAuth, isEditor, dropdownProps }: {
 
       {/* Row 2: primary nav — scrollable */}
       <div className="flex items-center px-4 gap-1 overflow-x-auto border-t border-border-default/50 py-1.5 scrollbar-none">
-        {MOBILE_MENU.map(({ href, label }) => (
-          <Link key={href} href={href} className={cn(
-            "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
-            isActive(href, path)
-              ? "bg-blue-600 text-white"
-              : "text-muted hover:text-foreground hover:bg-surface-hover"
-          )}>
-            {label}
-          </Link>
-        ))}
+        {ROW2_NAV_PATHS.map(({ path: navPath, label, community }) => {
+          const href = community ? c(navPath) : navPath
+          return (
+            <Link key={navPath} href={href} className={cn(
+              "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
+              isActive(href, path)
+                ? "bg-blue-600 text-white"
+                : "text-muted hover:text-foreground hover:bg-surface-hover"
+            )}>
+              {label}
+            </Link>
+          )
+        })}
         {isEditor && (
           <Link href="/admin" className={cn(
             "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
@@ -232,16 +231,19 @@ function AppNav({ path, isAuth, isEditor, dropdownProps }: {
 
       {/* Row 3: catalog nav — always visible */}
       <div className="flex items-center px-4 gap-1 overflow-x-auto border-t border-border-default/50 py-1.5 scrollbar-none">
-        {SECONDARY_NAV.map(({ href, label }) => (
-          <Link key={href} href={href} className={cn(
-            "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
-            isActive(href, path)
-              ? "bg-surface-active text-foreground"
-              : "text-muted hover:text-foreground hover:bg-surface-hover"
-          )}>
-            {label}
-          </Link>
-        ))}
+        {SECONDARY_NAV_PATHS.map(({ path: navPath, label }) => {
+          const href = c(navPath)
+          return (
+            <Link key={navPath} href={href} className={cn(
+              "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
+              isActive(href, path)
+                ? "bg-surface-active text-foreground"
+                : "text-muted hover:text-foreground hover:bg-surface-hover"
+            )}>
+              {label}
+            </Link>
+          )
+        })}
       </div>
     </div>
   )
@@ -251,7 +253,7 @@ function AppNav({ path, isAuth, isEditor, dropdownProps }: {
 
 export function Nav() {
   const path = usePathname()
-  const { activePersonId, profileOverride, loadDbEntities, membership } = useLineageStore()
+  const { activePersonId, profileOverride, loadDbEntities, membership, activeCommunitySlug } = useLineageStore()
   const basePerson    = getPersonById(activePersonId)
   const loadedForId   = useRef<string | null>(null)
 
@@ -279,6 +281,7 @@ export function Nav() {
         isAuth={isAuth}
         isEditor={isEditor}
         dropdownProps={dropdownProps}
+        communitySlug={activeCommunitySlug}
       />
     </nav>
   )

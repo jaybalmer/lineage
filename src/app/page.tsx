@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { CommunityLink } from "@/components/ui/community-link"
 import { cn, nameToSlug } from "@/lib/utils"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
@@ -99,12 +100,12 @@ export default function Home() {
         {/* CTAs */}
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           {isAuth ? (
-            <Link
+            <CommunityLink
               href="/profile"
               className="w-full sm:w-auto px-8 py-3 rounded-xl bg-blue-600 text-white font-semibold text-sm hover:bg-blue-500 transition-colors"
             >
               My Profile →
-            </Link>
+            </CommunityLink>
           ) : (
             <Link
               href="/onboarding"
@@ -113,12 +114,12 @@ export default function Home() {
               Start Your Timeline →
             </Link>
           )}
-          <Link
+          <CommunityLink
             href={browseHref}
             className="w-full sm:w-auto px-8 py-3 rounded-xl border border-border-default text-muted font-semibold text-sm hover:border-border-default hover:text-foreground transition-colors"
           >
             Browse
-          </Link>
+          </CommunityLink>
         </div>
 
       </div>

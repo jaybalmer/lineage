@@ -442,6 +442,7 @@ export function OnboardingFlow() {
     userEntities,
     catalog,
     addClaim,
+    activeCommunitySlug,
   } = useLineageStore()
 
   const step = onboarding.step
@@ -576,7 +577,7 @@ export function OnboardingFlow() {
     }
 
     if (data.session) {
-      router.replace("/timeline")
+      router.replace(`/${activeCommunitySlug}/timeline`)
     } else {
       // Email confirmation required
       setEmailConfirmPending(true)
@@ -595,7 +596,7 @@ export function OnboardingFlow() {
     setActivePersonId(devId)
     applyOnboardingClaims(devId)
     completeOnboarding()
-    router.replace("/timeline")
+    router.replace(`/${activeCommunitySlug}/timeline`)
   }
 
   // ── Navigation ────────────────────────────────────────────────────────────

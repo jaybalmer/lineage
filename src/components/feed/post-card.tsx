@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
+import { CommunityLink } from "@/components/ui/community-link"
 import type { Claim, EntityType, Event, Board, Place, Org, Person } from "@/types"
 import { ConfidenceBadge, UnverifiedBadge } from "@/components/ui/badge"
 import { PREDICATE_LABELS, formatDateRange } from "@/lib/utils"
@@ -441,18 +441,18 @@ function EntityBlock({ claim, entityName, isOwn }: EntityBlockProps) {
       )}
 
       <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border-default">
-        <Link href={href} className="flex-shrink-0">
+        <CommunityLink href={href} className="flex-shrink-0">
           {graphic}
-        </Link>
+        </CommunityLink>
 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <Link href={href} className="block">
+              <CommunityLink href={href} className="block">
                 <p className="font-bold text-foreground text-base leading-snug hover:text-blue-300 transition-colors truncate">
                   {displayName}
                 </p>
-              </Link>
+              </CommunityLink>
               {subtitle && (
                 <p className="text-xs text-muted mt-0.5 capitalize">{subtitle}</p>
               )}
@@ -536,11 +536,11 @@ function CompanionAvatars({ claim }: { claim: Claim }) {
           const initials = (person?.display_name ?? "?")[0].toUpperCase()
           const name = person?.display_name ?? "Rider"
           return (
-            <Link key={pid} href={`/riders/${pid}`} title={name}>
+            <CommunityLink key={pid} href={`/riders/${pid}`} title={name}>
               <div className="w-6 h-6 rounded-full bg-violet-700 border border-violet-600 flex items-center justify-center text-[9px] font-bold text-white hover:bg-violet-500 transition-colors">
                 {initials}
               </div>
-            </Link>
+            </CommunityLink>
           )
         })}
         <span className="text-[11px] text-muted ml-0.5">

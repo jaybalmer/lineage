@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { CommunityLink } from "@/components/ui/community-link"
 import { Nav } from "@/components/ui/nav"
 import { RiderAvatar, getInitials } from "@/components/ui/rider-avatar"
 
@@ -108,7 +109,7 @@ export default function FoundingPage() {
           ) : filled > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
               {members.map((m) => (
-                <Link key={m.id} href={`/riders/${m.id}`}
+                <CommunityLink key={m.id} href={`/riders/${m.id}`}
                   className="block bg-surface border border-border-default rounded-xl p-4 hover:border-amber-800/60 transition-all"
                   style={{ borderTop: "2px solid #f59e0b" }}>
                   {/* Avatar */}
@@ -128,7 +129,7 @@ export default function FoundingPage() {
                   <div className="text-muted mt-2" style={{ fontSize: 8 }}>
                     ✦ Founding member since {new Date(m.joined).getFullYear()}
                   </div>
-                </Link>
+                </CommunityLink>
               ))}
             </div>
           ) : (

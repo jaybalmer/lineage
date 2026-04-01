@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { CommunityLink } from "@/components/ui/community-link"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
@@ -654,7 +655,7 @@ function MembershipDashboard() {
 
           {/* Back links */}
           <div className="flex gap-4 pt-2" style={{ fontSize: 10 }}>
-            <Link href="/profile" className="text-muted hover:text-foreground transition-colors">← Profile</Link>
+            <CommunityLink href="/profile" className="text-muted hover:text-foreground transition-colors">← Profile</CommunityLink>
             <Link href="/membership" className="text-muted hover:text-foreground transition-colors">Membership options →</Link>
             <Link href="/revenue" className="text-muted hover:text-foreground transition-colors">Revenue sharing →</Link>
           </div>

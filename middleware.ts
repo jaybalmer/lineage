@@ -2,7 +2,24 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 
+/** Routes that now live under /(community)/[community]/ */
+const COMMUNITY_ROUTES = new Set([
+  "riders", "places", "events", "boards", "brands", "orgs",
+  "stories", "feed", "connections", "collective", "profile",
+  "explore", "timeline",
+])
+
 export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  const firstSegment = pathname.split("/")[1] // "riders", "auth", etc.
+
+  // Redirect old top-level community routes → /snowboarding/...
+  if (firstSegment && COMMUNITY_ROUTES.has(firstSegment)) {
+    const url = request.nextUrl.clone()
+    url.pathname = `/snowboarding${pathname}`
+    return NextResponse.redirect(url, 301)
+  }
+
   let supabaseResponse = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -31,8 +48,8 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Only /timeline requires auth — all browse pages stay public
-  const isProtected = request.nextUrl.pathname.startsWith("/timeline")
+  // Only /[community]/timeline requires auth — all browse pages stay public
+  const isProtected = /^\/[^/]+\/timeline/.test(request.nextUrl.pathname)
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone()

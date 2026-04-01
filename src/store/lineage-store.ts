@@ -2,7 +2,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import type { Claim, OnboardingState, Place, Board, Org, Event, EventSeries, Person, RidingDay, MembershipState, TriggerPrefs } from "@/types"
+import type { Claim, OnboardingState, Place, Board, Org, Event, EventSeries, Person, RidingDay, MembershipState, TriggerPrefs, Community } from "@/types"
 import { PLACES, ORGS, BOARDS, EVENTS, EVENT_SERIES, PEOPLE, CLAIMS } from "@/lib/mock-data"
 import { supabase } from "@/lib/supabase"
 
@@ -92,6 +92,11 @@ interface LineageStore {
     id: string
   ) => void
 
+  // Communities
+  communities: Community[]
+  activeCommunitySlug: string
+  setActiveCommunitySlug: (slug: string) => void
+
   // Active view state
   activePersonId: string
   setActivePersonId: (id: string) => void
@@ -143,12 +148,50 @@ export const useLineageStore = create<LineageStore>()(
             "id, display_name, birth_year, riding_since, privacy_level, bio, links, home_resort_id, membership_tier"
           ),
           // Junction tables fetched via service-role API route (RLS blocks anon reads)
-          fetch("/api/catalog-junctions").then((r) => r.json()).catch(() => ({ eventBrands: [], seriesBrands: [] })),
+          fetch("/api/catalog-junctions").then((r) => r.json()).catch(() => ({
+            eventBrands: [], seriesBrands: [],
+            communities: [],
+            communityPeople: [], communityPlaces: [], communityOrgs: [],
+            communityBoards: [], communityEvents: [],
+          })),
         ]).then(([p, o, b, e, es, pe, c, pr, junctions]) => {
-          const { eventBrands: ebData, seriesBrands: esbData } = junctions as {
+          const {
+            eventBrands: ebData, seriesBrands: esbData,
+            communities: commData,
+            communityPeople: cpData, communityPlaces: cplData,
+            communityOrgs: coData, communityBoards: cbData, communityEvents: ceData,
+          } = junctions as {
             eventBrands: { event_id: string; org_id: string }[]
             seriesBrands: { series_id: string; org_id: string }[]
+            communities: Community[]
+            communityPeople: { community_id: string; person_id: string }[]
+            communityPlaces: { community_id: string; place_id: string }[]
+            communityOrgs: { community_id: string; org_id: string }[]
+            communityBoards: { community_id: string; board_id: string }[]
+            communityEvents: { community_id: string; event_id: string }[]
           }
+
+          // Build community_id → slug lookup
+          const commSlugById = new Map<string, string>()
+          for (const comm of commData) commSlugById.set(comm.id, comm.slug)
+
+          // Build entity_id → community_slugs[] maps
+          function buildSlugMap(rows: { community_id: string }[], idKey: string) {
+            const map = new Map<string, string[]>()
+            for (const row of rows) {
+              const entityId = (row as Record<string, string>)[idKey]
+              const slug = commSlugById.get(row.community_id)
+              if (!entityId || !slug) continue
+              if (!map.has(entityId)) map.set(entityId, [])
+              map.get(entityId)!.push(slug)
+            }
+            return map
+          }
+          const peopleSlugs = buildSlugMap(cpData, "person_id")
+          const placesSlugs = buildSlugMap(cplData, "place_id")
+          const orgsSlugs   = buildSlugMap(coData, "org_id")
+          const boardsSlugs = buildSlugMap(cbData, "board_id")
+          const eventsSlugs = buildSlugMap(ceData, "event_id")
           const catalogPeople = (pe.data?.length ? pe.data : PEOPLE) as Person[]
 
           // Map profile rows → Person shape, skip any already in catalog people (dedup by id)
@@ -189,14 +232,32 @@ export const useLineageStore = create<LineageStore>()(
             brand_ids: seriesBrandMap.get(s.id),
           }))
 
+          // Attach community_slugs to each entity type
+          const placesWithComm = ((p.data?.length ? p.data : PLACES) as Place[]).map((pl) => ({
+            ...pl, community_slugs: placesSlugs.get(pl.id),
+          }))
+          const orgsWithComm = ((o.data?.length ? o.data : ORGS) as Org[]).map((org) => ({
+            ...org, community_slugs: orgsSlugs.get(org.id),
+          }))
+          const boardsWithComm = ((b.data?.length ? b.data : BOARDS) as Board[]).map((bd) => ({
+            ...bd, community_slugs: boardsSlugs.get(bd.id),
+          }))
+          const eventsWithComm = events.map((ev) => ({
+            ...ev, community_slugs: eventsSlugs.get(ev.id),
+          }))
+          const peopleWithComm = [...catalogPeople, ...profilePeople].map((pe2) => ({
+            ...pe2, community_slugs: peopleSlugs.get(pe2.id),
+          }))
+
           set({
+            communities: commData,
             catalog: {
-              places:      (p.data?.length  ? p.data  : PLACES)       as Place[],
-              orgs:        (o.data?.length  ? o.data  : ORGS)         as Org[],
-              boards:      (b.data?.length  ? b.data  : BOARDS)       as Board[],
-              events,
+              places:      placesWithComm,
+              orgs:        orgsWithComm,
+              boards:      boardsWithComm,
+              events:      eventsWithComm,
               eventSeries,
-              people:      [...catalogPeople, ...profilePeople],
+              people:      peopleWithComm,
               claims:      (c.data?.length  ? c.data  : CLAIMS)       as Claim[],
             },
             catalogLoaded: true,
@@ -516,6 +577,10 @@ export const useLineageStore = create<LineageStore>()(
         }
       },
 
+      communities: [],
+      activeCommunitySlug: "snowboarding",
+      setActiveCommunitySlug: (slug) => set({ activeCommunitySlug: slug }),
+
       activePersonId: "",
       setActivePersonId: (id) => set({ activePersonId: id }),
 
@@ -556,7 +621,7 @@ export const useLineageStore = create<LineageStore>()(
       // Don't persist catalog or dbClaims — catalog always starts from mock data
       // and gets overwritten by loadCatalog(); dbClaims are always reloaded from DB
       partialize: (s) => {
-        const { dbClaims: _db, catalog: _cat, catalogLoaded: _cl, showMemberCard: _smc, authReady: _ar, ...rest } = s
+        const { dbClaims: _db, catalog: _cat, catalogLoaded: _cl, showMemberCard: _smc, authReady: _ar, communities: _comm, ...rest } = s
         return rest
       },
     }

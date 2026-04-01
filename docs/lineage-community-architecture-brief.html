@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lineage: Community Architecture — Product Brief</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Figtree:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0e0e0e;
+    --paper: #f5f2ec;
+    --accent: #c8ff00;
+    --mid: #6b6b6b;
+    --rule: #d4d0c8;
+    --tag-bg: #1a1a1a;
+    --tag-fg: #c8ff00;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: 'Figtree', sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* COVER */
+  .cover {
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: 1fr auto;
+    padding: 64px 72px 56px;
+    border-bottom: 1px solid var(--rule);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cover::before {
+    content: '';
+    position: absolute;
+    top: -120px;
+    right: -80px;
+    width: 520px;
+    height: 520px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(200,255,0,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .cover-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .wordmark {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--mid);
+  }
+
+  .doc-ref {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--mid);
+    text-align: right;
+    line-height: 1.8;
+  }
+
+  .cover-body {
+    padding-top: 80px;
+  }
+
+  .brief-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--mid);
+    margin-bottom: 28px;
+  }
+
+  h1 {
+    font-family: 'Instrument Serif', serif;
+    font-size: clamp(48px, 7vw, 88px);
+    font-weight: 400;
+    line-height: 1.0;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin-bottom: 12px;
+  }
+
+  h1 em {
+    font-style: italic;
+    color: var(--mid);
+  }
+
+  .cover-summary {
+    max-width: 560px;
+    margin-top: 40px;
+    font-size: 16px;
+    color: var(--mid);
+    font-weight: 300;
+    line-height: 1.75;
+    border-left: 2px solid var(--accent);
+    padding-left: 20px;
+  }
+
+  .cover-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding-top: 48px;
+    border-top: 1px solid var(--rule);
+  }
+
+  .cover-footer-left {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--mid);
+    letter-spacing: 0.08em;
+  }
+
+  .status-pill {
+    background: var(--tag-bg);
+    color: var(--tag-fg);
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 2px;
+  }
+
+  /* BODY LAYOUT */
+  .content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 80px 72px;
+  }
+
+  /* SECTION */
+  .section {
+    margin-bottom: 72px;
+  }
+
+  .section-header {
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    gap: 20px;
+    align-items: baseline;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .section-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--mid);
+    letter-spacing: 0.1em;
+    padding-top: 4px;
+  }
+
+  h2 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 32px;
+    font-weight: 400;
+    line-height: 1.15;
+    color: var(--ink);
+  }
+
+  h3 {
+    font-family: 'Figtree', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+    margin-bottom: 12px;
+    margin-top: 32px;
+  }
+
+  p {
+    color: #2a2a2a;
+    margin-bottom: 16px;
+    max-width: 680px;
+  }
+
+  /* NODE GRID */
+  .node-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    margin: 32px 0;
+  }
+
+  .node-card {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 24px 20px;
+  }
+
+  .node-card-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #888;
+    margin-bottom: 8px;
+  }
+
+  .node-card-name {
+    font-family: 'Instrument Serif', serif;
+    font-size: 22px;
+    color: var(--paper);
+    margin-bottom: 14px;
+  }
+
+  .node-card-desc {
+    font-size: 12px;
+    color: #aaa;
+    line-height: 1.6;
+  }
+
+  .node-card.accent {
+    background: var(--accent);
+  }
+
+  .node-card.accent .node-card-label { color: rgba(0,0,0,0.45); }
+  .node-card.accent .node-card-name { color: var(--ink); }
+  .node-card.accent .node-card-desc { color: rgba(0,0,0,0.65); }
+
+  /* URL EXAMPLE */
+  .url-example {
+    background: var(--ink);
+    border-radius: 3px;
+    padding: 20px 24px;
+    margin: 24px 0;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    line-height: 2;
+  }
+
+  .url-example .base { color: #666; }
+  .url-example .community { color: var(--accent); }
+  .url-example .path { color: #aaa; }
+  .url-example .comment { color: #555; font-size: 11px; margin-left: 12px; }
+
+  /* RULE TABLE */
+  .rule-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 14px;
+  }
+
+  .rule-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--mid);
+    text-align: left;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--rule);
+    background: rgba(0,0,0,0.03);
+  }
+
+  .rule-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+    color: #2a2a2a;
+  }
+
+  .rule-table tr:last-child td { border-bottom: none; }
+
+  .pill {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 2px;
+    margin-right: 4px;
+  }
+
+  .pill.yes { background: rgba(200,255,0,0.2); color: #3a5a00; }
+  .pill.no { background: rgba(0,0,0,0.06); color: #777; }
+  .pill.scoped { background: rgba(200,255,0,0.12); color: #4a6a00; }
+
+  /* TIMELINE DIAGRAM */
+  .timeline-diagram {
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 28px 0;
+  }
+
+  .timeline-diagram-header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 14px 20px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .timeline-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--rule);
+    background: #faf9f6;
+  }
+
+  .tab {
+    padding: 10px 20px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--mid);
+    border-right: 1px solid var(--rule);
+    cursor: default;
+  }
+
+  .tab.active {
+    background: white;
+    color: var(--ink);
+    border-bottom: 2px solid var(--accent);
+    margin-bottom: -1px;
+  }
+
+  .timeline-content {
+    padding: 20px;
+    background: white;
+  }
+
+  .claim-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid #f0ede6;
+  }
+
+  .claim-row:last-child { border-bottom: none; }
+
+  .claim-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 6px;
+    flex-shrink: 0;
+  }
+
+  .claim-dot.snow { background: #4a90d9; }
+  .claim-dot.surf { background: #f0a500; }
+  .claim-dot.skate { background: #d94a4a; }
+  .claim-dot.all { background: var(--accent); border: 1px solid #888; }
+
+  .claim-text { font-size: 13px; color: #2a2a2a; }
+  .claim-community { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--mid); margin-top: 2px; }
+
+  /* CALLOUT */
+  .callout {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 28px 32px;
+    border-radius: 3px;
+    margin: 32px 0;
+  }
+
+  .callout-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  .callout p {
+    color: #ccc;
+    max-width: none;
+    margin: 0;
+    font-size: 15px;
+  }
+
+  .callout strong { color: var(--paper); }
+
+  /* OPEN QUESTIONS */
+  .questions-list {
+    counter-reset: q;
+    list-style: none;
+    margin: 20px 0;
+  }
+
+  .questions-list li {
+    counter-increment: q;
+    display: grid;
+    grid-template-columns: 32px 1fr;
+    gap: 12px;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--rule);
+    font-size: 14px;
+    color: #2a2a2a;
+  }
+
+  .questions-list li::before {
+    content: counter(q, decimal-leading-zero);
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--mid);
+    padding-top: 2px;
+  }
+
+  .questions-list li:last-child { border-bottom: none; }
+
+  /* SCOPE TABLE */
+  .scope-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 24px 0;
+    font-size: 13px;
+  }
+
+  .scope-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--mid);
+    padding: 10px 14px;
+    border: 1px solid var(--rule);
+    background: rgba(0,0,0,0.03);
+    text-align: center;
+  }
+
+  .scope-table th:first-child { text-align: left; }
+
+  .scope-table td {
+    padding: 11px 14px;
+    border: 1px solid var(--rule);
+    vertical-align: middle;
+    color: #2a2a2a;
+    text-align: center;
+  }
+
+  .scope-table td:first-child { text-align: left; font-weight: 500; }
+
+  .check { color: #3a8f00; font-size: 15px; }
+  .cross { color: #aaa; font-size: 15px; }
+
+  /* FOOTER */
+  .brief-footer {
+    border-top: 1px solid var(--rule);
+    padding: 32px 72px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .brief-footer-left {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--mid);
+    line-height: 1.8;
+  }
+
+  .brief-footer-right {
+    font-family: 'Instrument Serif', serif;
+    font-size: 28px;
+    color: var(--rule);
+  }
+
+  @media print {
+    .cover { min-height: auto; page-break-after: always; }
+    .section { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<div class="cover">
+  <div class="cover-meta">
+    <div class="wordmark">Lineage</div>
+    <div class="doc-ref">
+      Product Brief<br>
+      PB-004<br>
+      March 2026
+    </div>
+  </div>
+
+  <div class="cover-body">
+    <div class="brief-label">Architecture Evolution</div>
+    <h1>Community<br><em>as Lens</em></h1>
+    <p class="cover-summary">
+      Lineage moves from a single-sport prototype to a multi-community platform. Communities are scoped lenses over a shared graph, not isolated silos. Nodes join communities. Claims belong to one.
+    </p>
+  </div>
+
+  <div class="cover-footer">
+    <div class="cover-footer-left">
+      Prepared for Claude Code implementation handoff<br>
+      Lineage Inc. — Confidential
+    </div>
+    <div class="status-pill">Pre-Implementation</div>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- 01 CONTEXT -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">01</div>
+      <h2>Context and Intent</h2>
+    </div>
+
+    <p>The current prototype is built entirely within the snowboarding context. While snowboarding remains the launch community, the underlying architecture needs to support many communities from day one so that the prototype can scale without structural rework.</p>
+
+    <p>This brief defines how communities are modeled, how nodes relate to communities, how claims are scoped, and how the personal timeline adapts across community contexts.</p>
+
+    <div class="callout">
+      <div class="callout-label">Guiding Principle</div>
+      <p>Communities are <strong>lenses over the graph, not partitions of it.</strong> The same rider, place, brand, or event can appear in multiple communities. What stays community-specific is the claim: the story, gear entry, or event participation that a person creates within a community context.</p>
+    </div>
+  </div>
+
+  <!-- 02 URL STRUCTURE -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">02</div>
+      <h2>URL Structure and Routing</h2>
+    </div>
+
+    <p>Each community occupies a top-level route under the Lineage domain. All pages within that community live under its path prefix.</p>
+
+    <div class="url-example">
+      <div><span class="base">lineage.wtf/</span><span class="comment">— landing page, community discovery</span></div>
+      <div><span class="base">lineage.wtf/</span><span class="community">snowboarding</span><span class="comment">— community home</span></div>
+      <div><span class="base">lineage.wtf/</span><span class="community">snowboarding</span><span class="path">/riders/brad-holmes</span><span class="comment">— rider profile, scoped</span></div>
+      <div><span class="base">lineage.wtf/</span><span class="community">snowboarding</span><span class="path">/places/whistler</span><span class="comment">— place page, scoped</span></div>
+      <div><span class="base">lineage.wtf/</span><span class="community">snowboarding</span><span class="path">/brands/burton</span><span class="comment">— brand page, scoped</span></div>
+      <div><span class="base">lineage.wtf/</span><span class="community">snowboarding</span><span class="path">/events/arctic-challenge-2003</span><span class="comment">— event page, scoped</span></div>
+    </div>
+
+    <p>The landing page at <code style="font-family:'DM Mono',monospace; font-size:12px; background:rgba(0,0,0,0.06); padding:2px 6px; border-radius:2px;">lineage.wtf</code> serves as the community directory. Snowboarding is the only live community at launch. Additional communities are visible but marked as forthcoming.</p>
+  </div>
+
+  <!-- 03 NODE MODEL -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">03</div>
+      <h2>Node Membership Model</h2>
+    </div>
+
+    <p>The four primary node types in the Lineage graph each carry a community membership list. Membership determines where a node surfaces, not where it lives. The underlying record is shared across the graph.</p>
+
+    <div class="node-grid">
+      <div class="node-card">
+        <div class="node-card-label">Node Type</div>
+        <div class="node-card-name">People</div>
+        <div class="node-card-desc">A rider joins communities. Brad can be a member of snowboarding, surf, and skate simultaneously. His profile node is one record.</div>
+      </div>
+      <div class="node-card">
+        <div class="node-card-label">Node Type</div>
+        <div class="node-card-name">Places</div>
+        <div class="node-card-desc">Whistler belongs to snowboarding, skiing, and mountain biking. The same Place node surfaces in all three community maps.</div>
+      </div>
+      <div class="node-card">
+        <div class="node-card-label">Node Type</div>
+        <div class="node-card-name">Brands</div>
+        <div class="node-card-desc">A brand like Burton or Oakley can hold membership in multiple communities and appears in each community's brand directory.</div>
+      </div>
+      <div class="node-card accent">
+        <div class="node-card-label">Node Type</div>
+        <div class="node-card-name">Events</div>
+        <div class="node-card-desc">A mountain festival may span MTB and snowboard communities. Events carry a community list and surface in all relevant calendars.</div>
+      </div>
+    </div>
+
+    <h3>What Community Membership Controls</h3>
+
+    <table class="scope-table">
+      <thead>
+        <tr>
+          <th>Behavior</th>
+          <th>People</th>
+          <th>Places</th>
+          <th>Brands</th>
+          <th>Events</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Appears in community directory</td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td>Visible on community map / explore view</td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+          <td><span class="cross">—</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+        <tr>
+          <td>Claims auto-cross to other communities</td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+          <td><span class="cross">✗</span></td>
+        </tr>
+        <tr>
+          <td>Profile page accessible from community route</td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+          <td><span class="check">✓</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 04 CLAIMS -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">04</div>
+      <h2>Claim Scoping</h2>
+    </div>
+
+    <p>Claims are the core contribution type on Lineage: a story, gear entry, event participation, or sourced reference created by a user or publisher. Unlike nodes, claims are not shared across communities.</p>
+
+    <p>Every claim is created within a community context and stays there. If Brad wants to document the same trip across two communities, those are two separate claims. There is no automatic propagation.</p>
+
+    <h3>Claim Scoping Rules</h3>
+
+    <table class="rule-table">
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>Behavior</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Brad adds a snowboard gear entry</td>
+          <td><span class="pill scoped">Snowboarding only</span> Does not appear on his surf or skate timeline</td>
+        </tr>
+        <tr>
+          <td>Brad adds a surf session story</td>
+          <td><span class="pill scoped">Surf only</span> Does not appear on his snowboard timeline</td>
+        </tr>
+        <tr>
+          <td>Brad attends a multi-sport festival with communities snowboard + MTB</td>
+          <td>The Event node surfaces in both communities. Brad's participation claim is created in one community unless he explicitly claims it in both separately.</td>
+        </tr>
+        <tr>
+          <td>A journalist publishes a story that references Whistler</td>
+          <td>The citation is attached to whichever community context the story was published under. Whistler the Place node surfaces in all relevant communities, but the journalistic citation belongs to one.</td>
+        </tr>
+        <tr>
+          <td>A brand sponsors an event straddling two communities</td>
+          <td>The brand node appears in both communities. The sponsorship relationship is authored within a specific community context unless explicitly tagged to both.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout">
+      <div class="callout-label">Design Decision</div>
+      <p>Cross-community claim linking is reserved as a future capability, not a V1 feature. In V1, claims belong to exactly one community. This keeps claim provenance clean and avoids ambiguity in the personal timeline.</p>
+    </div>
+  </div>
+
+  <!-- 05 PERSONAL TIMELINE -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">05</div>
+      <h2>Personal Timeline Behavior</h2>
+    </div>
+
+    <p>The personal timeline adapts based on where the user is viewing it. Context determines scope.</p>
+
+    <h3>Home Context (lineage.wtf)</h3>
+    <p>The merged timeline shows all first-person claims across every community the user has joined. A community filter allows narrowing to a single community without leaving the home context. This is the only place cross-community claims appear side by side.</p>
+
+    <h3>Community Context (lineage.wtf/snowboarding)</h3>
+    <p>The timeline shows only claims created within the snowboarding community. No surf or skate claims surface here, even if the viewer is Brad and he is a member of all three.</p>
+
+    <div class="timeline-diagram">
+      <div class="timeline-diagram-header">
+        <span>lineage.wtf — Brad's Merged Timeline (Home)</span>
+        <span style="font-size:10px; color:#888;">Community filter: All</span>
+      </div>
+      <div class="timeline-tabs">
+        <div class="tab active">All</div>
+        <div class="tab">Snowboarding</div>
+        <div class="tab">Surf</div>
+        <div class="tab">Skate</div>
+      </div>
+      <div class="timeline-content">
+        <div class="claim-row">
+          <div class="claim-dot snow"></div>
+          <div>
+            <div class="claim-text">Powder day at Whistler Blackcomb, February 2023</div>
+            <div class="claim-community">snowboarding</div>
+          </div>
+        </div>
+        <div class="claim-row">
+          <div class="claim-dot surf"></div>
+          <div>
+            <div class="claim-text">Tofino trip, first overhead swell, August 2022</div>
+            <div class="claim-community">surf</div>
+          </div>
+        </div>
+        <div class="claim-row">
+          <div class="claim-dot snow"></div>
+          <div>
+            <div class="claim-text">Burton Custom X, 2021 season rider setup</div>
+            <div class="claim-community">snowboarding</div>
+          </div>
+        </div>
+        <div class="claim-row">
+          <div class="claim-dot skate"></div>
+          <div>
+            <div class="claim-text">Richmond Skate Ranch, early park days, 2019</div>
+            <div class="claim-community">skate</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <h3>Tab Structure on Profile</h3>
+    <p>Profile tabs are generated dynamically from the user's community memberships. The "All" tab is always present and always first. Community tabs appear in join order or by activity volume (to be decided).</p>
+  </div>
+
+  <!-- 06 LANDING PAGE -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">06</div>
+      <h2>Landing Page and Community Discovery</h2>
+    </div>
+
+    <p>The Lineage landing page at <code style="font-family:'DM Mono',monospace; font-size:12px; background:rgba(0,0,0,0.06); padding:2px 6px; border-radius:2px;">lineage.wtf</code> serves two purposes: it is the home for authenticated users (merged timeline) and the discovery entry point for new visitors.</p>
+
+    <h3>For Authenticated Users</h3>
+    <p>The default view is the merged personal timeline. A community switcher or tab row gives quick access to each joined community. The landing page does not redirect to a specific community route; it stays at root.</p>
+
+    <h3>For New Visitors</h3>
+    <p>The page presents available communities. At launch, only snowboarding is live. Other communities (surf, skate, ski, MTB) are displayed as forthcoming to signal the platform's scope without overpromising access.</p>
+
+    <h3>Launch State</h3>
+    <table class="rule-table">
+      <thead>
+        <tr>
+          <th>Community</th>
+          <th>Status at Launch</th>
+          <th>Route</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Snowboarding</td>
+          <td><span class="pill yes">Live</span></td>
+          <td><code style="font-family:'DM Mono',monospace; font-size:11px;">lineage.wtf/snowboarding</code></td>
+        </tr>
+        <tr>
+          <td>Surf</td>
+          <td><span class="pill no">Forthcoming</span></td>
+          <td><code style="font-family:'DM Mono',monospace; font-size:11px;">lineage.wtf/surf</code></td>
+        </tr>
+        <tr>
+          <td>Skateboarding</td>
+          <td><span class="pill no">Forthcoming</span></td>
+          <td><code style="font-family:'DM Mono',monospace; font-size:11px;">lineage.wtf/skate</code></td>
+        </tr>
+        <tr>
+          <td>Skiing</td>
+          <td><span class="pill no">Forthcoming</span></td>
+          <td><code style="font-family:'DM Mono',monospace; font-size:11px;">lineage.wtf/ski</code></td>
+        </tr>
+        <tr>
+          <td>Mountain Biking</td>
+          <td><span class="pill no">Forthcoming</span></td>
+          <td><code style="font-family:'DM Mono',monospace; font-size:11px;">lineage.wtf/mtb</code></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 07 CROSS-COMMUNITY OVERLAPS -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">07</div>
+      <h2>Cross-Community Overlaps</h2>
+    </div>
+
+    <p>Shared nodes are the connective tissue of the graph. When a place, brand, or person appears in multiple communities, that overlap is a feature, not a conflict. The question is how explicitly to surface it in the UI.</p>
+
+    <h3>Surfacing Overlap (Recommended)</h3>
+    <p>Node pages within a community context should display a secondary indicator showing other communities that node belongs to. This serves as natural cross-discovery without routing the user away.</p>
+
+    <p>Example: The Whistler page at <code style="font-family:'DM Mono',monospace; font-size:12px; background:rgba(0,0,0,0.06); padding:2px 6px; border-radius:2px;">lineage.wtf/snowboarding/places/whistler</code> displays a note that this place also belongs to the skiing and MTB communities, with links to those community-scoped views of the same place.</p>
+
+    <h3>Overlap Does Not Mean Shared Claims</h3>
+    <p>The overlap indicator points to the same underlying Place node viewed through a different community lens. The claims attached to Whistler in the skiing community are not visible on the snowboarding community page and vice versa, unless a claim was explicitly tagged to multiple communities (a future capability, not V1).</p>
+  </div>
+
+  <!-- 08 RESOLVED DECISIONS -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">08</div>
+      <h2>Implementation Decisions</h2>
+    </div>
+
+    <p>The following decisions were resolved prior to implementation handoff.</p>
+
+    <table class="rule-table">
+      <thead>
+        <tr>
+          <th>Decision</th>
+          <th>Resolution</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Claim community assignment</strong></td>
+          <td>Route inference. The claim automatically inherits the community from the route the user is on when creating it. No explicit picker in V1.</td>
+        </tr>
+        <tr>
+          <td><strong>Cross-community claim duplication</strong></td>
+          <td>Not supported in V1. A user creates a fresh claim per community independently. Duplication mechanic deferred to a future version.</td>
+        </tr>
+        <tr>
+          <td><strong>Profile tab ordering</strong></td>
+          <td>Sorted by claim activity volume, descending. The community with the most claims surfaces first. Not join date order.</td>
+        </tr>
+        <tr>
+          <td><strong>Node community membership gating</strong></td>
+          <td>Restricted to users with Editor flag set to TRUE or Founding member status. Community admin roles are deferred. At launch this is a single-operator function.</td>
+        </tr>
+        <tr>
+          <td><strong>Onboarding community selection</strong></td>
+          <td>Community selection is an explicit step at the start of onboarding. Snowboarding is the only selectable option at launch. All subsequent onboarding steps are driven by the selected community. The snowboard flow (first day, boards, places, events) is the template for future community onboarding builds.</td>
+        </tr>
+        <tr>
+          <td><strong>Community membership on public profile</strong></td>
+          <td>Community memberships are displayed as tags or badges above the timeline on a rider's profile. Selecting a community filters the timeline to that community's claims. A second tier of filters then becomes available for categories within that community (e.g. gear, events, places).</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- 09 SCOPE OF THIS BRIEF -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">09</div>
+      <h2>What This Brief Does Not Cover</h2>
+    </div>
+
+    <p>The following are out of scope for this document and are addressed in other existing briefs or workstreams:</p>
+
+    <table class="rule-table">
+      <thead>
+        <tr>
+          <th>Topic</th>
+          <th>Reference</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Claim types (Participant, Organizer, Spectator, Contributor)</td>
+          <td>Claim Types brief</td>
+        </tr>
+        <tr>
+          <td>Brand partnership tiers and archive model</td>
+          <td>Brand Partnership brief</td>
+        </tr>
+        <tr>
+          <td>Raku token model and participation wallet</td>
+          <td>Raku brief (in progress)</td>
+        </tr>
+        <tr>
+          <td>Publisher verification and trust tiers</td>
+          <td>Trust Architecture brief (in progress)</td>
+        </tr>
+        <tr>
+          <td>Graph data model and schema</td>
+          <td>Claude Code / Cowork project</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<div class="brief-footer">
+  <div class="brief-footer-left">
+    Lineage Inc. — Confidential and Proprietary<br>
+    PB-004 · Community Architecture · March 2026<br>
+    For handoff to Claude Code implementation
+  </div>
+  <div class="brief-footer-right">Lineage</div>
+</div>
+
+</body>
+</html>

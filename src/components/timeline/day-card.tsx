@@ -4,7 +4,7 @@ import { useState } from "react"
 import type { RidingDay } from "@/types"
 import { useLineageStore } from "@/store/lineage-store"
 import { PLACES, PEOPLE, placeSlug } from "@/lib/mock-data"
-import Link from "next/link"
+import { CommunityLink } from "@/components/ui/community-link"
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
 
@@ -46,12 +46,12 @@ export function DayCard({ day, isOwn }: { day: RidingDay; isOwn?: boolean }) {
             <div className="mt-1 flex items-center gap-1.5">
               <span className="text-sm">🏔</span>
               {place ? (
-                <Link
+                <CommunityLink
                   href={`/places/${placeSlug(place)}`}
                   className="font-medium text-foreground hover:text-emerald-400 transition-colors text-sm"
                 >
                   {place.name}
-                </Link>
+                </CommunityLink>
               ) : (
                 <span className="font-medium text-muted text-sm">Unknown place</span>
               )}
@@ -63,12 +63,12 @@ export function DayCard({ day, isOwn }: { day: RidingDay; isOwn?: boolean }) {
                 <span className="text-[11px] text-muted">with</span>
                 {riders.map((r, i) => (
                   <span key={r.id}>
-                    <Link
+                    <CommunityLink
                       href={`/riders/${r.id}`}
                       className="text-[11px] text-muted hover:text-foreground transition-colors"
                     >
                       {r.display_name}
-                    </Link>
+                    </CommunityLink>
                     {i < riders.length - 1 && (
                       <span className="text-muted">, </span>
                     )}

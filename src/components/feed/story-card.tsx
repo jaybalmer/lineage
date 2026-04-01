@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
+import { CommunityLink } from "@/components/ui/community-link"
 import { cn, nameToSlug, parseYouTubeId } from "@/lib/utils"
 import { orgSlug } from "@/lib/mock-data"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
@@ -203,46 +203,46 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
       {hasLinks && (
         <div className="flex flex-wrap gap-1.5 mt-2">
           {linkedPlace && (
-            <Link
+            <CommunityLink
               href={`/places/${linkedPlace.id}`}
               className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 transition-colors"
             >
               📍 {linkedPlace.name}
-            </Link>
+            </CommunityLink>
           )}
           {linkedEvent && (
-            <Link
+            <CommunityLink
               href={`/events/${linkedEvent.id}`}
               className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-colors"
             >
               🏆 {linkedEvent.name}
-            </Link>
+            </CommunityLink>
           )}
           {linkedOrg && (
-            <Link
+            <CommunityLink
               href={`/brands/${orgSlug(linkedOrg)}`}
               className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 transition-colors"
             >
               🏷 {linkedOrg.name}
-            </Link>
+            </CommunityLink>
           )}
           {linkedBoards.map((board) => board && (
-            <Link
+            <CommunityLink
               key={board.id}
               href={`/boards/${board.id}`}
               className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
             >
               🏂 {board.brand} {board.model} &apos;{String(board.model_year).slice(2)}
-            </Link>
+            </CommunityLink>
           ))}
           {taggedRiders.map((rider) => rider && (
-            <Link
+            <CommunityLink
               key={rider.id}
               href={`/riders/${nameToSlug(rider.display_name)}`}
               className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20 transition-colors"
             >
               👤 {rider.display_name}
-            </Link>
+            </CommunityLink>
           ))}
         </div>
       )}

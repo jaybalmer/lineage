@@ -9,6 +9,7 @@ import type { User } from "@supabase/supabase-js"
 export default function AuthCompletePage() {
   const router = useRouter()
   const store = useLineageStore()
+  const activeCommunitySlug = useLineageStore((s) => s.activeCommunitySlug)
   const [status, setStatus] = useState("Signing you in…")
 
   useEffect(() => {
@@ -109,7 +110,7 @@ export default function AuthCompletePage() {
       }
 
       setStatus("Done! Opening your lineage…")
-      router.replace("/profile")
+      router.replace(`/${activeCommunitySlug}/profile`)
     }
 
     // ── Timeout: never hang indefinitely ──────────────────────────────────

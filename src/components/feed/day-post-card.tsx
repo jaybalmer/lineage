@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
+import { CommunityLink } from "@/components/ui/community-link"
 import type { RidingDay } from "@/types"
 import { useLineageStore } from "@/store/lineage-store"
 import { PLACES, PEOPLE, placeSlug } from "@/lib/mock-data"
@@ -43,9 +43,9 @@ export function DayPostCard({ day, isOwn }: { day: RidingDay; isOwn?: boolean })
           {/* Headline */}
           <p className="text-base font-semibold text-foreground mb-2">
             {place ? (
-              <Link href={`/places/${placeSlug(place)}`} className="hover:text-emerald-400 transition-colors">
+              <CommunityLink href={`/places/${placeSlug(place)}`} className="hover:text-emerald-400 transition-colors">
                 Rode {place.name}
-              </Link>
+              </CommunityLink>
             ) : (
               "Day on the mountain"
             )}

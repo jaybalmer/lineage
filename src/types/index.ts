@@ -3,6 +3,19 @@
 export type PrivacyLevel = "private" | "shared" | "public"
 export type ConfidenceLevel = "self-reported" | "corroborated" | "documented" | "partner-verified"
 export type CommunityStatus = "verified" | "unverified"
+export type CommunityLaunchStatus = "active" | "coming_soon"
+
+// ─── Community ──────────────────────────────────────────────────────────────
+
+export interface Community {
+  id: string
+  slug: string
+  name: string
+  emoji?: string
+  status: CommunityLaunchStatus
+  sort_order: number
+  created_at?: string
+}
 export type PlaceType = "resort" | "shop" | "zone" | "city" | "venue"
 export type OrgType = "brand" | "shop" | "team" | "magazine" | "event-series"
 export type EventType = "contest" | "film-shoot" | "trip" | "camp" | "gathering"
@@ -47,6 +60,10 @@ export interface Person {
   links?: ProfileLink[]
   /** Populated for registered users (profiles table); absent for catalog/mock people */
   membership_tier?: "free" | "annual" | "lifetime" | "founding"
+  /** Community slugs this person belongs to (populated from junction table) */
+  community_slugs?: string[]
+  /** Primary community for this person (profiles table) */
+  primary_community_id?: string
 }
 
 export interface Place {
@@ -65,6 +82,8 @@ export interface Place {
   first_snowboard_year?: number
   community_status?: CommunityStatus
   added_by?: string
+  /** Community slugs this place belongs to (populated from junction table) */
+  community_slugs?: string[]
 }
 
 export type BrandCategory = "board_brand" | "outerwear" | "bindings" | "boots" | "retailer" | "media" | "other"
@@ -83,6 +102,8 @@ export interface Org {
   logo_url?: string
   community_status?: CommunityStatus
   added_by?: string
+  /** Community slugs this org belongs to (populated from junction table) */
+  community_slugs?: string[]
 }
 
 export interface Board {
@@ -95,6 +116,8 @@ export interface Board {
   image_url?: string
   community_status?: CommunityStatus
   added_by?: string
+  /** Community slugs this board belongs to (populated from junction table) */
+  community_slugs?: string[]
 }
 
 export interface EventSeries {
@@ -125,6 +148,8 @@ export interface Event {
   website_url?: string
   youtube_url?: string
   brand_ids?: string[]
+  /** Community slugs this event belongs to (populated from junction table) */
+  community_slugs?: string[]
 }
 
 export type EntityType = "person" | "place" | "org" | "board" | "event"
@@ -164,6 +189,8 @@ export interface Claim {
   sources?: Source[]
   note?: string
   approximate?: boolean
+  // Community scoping — every claim belongs to exactly one community
+  community_id?: string
   // Competition-specific fields (competed_at claims only)
   division?: string   // e.g. "Open Men", "Masters", "Boardercross"
   result?: string     // e.g. "1st", "3rd", "DNF", "Top 10"
@@ -264,6 +291,8 @@ export interface Story {
   author?: { display_name: string; avatar_url?: string }
   youtube_url?: string | null
   url?: string | null
+  // Community scoping — every story belongs to exactly one community
+  community_id?: string
 }
 
 // ─── UI-focused composite types ──────────────────────────────────────────────
@@ -290,4 +319,6 @@ export interface OnboardingState {
   crew_ids: string[]
   privacy?: "private" | "shared" | "public"
   email?: string
+  /** Community IDs selected during onboarding */
+  community_ids?: string[]
 }

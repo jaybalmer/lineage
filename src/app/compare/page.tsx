@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import Link from "next/link"
+import { CommunityLink } from "@/components/ui/community-link"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore, getAllClaims } from "@/store/lineage-store"
 import { PEOPLE, CLAIMS, getEntityName, getPlaceById } from "@/lib/mock-data"
@@ -246,12 +247,12 @@ function SideBySideTimeline({
             <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-foreground shrink-0">
               {initials(p.display_name)}
             </div>
-            <Link
+            <CommunityLink
               href={`/riders/${p.id}`}
               className="text-sm font-semibold text-foreground hover:text-blue-300 transition-colors truncate"
             >
               {p.display_name}
-            </Link>
+            </CommunityLink>
           </div>
         ))}
       </div>
