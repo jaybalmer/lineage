@@ -436,7 +436,7 @@ function EventInstancePhotoBlock({ eventId, eventName, activePersonId }: {
                   <button
                     type="submit"
                     disabled={suggesting || uploadingPhoto || !suggestUrl.trim()}
-                    className="px-2 py-1 rounded bg-blue-600 text-white text-[10px] font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors"
+                    className="px-2 py-1 rounded bg-[#1C1917] text-[#F5F2EE] text-[10px] font-medium hover:bg-[#292524] disabled:opacity-50 transition-colors"
                   >
                     {suggesting ? "…" : "Save"}
                   </button>
@@ -537,7 +537,7 @@ function AddRiderToEvent({
             onClick={() => setRiderRole(value)}
             className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all border ${
               riderRole === value
-                ? "bg-blue-600/20 border-blue-500/50 text-blue-300"
+                ? "bg-[#1C1917]/15 border-[#1C1917]/30 text-foreground"
                 : "border-border-default text-muted hover:text-foreground"
             }`}
           >
@@ -607,7 +607,7 @@ function AddRiderToEvent({
           <button
             onClick={handleCreateRider}
             disabled={!newRiderName.trim()}
-            className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors"
+            className="px-3 py-2 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-sm font-medium hover:bg-[#292524] disabled:opacity-50 transition-colors"
           >
             Add
           </button>
@@ -972,7 +972,7 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
             <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">Editions by year</h2>
             <button
               onClick={() => setShowAddEdition(true)}
-              className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors font-medium"
+              className="text-xs px-3 py-1.5 bg-[#1C1917] text-[#F5F2EE] rounded-lg hover:bg-[#292524] transition-colors font-medium"
             >
               + Add edition
             </button>

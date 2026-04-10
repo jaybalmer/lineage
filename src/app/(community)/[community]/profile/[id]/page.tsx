@@ -107,7 +107,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                     </button>
                   </Link>
                   <CommunityLink href={`/connections/${id}`}>
-                    <button className="px-3 py-1.5 rounded-lg bg-blue-600 text-xs text-foreground font-medium hover:bg-blue-500 transition-all">
+                    <button className="px-3 py-1.5 rounded-lg bg-[#1C1917] text-xs text-[#F5F2EE] font-medium hover:bg-[#292524] transition-all">
                       View connection →
                     </button>
                   </CommunityLink>

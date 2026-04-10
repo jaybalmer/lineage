@@ -432,7 +432,7 @@ function MembershipDashboard() {
           <p className="text-foreground font-semibold" style={{ fontSize: 14 }}>Sign in to Lineage</p>
           <p className="text-muted" style={{ fontSize: 12 }}>Sign in to view your membership and profile.</p>
           <Link href="/auth/signin"
-            className="inline-block w-full px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-500 transition-colors"
+            className="inline-block w-full px-6 py-3 rounded-xl bg-[#1C1917] text-[#F5F2EE] font-semibold hover:bg-[#292524] transition-colors"
             style={{ fontSize: 13 }}>
             Sign in →
           </Link>

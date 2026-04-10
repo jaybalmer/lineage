@@ -575,7 +575,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                         <button
                           type="submit"
                           disabled={suggesting || uploadingPhoto || !suggestUrl.trim()}
-                          className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors"
+                          className="px-3 py-1.5 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-xs font-medium hover:bg-[#292524] disabled:opacity-50 transition-colors"
                         >
                           {suggesting ? "Saving…" : "Save"}
                         </button>
@@ -622,7 +622,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                     return (
                       <CommunityLink key={rid} href={`/riders/${rid}`}>
                         <div className="flex items-center gap-3 px-4 py-3 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all group">
-                          <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold text-foreground shrink-0">
+                          <div className="w-9 h-9 rounded-full bg-[#1C1917] flex items-center justify-center text-sm font-bold text-foreground shrink-0">
                             {initials(person.display_name)}
                           </div>
                           <div className="flex-1 min-w-0">
@@ -684,7 +684,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                     />
                   </div>
                   <div className="flex gap-2">
-                    <button type="submit" disabled={storySubmitting || !storyText.trim()} className="px-4 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors">
+                    <button type="submit" disabled={storySubmitting || !storyText.trim()} className="px-4 py-1.5 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-xs font-medium hover:bg-[#292524] disabled:opacity-50 transition-colors">
                       {storySubmitting ? "Saving…" : "Save story"}
                     </button>
                     <button type="button" onClick={() => setShowStoryForm(false)} className="px-3 py-1.5 text-xs text-muted hover:text-foreground transition-colors">
@@ -772,7 +772,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                       required
                       className="flex-1 bg-surface-hover border border-border-default rounded-lg px-3 py-2 text-sm text-foreground placeholder-zinc-600 outline-none focus:border-blue-600"
                     />
-                    <button type="submit" disabled={linkSubmitting} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors shrink-0">
+                    <button type="submit" disabled={linkSubmitting} className="px-4 py-2 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-xs font-medium hover:bg-[#292524] disabled:opacity-50 transition-colors shrink-0">
                       {linkSubmitting ? "Fetching…" : "Add"}
                     </button>
                     <button type="button" onClick={() => { setShowLinkForm(false); setLinkError("") }} className="px-2 py-2 text-xs text-muted hover:text-foreground transition-colors">
@@ -855,7 +855,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
               <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">Add to profile</div>
               <p className="text-xs text-muted mb-3">Did you ride this board?</p>
               <CommunityLink href="/profile">
-                <button className="w-full px-3 py-2 bg-blue-600 rounded-lg text-xs text-foreground font-medium hover:bg-blue-500 transition-colors">
+                <button className="w-full px-3 py-2 bg-[#1C1917] rounded-lg text-xs text-[#F5F2EE] font-medium hover:bg-[#292524] transition-colors">
                   + Add to my profile
                 </button>
               </CommunityLink>

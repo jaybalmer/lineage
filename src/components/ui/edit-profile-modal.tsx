@@ -371,7 +371,7 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
                   />
                   <button
                     onClick={addLink}
-                    className="px-4 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-500 transition-colors flex-shrink-0"
+                    className="px-4 py-2 bg-[#1C1917] text-[#F5F2EE] text-xs font-medium rounded-lg hover:bg-[#292524] transition-colors flex-shrink-0"
                   >
                     Add
                   </button>
@@ -428,7 +428,7 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
               className={cn(
                 "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
                 canSave && !saving
-                  ? "bg-blue-600 text-white hover:bg-blue-500"
+                  ? "bg-[#1C1917] text-[#F5F2EE] hover:bg-[#292524]"
                   : "bg-surface-active text-muted cursor-not-allowed"
               )}
             >

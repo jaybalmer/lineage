@@ -177,7 +177,7 @@ function PasteArea({
         <button
           onClick={() => { onImport(text); setText("") }}
           disabled={!text.trim()}
-          className="px-4 py-1.5 bg-blue-600 text-white text-xs rounded-lg hover:bg-blue-500 disabled:opacity-40 transition-colors font-medium"
+          className="px-4 py-1.5 bg-[#1C1917] text-[#F5F2EE] text-xs rounded-lg hover:bg-[#292524] disabled:opacity-40 transition-colors font-medium"
         >
           Import {rowCount > 0 ? rowCount : ""} row{rowCount !== 1 ? "s" : ""}
         </button>
@@ -297,7 +297,7 @@ function BrandsTable() {
               className={cn(
                 "text-xs px-2.5 py-1 rounded-full border transition-colors",
                 catFilter === cat
-                  ? "bg-blue-600/20 border-blue-500 text-blue-300"
+                  ? "bg-[#1C1917]/15 border-[#1C1917]/30 text-foreground"
                   : "border-border-default text-muted hover:text-foreground hover:border-blue-500/40"
               )}
             >
@@ -374,7 +374,7 @@ function BrandsTable() {
                     </td>
                     <td className="py-1 px-2">
                       <div className="flex gap-1">
-                        <button onClick={saveEdit} className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500 transition-colors">Save</button>
+                        <button onClick={saveEdit} className="px-2 py-1 bg-[#1C1917] text-[#F5F2EE] text-xs rounded hover:bg-[#292524] transition-colors">Save</button>
                         <button onClick={() => setEditId(null)} className="px-2 py-1 text-xs text-muted hover:text-foreground transition-colors">×</button>
                       </div>
                     </td>
@@ -425,7 +425,7 @@ function BrandsTable() {
               </td>
               <td className="py-1.5 px-1" />
               <td className="px-2 py-1.5">
-                <button onClick={addRow} disabled={!newRow.name.trim()} className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500 disabled:opacity-30 transition-colors">+ Add</button>
+                <button onClick={addRow} disabled={!newRow.name.trim()} className="px-2 py-1 bg-[#1C1917] text-[#F5F2EE] text-xs rounded hover:bg-[#292524] disabled:opacity-30 transition-colors">+ Add</button>
               </td>
             </tr>
           </tbody>
@@ -571,7 +571,7 @@ function BoardsTable() {
                     </td>
                     <td className="py-1 px-2">
                       <div className="flex gap-1">
-                        <button onClick={saveEdit} className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500 transition-colors">Save</button>
+                        <button onClick={saveEdit} className="px-2 py-1 bg-[#1C1917] text-[#F5F2EE] text-xs rounded hover:bg-[#292524] transition-colors">Save</button>
                         <button onClick={() => setEditId(null)} className="px-2 py-1 text-xs text-muted hover:text-foreground transition-colors">×</button>
                       </div>
                     </td>
@@ -611,7 +611,7 @@ function BoardsTable() {
                 <button
                   onClick={addRow}
                   disabled={!newRow.brand.trim() || !newRow.model.trim()}
-                  className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500 disabled:opacity-30 transition-colors"
+                  className="px-2 py-1 bg-[#1C1917] text-[#F5F2EE] text-xs rounded hover:bg-[#292524] disabled:opacity-30 transition-colors"
                 >
                   + Add
                 </button>
@@ -794,7 +794,7 @@ function EventsTable() {
                     </td>
                     <td className="py-1 px-2">
                       <div className="flex gap-1">
-                        <button onClick={saveEdit} className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500 transition-colors">Save</button>
+                        <button onClick={saveEdit} className="px-2 py-1 bg-[#1C1917] text-[#F5F2EE] text-xs rounded hover:bg-[#292524] transition-colors">Save</button>
                         <button onClick={() => setEditId(null)} className="px-2 py-1 text-xs text-muted hover:text-foreground transition-colors">×</button>
                       </div>
                     </td>
@@ -839,7 +839,7 @@ function EventsTable() {
                 </select>
               </td>
               <td className="px-2 py-1.5">
-                <button onClick={addRow} disabled={!newRow.name.trim()} className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500 disabled:opacity-30 transition-colors">
+                <button onClick={addRow} disabled={!newRow.name.trim()} className="px-2 py-1 bg-[#1C1917] text-[#F5F2EE] text-xs rounded hover:bg-[#292524] disabled:opacity-30 transition-colors">
                   + Add
                 </button>
               </td>
@@ -974,7 +974,7 @@ function PlacesTable() {
                     <td className="py-1 px-1"><input value={draft.country} onChange={(e) => setDraft({ ...draft, country: e.target.value })} placeholder="e.g. USA" className={inputCls} onKeyDown={(e) => e.key === "Enter" && saveEdit()} /></td>
                     <td className="py-1 px-2">
                       <div className="flex gap-1">
-                        <button onClick={saveEdit} className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500 transition-colors">Save</button>
+                        <button onClick={saveEdit} className="px-2 py-1 bg-[#1C1917] text-[#F5F2EE] text-xs rounded hover:bg-[#292524] transition-colors">Save</button>
                         <button onClick={() => setEditId(null)} className="px-2 py-1 text-xs text-muted hover:text-foreground transition-colors">×</button>
                       </div>
                     </td>
@@ -1002,7 +1002,7 @@ function PlacesTable() {
               <td className="py-1.5 px-1"><input value={newRow.region} onChange={(e) => setNewRow({ ...newRow, region: e.target.value })} placeholder="Region…" className={inputCls} /></td>
               <td className="py-1.5 px-1"><input value={newRow.country} onChange={(e) => setNewRow({ ...newRow, country: e.target.value })} placeholder="Country…" className={inputCls} onKeyDown={(e) => e.key === "Enter" && addRow()} /></td>
               <td className="px-2 py-1.5">
-                <button onClick={addRow} disabled={!newRow.name.trim()} className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500 disabled:opacity-30 transition-colors">+ Add</button>
+                <button onClick={addRow} disabled={!newRow.name.trim()} className="px-2 py-1 bg-[#1C1917] text-[#F5F2EE] text-xs rounded hover:bg-[#292524] disabled:opacity-30 transition-colors">+ Add</button>
               </td>
             </tr>
           </tbody>
@@ -1135,7 +1135,7 @@ function OrgsTable() {
                     <td className="py-1 px-1"><input value={draft.country} onChange={(e) => setDraft({ ...draft, country: e.target.value })} placeholder="e.g. USA" className={inputCls} onKeyDown={(e) => e.key === "Enter" && saveEdit()} /></td>
                     <td className="py-1 px-2">
                       <div className="flex gap-1">
-                        <button onClick={saveEdit} className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500 transition-colors">Save</button>
+                        <button onClick={saveEdit} className="px-2 py-1 bg-[#1C1917] text-[#F5F2EE] text-xs rounded hover:bg-[#292524] transition-colors">Save</button>
                         <button onClick={() => setEditId(null)} className="px-2 py-1 text-xs text-muted hover:text-foreground transition-colors">×</button>
                       </div>
                     </td>
@@ -1163,7 +1163,7 @@ function OrgsTable() {
               <td className="py-1.5 px-1"><input type="number" value={newRow.founded} onChange={(e) => setNewRow({ ...newRow, founded: e.target.value })} placeholder="Year…" className={inputCls} /></td>
               <td className="py-1.5 px-1"><input value={newRow.country} onChange={(e) => setNewRow({ ...newRow, country: e.target.value })} placeholder="Country…" className={inputCls} onKeyDown={(e) => e.key === "Enter" && addRow()} /></td>
               <td className="px-2 py-1.5">
-                <button onClick={addRow} disabled={!newRow.name.trim()} className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500 disabled:opacity-30 transition-colors">+ Add</button>
+                <button onClick={addRow} disabled={!newRow.name.trim()} className="px-2 py-1 bg-[#1C1917] text-[#F5F2EE] text-xs rounded hover:bg-[#292524] disabled:opacity-30 transition-colors">+ Add</button>
               </td>
             </tr>
           </tbody>
@@ -1300,7 +1300,7 @@ function SeriesTable() {
                     </td>
                     <td className="py-1 px-2">
                       <div className="flex gap-1">
-                        <button onClick={saveEdit} className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500 transition-colors">Save</button>
+                        <button onClick={saveEdit} className="px-2 py-1 bg-[#1C1917] text-[#F5F2EE] text-xs rounded hover:bg-[#292524] transition-colors">Save</button>
                         <button onClick={() => setEditId(null)} className="px-2 py-1 text-xs text-muted hover:text-foreground transition-colors">×</button>
                       </div>
                     </td>
@@ -1335,7 +1335,7 @@ function SeriesTable() {
                 </select>
               </td>
               <td className="px-2 py-1.5">
-                <button onClick={addRow} disabled={!newRow.name.trim()} className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500 disabled:opacity-30 transition-colors">+ Add</button>
+                <button onClick={addRow} disabled={!newRow.name.trim()} className="px-2 py-1 bg-[#1C1917] text-[#F5F2EE] text-xs rounded hover:bg-[#292524] disabled:opacity-30 transition-colors">+ Add</button>
               </td>
             </tr>
           </tbody>
@@ -1589,7 +1589,7 @@ function MembersTable() {
                       <td className="py-1 px-2">
                         <div className="flex gap-1">
                           <button onClick={() => save(m.id)} disabled={saving}
-                            className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-500 disabled:opacity-50 transition-colors">
+                            className="px-2 py-1 bg-[#1C1917] text-[#F5F2EE] text-xs rounded hover:bg-[#292524] disabled:opacity-50 transition-colors">
                             {saving ? "…" : "Save"}
                           </button>
                           <button onClick={() => setEditId(null)}
@@ -1757,7 +1757,7 @@ export default function AdminPage() {
             )}
             <button
               type="submit"
-              className="w-full px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
+              className="w-full px-4 py-2.5 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-sm font-medium hover:bg-[#292524] transition-colors"
             >
               Unlock
             </button>
@@ -1811,7 +1811,7 @@ export default function AdminPage() {
               {id !== "members" && (
                 <span className={cn(
                   "ml-1.5 text-[10px] tabular-nums px-1.5 py-0.5 rounded-full",
-                  tab === id ? "bg-blue-600/30 text-blue-300" : "bg-surface text-muted"
+                  tab === id ? "bg-[#1C1917]/20 text-foreground" : "bg-surface text-muted"
                 )}>
                   {counts[id]}
                 </span>

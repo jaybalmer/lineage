@@ -221,7 +221,7 @@ function BoardsPageInner() {
           </div>
           <button
             onClick={() => setAddOpen(true)}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-foreground hover:bg-blue-500 transition-all"
+            className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-[#F5F2EE] hover:bg-[#292524] transition-all"
           >
             + Add board
           </button>
@@ -270,7 +270,7 @@ function BoardsPageInner() {
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border shrink-0",
                 myOnly
-                  ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
+                  ? "bg-[#1C1917]/15 border-[#1C1917]/30 text-foreground"
                   : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
               )}
             >

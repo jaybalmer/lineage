@@ -285,7 +285,7 @@ export default function ResultsScannerPage() {
               {pwError && <p className="text-xs text-red-400">Incorrect password</p>}
               <button
                 type="submit"
-                className="w-full px-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
+                className="w-full px-4 py-2.5 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-sm font-medium hover:bg-[#292524] transition-colors"
               >
                 Unlock
               </button>
@@ -324,7 +324,7 @@ export default function ResultsScannerPage() {
             {selectedEventId && (
               <button
                 onClick={() => router.push(`/${activeCommunitySlug}/events/${selectedEventId}`)}
-                className="px-5 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
+                className="px-5 py-2.5 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-sm font-medium hover:bg-[#292524] transition-colors"
               >
                 View event
               </button>
@@ -382,7 +382,7 @@ export default function ResultsScannerPage() {
                   className={cn(
                     "w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold",
                     step === s
-                      ? "bg-blue-600 text-white"
+                      ? "bg-[#1C1917] text-[#F5F2EE]"
                       : (s === "input" && step !== "input") || step === "done"
                       ? "bg-green-700 text-white"
                       : "bg-surface border border-border-default text-muted"
@@ -484,7 +484,7 @@ export default function ResultsScannerPage() {
             <button
               onClick={handleParse}
               disabled={parsing || !inputText.trim()}
-              className="px-6 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-6 py-2.5 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-sm font-medium hover:bg-[#292524] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               {parsing ? "Parsing…" : "Parse document →"}
             </button>
@@ -688,7 +688,7 @@ export default function ResultsScannerPage() {
                 <button
                   onClick={handleConfirm}
                   disabled={confirming || includedCount === 0}
-                  className="px-5 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="px-5 py-2.5 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-sm font-medium hover:bg-[#292524] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {confirming ? "Saving…" : `Confirm import (${includedCount})`}
                 </button>

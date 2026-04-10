@@ -327,7 +327,7 @@ export default function CollectivePage() {
 
   // ── Theme-aware colors ────────────────────────────────────────────────────
   const typeColors  = isDark ? TYPE_COLORS_DARK  : TYPE_COLORS_LIGHT
-  const accentColor = isDark ? "#00d4ff" : "#2563eb"
+  const accentColor = "#B8862A"
 
   // ── Chart dimensions ──────────────────────────────────────────────────────
   const CHART_H = 160
@@ -420,12 +420,12 @@ export default function CollectivePage() {
         <div className="max-w-3xl mx-auto px-4 pt-6 pb-16">
 
           {/* ── Page header ──────────────────────────────────────────────── */}
-          <div className="mb-6">
+          <div className="mb-6 bg-[#1C1917] rounded-lg px-6 py-5">
             <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: 3, lineHeight: 1, marginBottom: 4 }}
-              className="text-foreground">
+              className="text-[#F5F2EE]">
               COLLECTIVE<span style={{ color: accentColor }}>.</span>
             </div>
-            <div className="text-muted" style={{ fontSize: 10, letterSpacing: 2 }}>
+            <div style={{ fontSize: 10, letterSpacing: 2, color: "#78716C" }}>
               // snowboarding · 1983–present
             </div>
           </div>

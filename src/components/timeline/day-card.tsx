@@ -44,7 +44,7 @@ export function DayCard({ day, isOwn }: { day: RidingDay; isOwn?: boolean }) {
               <span className="text-xs text-muted">{display}</span>
             </div>
             <div className="mt-1 flex items-center gap-1.5">
-              <span className="text-sm">🏔</span>
+              <div className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-[#2563EB]" />
               {place ? (
                 <CommunityLink
                   href={`/places/${placeSlug(place)}`}

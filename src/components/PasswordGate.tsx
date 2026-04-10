@@ -13,7 +13,26 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored === "1") setUnlocked(true)
+    if (stored === "1") {
+      setUnlocked(true)
+      setReady(true)
+      return
+    }
+
+    // Check for ?pass= query param to auto-unlock via shared links / QR codes
+    const params = new URLSearchParams(window.location.search)
+    const passParam = params.get("pass")
+    if (passParam === CORRECT_PASSWORD) {
+      localStorage.setItem(STORAGE_KEY, "1")
+      setUnlocked(true)
+
+      // Strip the pass param from the URL so it isn't visible / shareable onward
+      params.delete("pass")
+      const clean = params.toString()
+      const newUrl = window.location.pathname + (clean ? `?${clean}` : "") + window.location.hash
+      window.history.replaceState({}, "", newUrl)
+    }
+
     setReady(true)
   }, [])
 
@@ -57,7 +76,7 @@ export function PasswordGate({ children }: { children: React.ReactNode }) {
           )}
           <button
             type="submit"
-            className="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors"
+            className="w-full py-2.5 rounded-lg bg-[#1C1917] hover:bg-[#292524] text-[#F5F2EE] text-sm font-medium transition-colors"
           >
             Enter
           </button>

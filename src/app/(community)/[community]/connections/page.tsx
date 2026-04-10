@@ -299,7 +299,7 @@ export default function ConnectionsPage() {
             <div className="flex items-center gap-3">
               <Link
                 href="/membership"
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#1C1917] text-[#F5F2EE] hover:bg-[#292524] transition-colors"
               >
                 Become a member →
               </Link>

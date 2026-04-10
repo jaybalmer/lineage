@@ -200,7 +200,7 @@ export function FeedView({
               </button>
               <button
                 onClick={() => setAddingClaim(true)}
-                className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
+                className="px-3 py-2 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-sm font-medium hover:bg-[#292524] transition-colors"
               >
                 + Add claim
               </button>
@@ -223,7 +223,7 @@ export function FeedView({
                 active
                   ? isStoriesChip
                     ? "bg-violet-700 border-violet-700 text-foreground"
-                    : "bg-blue-600 border-blue-600 text-foreground"
+                    : "bg-[#1C1917] border-[#1C1917] text-[#F5F2EE]"
                   : "border-border-default text-muted hover:border-border-default hover:text-foreground"
               }`}
             >
@@ -262,10 +262,10 @@ export function FeedView({
           {decades.map((decade) => (
             <div key={decade} className="mb-8">
               {/* Decade header — shifted right of timeline gutter */}
-              <div className="pl-9 text-xs font-semibold text-muted uppercase tracking-widest mb-4 flex items-center gap-3">
-                <span>{decade}</span>
+              <div className="pl-9 mb-4 flex items-center gap-3">
+                <span className="text-3xl text-foreground" style={{ fontFamily: "var(--font-display)" }}>{decade}</span>
                 <div className="flex-1 h-px bg-surface-active" />
-                <span>{grouped[decade].length} entries</span>
+                <span className="text-xs text-muted">{grouped[decade].length} entries</span>
               </div>
 
               {/* Items with timeline nodes */}

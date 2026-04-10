@@ -83,7 +83,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   if (!catalogLoaded) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-blue-400 text-3xl animate-pulse">⬡</div>
+        <div className="text-[#B8862A] text-3xl animate-pulse">⬡</div>
       </div>
     )
   }
@@ -239,7 +239,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                   </button>
                 </Link>
                 <CommunityLink href={`/connections/${resolvedId}`}>
-                  <button className="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-500 transition-all">
+                  <button className="px-3 py-2 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-xs font-medium hover:bg-[#292524] transition-all">
                     View connection →
                   </button>
                 </CommunityLink>

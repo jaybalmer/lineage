@@ -162,7 +162,7 @@ export default function AuthCompletePage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-center space-y-3">
-        <div className="text-blue-400 text-3xl animate-pulse">⬡</div>
+        <div className="text-[#B8862A] text-3xl animate-pulse">⬡</div>
         <div className="text-muted text-sm">{status}</div>
       </div>
     </div>

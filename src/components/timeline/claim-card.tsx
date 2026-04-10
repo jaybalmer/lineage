@@ -14,6 +14,14 @@ import type { Event } from "@/types"
 const PLACE_PREDICATES = ["rode_at", "worked_at", "competed_at"]
 const ORG_PREDICATES = ["sponsored_by", "part_of_team", "shot_by", "coached_by"]
 
+const ENTITY_DOT_COLOR: Record<string, string> = {
+  place: "#2563EB",
+  person: "#7C3AED",
+  event: "#D97706",
+  board: "#059669",
+  org: "#0891B2",
+}
+
 function entityHref(id: string, type: string) {
   if (type === "place") return `/places/${id}`
   if (type === "person") return `/riders/${id}`
@@ -74,9 +82,9 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
       )}
 
       <div className="relative pl-10 pb-5 timeline-line last:pb-0 group">
-        {/* Icon dot */}
-        <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-surface-2 border border-border-default flex items-center justify-center text-sm z-10">
-          {icon}
+        {/* Entity color dot */}
+        <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-surface-2 border border-border-default flex items-center justify-center z-10">
+          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: ENTITY_DOT_COLOR[claim.object_type] ?? "#78716C" }} />
         </div>
 
         <div className="bg-surface border border-border-default rounded-xl p-4 hover:border-border-default transition-colors">

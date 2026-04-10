@@ -100,7 +100,7 @@ export default function ClaimPage() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-3">
-          <div className="text-blue-400 text-3xl animate-pulse">⬡</div>
+          <div className="text-[#B8862A] text-3xl animate-pulse">⬡</div>
           <p className="text-muted text-sm">Loading your invite…</p>
         </div>
       </div>
@@ -138,7 +138,7 @@ export default function ClaimPage() {
           </p>
           <button
             onClick={() => router.push("/")}
-            className="mt-4 px-6 py-2.5 rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-500 transition-colors"
+            className="mt-4 px-6 py-2.5 rounded-xl bg-[#1C1917] text-sm font-semibold text-[#F5F2EE] hover:bg-[#292524] transition-colors"
           >
             Visit Lineage
           </button>
@@ -159,7 +159,7 @@ export default function ClaimPage() {
           </p>
           <button
             onClick={() => router.push("/onboarding")}
-            className="mt-4 px-6 py-2.5 rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-500 transition-colors"
+            className="mt-4 px-6 py-2.5 rounded-xl bg-[#1C1917] text-sm font-semibold text-[#F5F2EE] hover:bg-[#292524] transition-colors"
           >
             Sign in
           </button>
@@ -195,7 +195,7 @@ export default function ClaimPage() {
           {/* Person preview */}
           <div className="px-5 py-4 flex items-center gap-4">
             {/* Avatar */}
-            <div className="w-12 h-12 rounded-full bg-blue-600 flex items-center justify-center text-base font-bold text-white shrink-0">
+            <div className="w-12 h-12 rounded-full bg-[#1C1917] flex items-center justify-center text-base font-bold text-white shrink-0">
               {invite?.person_name?.[0]?.toUpperCase() ?? "?"}
             </div>
             <div>
@@ -224,7 +224,7 @@ export default function ClaimPage() {
           <div className="px-5 pb-5 space-y-2">
             <button
               onClick={handleClaim}
-              className="w-full py-3 rounded-xl bg-blue-600 text-sm font-semibold text-white hover:bg-blue-500 transition-colors"
+              className="w-full py-3 rounded-xl bg-[#1C1917] text-sm font-semibold text-[#F5F2EE] hover:bg-[#292524] transition-colors"
             >
               Claim my profile →
             </button>

@@ -242,7 +242,7 @@ function CompareIntroView({ slide, active }: { slide: CompareIntroSlide; active:
         <div className="flex items-center justify-center gap-6 mb-8">
           {/* Rider A */}
           <div className="flex flex-col items-center gap-3">
-            <div className="w-16 h-16 rounded-full bg-blue-600/30 border-2 border-blue-500/50 flex items-center justify-center text-xl font-black text-blue-300">
+            <div className="w-16 h-16 rounded-full bg-[#1C1917]/30 border-2 border-[#1C1917]/50 flex items-center justify-center text-xl font-black text-foreground">
               {initials(slide.nameA)}
             </div>
             <div className="text-white font-bold text-sm">{slide.nameA.split(" ")[0]}</div>
@@ -532,7 +532,7 @@ export function ComparePlayer({ personA, personB, claimsA, claimsB, onClose }: C
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-2 shrink-0">
         <div className="flex items-center gap-1.5">
-          <div className="w-5 h-5 rounded-full bg-blue-600/40 flex items-center justify-center text-[9px] font-bold text-blue-300">
+          <div className="w-5 h-5 rounded-full bg-[#1C1917]/40 flex items-center justify-center text-[9px] font-bold text-foreground">
             {initials(personA.display_name)}
           </div>
           <span className="text-white/30 text-[10px]">×</span>

@@ -12,12 +12,12 @@ import type { Story, Claim, Person } from "@/types"
 
 // ─── Community emoji lookup ──────────────────────────────────────────────────
 
-const COMMUNITY_META: Record<string, { emoji: string; tagline: string }> = {
-  snowboarding: { emoji: "🏂", tagline: "The living history of snowboarding" },
-  surf:         { emoji: "🏄", tagline: "The living history of surfing" },
-  skate:        { emoji: "🛹", tagline: "The living history of skateboarding" },
-  ski:          { emoji: "⛷️", tagline: "The living history of skiing" },
-  mtb:          { emoji: "🚵", tagline: "The living history of mountain biking" },
+const COMMUNITY_META: Record<string, { dotColor: string; tagline: string }> = {
+  snowboarding: { dotColor: "#B8862A", tagline: "The living history of snowboarding" },
+  surf:         { dotColor: "#78716C", tagline: "The living history of surfing" },
+  skate:        { dotColor: "#78716C", tagline: "The living history of skateboarding" },
+  ski:          { dotColor: "#78716C", tagline: "The living history of skiing" },
+  mtb:          { dotColor: "#78716C", tagline: "The living history of mountain biking" },
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -104,7 +104,7 @@ export default function CommunityHome() {
   const { catalog, catalogLoaded, activeCommunitySlug, activePersonId } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
 
-  const meta = COMMUNITY_META[activeCommunitySlug] ?? { emoji: "", tagline: "Welcome to this community" }
+  const meta = COMMUNITY_META[activeCommunitySlug] ?? { dotColor: "#78716C", tagline: "Welcome to this community" }
 
   // ── Recent activity (stories + claims) ──────────────────────────────────
   const [recentStories, setRecentStories] = useState<Story[]>([])
@@ -203,7 +203,7 @@ export default function CommunityHome() {
       {/* Community header */}
       <div className="max-w-4xl mx-auto px-6 pt-12 pb-8">
         <div className="flex items-center gap-4 mb-3">
-          <span className="text-4xl">{meta.emoji}</span>
+          <div className="w-10 h-10 rounded-full flex-shrink-0" style={{ background: meta.dotColor }} />
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
               {activeCommunitySlug.charAt(0).toUpperCase() + activeCommunitySlug.slice(1)}
@@ -217,14 +217,14 @@ export default function CommunityHome() {
           {isAuth ? (
             <CommunityLink
               href="/profile"
-              className="px-6 py-2.5 rounded-lg bg-blue-600 text-white font-semibold text-sm hover:bg-blue-500 transition-colors"
+              className="px-6 py-2.5 rounded-lg bg-[#1C1917] text-[#F5F2EE] font-semibold text-sm hover:bg-[#292524] transition-colors"
             >
               My Timeline
             </CommunityLink>
           ) : (
             <Link
               href="/onboarding"
-              className="px-6 py-2.5 rounded-lg bg-blue-600 text-white font-semibold text-sm hover:bg-blue-500 transition-colors"
+              className="px-6 py-2.5 rounded-lg bg-[#1C1917] text-[#F5F2EE] font-semibold text-sm hover:bg-[#292524] transition-colors"
             >
               Start Your Timeline
             </Link>

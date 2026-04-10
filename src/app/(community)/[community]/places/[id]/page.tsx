@@ -18,12 +18,12 @@ import type { Story } from "@/types"
 
 type PlaceTab = "all" | "riders" | "events" | "stories"
 
-const EVENT_TYPE_ICON: Record<string, string> = {
-  contest: "🏆",
-  "film-shoot": "🎬",
-  trip: "🏔",
-  camp: "🏕",
-  gathering: "📅",
+const EVENT_TYPE_DOT: Record<string, string> = {
+  contest: "#D97706",
+  "film-shoot": "#7C3AED",
+  trip: "#2563EB",
+  camp: "#059669",
+  gathering: "#0891B2",
 }
 
 const EVENT_TYPE_COLOR: Record<string, string> = {
@@ -302,7 +302,9 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                   </div>
                 </button>
               ) : (
-                <div className="w-24 h-24 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-4xl">🏔</div>
+                <div className="w-24 h-24 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center">
+                  <div className="w-6 h-6 rounded-full bg-[#2563EB]" />
+                </div>
               )}
               {/* Vote buttons */}
               {isAuth && (
@@ -407,7 +409,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                         <button
                           type="submit"
                           disabled={suggesting || uploadingPhoto || !suggestUrl.trim()}
-                          className="px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors"
+                          className="px-3 py-1.5 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-xs font-medium hover:bg-[#292524] disabled:opacity-50 transition-colors"
                         >
                           {suggesting ? "Saving…" : "Save"}
                         </button>
@@ -529,18 +531,18 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
 
                         if (item.kind === "event") {
                           const accent = EVENT_TYPE_COLOR[item.event.event_type] ?? "border-l-zinc-600"
-                          const icon = EVENT_TYPE_ICON[item.event.event_type] ?? "📅"
+                          const dotColor = EVENT_TYPE_DOT[item.event.event_type] ?? "#D97706"
                           return (
                             <CommunityLink key={`event-${item.event.id}`} href={`/events/${eventSlug(item.event)}`}>
                               <div className={cn(
                                 "flex items-center gap-3 px-4 py-3 bg-surface border border-border-default border-l-2 rounded-xl hover:border-border-default transition-all group",
                                 accent
                               )}>
-                                <div className="shrink-0 w-8 h-8 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-sm">
-                                  {icon}
+                                <div className="shrink-0 w-8 h-8 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center">
+                                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: dotColor }} />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">{item.event.name}</div>
+                                  <div className="text-sm font-medium text-foreground group-hover:opacity-80 transition-colors">{item.event.name}</div>
                                   <div className="text-xs text-muted capitalize">{item.event.event_type.replace("-", " ")}</div>
                                 </div>
                                 <span className="text-xs text-muted shrink-0">{item.event.year}</span>
@@ -604,18 +606,18 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                   </div>
                 ) : [...placeEvents].sort((a, b) => (b.year ?? 0) - (a.year ?? 0)).map((event) => {
                   const accent = EVENT_TYPE_COLOR[event.event_type] ?? "border-l-zinc-600"
-                  const icon = EVENT_TYPE_ICON[event.event_type] ?? "📅"
+                  const dotColor = EVENT_TYPE_DOT[event.event_type] ?? "#D97706"
                   return (
                     <CommunityLink key={event.id} href={`/events/${eventSlug(event)}`}>
                       <div className={cn(
                         "flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 rounded-xl hover:border-border-default transition-all group",
                         accent
                       )}>
-                        <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">
-                          {icon}
+                        <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center">
+                          <div className="w-2.5 h-2.5 rounded-full" style={{ background: dotColor }} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">{event.name}</div>
+                          <div className="text-sm font-medium text-foreground group-hover:opacity-80 transition-colors">{event.name}</div>
                           <div className="text-xs text-muted capitalize mt-0.5">{event.event_type.replace("-", " ")}</div>
                         </div>
                         <span className="text-sm text-muted shrink-0">{event.year}</span>
@@ -743,7 +745,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
               <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">Add a claim</div>
               <p className="text-xs text-muted mb-3">Did you ride here? Work here? Compete here?</p>
               <CommunityLink href="/profile">
-                <button className="w-full px-3 py-2 bg-blue-600 rounded-lg text-xs text-foreground font-medium hover:bg-blue-500 transition-colors">
+                <button className="w-full px-3 py-2 bg-[#1C1917] rounded-lg text-xs text-[#F5F2EE] font-medium hover:bg-[#292524] transition-colors">
                   + Add to my profile
                 </button>
               </CommunityLink>

@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
 
         <div className="text-center">
           <Link href="/" className="inline-block">
-            <span className="text-blue-400 text-4xl">⬡</span>
+            <span className="text-[#B8862A] text-4xl">⬡</span>
           </Link>
           <h1 className="mt-3 text-foreground font-semibold" style={{ fontSize: 16 }}>
             Reset your password
@@ -94,7 +94,7 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={loading || !email.trim()}
-              className="w-full px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full px-6 py-3 rounded-xl bg-[#1C1917] text-[#F5F2EE] font-semibold hover:bg-[#292524] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               style={{ fontSize: 13 }}
             >
               {loading ? "Sending…" : "Send reset link →"}

@@ -12,12 +12,12 @@ import { cn } from "@/lib/utils"
 import { CommunityLink } from "@/components/ui/community-link"
 import type { Place } from "@/types"
 
-const PLACE_TYPE_ICONS: Record<string, string> = {
-  resort: "🏔",
-  shop: "🏪",
-  zone: "🗺",
-  city: "🏙",
-  venue: "🏟",
+const PLACE_TYPE_COLORS: Record<string, string> = {
+  resort: "#2563EB",
+  shop: "#0891B2",
+  zone: "#059669",
+  city: "#7C3AED",
+  venue: "#D97706",
 }
 
 function PlaceCard({ place }: { place: Place }) {
@@ -41,7 +41,7 @@ function PlaceCard({ place }: { place: Place }) {
       <CommunityLink href={`/places/${placeSlug(place)}`} className="flex-1 min-w-0 block">
         <div className="bg-surface border-2 border-blue-600 rounded-xl p-4 hover:opacity-90 transition-all">
           <div className="flex items-center gap-3">
-            <span className="text-xl shrink-0">{PLACE_TYPE_ICONS[place.place_type] ?? "📍"}</span>
+            <div className="w-3 h-3 rounded-full shrink-0" style={{ background: PLACE_TYPE_COLORS[place.place_type] ?? "#2563EB" }} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-foreground text-sm">{place.name}</span>
@@ -121,7 +121,7 @@ function PlacesPageInner() {
           </div>
           <button
             onClick={() => setAddOpen(true)}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-foreground hover:bg-blue-500 transition-all"
+            className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-[#F5F2EE] hover:bg-[#292524] transition-all"
           >
             + Add place
           </button>
@@ -157,7 +157,7 @@ function PlacesPageInner() {
                 className={cn(
                   "px-3 py-2 rounded-lg text-xs font-medium transition-colors border",
                   myOnly
-                    ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
+                    ? "bg-[#1C1917]/15 border-[#1C1917]/30 text-foreground"
                     : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
                 )}
               >

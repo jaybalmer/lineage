@@ -9,6 +9,15 @@ import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 import { COMMUNITY_SLUGS } from "@/lib/community"
 
+/** Community dot colors — gold for active, muted for coming soon */
+const COMMUNITY_DOT_COLOR: Record<string, string> = {
+  snowboarding: "#B8862A",
+  surf: "#78716C",
+  skate: "#78716C",
+  ski: "#78716C",
+  mtb: "#78716C",
+}
+
 /** Fallback community list used before catalog loads */
 const FALLBACK_COMMUNITIES = [
   { slug: "snowboarding",  name: "Snowboarding",     emoji: "🏂", status: "active" },
@@ -92,7 +101,7 @@ export default function Home() {
             className="font-bold text-foreground leading-none tracking-tight"
             style={{ fontSize: "clamp(4rem, 14vw, 7.5rem)", letterSpacing: "-0.03em" }}
           >
-            Lineage<span style={{ color: "#60a5fa" }}>.</span>
+            Lineage<span style={{ color: "#B8862A" }}>.</span>
           </div>
         </div>
 
@@ -124,12 +133,14 @@ export default function Home() {
               >
                 <div className="flex items-start gap-4">
                   {/* Marker dot */}
-                  <div className={cn(
-                    "w-10 h-10 rounded-full flex-shrink-0 mt-0.5",
-                    isActive
-                      ? "bg-blue-600"
-                      : "bg-muted/20 border border-border-default"
-                  )} />
+                  {isActive ? (
+                    <div
+                      className="w-10 h-10 rounded-full flex-shrink-0 mt-0.5"
+                      style={{ background: COMMUNITY_DOT_COLOR[comm.slug] ?? "#B8862A" }}
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full flex-shrink-0 mt-0.5 bg-muted/20 border border-border-default" />
+                  )}
 
                   {/* Content */}
                   <div className="flex-1 min-w-0">
@@ -153,14 +164,14 @@ export default function Home() {
                         {isAuth ? (
                           <Link
                             href={`/${comm.slug}/profile`}
-                            className="px-5 py-2 rounded-lg bg-blue-600 text-white font-semibold text-xs hover:bg-blue-500 transition-colors"
+                            className="px-5 py-2 rounded-lg bg-[#1C1917] text-[#F5F2EE] font-semibold text-xs hover:bg-[#292524] transition-colors"
                           >
                             My Timeline
                           </Link>
                         ) : (
                           <Link
                             href="/onboarding"
-                            className="px-5 py-2 rounded-lg bg-blue-600 text-white font-semibold text-xs hover:bg-blue-500 transition-colors"
+                            className="px-5 py-2 rounded-lg bg-[#1C1917] text-[#F5F2EE] font-semibold text-xs hover:bg-[#292524] transition-colors"
                           >
                             Start Your Timeline
                           </Link>

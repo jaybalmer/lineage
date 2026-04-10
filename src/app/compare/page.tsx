@@ -62,7 +62,7 @@ function PersonPicker({
           onClick={() => setOpen(true)}
           className="w-full flex items-center gap-2.5 px-3 py-2.5 bg-surface border border-border-default rounded-xl text-left hover:border-border-default transition-colors group"
         >
-          <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-foreground shrink-0">
+          <div className="w-8 h-8 rounded-full bg-[#1C1917] flex items-center justify-center text-xs font-bold text-foreground shrink-0">
             {initials(value.display_name)}
           </div>
           <div className="min-w-0">
@@ -111,7 +111,7 @@ function PersonPicker({
                     }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-surface-hover transition-colors text-left"
                   >
-                    <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-foreground shrink-0">
+                    <div className="w-7 h-7 rounded-full bg-[#1C1917] flex items-center justify-center text-xs font-bold text-foreground shrink-0">
                       {initials(p.display_name)}
                     </div>
                     <div>
@@ -244,7 +244,7 @@ function SideBySideTimeline({
       <div className="grid grid-cols-2 gap-4 mb-4">
         {[personA, personB].map((p) => (
           <div key={p.id} className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-[10px] font-bold text-foreground shrink-0">
+            <div className="w-6 h-6 rounded-full bg-[#1C1917] flex items-center justify-center text-[10px] font-bold text-foreground shrink-0">
               {initials(p.display_name)}
             </div>
             <CommunityLink

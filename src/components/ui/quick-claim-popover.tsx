@@ -120,8 +120,8 @@ export function QuickClaimPopover({ entityId, entityType, entityName, entityYear
           alreadyClaimed || added
             ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400 cursor-default"
             : open
-              ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
-              : "bg-surface-hover border-border-default text-muted hover:border-accent hover:text-accent hover:bg-blue-600/10"
+              ? "bg-[#1C1917]/15 border-[#1C1917]/30 text-foreground"
+              : "bg-surface-hover border-border-default text-muted hover:border-accent hover:text-accent hover:bg-[#1C1917]/10"
         )}
       >
         {alreadyClaimed || added ? "✓" : "+"}
@@ -145,7 +145,7 @@ export function QuickClaimPopover({ entityId, entityType, entityName, entityYear
                   className={cn(
                     "px-2 py-1 rounded-md text-xs border transition-all flex items-center gap-1",
                     predicate === opt.value
-                      ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
+                      ? "bg-[#1C1917]/15 border-[#1C1917]/30 text-foreground"
                       : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
                   )}
                 >
@@ -176,7 +176,7 @@ export function QuickClaimPopover({ entityId, entityType, entityName, entityYear
             className={cn(
               "w-full py-1.5 rounded-lg text-xs font-medium transition-all",
               canAdd
-                ? "bg-blue-600 text-white hover:bg-blue-500"
+                ? "bg-[#1C1917] text-[#F5F2EE] hover:bg-[#292524]"
                 : "bg-surface-hover text-muted cursor-not-allowed"
             )}
           >

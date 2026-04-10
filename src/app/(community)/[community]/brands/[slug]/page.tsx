@@ -321,7 +321,7 @@ function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void })
             className={cn(
               "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
               canSubmit
-                ? "bg-blue-600 text-white hover:bg-blue-500"
+                ? "bg-[#1C1917] text-[#F5F2EE] hover:bg-[#292524]"
                 : "bg-surface-active text-muted cursor-not-allowed"
             )}
           >
@@ -636,7 +636,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
           </div>
           <button
             onClick={() => setAddOpen(true)}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+            className="px-4 py-2 rounded-lg text-sm font-medium bg-[#1C1917] text-[#F5F2EE] hover:bg-[#292524] transition-colors"
           >
             + Add claim
           </button>
@@ -656,7 +656,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                     <p className="text-muted text-sm mb-4">No claims yet for this brand.</p>
                     <button
                       onClick={() => setAddOpen(true)}
-                      className="px-5 py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-500 transition-colors"
+                      className="px-5 py-2.5 rounded-lg text-sm font-medium bg-[#1C1917] text-[#F5F2EE] hover:bg-[#292524] transition-colors"
                     >
                       + Add the first claim
                     </button>

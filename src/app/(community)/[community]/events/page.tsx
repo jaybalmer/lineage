@@ -25,12 +25,12 @@ const ACCENT: Record<EventType, string> = {
   gathering: "border-zinc-400",
 }
 
-const ICON: Record<EventType, string> = {
-  contest: "🏆",
-  "film-shoot": "🎬",
-  trip: "🚐",
-  camp: "⛺",
-  gathering: "🤝",
+const EVENT_DOT_COLOR: Record<EventType, string> = {
+  contest: "#D97706",
+  "film-shoot": "#7C3AED",
+  trip: "#2563EB",
+  camp: "#059669",
+  gathering: "#0891B2",
 }
 
 const TYPE_LABEL: Record<EventType, string> = {
@@ -86,7 +86,7 @@ function EventCard({ event }: { event: Event }) {
     ).map((c) => c.subject_id)
   )]
   const accent = ACCENT[event.event_type] ?? "border-zinc-400"
-  const icon = ICON[event.event_type] ?? "📅"
+  const dotColor = EVENT_DOT_COLOR[event.event_type] ?? "#D97706"
   const addedByPerson = event.added_by ? catalog.people.find((p) => p.id === event.added_by) : null
   const isUnverified = event.community_status === "unverified"
 
@@ -98,7 +98,7 @@ function EventCard({ event }: { event: Event }) {
           accent
         )}>
           <div className="flex items-center gap-3">
-            <span className="text-xl shrink-0">{icon}</span>
+            <div className="w-3 h-3 rounded-full shrink-0" style={{ background: dotColor }} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                 <span className="font-semibold text-foreground text-sm leading-snug">{event.name}</span>
@@ -279,7 +279,7 @@ function EventsPageInner() {
           </div>
           <button
             onClick={() => setAddOpen(true)}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-sm font-medium text-foreground hover:bg-blue-500 transition-all"
+            className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-[#F5F2EE] hover:bg-[#292524] transition-all"
           >
             + Add event
           </button>
@@ -350,7 +350,7 @@ function EventsPageInner() {
               className={cn(
                 "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border shrink-0",
                 myOnly
-                  ? "bg-blue-600/20 border-blue-500/50 text-blue-400"
+                  ? "bg-[#1C1917]/15 border-[#1C1917]/30 text-foreground"
                   : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
               )}
             >

@@ -168,7 +168,7 @@ export default function ProfilePage() {
             </button>
             <button
               onClick={() => setAddingClaim(true)}
-              className="px-3 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
+              className="px-3 py-2 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-sm font-medium hover:bg-[#292524] transition-colors"
             >
               + Add claim
             </button>
@@ -179,7 +179,7 @@ export default function ProfilePage() {
         {membership.tier === "free" && (
           (personClaims.length >= 20 && !triggerPrefs.milestone_card_20_dismissed) ? (
             <div className="mb-4 p-4 rounded-xl border"
-              style={{ borderColor: "#3b82f630", background: "#3b82f608", fontFamily: "'IBM Plex Mono', monospace" }}>
+              style={{ borderColor: "#B8862A30", background: "#B8862A08", fontFamily: "'IBM Plex Mono', monospace" }}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-foreground" style={{ fontSize: 11, lineHeight: 1.7 }}>
@@ -201,7 +201,7 @@ export default function ProfilePage() {
             </div>
           ) : personClaims.length >= 5 && !triggerPrefs.milestone_card_5_dismissed ? (
             <div className="mb-4 p-4 rounded-xl border"
-              style={{ borderColor: "#3b82f630", background: "#3b82f608", fontFamily: "'IBM Plex Mono', monospace" }}>
+              style={{ borderColor: "#B8862A30", background: "#B8862A08", fontFamily: "'IBM Plex Mono', monospace" }}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-foreground" style={{ fontSize: 11, lineHeight: 1.7 }}>

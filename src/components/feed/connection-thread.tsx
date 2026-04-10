@@ -62,7 +62,7 @@ export function ConnectionThread({ personA, personB, claimsA, claimsB }: Connect
         {/* Avatar pair + strength */}
         <div className="flex items-center gap-3 mb-4">
           <div className="flex items-center shrink-0">
-            <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold text-foreground">
+            <div className="w-10 h-10 rounded-full bg-[#1C1917] flex items-center justify-center text-sm font-bold text-foreground">
               {initials(personA.display_name)}
             </div>
             <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-bold text-foreground -ml-3 border-2 border-border-default">

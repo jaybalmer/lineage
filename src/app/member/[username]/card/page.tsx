@@ -70,7 +70,7 @@ export default function MemberCardPage({ params }: { params: Promise<{ username:
     >
       {/* Wordmark */}
       <div className="mb-8 flex items-center gap-2">
-        <span className="text-blue-400 text-lg">⬡</span>
+        <span className="text-[#B8862A] text-lg">⬡</span>
         <span className="text-muted text-xs tracking-widest font-medium">LINEAGE</span>
       </div>
 
