@@ -423,7 +423,7 @@ export default function CollectivePage() {
           <div className="mb-6 bg-[#1C1917] rounded-lg px-6 py-5">
             <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: 3, lineHeight: 1, marginBottom: 4 }}
               className="text-[#F5F2EE]">
-              COLLECTIVE<span style={{ color: accentColor }}>.</span>
+              COLLECTIVE<span className="inline-block rounded-full align-middle" style={{ width: "0.3em", height: "0.3em", marginBottom: "0.15em", background: accentColor }} />
             </div>
             <div style={{ fontSize: 10, letterSpacing: 2, color: "#78716C" }}>
               // snowboarding · 1983–present

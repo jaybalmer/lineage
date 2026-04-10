@@ -101,7 +101,7 @@ export default function Home() {
             className="font-bold text-foreground leading-none tracking-tight"
             style={{ fontSize: "clamp(4rem, 14vw, 7.5rem)", letterSpacing: "-0.03em" }}
           >
-            Lineage<span style={{ color: "#B8862A" }}>.</span>
+            Lineage<span className="inline-block rounded-full bg-[#B8862A] align-middle" style={{ width: "0.3em", height: "0.3em", marginBottom: "0.15em" }} />
           </div>
         </div>
 

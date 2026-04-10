@@ -201,7 +201,7 @@ function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug, communit
       <div className="flex items-center h-12 px-4 gap-3">
         <Link href="/" className="font-black text-xl text-[#F5F2EE] tracking-tight flex items-center gap-1 flex-shrink-0">
           <span>Lineage</span>
-          <span className="text-[#B8862A]">.</span>
+          <span className="inline-block rounded-full bg-[#B8862A] align-middle" style={{ width: "0.3em", height: "0.3em", marginBottom: "0.15em" }} />
         </Link>
         {inCommunity && (
           <Link href={`/${communitySlug}`} className="flex items-center gap-1.5 flex-shrink-0">
