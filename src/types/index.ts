@@ -258,6 +258,35 @@ export interface TriggerPrefs {
   milestone_card_5_dismissed?:       boolean
   milestone_card_20_dismissed?:      boolean
   digest_membership_mentions?:       number
+  // FTUE celebration system
+  welcome_pending?:                  boolean  // set by auth/complete, consumed by profile
+  welcome_celebration_shown?:        boolean
+  // First-session step tracking
+  ftue_added_board?:                 boolean
+  ftue_added_event?:                 boolean
+  ftue_connected_person?:            boolean
+  ftue_shared_story?:                boolean
+  ftue_complete?:                    boolean
+  // Milestone claim counts shown (replaces old cards at 5/20)
+  milestone_first_shown?:            boolean
+  milestone_5_shown?:                boolean
+  milestone_10_shown?:               boolean
+}
+
+// ─── Celebrations ─────────────────────────────────────────────────────────────
+
+export type CelebrationTier = 1 | 2 | 3 | 4 | 5
+
+export interface CelebrationPayload {
+  tier: CelebrationTier
+  icon?: string
+  title: string
+  body?: string         // "meaning" — why it matters
+  nextThread?: string   // suggested next action
+  stat?: string         // e.g. "Board #3 in your quiver"
+  accentColor?: string  // defaults to gold #B8862A
+  autoDismissMs?: number // for Tier 1-2; if omitted, uses tier default
+  contentType?: "board" | "event" | "person" | "story" | "welcome" | "milestone"
 }
 
 // ─── Stories ─────────────────────────────────────────────────────────────────

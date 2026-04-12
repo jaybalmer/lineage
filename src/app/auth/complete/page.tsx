@@ -109,6 +109,11 @@ export default function AuthCompletePage() {
         console.error("Invite merge error:", mergeErr)
       }
 
+      // Mark welcome explosion as pending — profile page picks this up and fires it
+      if (!existingProfile) {
+        store.setTriggerPrefs({ welcome_pending: true })
+      }
+
       setStatus("Done! Opening your lineage…")
       router.replace(`/${activeCommunitySlug}/profile`)
     }
