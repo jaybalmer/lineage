@@ -373,6 +373,7 @@ export interface OnboardingState {
   start_year?: number
   first_place_id?: string
   first_board_id?: string
+  first_board_text?: string
   board_ids: string[]
   event_ids: string[]
   early_orgs: string[]
@@ -381,4 +382,8 @@ export interface OnboardingState {
   email?: string
   /** Community IDs selected during onboarding */
   community_ids?: string[]
+  /** How intensely they rode at their peak */
+  riding_intensity?: "casual" | "a_lot" | "my_life"
+  was_sponsored?: boolean
+  did_compete?: boolean
 }
