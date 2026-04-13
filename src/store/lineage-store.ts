@@ -2,7 +2,7 @@
 
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
-import type { Claim, OnboardingState, Place, Board, Org, Event, EventSeries, Person, RidingDay, MembershipState, TriggerPrefs, Community } from "@/types"
+import type { Claim, OnboardingState, Place, Board, Org, Event, EventSeries, Person, RidingDay, MembershipState, TriggerPrefs, Community, CelebrationPayload } from "@/types"
 import { PLACES, ORGS, BOARDS, EVENTS, EVENT_SERIES, PEOPLE, CLAIMS } from "@/lib/mock-data"
 import { supabase } from "@/lib/supabase"
 
@@ -127,6 +127,15 @@ interface LineageStore {
   toasts: { id: string; message: string; type: "error" | "info" }[]
   addToast: (message: string, type?: "error" | "info") => void
   dismissToast: (id: string) => void
+
+  // Celebration queue — ephemeral, not persisted
+  celebrationQueue: CelebrationPayload[]
+  queueCelebration: (c: CelebrationPayload) => void
+  dismissCelebration: () => void
+
+  // Welcome explosion overlay
+  showWelcomeCelebration: boolean
+  setShowWelcomeCelebration: (v: boolean) => void
 }
 
 export const useLineageStore = create<LineageStore>()(
@@ -698,13 +707,22 @@ export const useLineageStore = create<LineageStore>()(
       },
       dismissToast: (id) =>
         set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
+
+      celebrationQueue: [],
+      queueCelebration: (c) =>
+        set((s) => ({ celebrationQueue: [...s.celebrationQueue, c] })),
+      dismissCelebration: () =>
+        set((s) => ({ celebrationQueue: s.celebrationQueue.slice(1) })),
+
+      showWelcomeCelebration: false,
+      setShowWelcomeCelebration: (v) => set({ showWelcomeCelebration: v }),
     }),
     {
       name: "lineage-store-v2",
       // Don't persist catalog or dbClaims — catalog always starts from mock data
       // and gets overwritten by loadCatalog(); dbClaims are always reloaded from DB
       partialize: (s) => {
-        const { dbClaims: _db, catalog: _cat, catalogLoaded: _cl, showMemberCard: _smc, authReady: _ar, communities: _comm, catalogError: _ce, toasts: _t, ...rest } = s
+        const { dbClaims: _db, catalog: _cat, catalogLoaded: _cl, showMemberCard: _smc, authReady: _ar, communities: _comm, catalogError: _ce, toasts: _t, celebrationQueue: _cq, showWelcomeCelebration: _swc, ...rest } = s
         return rest
       },
     }
