@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { validateFetchUrl } from "@/lib/url-validation"
 
 const MAX_BYTES = 10 * 1024 * 1024 // 10 MB
 const FETCH_TIMEOUT_MS = 12_000
@@ -54,6 +55,11 @@ export async function POST(req: NextRequest) {
   }
   if (!["http:", "https:"].includes(parsed.protocol)) {
     return NextResponse.json({ error: "Only http/https URLs allowed" }, { status: 400 })
+  }
+
+  const urlCheck = validateFetchUrl(sourceUrl)
+  if (!urlCheck.valid) {
+    return NextResponse.json({ error: urlCheck.error }, { status: 400 })
   }
 
   let imageBuffer: ArrayBuffer

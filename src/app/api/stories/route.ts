@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { requireAuth } from "@/lib/auth"
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+function getServiceClient() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  )
+}
 
 // ── GET /api/stories ─────────────────────────────────────────────────────────
 // Query params: author_id | place_id | event_id | org_id | board_id | rider_id | limit
@@ -20,6 +23,8 @@ export async function GET(req: NextRequest) {
   const offset    = Math.max(parseInt(searchParams.get("offset") ?? "0"), 0)
 
   try {
+    const supabase = getServiceClient()
+
     let query = supabase
       .from("stories")
       .select(`
@@ -79,13 +84,17 @@ export async function GET(req: NextRequest) {
 }
 
 // ── POST /api/stories ────────────────────────────────────────────────────────
-// Body: { author_id, title?, body, story_date, visibility?, linked_event_id?,
+// Body: { title?, body, story_date, visibility?, linked_event_id?,
 //         linked_place_id?, board_ids?, rider_ids?, photos? }
 export async function POST(req: NextRequest) {
+  const { user, response: authResponse } = await requireAuth()
+  if (authResponse) return authResponse
+
   try {
+    const supabase = getServiceClient()
     const body = await req.json()
     const {
-      author_id, title, body: storyBody, story_date, visibility = "public",
+      title, body: storyBody, story_date, visibility = "public",
       linked_event_id, linked_place_id, linked_org_id,
       board_ids = [], rider_ids = [],
       photos = [],   // [{ url, caption?, sort_order? }]
@@ -93,15 +102,15 @@ export async function POST(req: NextRequest) {
       url,
     } = body
 
-    if (!author_id || !story_date) {
-      return NextResponse.json({ error: "author_id and story_date are required" }, { status: 400 })
+    if (!story_date) {
+      return NextResponse.json({ error: "story_date is required" }, { status: 400 })
     }
 
-    // Insert story
+    // Insert story -- author_id always comes from the authenticated session
     const { data: story, error: storyErr } = await supabase
       .from("stories")
       .insert({
-        author_id, title: title || null, body: storyBody ?? "",
+        author_id: user.id, title: title || null, body: storyBody ?? "",
         story_date, visibility,
         linked_event_id: linked_event_id || null,
         linked_place_id: linked_place_id || null,
@@ -152,7 +161,11 @@ export async function POST(req: NextRequest) {
 //         linked_place_id?, board_ids?, rider_ids?,
 //         keep_photo_ids?, new_photos? }
 export async function PATCH(req: NextRequest) {
+  const { user, response: authResponse } = await requireAuth()
+  if (authResponse) return authResponse
+
   try {
+    const supabase = getServiceClient()
     const body = await req.json()
     const {
       id,
@@ -166,6 +179,18 @@ export async function PATCH(req: NextRequest) {
     } = body
 
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })
+
+    // Verify ownership
+    const { data: existing } = await supabase
+      .from("stories")
+      .select("author_id")
+      .eq("id", id)
+      .single()
+
+    if (!existing) return NextResponse.json({ error: "Story not found" }, { status: 404 })
+    if (existing.author_id !== user.id) {
+      return NextResponse.json({ error: "Not authorized to edit this story" }, { status: 403 })
+    }
 
     // Update story row
     const { error: updateErr } = await supabase
@@ -199,13 +224,13 @@ export async function PATCH(req: NextRequest) {
 
     // Append new photos after existing ones
     if (new_photos.length > 0) {
-      const { data: existing } = await supabase
+      const { data: existingPhotos } = await supabase
         .from("story_photos")
         .select("sort_order")
         .eq("story_id", id)
         .order("sort_order", { ascending: false })
         .limit(1)
-      const maxOrder = (existing?.[0]?.sort_order ?? -1) as number
+      const maxOrder = (existingPhotos?.[0]?.sort_order ?? -1) as number
       await supabase.from("story_photos").insert(
         (new_photos as { url: string; caption?: string }[]).map((p, i) => ({
           story_id: id, url: p.url, caption: p.caption ?? null,
@@ -244,8 +269,25 @@ export async function PATCH(req: NextRequest) {
 
 // ── DELETE /api/stories?id=xxx ───────────────────────────────────────────────
 export async function DELETE(req: NextRequest) {
+  const { user, response: authResponse } = await requireAuth()
+  if (authResponse) return authResponse
+
+  const supabase = getServiceClient()
   const id = new URL(req.url).searchParams.get("id")
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })
+
+  // Verify ownership
+  const { data: existing } = await supabase
+    .from("stories")
+    .select("author_id")
+    .eq("id", id)
+    .single()
+
+  if (!existing) return NextResponse.json({ error: "Story not found" }, { status: 404 })
+  if (existing.author_id !== user.id) {
+    return NextResponse.json({ error: "Not authorized to delete this story" }, { status: 403 })
+  }
+
   const { error } = await supabase.from("stories").delete().eq("id", id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   return NextResponse.json({ ok: true })

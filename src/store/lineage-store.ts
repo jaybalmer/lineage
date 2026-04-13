@@ -119,6 +119,14 @@ interface LineageStore {
   // Trigger moment suppression
   triggerPrefs: TriggerPrefs
   setTriggerPrefs: (updates: Partial<TriggerPrefs>) => void
+
+  // Error state
+  catalogError: string | null
+
+  // Toast notifications
+  toasts: { id: string; message: string; type: "error" | "info" }[]
+  addToast: (message: string, type?: "error" | "info") => void
+  dismissToast: (id: string) => void
 }
 
 export const useLineageStore = create<LineageStore>()(
@@ -145,7 +153,7 @@ export const useLineageStore = create<LineageStore>()(
           supabase.from("claims").select("*"),
           // Registered users live in profiles, not people — fetch both and merge
           supabase.from("profiles").select(
-            "id, display_name, birth_year, riding_since, privacy_level, bio, links, home_resort_id, membership_tier"
+            "id, display_name, birth_year, riding_since, privacy_level, bio, links, home_resort_id, membership_tier, node_status"
           ),
           // Junction tables fetched via service-role API route (RLS blocks anon reads)
           fetch("/api/catalog-junctions").then((r) => r.json()).catch(() => ({
@@ -208,6 +216,7 @@ export const useLineageStore = create<LineageStore>()(
               links:            row.links          ?? undefined,
               home_resort_id:   row.home_resort_id ?? undefined,
               membership_tier:  (row.membership_tier ?? "free") as Person["membership_tier"],
+              node_status:      (row.node_status ?? "claimed") as Person["node_status"],
               community_status: "verified" as const,
             }))
 
@@ -261,7 +270,12 @@ export const useLineageStore = create<LineageStore>()(
               claims:      (c.data?.length  ? c.data  : CLAIMS)       as Claim[],
             },
             catalogLoaded: true,
+            catalogError: null,
           })
+        }).catch((err) => {
+          const msg = err instanceof Error ? err.message : "Failed to load catalog"
+          set({ catalogError: msg })
+          get().addToast("Could not load data. Some content may be outdated.", "error")
         })
       },
 
@@ -291,7 +305,11 @@ export const useLineageStore = create<LineageStore>()(
             .from("claims")
             .insert({ ...claim, asserted_by: activePersonId })
             .then(({ error }) => {
-              if (!error) {
+              if (error) {
+                // Rollback optimistic update
+                set((s) => ({ sessionClaims: s.sessionClaims.filter((c) => c.id !== claim.id) }))
+                get().addToast("Failed to save claim. Please try again.")
+              } else {
                 // Move from sessionClaims → dbClaims
                 set((s) => ({
                   sessionClaims: s.sessionClaims.filter((c) => c.id !== claim.id),
@@ -303,6 +321,10 @@ export const useLineageStore = create<LineageStore>()(
       },
       removeClaim: (id) => {
         const { activePersonId } = get()
+        // Capture claim for rollback
+        const removedClaim = get().sessionClaims.find((c) => c.id === id)
+          ?? get().dbClaims.find((c) => c.id === id)
+
         set((s) => {
           const isSession = s.sessionClaims.some((c) => c.id === id)
           const isDb = s.dbClaims.some((c) => c.id === id)
@@ -311,11 +333,20 @@ export const useLineageStore = create<LineageStore>()(
           return { deletedClaimIds: [...s.deletedClaimIds, id] }
         })
         if (isAuthUser(activePersonId)) {
-          // Use service-role API route — browser client RLS may block deletes
           fetch("/api/admin", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ operation: "delete", table: "claims", id }),
+          }).then((r) => {
+            if (!r.ok && removedClaim) {
+              set((s) => ({ dbClaims: [...s.dbClaims, removedClaim] }))
+              get().addToast("Failed to delete claim. It has been restored.")
+            }
+          }).catch(() => {
+            if (removedClaim) {
+              set((s) => ({ dbClaims: [...s.dbClaims, removedClaim] }))
+              get().addToast("Failed to delete claim. It has been restored.")
+            }
           })
         }
       },
@@ -373,7 +404,15 @@ export const useLineageStore = create<LineageStore>()(
               first_snowboard_year: place.first_snowboard_year ?? null,
               community_status: "unverified", added_by: get().activePersonId,
             }})
-          }).then(r => r.json()).then(d => { if (!d.ok) console.error("place insert:", d.error) })
+          }).then(r => r.json()).then(d => {
+            if (!d.ok) {
+              set((s) => ({
+                userEntities: { ...s.userEntities, places: s.userEntities.places.filter((p) => p.id !== place.id) },
+                catalog: { ...s.catalog, places: s.catalog.places.filter((p) => p.id !== place.id) },
+              }))
+              get().addToast("Failed to save place. Please try again.")
+            }
+          }).catch(() => get().addToast("Failed to save place. Please try again."))
         }
       },
       addUserBoard: (board) => {
@@ -389,7 +428,15 @@ export const useLineageStore = create<LineageStore>()(
               shape: board.shape ?? null, external_ref: board.external_ref ?? null,
               community_status: "unverified", added_by: get().activePersonId,
             }})
-          }).then(r => r.json()).then(d => { if (!d.ok) console.error("board insert:", d.error) })
+          }).then(r => r.json()).then(d => {
+            if (!d.ok) {
+              set((s) => ({
+                userEntities: { ...s.userEntities, boards: s.userEntities.boards.filter((b) => b.id !== board.id) },
+                catalog: { ...s.catalog, boards: s.catalog.boards.filter((b) => b.id !== board.id) },
+              }))
+              get().addToast("Failed to save board. Please try again.")
+            }
+          }).catch(() => get().addToast("Failed to save board. Please try again."))
         }
       },
       addUserOrg: (org) => {
@@ -407,7 +454,15 @@ export const useLineageStore = create<LineageStore>()(
               description: org.description ?? null,
               community_status: "unverified", added_by: get().activePersonId,
             }})
-          }).then(r => r.json()).then(d => { if (!d.ok) console.error("org insert:", d.error) })
+          }).then(r => r.json()).then(d => {
+            if (!d.ok) {
+              set((s) => ({
+                userEntities: { ...s.userEntities, orgs: s.userEntities.orgs.filter((o) => o.id !== org.id) },
+                catalog: { ...s.catalog, orgs: s.catalog.orgs.filter((o) => o.id !== org.id) },
+              }))
+              get().addToast("Failed to save brand. Please try again.")
+            }
+          }).catch(() => get().addToast("Failed to save brand. Please try again."))
         }
       },
       addUserSeries: (series) => {
@@ -422,7 +477,9 @@ export const useLineageStore = create<LineageStore>()(
               frequency: series.frequency, start_year: series.start_year ?? null,
               description: series.description ?? null,
             }})
-          }).then(r => r.json()).then(d => { if (!d.ok) console.error("series insert:", d.error) })
+          }).then(r => r.json()).then(d => {
+            if (!d.ok) get().addToast("Failed to save event series. Please try again.")
+          }).catch(() => get().addToast("Failed to save event series. Please try again."))
         }
       },
       addUserEvent: (event) => {
@@ -444,7 +501,15 @@ export const useLineageStore = create<LineageStore>()(
               description: event.description ?? null,
               community_status: "unverified", added_by: get().activePersonId,
             }})
-          }).then(r => r.json()).then(d => { if (!d.ok) console.error("event insert:", d.error) })
+          }).then(r => r.json()).then(d => {
+            if (!d.ok) {
+              set((s) => ({
+                userEntities: { ...s.userEntities, events: s.userEntities.events.filter((e) => e.id !== event.id) },
+                catalog: { ...s.catalog, events: s.catalog.events.filter((e) => e.id !== event.id) },
+              }))
+              get().addToast("Failed to save event. Please try again.")
+            }
+          }).catch(() => get().addToast("Failed to save event. Please try again."))
         }
       },
       addUserPerson: (person) => {
@@ -459,7 +524,9 @@ export const useLineageStore = create<LineageStore>()(
             riding_since: person.riding_since ?? null,
             bio: person.bio ?? null,
             community_status: "unverified", added_by: get().activePersonId,
-          }).then(({ error }) => { if (error) console.error("person insert:", error) })
+          }).then(({ error }) => {
+            if (error) get().addToast("Failed to save rider. Please try again.")
+          })
         }
       },
       updateUserEvent: (id, updates) => {
@@ -528,7 +595,12 @@ export const useLineageStore = create<LineageStore>()(
             id: day.id, date: day.date, place_id: day.place_id,
             rider_ids: day.rider_ids, note: day.note ?? null,
             visibility: day.visibility, created_by: day.created_by,
-          }).then(({ error }) => { if (error) console.error("riding_day insert:", error) })
+          }).then(({ error }) => {
+            if (error) {
+              set((s) => ({ ridingDays: s.ridingDays.filter((d) => d.id !== day.id) }))
+              get().addToast("Failed to save riding day. Please try again.")
+            }
+          })
         }
       },
       removeRidingDay: (id) => {
@@ -615,13 +687,24 @@ export const useLineageStore = create<LineageStore>()(
       triggerPrefs: {},
       setTriggerPrefs: (updates) =>
         set((s) => ({ triggerPrefs: { ...s.triggerPrefs, ...updates } })),
+
+      catalogError: null,
+
+      toasts: [],
+      addToast: (message, type = "error") => {
+        const id = crypto.randomUUID()
+        set((s) => ({ toasts: [...s.toasts, { id, message, type }] }))
+        setTimeout(() => get().dismissToast(id), 5000)
+      },
+      dismissToast: (id) =>
+        set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
     }),
     {
       name: "lineage-store-v2",
       // Don't persist catalog or dbClaims — catalog always starts from mock data
       // and gets overwritten by loadCatalog(); dbClaims are always reloaded from DB
       partialize: (s) => {
-        const { dbClaims: _db, catalog: _cat, catalogLoaded: _cl, showMemberCard: _smc, authReady: _ar, communities: _comm, ...rest } = s
+        const { dbClaims: _db, catalog: _cat, catalogLoaded: _cl, showMemberCard: _smc, authReady: _ar, communities: _comm, catalogError: _ce, toasts: _t, ...rest } = s
         return rest
       },
     }

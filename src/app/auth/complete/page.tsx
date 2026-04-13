@@ -94,9 +94,18 @@ export default function AuthCompletePage() {
             const oldId = invite.person_id as string
             await supabase.from("claims").update({ subject_id: user.id }).eq("subject_id", oldId)
             await supabase.from("claims").update({ object_id: user.id }).eq("object_id", oldId)
+            await supabase.from("story_riders").update({ rider_id: user.id }).eq("rider_id", oldId)
             await supabase.from("invites")
               .update({ claimed_at: new Date().toISOString(), claimed_by: user.id })
               .eq("id", inviteToken)
+            // Set the profile as claimed with timestamp
+            await supabase.from("profiles")
+              .update({ node_status: "claimed", claimed_at: new Date().toISOString() })
+              .eq("id", user.id)
+            // Store the old ID for URL redirects, then remove the old node
+            await supabase.from("profiles")
+              .update({ merged_from_id: oldId })
+              .eq("id", user.id)
             await supabase.from("people").delete().eq("id", oldId)
           }
 

@@ -8,7 +8,7 @@ import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
-import { RiderAvatar, getInitials } from "@/components/ui/rider-avatar"
+import { RiderAvatar, getRiderTier, type RiderTier } from "@/components/ui/rider-avatar"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import type { Person } from "@/types"
@@ -22,34 +22,29 @@ const SORT_TABS: { id: SortTab; label: string; title: string }[] = [
   { id: "resort", label: "Resort", title: "Group by home resort" },
 ]
 
-// ── Rider type classification ─────────────────────────────────────────────────
+// ── Rider type classification (delegates to shared getRiderTier) ─────────────
 
-type RiderKind = "founding" | "paid" | "free-account" | "unclaimed" | "catalog"
+type RiderKind = RiderTier
 
 function getRiderKind(person: Person): RiderKind {
-  if (isAuthUser(person.id)) {
-    const tier = person.membership_tier ?? "free"
-    if (tier === "founding")                       return "founding"
-    if (tier === "annual" || tier === "lifetime")   return "paid"
-    return "free-account"
-  }
-  if (person.community_status === "unverified")    return "unclaimed"
-  return "catalog"
+  return getRiderTier(person)
 }
 
 const KIND_META: Record<RiderKind, { label: string; color: string; avatarBg: string; badge?: string }> = {
-  founding:     { label: "Founding",     color: "#f59e0b", avatarBg: "#78350f", badge: "✦ Founding" },
-  paid:         { label: "Member",       color: "#3b82f6", avatarBg: "#1e3a8a", badge: "◈ Member"   },
+  founding:       { label: "Founding",   color: "#f59e0b", avatarBg: "#78350f", badge: "✦ Founding" },
+  paid:           { label: "Member",     color: "#f97316", avatarBg: "#431407", badge: "◈ Member"   },
   "free-account": { label: "Rider",      color: "#10b981", avatarBg: "#064e3b", badge: undefined    },
-  unclaimed:    { label: "Unclaimed",    color: "#f97316", avatarBg: "#431407", badge: undefined    },
-  catalog:      { label: "Catalog",      color: "#52525b", avatarBg: "#27272a", badge: undefined    },
+  unclaimed:      { label: "Unclaimed",  color: "#3b82f6", avatarBg: "#1e3a8a", badge: undefined    },
+  catalog:        { label: "Catalog",    color: "#52525b", avatarBg: "#27272a", badge: undefined    },
+  verified:       { label: "Verified",   color: "#10b981", avatarBg: "#064e3b", badge: "✓ Verified" },
 }
 
-const KIND_ORDER: RiderKind[] = ["founding", "paid", "free-account", "unclaimed", "catalog"]
+const KIND_ORDER: RiderKind[] = ["founding", "paid", "verified", "free-account", "unclaimed", "catalog"]
 
 const SECTION_LABELS: Record<RiderKind, string> = {
   founding:       "Founding Members",
   paid:           "Members",
+  verified:       "Verified",
   "free-account": "Riders",
   unclaimed:      "Unclaimed Profiles",
   catalog:        "Catalog",
@@ -79,7 +74,7 @@ function RiderRow({ person, isMe, onInvite, claims }: {
           style={{ borderColor: `${meta.color}30` }}
         >
           {/* Avatar */}
-          <RiderAvatar person={person} size="lg" ring={kind === "founding" || kind === "paid"} />
+          <RiderAvatar person={person} size="lg" ring={kind !== "catalog"} />
 
           {/* Info */}
           <div className="min-w-0 flex-1">

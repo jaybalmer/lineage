@@ -45,7 +45,7 @@ export default function GiftRedemptionPage() {
     const res = await fetch("/api/gift/redeem", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, userId: activePersonId }),
+      body: JSON.stringify({ code }),
     })
 
     if (res.ok) {

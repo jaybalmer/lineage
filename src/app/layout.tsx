@@ -5,6 +5,7 @@ import { CatalogLoader } from "@/components/catalog-loader"
 import { ClientOverlays } from "@/components/ClientOverlays"
 import { PasswordGate } from "@/components/PasswordGate"
 import { Analytics } from "@vercel/analytics/next"
+import { Toasts } from "@/components/ui/toast"
 
 const dmSerif = DM_Serif_Display({
   subsets: ["latin"],
@@ -27,6 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ClientOverlays />
           {children}
         </PasswordGate>
+        <Toasts />
         <Analytics />
       </body>
     </html>

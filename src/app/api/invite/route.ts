@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
+import { requireAuth, getServiceClient } from "@/lib/auth"
 
-// ─── Supabase admin client (service role bypasses RLS) ───────────────────────
-// Falls back to anon key if service role key not configured yet
-function getSupabaseAdmin() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  return createClient(url, key)
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
 }
 
 // ─── Email HTML ───────────────────────────────────────────────────────────────
@@ -50,32 +51,38 @@ function inviteEmailHtml(inviterName: string, personName: string, link: string):
 
 // ─── POST /api/invite ─────────────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
+  const { user, response: authResponse } = await requireAuth()
+  if (authResponse) return authResponse
+
   try {
     const body = await req.json() as {
       person_id: string
       person_name: string
-      invited_by: string
       inviter_name: string
       predicate: string
       email?: string
     }
 
-    const { person_id, person_name, invited_by, inviter_name, predicate, email } = body
+    const { person_id, person_name, inviter_name, predicate, email } = body
 
-    if (!person_id || !invited_by) {
+    if (!person_id) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
+
+    // Escape user-supplied names before using in HTML email
+    const safeInviterName = escapeHtml(inviter_name || "Someone")
+    const safePersonName = escapeHtml(person_name || "a rider")
 
     const token = crypto.randomUUID()
     const origin = req.headers.get("origin") || "https://lineage.wtf"
     const link = `${origin}/claim/${token}`
 
-    // Insert invite record
-    const supabase = getSupabaseAdmin()
+    // Insert invite record -- use authenticated user's ID
+    const supabase = getServiceClient()
     const { error: insertError } = await supabase.from("invites").insert({
       id: token,
       person_id,
-      invited_by,
+      invited_by: user.id,
       email: email ?? null,
       person_name,
       inviter_name,
@@ -87,6 +94,19 @@ export async function POST(req: NextRequest) {
       // Don't hard-fail — still return a usable link
     }
 
+    // Update the person node with invite info and elevate to unclaimed if catalog
+    try {
+      const updateFields: Record<string, unknown> = {
+        invited_by: user.id,
+      }
+      if (email) updateFields.invite_email = email
+      // Elevate catalog → unclaimed (being invited means someone knows them)
+      updateFields.node_status = "unclaimed"
+      await supabase.from("people").update(updateFields).eq("id", person_id)
+    } catch (updateErr) {
+      console.error("Person update error:", updateErr)
+    }
+
     // Send email via Resend (if API key is configured and email provided)
     const resendKey = process.env.RESEND_API_KEY
     if (email && resendKey) {
@@ -96,8 +116,8 @@ export async function POST(req: NextRequest) {
         await resend.emails.send({
           from: "Lineage <noreply@lineage.wtf>",
           to: email,
-          subject: `${inviter_name} added you to their snowboard lineage`,
-          html: inviteEmailHtml(inviter_name, person_name, link),
+          subject: `${safeInviterName} added you to their snowboard lineage`,
+          html: inviteEmailHtml(safeInviterName, safePersonName, link),
         })
       } catch (emailErr) {
         console.error("Resend error:", emailErr)

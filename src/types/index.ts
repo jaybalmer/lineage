@@ -4,6 +4,10 @@ export type PrivacyLevel = "private" | "shared" | "public"
 export type ConfidenceLevel = "self-reported" | "corroborated" | "documented" | "partner-verified"
 export type CommunityStatus = "verified" | "unverified"
 export type CommunityLaunchStatus = "active" | "coming_soon"
+export type NodeStatus = "catalog" | "unclaimed" | "claimed" | "verified"
+export type TagPreference = "notify_approve" | "auto_approve" | "disabled"
+export type VerificationTier = "standard" | "elevated" | "protected"
+export type ClaimRequestStatus = "pending" | "approved" | "declined" | "expired"
 
 // ─── Community ──────────────────────────────────────────────────────────────
 
@@ -55,7 +59,17 @@ export interface Person {
   region?: string
   country?: string
   is_current_user?: boolean
+  /** @deprecated Use node_status instead for UI classification */
   community_status?: CommunityStatus
+  node_status?: NodeStatus
+  claimed_by?: string
+  claimed_at?: string
+  merged_from_id?: string
+  is_notable?: boolean
+  is_deceased?: boolean
+  invite_email?: string
+  invited_by?: string
+  tag_preference?: TagPreference
   added_by?: string
   links?: ProfileLink[]
   /** Populated for registered users (profiles table); absent for catalog/mock people */
@@ -293,6 +307,23 @@ export interface Story {
   url?: string | null
   // Community scoping — every story belongs to exactly one community
   community_id?: string
+}
+
+// ─── Claim Requests ─────────────────────────────────────────────────────────
+
+export interface ClaimRequest {
+  id: string
+  claimant_id: string
+  node_id: string
+  verification_tier: VerificationTier
+  status: ClaimRequestStatus
+  vouches_required: number
+  vouches_received: Array<{ voucher_id: string; vouched_at: string; relationship: string }>
+  evidence_notes?: string
+  editor_notes?: string
+  expires_at: string
+  created_at: string
+  resolved_at?: string
 }
 
 // ─── UI-focused composite types ──────────────────────────────────────────────

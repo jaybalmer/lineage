@@ -12,12 +12,14 @@ import { nameToSlug } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
 import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
+import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
+import { isAuthUser } from "@/store/lineage-store"
 import { notFound } from "next/navigation"
 import type { Claim, Story } from "@/types"
 
 const TIER_BADGE: Record<string, { symbol: string; label: string; color: string }> = {
-  annual:   { symbol: "◈", label: "MEMBER",    color: "#3b82f6" },
-  lifetime: { symbol: "◆", label: "LIFETIME",  color: "#8b5cf6" },
+  annual:   { symbol: "◈", label: "MEMBER",    color: "#f97316" },
+  lifetime: { symbol: "◆", label: "LIFETIME",  color: "#f97316" },
   founding: { symbol: "✦", label: "FOUNDING",  color: "#f59e0b" },
 }
 
@@ -30,6 +32,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   const [milestoneDismissed, setMilestoneDismissed] = useState(false)
   const [dbClaims, setDbClaims] = useState<Claim[]>([])
   const [stories, setStories] = useState<Story[]>([])
+  const [showInviteModal, setShowInviteModal] = useState(false)
 
   // Show post-onboarding welcome banner (once, on first profile visit after signup)
   useEffect(() => {
@@ -143,7 +146,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
             <RiderAvatar
               person={person}
               size="xl"
-              ring={tier !== "catalog" && tier !== "free-account"}
+              ring={tier !== "catalog"}
               className="flex-shrink-0"
             />
 
@@ -233,6 +236,15 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                 <span className="text-foreground font-bold">{personClaims.length}</span> claims
               </span>
               <div className="flex gap-2">
+                {tier === "unclaimed" && isAuthUser(activePersonId) && (
+                  <button
+                    onClick={() => setShowInviteModal(true)}
+                    className="px-3 py-2 rounded-lg border text-xs font-medium transition-all"
+                    style={{ borderColor: "#3b82f640", color: "#3b82f6", background: "#3b82f610" }}
+                  >
+                    Invite to Lineage
+                  </button>
+                )}
                 <Link href={`/compare?b=${resolvedId}`}>
                   <button className="px-3 py-2 rounded-lg bg-surface-hover border border-border-default text-xs text-muted hover:text-foreground transition-all">
                     Compare ⬡
@@ -247,6 +259,39 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
             </div>
           )}
         </div>
+
+        {/* ── Unclaimed profile banner ── */}
+        {!isCurrentUser && tier === "unclaimed" && (
+          <div
+            className="mb-6 rounded-xl p-4 flex items-start gap-3"
+            style={{ background: "#3b82f608", border: "1px dashed #3b82f640" }}
+          >
+            <span className="text-base shrink-0" style={{ color: "#3b82f6" }}>👤</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-foreground mb-0.5">
+                This profile hasn&apos;t been claimed yet
+              </p>
+              <p className="text-xs text-muted leading-relaxed">
+                {person.display_name} exists in the graph because another member mentioned them.
+                {person.added_by && (() => {
+                  const addedBy = allPeople.find((p) => p.id === person.added_by)
+                  return addedBy ? ` Added by ${addedBy.display_name}.` : ""
+                })()}
+              </p>
+              {isAuthUser(activePersonId) && (
+                <div className="flex items-center gap-3 mt-2">
+                  <button
+                    onClick={() => setShowInviteModal(true)}
+                    className="text-xs font-medium transition-colors hover:opacity-80"
+                    style={{ color: "#3b82f6" }}
+                  >
+                    Invite to Lineage →
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* ── Post-onboarding welcome banner ── */}
         {isCurrentUser && showWelcomeBanner && membership.tier === "free" && (
@@ -350,6 +395,15 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
         />
 
       </div>
+
+      {showInviteModal && (
+        <InviteRiderModal
+          personId={resolvedId}
+          personName={person.display_name}
+          predicate="rode_with"
+          onClose={() => setShowInviteModal(false)}
+        />
+      )}
     </div>
   )
 }

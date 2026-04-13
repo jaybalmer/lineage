@@ -45,7 +45,8 @@ src/
   lib/
     utils.ts            # cn(), nameToSlug(), formatSmartDate(), parseYouTubeId()
     supabase.ts         # Browser client singleton
-    supabase-server.ts  # Server-side client (for API routes)
+    supabase-server.ts  # Server-side session client (anon key, for auth checks)
+    auth.ts             # requireAuth(), requireEditor(), getServiceClient()
     mock-data.ts        # Seed data for anon/demo users
     connection-summary.ts # Overlap-scoring algorithm
     theme.ts            # useTheme() hook
@@ -110,11 +111,16 @@ Run SQL directly in Supabase dashboard — there are no local migration files to
 3. Update the modal (if user-editable) and the card component (if displayed)
 
 ### API route pattern
-All routes use the **service role key** (bypasses RLS). RLS is enforced on the client-side Supabase client.
+Two server-side Supabase clients exist:
+
+1. **Session client** (`createServerSupabaseClient()` from `supabase-server.ts`) uses the **anon key**. Used for `auth.getUser()` to validate the caller's session. Subject to RLS.
+2. **Service client** (`getServiceClient()` from `auth.ts`) uses the **service role key**. Bypasses RLS. Used for data mutations after auth is verified.
 
 ```typescript
-import { createServerSupabaseClient } from "@/lib/supabase-server"
-const supabase = createServerSupabaseClient() // service role — use in API routes
+// Auth check pattern (used by all mutating routes):
+import { requireAuth } from "@/lib/auth"         // returns { user } or 401
+import { requireEditor } from "@/lib/auth"        // returns { user, profile } or 401/403
+import { getServiceClient } from "@/lib/auth"     // service role client for DB ops
 ```
 
 Pagination uses `.range(offset, offset + limit - 1)` — not `.limit()`.
@@ -299,7 +305,7 @@ Strength: **strong** ≥20, **medium** ≥8, **light** >0, **none** = 0
 
 5. **Optimistic claims** — `sessionClaims` are written immediately to state. `dbClaims` arrive async. `getAllClaims()` merges both plus overrides. Never read `dbClaims` directly.
 
-6. **Service role in API routes** — use `createServerSupabaseClient()` from `supabase-server.ts`. This uses the service role key and bypasses RLS. Don't import the browser `supabase` client in API routes.
+6. **Auth in API routes** — all mutating API routes must call `requireAuth()` or `requireEditor()` from `src/lib/auth.ts` before proceeding. Use `getServiceClient()` from the same file for service-role DB operations. `createServerSupabaseClient()` from `supabase-server.ts` uses the **anon key** (not service role) and is used internally by the auth helpers for session validation.
 
 7. **Postcard light theme** — `.postcard` class forces light background. Don't add dark-mode overrides to card components — it breaks the intentional design.
 

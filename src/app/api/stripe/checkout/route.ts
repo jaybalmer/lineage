@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
+import { requireAuth } from "@/lib/auth"
 
 const PRICE_IDS: Record<string, string | undefined> = {
   annual:     process.env.STRIPE_PRICE_ANNUAL,
@@ -9,6 +10,9 @@ const PRICE_IDS: Record<string, string | undefined> = {
 }
 
 export async function POST(req: NextRequest) {
+  const { user, response: authResponse } = await requireAuth()
+  if (authResponse) return authResponse
+
   const stripeKey = process.env.STRIPE_SECRET_KEY
   if (!stripeKey) {
     return NextResponse.json(
@@ -18,7 +22,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}))
-  const { tier, userId } = body as { tier?: string; userId?: string }
+  const { tier } = body as { tier?: string }
 
   if (!tier || !PRICE_IDS[tier]) {
     return NextResponse.json({ error: "Invalid tier." }, { status: 400 })
@@ -44,13 +48,13 @@ export async function POST(req: NextRequest) {
       line_items: [{ price: priceId, quantity: 1 }],
       metadata: {
         tier,
-        userId: userId ?? "",
+        userId: user.id,
         isGift: tier === "gift_annual" ? "true" : "false",
       },
       // For founding tier: enforce 500-unit cap at app layer (Stripe inventory is backup)
       success_url: `${origin}/welcome?tier=${tier}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${origin}/membership`,
-      ...(userId && { client_reference_id: userId }),
+      client_reference_id: user.id,
     })
 
     return NextResponse.json({ url: session.url })

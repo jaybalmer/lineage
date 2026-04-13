@@ -1,5 +1,5 @@
-import { createClient } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
+import { requireEditor, getServiceClient } from "@/lib/auth"
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -17,15 +17,6 @@ export interface ExtractedRow {
   country?: string
   score?: string
   match: MatchResult
-}
-
-// ── Admin client ───────────────────────────────────────────────────────────
-
-function getAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!key) return null
-  return createClient(url, key, { auth: { persistSession: false } })
 }
 
 // ── Text parsing ───────────────────────────────────────────────────────────
@@ -282,6 +273,9 @@ function matchName(
 // ── Route handler ──────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
+  const { response } = await requireEditor()
+  if (response) return response
+
   const body = await req.json() as { text: string; event_id?: string }
   const { text } = body
 
@@ -289,13 +283,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "text is required" }, { status: 400 })
   }
 
-  const client = getAdminClient()
-  if (!client) {
-    return NextResponse.json(
-      { error: "SUPABASE_SERVICE_ROLE_KEY is not configured" },
-      { status: 500 }
-    )
-  }
+  const client = getServiceClient()
 
   // Fetch all people for matching (people table + profiles)
   const [{ data: catalogPeople }, { data: profilePeople }] = await Promise.all([

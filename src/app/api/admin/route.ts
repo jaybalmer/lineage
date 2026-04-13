@@ -1,7 +1,7 @@
-import { createClient } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
+import { requireEditor, getServiceClient } from "@/lib/auth"
 
-const ALLOWED_TABLES = new Set(["events", "boards", "places", "orgs", "event_series", "event_brands", "event_series_brands", "claims"])
+const ALLOWED_TABLES = new Set(["events", "boards", "places", "orgs", "event_series", "event_brands", "event_series_brands", "claims", "people"])
 
 const TABLE_MAP: Record<string, string> = {
   events: "events",
@@ -12,14 +12,10 @@ const TABLE_MAP: Record<string, string> = {
   event_series: "event_series",
 }
 
-function getAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!key) return null
-  return createClient(url, key, { auth: { persistSession: false } })
-}
-
 export async function POST(req: NextRequest) {
+  const { response } = await requireEditor()
+  if (response) return response
+
   const body = await req.json() as {
     operation: "insert" | "update" | "delete" | "replace_junction"
     table: string
@@ -40,13 +36,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `Table "${table}" not allowed` }, { status: 400 })
   }
 
-  const client = getAdminClient()
-  if (!client) {
-    return NextResponse.json(
-      { error: "SUPABASE_SERVICE_ROLE_KEY is not configured — add it to your environment variables" },
-      { status: 500 }
-    )
-  }
+  const client = getServiceClient()
 
   if (operation === "insert") {
     if (!data) return NextResponse.json({ error: "data required for insert" }, { status: 400 })

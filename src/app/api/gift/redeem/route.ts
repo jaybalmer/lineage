@@ -1,22 +1,18 @@
 import { NextRequest, NextResponse } from "next/server"
-import { createClient } from "@supabase/supabase-js"
-
-function adminClient() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
+import { requireAuth, getServiceClient } from "@/lib/auth"
 
 export async function POST(req: NextRequest) {
-  const { code, userId } = await req.json() as { code: string; userId: string }
+  const { user, response: authResponse } = await requireAuth()
+  if (authResponse) return authResponse
 
-  if (!code || !userId) {
-    return NextResponse.json({ error: "Missing code or userId" }, { status: 400 })
+  const { code } = await req.json() as { code: string }
+
+  if (!code) {
+    return NextResponse.json({ error: "Missing code" }, { status: 400 })
   }
 
   const normalizedCode = code.toUpperCase()
-  const db = adminClient()
+  const db = getServiceClient()
 
   // Fetch and validate the gift code (single atomic-ish read)
   const { data: giftRow, error: fetchErr } = await db
@@ -34,14 +30,14 @@ export async function POST(req: NextRequest) {
   }
 
   // Can't redeem your own gift code
-  if (giftRow.gifted_by === userId) {
+  if (giftRow.gifted_by === user.id) {
     return NextResponse.json({ error: "You cannot redeem your own gift code" }, { status: 400 })
   }
 
   // Mark the code as redeemed
   const { error: updateCodeErr } = await db
     .from("gift_codes")
-    .update({ status: "redeemed", redeemed_by: userId })
+    .update({ status: "redeemed", redeemed_by: user.id })
     .eq("code", normalizedCode)
 
   if (updateCodeErr) {
@@ -59,7 +55,7 @@ export async function POST(req: NextRequest) {
       token_member:           10,
       membership_expires_at:  expiresAt,
     })
-    .eq("id", userId)
+    .eq("id", user.id)
 
   if (profileErr) {
     return NextResponse.json({ error: "Failed to grant membership" }, { status: 500 })
@@ -67,7 +63,7 @@ export async function POST(req: NextRequest) {
 
   // Log token grant
   await db.from("token_events").insert({
-    user_id:    userId,
+    user_id:    user.id,
     token_type: "member",
     amount:     10,
     source:     "gift_redemption",

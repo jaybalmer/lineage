@@ -1,5 +1,5 @@
-import { createClient } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
+import { requireEditor, getServiceClient } from "@/lib/auth"
 
 // ─── Tier constants ───────────────────────────────────────────────────────────
 
@@ -12,19 +12,12 @@ const TIER_TOKENS: Record<string, { founder: number; member: number }> = {
 
 const VALID_TIERS = new Set(["free", "annual", "lifetime", "founding"])
 
-function getAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!key) return null
-  return createClient(url, key, { auth: { persistSession: false } })
-}
-
 // ─── GET /api/admin/memberships ── list all profiles with membership data ─────
 export async function GET() {
-  const client = getAdminClient()
-  if (!client) {
-    return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 })
-  }
+  const { response } = await requireEditor()
+  if (response) return response
+
+  const client = getServiceClient()
 
   // Fetch profiles (no email column — that lives in auth.users)
   const { data: profiles, error } = await client
@@ -52,10 +45,10 @@ export async function GET() {
 
 // ─── POST /api/admin/memberships ── grant / edit membership ──────────────────
 export async function POST(req: NextRequest) {
-  const client = getAdminClient()
-  if (!client) {
-    return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 })
-  }
+  const { response } = await requireEditor()
+  if (response) return response
+
+  const client = getServiceClient()
 
   const body = await req.json() as {
     user_id: string

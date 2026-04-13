@@ -7,6 +7,7 @@ import { orgSlug } from "@/lib/mock-data"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { useLineageStore } from "@/store/lineage-store"
+import { getRiderTier } from "@/components/ui/rider-avatar"
 import type { Story } from "@/types"
 
 interface StoryCardProps {
@@ -235,15 +236,26 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
               🏂 {board.brand} {board.model} &apos;{String(board.model_year).slice(2)}
             </CommunityLink>
           ))}
-          {taggedRiders.map((rider) => rider && (
-            <CommunityLink
-              key={rider.id}
-              href={`/riders/${nameToSlug(rider.display_name)}`}
-              className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20 transition-colors"
-            >
-              👤 {rider.display_name}
-            </CommunityLink>
-          ))}
+          {taggedRiders.map((rider) => {
+            if (!rider) return null
+            const riderTier = getRiderTier(rider)
+            const isUnclaimed = riderTier === "unclaimed" || riderTier === "catalog"
+            return (
+              <CommunityLink
+                key={rider.id}
+                href={`/riders/${nameToSlug(rider.display_name)}`}
+                className={cn(
+                  "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full transition-colors",
+                  isUnclaimed
+                    ? "bg-blue-500/5 border border-dashed border-blue-500/30 text-blue-400/70 hover:bg-blue-500/10"
+                    : "bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20"
+                )}
+                title={isUnclaimed ? `${rider.display_name} hasn't joined yet` : undefined}
+              >
+                👤 {rider.display_name}
+              </CommunityLink>
+            )
+          })}
         </div>
       )}
 

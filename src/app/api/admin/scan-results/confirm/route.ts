@@ -1,5 +1,5 @@
-import { createClient } from "@supabase/supabase-js"
 import { NextRequest, NextResponse } from "next/server"
+import { requireEditor, getServiceClient } from "@/lib/auth"
 
 interface ConfirmEntry {
   name: string
@@ -16,33 +16,26 @@ interface RequestBody {
   added_by: string
 }
 
-function getAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!key) return null
-  return createClient(url, key, { auth: { persistSession: false } })
-}
-
 function generateId() {
   // crypto.randomUUID() is available in the Node.js/Edge runtime
   return crypto.randomUUID()
 }
 
 export async function POST(req: NextRequest) {
+  const { user, response } = await requireEditor()
+  if (response) return response
+
   const body = await req.json() as RequestBody
-  const { entries, event_id, create_claims, added_by } = body
+  const { entries, event_id, create_claims } = body
+
+  // Use authenticated user's ID instead of trusting request body
+  const added_by = user.id
 
   if (!entries || entries.length === 0) {
     return NextResponse.json({ error: "entries is required" }, { status: 400 })
   }
 
-  const client = getAdminClient()
-  if (!client) {
-    return NextResponse.json(
-      { error: "SUPABASE_SERVICE_ROLE_KEY is not configured" },
-      { status: 500 }
-    )
-  }
+  const client = getServiceClient()
 
   const active = entries.filter((e) => !e.skip)
 
@@ -56,6 +49,7 @@ export async function POST(req: NextRequest) {
       id: generateId(),
       display_name: e.name,
       community_status: "unverified",
+      node_status: "unclaimed",
       added_by: added_by || null,
     }))
 

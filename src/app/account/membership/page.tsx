@@ -54,10 +54,10 @@ function getNextDistributionDate() {
   return `January ${now.getFullYear() + 1}`
 }
 
-async function openStripePortal(customerId: string) {
+async function openStripePortal() {
   const res = await fetch("/api/stripe/portal", {
     method: "POST", headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ customerId }),
+    body: JSON.stringify({}),
   })
   const data = await res.json()
   if (data.url) window.location.href = data.url
@@ -276,7 +276,7 @@ function ShareCard({
 
 // ─── Gift Section ─────────────────────────────────────────────────────────────
 
-function GiftSection({ userId }: { userId: string }) {
+function GiftSection() {
   const [loading, setLoading] = useState(false)
   const [giftLink, setGiftLink] = useState("")
   const [copied, setCopied] = useState(false)
@@ -286,7 +286,7 @@ function GiftSection({ userId }: { userId: string }) {
     const res = await fetch("/api/stripe/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tier: "gift_annual", userId }),
+      body: JSON.stringify({ tier: "gift_annual" }),
     })
     const data = await res.json()
     setLoading(false)
@@ -620,7 +620,7 @@ function MembershipDashboard() {
 
           {/* Gift a membership (for paid members) */}
           {tier !== "free" && (
-            <GiftSection userId={activePersonId} />
+            <GiftSection />
           )}
 
           {/* Manage subscription */}
@@ -633,7 +633,7 @@ function MembershipDashboard() {
                 Update your payment method, view invoices, or cancel — all through Stripe&apos;s secure portal.
               </p>
               <button
-                onClick={() => openStripePortal(stripe_customer_id!)}
+                onClick={() => openStripePortal()}
                 className="px-5 py-2 rounded-full border border-border-default text-muted hover:text-foreground hover:border-foreground transition-all"
                 style={{ fontSize: 10, letterSpacing: 1, background: "none", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace" }}>
                 Manage billing →

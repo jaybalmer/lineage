@@ -4,6 +4,7 @@ import { useMemo } from "react"
 import { computeConnectionSummary } from "@/lib/connection-summary"
 import { FeedView } from "@/components/feed/feed-view"
 import { cn } from "@/lib/utils"
+import { RiderAvatar, getRiderTier } from "@/components/ui/rider-avatar"
 import type { Person, Claim } from "@/types"
 
 interface ConnectionThreadProps {
@@ -62,16 +63,17 @@ export function ConnectionThread({ personA, personB, claimsA, claimsB }: Connect
         {/* Avatar pair + strength */}
         <div className="flex items-center gap-3 mb-4">
           <div className="flex items-center shrink-0">
-            <div className="w-10 h-10 rounded-full bg-[#1C1917] flex items-center justify-center text-sm font-bold text-foreground">
-              {initials(personA.display_name)}
-            </div>
-            <div className="w-10 h-10 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-bold text-foreground -ml-3 border-2 border-border-default">
-              {initials(personB.display_name)}
+            <RiderAvatar person={personA} size="lg" ring />
+            <div className="-ml-3">
+              <RiderAvatar person={personB} size="lg" ring />
             </div>
           </div>
           <div className="min-w-0">
             <div className="text-sm font-semibold text-foreground leading-snug">
               {personA.display_name} + {personB.display_name}
+              {getRiderTier(personB) === "unclaimed" && (
+                <span className="ml-2 text-[10px] font-normal text-blue-400">(unclaimed)</span>
+              )}
             </div>
             <div className="mt-1.5">
               <StrengthBadge strength={summary.strength} score={summary.score} />

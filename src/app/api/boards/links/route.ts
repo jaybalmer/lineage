@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { validateFetchUrl } from "@/lib/url-validation"
 
 /** Extract Open Graph meta tags from HTML without an npm dependency. */
 function parseOG(html: string): { og_title?: string; og_image?: string; og_description?: string } {
@@ -60,7 +61,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid URL" }, { status: 400 })
   }
 
-  // Fetch OG data — best-effort, fall through on any error
+  // Block private/reserved IPs (SSRF protection)
+  const urlCheck = validateFetchUrl(url)
+  if (!urlCheck.valid) {
+    return NextResponse.json({ error: urlCheck.error }, { status: 400 })
+  }
+
+  // Fetch OG data -- best-effort, fall through on any error
   let ogData: ReturnType<typeof parseOG> = {}
   try {
     const res = await fetch(url, {
