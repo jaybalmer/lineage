@@ -134,6 +134,12 @@ import { isAuthUser } from "@/store/lineage-store"
 const isAuth = isAuthUser(activePersonId) // true if UUID, false if "u1"/"dev-*"
 ```
 
+### Supabase verification email
+The default Supabase confirmation email is generic ("Confirm your email"). To customize it for Lineage:
+- **Option A — Supabase email templates**: Go to Supabase dashboard → Auth → Email Templates → "Confirm signup". Update the subject and body to match the community tone.
+- **Option B — Custom SMTP**: Add a custom SMTP provider (Resend is already in the stack) under Auth → SMTP Settings. This enables full HTML email control.
+Neither blocks signup — users land on the email-confirm-pending screen either way.
+
 ---
 
 ## State — Zustand Store
