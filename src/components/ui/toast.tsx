@@ -14,10 +14,10 @@ export function Toasts() {
         <div
           key={toast.id}
           className={[
-            "flex items-start gap-3 rounded-lg px-4 py-3 shadow-lg text-sm",
+            "flex items-start gap-3 rounded-lg px-4 py-3 shadow-lg text-sm border",
             toast.type === "error"
-              ? "bg-red-600 text-white"
-              : "bg-gray-900 text-white",
+              ? "bg-red-950 border-red-800 text-red-200"
+              : "bg-surface border-border-default text-foreground",
           ].join(" ")}
         >
           <span className="flex-1">{toast.message}</span>

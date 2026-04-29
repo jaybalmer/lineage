@@ -10,8 +10,9 @@ export function validateFetchUrl(url: string): { valid: true } | { valid: false;
     return { valid: false, error: "Invalid URL" }
   }
 
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    return { valid: false, error: "Only http and https URLs are allowed" }
+  const allowHttp = process.env.NODE_ENV === "development"
+  if (parsed.protocol !== "https:" && !(allowHttp && parsed.protocol === "http:")) {
+    return { valid: false, error: "Only HTTPS URLs are allowed" }
   }
 
   const hostname = parsed.hostname.toLowerCase()

@@ -38,11 +38,12 @@ export async function requireEditor(): Promise<
   const db = getServiceClient()
   const { data: profile } = await db
     .from("profiles")
-    .select("is_editor")
+    .select("is_editor, membership_tier")
     .eq("id", user.id)
     .single()
 
-  if (!profile?.is_editor) {
+  const isEditor = profile?.is_editor || profile?.membership_tier === "founding"
+  if (!isEditor) {
     return {
       user: null,
       profile: null,
