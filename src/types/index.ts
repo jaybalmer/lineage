@@ -7,7 +7,7 @@ export type CommunityLaunchStatus = "active" | "coming_soon"
 export type NodeStatus = "catalog" | "unclaimed" | "claimed" | "verified"
 export type TagPreference = "notify_approve" | "auto_approve" | "disabled"
 export type VerificationTier = "standard" | "elevated" | "protected"
-export type ClaimRequestStatus = "pending" | "approved" | "declined" | "expired"
+export type ClaimRequestStatus = "pending" | "vouched" | "approved" | "denied" | "expired"
 
 // ─── Community ──────────────────────────────────────────────────────────────
 
@@ -65,6 +65,7 @@ export interface Person {
   claimed_by?: string
   claimed_at?: string
   merged_from_id?: string
+  merged_at?: string | null
   is_notable?: boolean
   is_deceased?: boolean
   invite_email?: string
@@ -291,13 +292,25 @@ export interface TriggerPrefs {
 
 export type CelebrationTier = 1 | 2 | 3 | 4 | 5
 
+export interface CelebrationStat {
+  label: string
+  value: string
+}
+
+export interface CelebrationCta {
+  label: string
+  action: () => void
+}
+
 export interface CelebrationPayload {
   tier: CelebrationTier
   icon?: string
   title: string
   body?: string         // "meaning" — why it matters
-  nextThread?: string   // suggested next action
-  stat?: string         // e.g. "Board #3 in your quiver"
+  nextThread?: string   // suggested next action (plain text)
+  stat?: string         // e.g. "Board #3 in your quiver" (single line)
+  stats?: CelebrationStat[]  // structured stat list (label/value pairs)
+  cta?: CelebrationCta       // actionable button (fires callback + dismisses)
   accentColor?: string  // defaults to gold #B8862A
   autoDismissMs?: number // for Tier 1-2; if omitted, uses tier default
   contentType?: "board" | "event" | "person" | "story" | "welcome" | "milestone"
@@ -340,6 +353,13 @@ export interface Story {
 
 // ─── Claim Requests ─────────────────────────────────────────────────────────
 
+export interface Vouch {
+  voucher_id: string
+  relationship: "rode_with" | "worked_with" | "family" | "other"
+  note: string | null
+  created_at: string
+}
+
 export interface ClaimRequest {
   id: string
   claimant_id: string
@@ -347,12 +367,15 @@ export interface ClaimRequest {
   verification_tier: VerificationTier
   status: ClaimRequestStatus
   vouches_required: number
-  vouches_received: Array<{ voucher_id: string; vouched_at: string; relationship: string }>
+  vouches_received: Vouch[]
   evidence_notes?: string
   editor_notes?: string
   expires_at: string
   created_at: string
   resolved_at?: string
+  resolved_by: string | null
+  status_reason: string | null
+  updated_at: string
 }
 
 // ─── UI-focused composite types ──────────────────────────────────────────────
