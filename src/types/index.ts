@@ -8,6 +8,24 @@ export type NodeStatus = "catalog" | "unclaimed" | "claimed" | "verified"
 export type TagPreference = "notify_approve" | "auto_approve" | "disabled"
 export type VerificationTier = "standard" | "elevated" | "protected"
 export type ClaimRequestStatus = "pending" | "vouched" | "approved" | "denied" | "expired"
+export type PersonRedirectReason = "merged" | "reslugged" | "manual"
+
+// ─── Person redirects (PB-008 Phase 2 Session 1) ────────────────────────────
+
+export interface PersonSlugAlias {
+  alias: string
+  person_id: string
+  reason: PersonRedirectReason
+  created_at: string
+}
+
+export interface PersonRedirectEntry {
+  to_id: string
+  to_slug: string
+  reason: PersonRedirectReason
+}
+
+export type PersonRedirectMap = Record<string, PersonRedirectEntry>
 
 // ─── Community ──────────────────────────────────────────────────────────────
 
