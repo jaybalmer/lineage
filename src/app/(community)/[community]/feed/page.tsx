@@ -213,7 +213,7 @@ export default function FeedPage() {
                   <div key={`story-${entry.story.id}`}>
                     <ContextLine
                       name={authorName}
-                      href={authorName ? `/riders/${nameToSlug(authorName)}` : undefined}
+                      href={authorName ? `/people/${nameToSlug(authorName)}` : undefined}
                       action={action}
                       ago={ago}
                     />
@@ -233,7 +233,7 @@ export default function FeedPage() {
                 <div key={`claim-${entry.claim.id}`}>
                   <ContextLine
                     name={author?.display_name}
-                    href={author ? `/riders/${nameToSlug(author.display_name)}` : undefined}
+                    href={author ? `/people/${nameToSlug(author.display_name)}` : undefined}
                     action={action}
                     ago={ago}
                   />

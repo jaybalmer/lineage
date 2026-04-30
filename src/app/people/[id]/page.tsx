@@ -134,7 +134,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
 
         {/* Breadcrumb */}
         <div className="text-xs text-muted mb-6">
-          <CommunityLink href="/riders" className="hover:text-foreground">Riders</CommunityLink>
+          <Link href="/people" className="hover:text-foreground">Riders</Link>
           <span className="mx-2">/</span>
           <span className="text-muted">{person.display_name}</span>
         </div>

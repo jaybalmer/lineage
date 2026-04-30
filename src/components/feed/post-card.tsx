@@ -348,7 +348,7 @@ function EntityBlock({ claim, entityName, isOwn }: EntityBlockProps) {
     : board  ? `/boards/${boardSlug(board)}`
     : org    ? `/brands/${orgSlug(org)}`
     : event  ? `/events/${eventSlug(event)}`
-    : person ? `/riders/${id}`
+    : person ? `/people/${id}`
     : "#"
 
   // Auto-fetch board image via search API (hook always called; returns null for non-boards)
@@ -536,7 +536,7 @@ function CompanionAvatars({ claim }: { claim: Claim }) {
           const initials = (person?.display_name ?? "?")[0].toUpperCase()
           const name = person?.display_name ?? "Rider"
           return (
-            <CommunityLink key={pid} href={`/riders/${pid}`} title={name}>
+            <CommunityLink key={pid} href={`/people/${pid}`} title={name}>
               <div className="w-6 h-6 rounded-full bg-violet-700 border border-violet-600 flex items-center justify-center text-[9px] font-bold text-white hover:bg-violet-500 transition-colors">
                 {initials}
               </div>

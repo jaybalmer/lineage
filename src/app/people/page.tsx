@@ -52,16 +52,17 @@ const SECTION_LABELS: Record<RiderKind, string> = {
 
 // ── RiderRow ─────────────────────────────────────────────────────────────────
 
-function RiderRow({ person, isMe, onInvite, claims }: {
+function RiderRow({ person, isMe, onInvite, claims, activeCommunitySlug }: {
   person: Person
   isMe: boolean
   onInvite?: (p: Person) => void
   claims: import("@/types").Claim[]
+  activeCommunitySlug: string
 }) {
   const claimCount = claims.filter((c) => c.subject_id === person.id).length
   const placeCount = claims.filter((c) => c.subject_id === person.id && c.predicate === "rode_at").length
   const homeResort = person.home_resort_id ? getPlaceById(person.home_resort_id) : null
-  const href = isMe ? "/profile" : `/riders/${person.id}`
+  const href = isMe ? `/${activeCommunitySlug}/profile` : `/people/${person.id}`
   const addedByPerson = person.added_by ? getPersonById(person.added_by) : null
   const kind = getRiderKind(person)
   const meta = KIND_META[kind]
@@ -164,19 +165,24 @@ function SectionHeader({ label, count, color }: { label: string; count: number; 
 function RidersPageInner() {
   const searchParams = useSearchParams()
   const yearParam = searchParams.get("year")
-  const { activePersonId, userEntities, catalog } = useLineageStore()
+  const { activePersonId, userEntities, catalog, activeCommunitySlug } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState<SortTab>(yearParam ? "origin" : "all")
   const [myOnly, setMyOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [invitePerson, setInvitePerson] = useState<Person | null>(null)
+  // ?community=all opts out of the community filter and shows the global directory.
+  const showAllCommunities = searchParams.get("community") === "all"
 
-  // catalog.people already merges the people table + registered profiles
-  const allPeople = useMemo(
-    () => [...catalog.people, ...(userEntities.people ?? [])],
-    [catalog.people, userEntities.people]
-  )
+  // catalog.people already merges the people table + registered profiles.
+  // Filter to active community by default; pass-through when community_slugs is unpopulated
+  // so the page degrades gracefully for entities that haven't been backfilled yet.
+  const allPeople = useMemo(() => {
+    const merged = [...catalog.people, ...(userEntities.people ?? [])]
+    if (showAllCommunities || !activeCommunitySlug) return merged
+    return merged.filter((p) => !p.community_slugs?.length || p.community_slugs.includes(activeCommunitySlug))
+  }, [catalog.people, userEntities.people, activeCommunitySlug, showAllCommunities])
 
   const allClaims = catalog.claims
 
@@ -353,7 +359,7 @@ function RidersPageInner() {
         ) : result.type === "flat" ? (
           <div className="space-y-2">
             {result.items.map((person) => (
-              <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} claims={allClaims} />
+              <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} claims={allClaims} activeCommunitySlug={activeCommunitySlug} />
             ))}
           </div>
         ) : result.type === "kind-grouped" ? (
@@ -363,7 +369,7 @@ function RidersPageInner() {
                 <SectionHeader label={label} count={items.length} color={KIND_META[kind].color} />
                 <div className="space-y-2">
                   {items.map((person) => (
-                    <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} claims={allClaims} />
+                    <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} claims={allClaims} activeCommunitySlug={activeCommunitySlug} />
                   ))}
                 </div>
               </div>
@@ -376,7 +382,7 @@ function RidersPageInner() {
                 <SectionHeader label={label} count={items.length} color="#52525b" />
                 <div className="space-y-2">
                   {items.map((person) => (
-                    <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} claims={allClaims} />
+                    <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} claims={allClaims} activeCommunitySlug={activeCommunitySlug} />
                   ))}
                 </div>
               </div>

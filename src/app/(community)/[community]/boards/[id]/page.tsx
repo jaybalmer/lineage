@@ -65,7 +65,7 @@ function StoryCard({ story, authorName, isOwn, onDelete }: {
       <p className="text-sm text-foreground leading-relaxed">{story.story_text}</p>
       <div className="flex items-center justify-between mt-3">
         <div className="flex items-center gap-2 text-xs text-muted">
-          <CommunityLink href={`/riders/${story.user_id}`} className="hover:text-foreground transition-colors font-medium">
+          <CommunityLink href={`/people/${story.user_id}`} className="hover:text-foreground transition-colors font-medium">
             {authorName}
           </CommunityLink>
           {story.year_ridden && <span>· {story.year_ridden}</span>}
@@ -620,7 +620,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                     if (!person) return null
                     const claim = ownedClaims.find((c) => c.subject_id === rid)
                     return (
-                      <CommunityLink key={rid} href={`/riders/${rid}`}>
+                      <CommunityLink key={rid} href={`/people/${rid}`}>
                         <div className="flex items-center gap-3 px-4 py-3 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all group">
                           <div className="w-9 h-9 rounded-full bg-[#1C1917] flex items-center justify-center text-sm font-bold text-foreground shrink-0">
                             {initials(person.display_name)}

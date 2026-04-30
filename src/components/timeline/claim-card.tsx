@@ -24,7 +24,7 @@ const ENTITY_DOT_COLOR: Record<string, string> = {
 
 function entityHref(id: string, type: string) {
   if (type === "place") return `/places/${id}`
-  if (type === "person") return `/riders/${id}`
+  if (type === "person") return `/people/${id}`
   if (type === "org") return `/orgs/${id}`
   if (type === "board") return `/boards/${id}`
   if (type === "event") return `/events/${id}`

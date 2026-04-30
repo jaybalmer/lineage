@@ -24,13 +24,13 @@ const PRIMARY_NAV_PATHS = [
   { path: "/collective",  label: "Collective" },
 ]
 
-const SECONDARY_NAV_PATHS = [
-  { path: "/riders",  label: "Riders" },
-  { path: "/events",  label: "Events" },
-  { path: "/boards",  label: "Boards" },
-  { path: "/brands",  label: "Brands" },
-  { path: "/places",  label: "Places" },
-  { path: "/stories", label: "Stories" },
+const SECONDARY_NAV_PATHS: { path: string; label: string; community: boolean }[] = [
+  { path: "/people",  label: "Riders",  community: false },
+  { path: "/events",  label: "Events",  community: true  },
+  { path: "/boards",  label: "Boards",  community: true  },
+  { path: "/brands",  label: "Brands",  community: true  },
+  { path: "/places",  label: "Places",  community: true  },
+  { path: "/stories", label: "Stories", community: true  },
 ]
 
 /** Check if pathname matches a nav link (accounting for community prefix) */
@@ -190,7 +190,7 @@ function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug, communit
   /** Prefix a path with the community slug */
   const c = (basePath: string) => `/${communitySlug}${basePath}`
 
-  /** Are we inside a community route? (e.g. /snowboarding/riders) */
+  /** Are we inside a community route? (e.g. /snowboarding/feed) */
   const inCommunity = path.startsWith(`/${communitySlug}/`)
   /** Are we on the root landing page? */
   const isLanding = path === "/"
@@ -251,10 +251,10 @@ function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug, communit
 
       {/* Row 3: context-dependent — community nodes OR community list */}
       <div className="flex items-center px-4 gap-1 overflow-x-auto border-t border-white/10 py-1.5 scrollbar-none">
-        {(inCommunity || path === `/${communitySlug}`) ? (
+        {(inCommunity || path === `/${communitySlug}` || path.startsWith("/people")) ? (
           /* Inside a community: show entity nav (Riders, Events, ...) */
-          SECONDARY_NAV_PATHS.map(({ path: navPath, label }) => {
-            const href = c(navPath)
+          SECONDARY_NAV_PATHS.map(({ path: navPath, label, community }) => {
+            const href = community ? c(navPath) : navPath
             return (
               <Link key={navPath} href={href} className={cn(
                 "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",

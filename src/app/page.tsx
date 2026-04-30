@@ -57,7 +57,7 @@ const FEATURES = [
 export default function Home() {
   const { activePersonId, communities: storeCommunities } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
-  const [browseHref, setBrowseHref] = useState<string>("/riders")
+  const [browseHref, setBrowseHref] = useState<string>("/people")
 
   // Use store communities if loaded, otherwise fallback
   const communities = storeCommunities.length > 0
@@ -83,9 +83,9 @@ export default function Home() {
           .eq("id", topId)
           .single()
         if (profile?.display_name) {
-          setBrowseHref(`/riders/${nameToSlug(profile.display_name)}`)
+          setBrowseHref(`/people/${nameToSlug(profile.display_name)}`)
         } else {
-          setBrowseHref(`/riders/${topId}`)
+          setBrowseHref(`/people/${topId}`)
         }
       })
   }, [])

@@ -605,6 +605,6 @@ export function getEntityHref(id: string, type: EntityType): string {
     const event = getEventById(id)
     return event ? `/events/${eventSlug(event)}` : `/events/${id}`
   }
-  if (type === "person") return `/riders/${id}`
+  if (type === "person") return `/people/${id}`
   return "#"
 }

@@ -50,7 +50,7 @@ function ActivityItem({ person, text, time }: { person: Person | null; text: str
   return (
     <div className="flex items-start gap-3 py-3 border-b border-border-default/50 last:border-0">
       {person && (
-        <CommunityLink href={`/riders/${nameToSlug(person.display_name)}`} className="flex-shrink-0">
+        <CommunityLink href={`/people/${nameToSlug(person.display_name)}`} className="flex-shrink-0">
           <RiderAvatar person={person} size="sm" />
         </CommunityLink>
       )}
@@ -84,11 +84,11 @@ function ConnectionPair({
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-sm text-foreground">
-          <CommunityLink href={`/riders/${nameToSlug(personA.display_name)}`} className="font-medium hover:text-blue-400 transition-colors">
+          <CommunityLink href={`/people/${nameToSlug(personA.display_name)}`} className="font-medium hover:text-blue-400 transition-colors">
             {personA.display_name}
           </CommunityLink>
           {" & "}
-          <CommunityLink href={`/riders/${nameToSlug(personB.display_name)}`} className="font-medium hover:text-blue-400 transition-colors">
+          <CommunityLink href={`/people/${nameToSlug(personB.display_name)}`} className="font-medium hover:text-blue-400 transition-colors">
             {personB.display_name}
           </CommunityLink>
         </div>
@@ -242,7 +242,7 @@ export default function CommunityHome() {
         {/* Stats grid */}
         {stats && (
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-8">
-            <StatCard label="Riders" value={stats.riders} href="/riders" />
+            <StatCard label="Riders" value={stats.riders} href="/people" />
             <StatCard label="Places" value={stats.places} href="/places" />
             <StatCard label="Events" value={stats.events} href="/events" />
             <StatCard label="Boards" value={stats.boards} href="/boards" />

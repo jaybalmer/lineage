@@ -64,7 +64,7 @@ export function DayCard({ day, isOwn }: { day: RidingDay; isOwn?: boolean }) {
                 {riders.map((r, i) => (
                   <span key={r.id}>
                     <CommunityLink
-                      href={`/riders/${r.id}`}
+                      href={`/people/${r.id}`}
                       className="text-[11px] text-muted hover:text-foreground transition-colors"
                     >
                       {r.display_name}

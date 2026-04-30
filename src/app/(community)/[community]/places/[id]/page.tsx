@@ -512,7 +512,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                           const rider = catalog.people.find((p) => p.id === item.riderId)
                           if (!rider) return null
                           return (
-                            <CommunityLink key={`rider-${item.riderId}-${i}`} href={`/riders/${item.riderId}`}>
+                            <CommunityLink key={`rider-${item.riderId}-${i}`} href={`/people/${item.riderId}`}>
                               <div className="flex items-center gap-3 px-4 py-3 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all">
                                 <RiderAvatar person={rider} size="md" ring={!!(rider.membership_tier && rider.membership_tier !== "free")} />
                                 <div className="flex-1 min-w-0">
@@ -578,7 +578,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                         if (!rider) return null
                         const claim = rideClaims.find((c) => c.subject_id === riderId)
                         return (
-                          <CommunityLink key={riderId} href={`/riders/${riderId}`}>
+                          <CommunityLink key={riderId} href={`/people/${riderId}`}>
                             <div className="flex items-center gap-2 p-2.5 bg-surface border border-border-default rounded-lg hover:border-border-default transition-all">
                               <RiderAvatar person={rider} size="sm" />
                               <div className="min-w-0">
@@ -726,7 +726,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                   if (!person) return null
                   const claim = workClaims.find((c) => c.subject_id === sid)
                   return (
-                    <CommunityLink key={sid} href={`/riders/${sid}`}>
+                    <CommunityLink key={sid} href={`/people/${sid}`}>
                       <div className="flex items-center gap-2 py-2 hover:text-blue-300 transition-colors">
                         <RiderAvatar person={person} size="sm" />
                         <div>

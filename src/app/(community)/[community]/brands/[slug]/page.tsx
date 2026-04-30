@@ -677,12 +677,12 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                           const confColor = CONFIDENCE_COLORS[item.claim.confidence] ?? "text-muted"
                           return (
                             <div key={item.claim.id} className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all">
-                              <CommunityLink href={`/riders/${person.id}`} className="shrink-0">
+                              <CommunityLink href={`/people/${person.id}`} className="shrink-0">
                                 <RiderAvatar person={person} size="md" ring={!!(person.membership_tier && person.membership_tier !== "free")} />
                               </CommunityLink>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-baseline gap-2 flex-wrap">
-                                  <CommunityLink href={`/riders/${person.id}`} className="text-sm font-medium text-foreground hover:text-blue-300 transition-colors">
+                                  <CommunityLink href={`/people/${person.id}`} className="text-sm font-medium text-foreground hover:text-blue-300 transition-colors">
                                     {person.display_name}
                                   </CommunityLink>
                                   <span className="text-xs text-muted">{relLabel}</span>
@@ -814,12 +814,12 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                   const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-muted"
                   return (
                     <div key={claim.id} className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all">
-                      <CommunityLink href={`/riders/${person.id}`} className="shrink-0">
+                      <CommunityLink href={`/people/${person.id}`} className="shrink-0">
                         <RiderAvatar person={person} size="md" ring={!!(person.membership_tier && person.membership_tier !== "free")} />
                       </CommunityLink>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 flex-wrap">
-                          <CommunityLink href={`/riders/${person.id}`} className="text-sm font-medium text-foreground hover:text-blue-300 transition-colors">
+                          <CommunityLink href={`/people/${person.id}`} className="text-sm font-medium text-foreground hover:text-blue-300 transition-colors">
                             {person.display_name}
                           </CommunityLink>
                           <span className="text-xs text-muted">{relLabel}</span>
@@ -1092,7 +1092,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                     const person = catalog.people.find((p) => p.id === rid)
                     if (!person) return null
                     return (
-                      <CommunityLink key={rid} href={`/riders/${rid}`}>
+                      <CommunityLink key={rid} href={`/people/${rid}`}>
                         <div className="flex items-center gap-1 px-2 py-1 bg-background border border-border-default rounded-full text-xs text-muted hover:text-foreground hover:border-border-default transition-all">
                           <RiderAvatar person={person} size="xs" />
                           {person.display_name.split(" ")[0]}

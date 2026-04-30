@@ -245,7 +245,7 @@ export function RiderCard({
   const name     = person.display_name ?? "Rider"
   const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
   const shareUrl = typeof window !== "undefined"
-    ? (userId ? `${window.location.origin}/riders/${userId}` : window.location.href)
+    ? (userId ? `${window.location.origin}/people/${userId}` : window.location.href)
     : ""
 
   const grad = `linear-gradient(170deg, ${t.grad[0]} 0%, ${t.grad[1]} 55%, ${t.grad[2]} 100%)`

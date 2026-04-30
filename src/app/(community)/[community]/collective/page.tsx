@@ -25,7 +25,7 @@ interface DataPoint {
 // ─── Type definitions (symbols + labels + hrefs) ──────────────────────────────
 
 const TYPE: Record<CollectiveType, { symbol: string; label: string; href: string }> = {
-  rider: { symbol: "●",  label: "Riders",  href: "/riders" },
+  rider: { symbol: "●",  label: "Riders",  href: "/people" },
   event: { symbol: "◈",  label: "Events",  href: "/events" },
   board: { symbol: "◆",  label: "Boards",  href: "/boards" },
   brand: { symbol: "◎",  label: "Brands",  href: "/brands" },

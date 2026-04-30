@@ -20,11 +20,14 @@ export function getCommunityBySlug(slug: string, communities: Community[]): Comm
 /**
  * Prefix a path with the active community slug.
  *
- * communityHref("/riders/brad-holmes", "snowboarding")
- *   → "/snowboarding/riders/brad-holmes"
+ * communityHref("/feed", "snowboarding")
+ *   → "/snowboarding/feed"
  *
- * communityHref("/riders", undefined)
- *   → "/snowboarding/riders"  (falls back to default)
+ * communityHref("/events", undefined)
+ *   → "/snowboarding/events"  (falls back to default)
+ *
+ * Note: top-level routes like /people/[id] are not community-scoped and should
+ * not be passed to this helper.
  */
 export function communityHref(path: string, communitySlug?: string): string {
   const slug = communitySlug || DEFAULT_COMMUNITY_SLUG

@@ -109,7 +109,7 @@ export default function FoundingPage() {
           ) : filled > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
               {members.map((m) => (
-                <CommunityLink key={m.id} href={`/riders/${m.id}`}
+                <CommunityLink key={m.id} href={`/people/${m.id}`}
                   className="block bg-surface border border-border-default rounded-xl p-4 hover:border-amber-800/60 transition-all"
                   style={{ borderTop: "2px solid #f59e0b" }}>
                   {/* Avatar */}

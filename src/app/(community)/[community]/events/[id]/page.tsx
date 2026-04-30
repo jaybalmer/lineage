@@ -82,7 +82,7 @@ function AttendeeList({ eventId }: { eventId: string }) {
           role="link"
           onClick={(e) => {
             if (isConfirming) return
-            e.preventDefault(); e.stopPropagation(); window.location.href = `/riders/${claim.subject_id}`
+            e.preventDefault(); e.stopPropagation(); window.location.href = `/people/${claim.subject_id}`
           }}
           className="flex items-center gap-2 px-3 py-2 bg-surface border border-border-default rounded-xl hover:border-blue-500/40 transition-all group cursor-pointer"
         >

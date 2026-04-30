@@ -248,7 +248,7 @@ function SideBySideTimeline({
               {initials(p.display_name)}
             </div>
             <CommunityLink
-              href={`/riders/${p.id}`}
+              href={`/people/${p.id}`}
               className="text-sm font-semibold text-foreground hover:text-blue-300 transition-colors truncate"
             >
               {p.display_name}
