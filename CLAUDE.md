@@ -8,7 +8,7 @@ A living, community-authored snowboarding history graph. People log their timeli
 
 | Layer | Tech |
 |---|---|
-| Framework | Next.js 15 (App Router) |
+| Framework | Next.js 16 (App Router, Turbopack) |
 | Language | TypeScript (strict) |
 | Styling | Tailwind CSS v4 — no config file, uses `@theme inline` in globals.css |
 | State | Zustand 5 with `persist` middleware |
@@ -131,7 +131,7 @@ Pagination uses `.range(offset, offset + limit - 1)` — not `.limit()`.
 
 - **Passwordless magic link** via Supabase Auth → `POST /api/auth/magic-link`
 - Callback: `/auth/callback` → `/auth/complete` (profile creation)
-- Session refresh on every request via `middleware.ts`
+- Session refresh on every request via `src/proxy.ts` (Next 16's `proxy` file convention; replaces the old `middleware.ts`. Lives next to `src/app/`, NOT at the project root. The exported function is `proxy`, not `middleware`.)
 - **Only `/timeline/*` is protected** — all browse pages stay public
 
 ### Distinguish auth users from mock/demo users
@@ -244,7 +244,7 @@ import { StoryCard as RichStoryCard } from "@/components/feed/story-card"
 | `/profile` | Personal timeline — FeedView with `order` toggle, "Add Story" button |
 | `/feed` | Community activity stream — stories + claims, filter chips, context lines |
 | `/collective` | Community-wide FeedView |
-| `/riders/[id]` | Public profile page |
+| `/people/[id]` | Public person profile (top-level, global; was `/[community]/riders/[id]` pre-PB-008-Phase-2). The proxy redirects every legacy shape: `/[community]/riders/[id]`, `/riders/[id]`, and stale slugs from `person_slug_aliases` or `merged_from_id`. The list page at `/people` filters to the active community by default; `?community=all` shows the global directory. |
 | `/events/[id]` | Event page — Stories tab added |
 | `/places/[id]` | Place page — Stories tab added |
 | `/boards/[id]` | Board page — Rich Stories section added |
