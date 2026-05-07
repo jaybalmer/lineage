@@ -48,10 +48,11 @@ function parseAction(body: unknown): Action | null {
 //     Session 3's merge handler so all people-level state changes go through
 //     a single auditable path (merge_log).
 //   - On approve: writes any required person_slug_aliases rows mirroring
-//     Session 1 conventions, then revalidateTag("person-redirects") so the
-//     middleware sees the new aliases on the next request. (revalidateTag is
-//     the canonical Route Handler API in Next 16; updateTag is Server-Action-
-//     only and throws here.)
+//     Session 1 conventions, then revalidateTag("person-redirects", { expire: 0 })
+//     so middleware sees the new aliases on the very next request. Next 16
+//     deprecated the single-arg form; { expire: 0 } is the immediate-expiry
+//     pattern the docs recommend for "external trigger, refresh now" cases.
+//     updateTag would be the Server-Action-only equivalent.
 //   - Emails the claimant on approve / deny.
 export async function PATCH(
   req: NextRequest,
@@ -172,7 +173,7 @@ export async function PATCH(
     } catch (err) {
       console.error("[admin claim PATCH] alias write failed:", err)
     }
-    revalidateTag("person-redirects")
+    revalidateTag("person-redirects", { expire: 0 })
   }
 
   // ── Email claimant + track ──
