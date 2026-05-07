@@ -1,29 +1,46 @@
 "use client"
 
-import { useEffect, useRef, useCallback } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 
 // ─── Era mapping ──────────────────────────────────────────────────────────────
 
 type Era = { label: string; tagline: string }
 
+const ERA_DEFS: { maxYear: number; label: string; taglines: string[] }[] = [
+  { maxYear: 1989, label: "the Pioneer Era", taglines: [
+    "You were riding before most resorts even allowed it.",
+    "You were riding before snowboarding had rules. You helped write them.",
+    "The mountains weren't ready for you yet. You went anyway.",
+  ]},
+  { maxYear: 1997, label: "the Boom Era", taglines: [
+    "You were part of the wave that made snowboarding legit.",
+    "Burton ads in every magazine. Halfpipes going Olympic. You were in the middle of it.",
+    "The sport exploded in the 90s and you were already strapped in.",
+  ]},
+  { maxYear: 2006, label: "the Golden Age", taglines: [
+    "You grew up in the golden age. Forum, Robot Food, Kingpin.",
+    "Park laps, video premieres, crew trips. The culture peaked and you were in it.",
+    "The golden age of snowboarding shaped a generation. Yours.",
+  ]},
+  { maxYear: 2015, label: "the Evolution Era", taglines: [
+    "You watched the culture shift from park to pow.",
+    "Backcountry, splitboards, and a new definition of style. You rode through the evolution.",
+    "The sport grew up in the 2010s. So did the riders who stuck with it.",
+  ]},
+  { maxYear: Infinity, label: "the Modern Era", taglines: [
+    "You're riding in the most connected era ever.",
+    "Social media, global crews, and endless terrain. The modern era is yours.",
+    "More access, more progression, more ways to ride. You're writing the next chapter.",
+  ]},
+]
+
 function getEra(ridingSince?: number): Era | null {
   if (!ridingSince) return null
-  if (ridingSince < 1990) return {
-    label: "the Pioneer Era",
-    tagline: "You were riding before snowboarding had rules. You helped write them.",
-  }
-  if (ridingSince < 2000) return {
-    label: "the Golden Era",
-    tagline: "The 90s shaped everything that came after. You were there.",
-  }
-  if (ridingSince < 2010) return {
-    label: "the Progression Era",
-    tagline: "Parks, video parts, and a global scene. You came up in the best decade.",
-  }
+  const def = ERA_DEFS.find(d => ridingSince <= d.maxYear) ?? ERA_DEFS[ERA_DEFS.length - 1]
   return {
-    label: "the Modern Era",
-    tagline: "The sport is bigger and wilder than ever. You're part of its next chapter.",
+    label: def.label,
+    tagline: def.taglines[Math.floor(Math.random() * def.taglines.length)],
   }
 }
 
@@ -121,16 +138,37 @@ function spawnWelcomeBurst(container: HTMLDivElement) {
 export function WelcomeExplosion() {
   const {
     showWelcomeCelebration, setShowWelcomeCelebration,
-    profileOverride, membership, triggerPrefs, setTriggerPrefs,
+    profileOverride, activePersonId, membership, setTriggerPrefs,
   } = useLineageStore()
 
   const burstRef      = useRef<HTMLDivElement>(null)
   const reducedMotion = useRef(false)
+  const eraRef        = useRef<Era | null>(null)
+
+  // Fetch member_number from stats API (loads during beat 1-2 gap)
+  const [memberNumber, setMemberNumber] = useState<number | null>(null)
 
   useEffect(() => {
     injectStyles()
     reducedMotion.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches
   }, [])
+
+  // Stabilize era on first render so random tagline doesn't change
+  if (eraRef.current === null && profileOverride.riding_since) {
+    eraRef.current = getEra(profileOverride.riding_since)
+  }
+
+  useEffect(() => {
+    if (!showWelcomeCelebration || !activePersonId) return
+    let cancelled = false
+    fetch(`/api/stats/user?userId=${activePersonId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!cancelled && data?.member_number) setMemberNumber(data.member_number)
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+  }, [showWelcomeCelebration, activePersonId])
 
   useEffect(() => {
     if (!showWelcomeCelebration) return
@@ -157,17 +195,36 @@ export function WelcomeExplosion() {
 
   if (!showWelcomeCelebration) return null
 
-  const displayName   = profileOverride.display_name ?? "Rider"
   const ridingSince   = profileOverride.riding_since
-  const era           = getEra(ridingSince)
-  const ridingText    = getRidingYearsText(ridingSince)
+  const era           = eraRef.current
+  const yearsRiding   = ridingSince ? new Date().getFullYear() - ridingSince : null
   const foundingNum   = membership.founding_member_number
   const isFounding    = membership.tier === "founding"
 
-  // Member number line
+  // Build stats line for Beat 3
   const memberLine = isFounding && foundingNum
-    ? `You're founding member #${String(foundingNum).padStart(3, "0")} of 500.`
+    ? `Founding member #${String(foundingNum).padStart(3, "0")}`
+    : memberNumber
+      ? `Member #${memberNumber}`
+      : null
+
+  const yearsLine = yearsRiding && yearsRiding >= 2 && ridingSince
+    ? `Riding since ${ridingSince} -- that's ${yearsRiding} years.`
     : null
+
+  // Animation helper: returns style props for a beat at a given delay
+  const rm = reducedMotion.current
+  const beat = (delaySec: number) => ({
+    animation: rm ? undefined : `weFadeUp 0.5s ease ${delaySec}s both`,
+    opacity:   rm ? 1 : 0,
+  })
+
+  // Beat timing: ~1.5s between beats
+  const B1 = 0.3   // "You're in."
+  const B2 = 1.8   // "Welcome to..."
+  const B3 = 3.3   // Stats block
+  const B4 = 4.8   // "Your history matters."
+  const BC = 6.0   // CTA buttons
 
   return (
     <div
@@ -191,145 +248,111 @@ export function WelcomeExplosion() {
       <div style={{
         position:    "absolute", inset: 0, pointerEvents: "none",
         background:  "radial-gradient(ellipse 60% 50% at 50% 35%, #B8862A14 0%, transparent 70%)",
-        animation:   reducedMotion.current ? undefined : "weBgPulse 3s ease-in-out infinite",
+        animation:   rm ? undefined : "weBgPulse 3s ease-in-out infinite",
       }} />
 
       {/* Content */}
-      <div
-        className="we-hero"
-        style={{
-          position:  "relative",
-          zIndex:    1,
-          textAlign: "center",
-          maxWidth:  480,
-          animation: reducedMotion.current ? undefined : "weHeroIn 0.6s cubic-bezier(0.34,1.56,0.64,1) 0.2s both",
-          opacity:   reducedMotion.current ? 1 : 0,
-        }}
-      >
-        {/* Hex icon */}
-        <div style={{
-          fontSize:     48,
-          marginBottom: 8,
-          color:        "#B8862A",
-          animation:    reducedMotion.current ? undefined : "weHexSpin 8s linear infinite",
-          display:      "inline-block",
-        }}>
-          ⬡
+      <div style={{ position: "relative", zIndex: 1, textAlign: "center", maxWidth: 480 }}>
+
+        {/* ── Beat 1: "You're in." ── */}
+        <div className="we-hero" style={beat(B1)}>
+          <div style={{
+            fontSize: 48, marginBottom: 16, color: "#B8862A",
+            animation: rm ? undefined : "weHexSpin 8s linear infinite",
+            display: "inline-block",
+          }}>
+            ⬡
+          </div>
+          <h1 style={{
+            margin: 0, fontSize: 36, fontWeight: 800,
+            color: "#F5F2EE", letterSpacing: "-0.02em", lineHeight: 1.1,
+          }}>
+            You're in.
+          </h1>
         </div>
 
-        {/* Welcome */}
-        <p style={{ margin: "0 0 4px", fontSize: 12, letterSpacing: "0.18em", textTransform: "uppercase", color: "#78716C", fontFamily: "'IBM Plex Mono', monospace" }}>
-          Welcome to
+        {/* ── Beat 2: "Welcome to..." ── */}
+        <p className="we-body" style={{
+          margin: "28px 0 0", fontSize: 16, color: "#A8A29E",
+          lineHeight: 1.6, fontWeight: 400,
+          ...beat(B2),
+        }}>
+          Welcome to the modern history vault of snowboarding.
         </p>
-        <h1 style={{ margin: "0 0 20px", fontSize: 30, fontWeight: 800, color: "#F5F2EE", letterSpacing: "-0.01em", lineHeight: 1.15 }}>
-          The Snowboard Community
-        </h1>
 
-        {/* Member number */}
-        {memberLine && (
-          <p className="we-body" style={{
-            margin:      "0 0 16px",
-            fontSize:    13,
-            color:       "#B8862A",
-            fontFamily:  "'IBM Plex Mono', monospace",
-            animation:   reducedMotion.current ? undefined : "weFadeUp 0.4s ease 0.6s both",
-            opacity:     reducedMotion.current ? 1 : 0,
-          }}>
-            {memberLine}
-          </p>
-        )}
-
-        {/* Riding years + era */}
-        {(ridingText || era) && (
+        {/* ── Beat 3: Stats block ── */}
+        {(memberLine || yearsLine || era) && (
           <div className="we-body" style={{
-            margin:      "0 0 20px",
-            padding:     "14px 18px",
-            background:  "#B8862A12",
-            border:      "1px solid #B8862A30",
-            borderRadius: 10,
-            animation:   reducedMotion.current ? undefined : "weFadeUp 0.4s ease 0.75s both",
-            opacity:     reducedMotion.current ? 1 : 0,
+            margin: "28px auto 0", maxWidth: 380,
+            padding: "16px 20px",
+            background: "#B8862A0F",
+            border: "1px solid #B8862A30",
+            borderRadius: 12,
+            ...beat(B3),
           }}>
-            {ridingText && (
-              <p style={{ margin: "0 0 4px", fontSize: 16, fontWeight: 700, color: "#F5DFA0" }}>
-                {ridingText}
+            {memberLine && (
+              <p style={{
+                margin: "0 0 8px", fontSize: 13, fontWeight: 600,
+                color: "#B8862A", fontFamily: "'IBM Plex Mono', monospace",
+                letterSpacing: "0.04em",
+              }}>
+                {memberLine}
+              </p>
+            )}
+            {yearsLine && (
+              <p style={{
+                margin: "0 0 6px", fontSize: 15, fontWeight: 600,
+                color: "#F5DFA0", lineHeight: 1.4,
+              }}>
+                {yearsLine}
               </p>
             )}
             {era && (
-              <>
-                <p style={{ margin: "0 0 4px", fontSize: 12, color: "#B8862A", letterSpacing: "0.08em", textTransform: "uppercase", fontFamily: "'IBM Plex Mono', monospace" }}>
-                  {era.label}
-                </p>
-                <p style={{ margin: 0, fontSize: 13, color: "#A8A29E", lineHeight: 1.55 }}>
-                  {era.tagline}
-                </p>
-              </>
+              <p style={{
+                margin: 0, fontSize: 13, color: "#A8A29E", lineHeight: 1.55,
+              }}>
+                {era.tagline}
+              </p>
             )}
           </div>
         )}
 
-        {/* Core message */}
+        {/* ── Beat 4: "Your history matters." ── */}
         <p className="we-body" style={{
-          margin:    "0 0 8px",
-          fontSize:  15,
-          color:     "#F5F2EE",
-          lineHeight: 1.65,
-          fontWeight: 500,
-          animation: reducedMotion.current ? undefined : "weFadeUp 0.4s ease 0.9s both",
-          opacity:   reducedMotion.current ? 1 : 0,
+          margin: "28px 0 0", fontSize: 17, fontWeight: 600,
+          color: "#F5F2EE", lineHeight: 1.5,
+          ...beat(B4),
         }}>
-          Your history is part of the permanent record now{displayName !== "Rider" ? `, ${displayName.split(" ")[0]}` : ""}.
-        </p>
-        <p className="we-body" style={{
-          margin:    "0 0 28px",
-          fontSize:  13,
-          color:     "#78716C",
-          lineHeight: 1.6,
-          animation: reducedMotion.current ? undefined : "weFadeUp 0.4s ease 1s both",
-          opacity:   reducedMotion.current ? 1 : 0,
-        }}>
-          Start building your timeline — boards, events, crew, stories. Every entry makes the collective history more complete.
+          Your history matters. Let's build it.
         </p>
 
-        {/* CTA */}
+        {/* ── CTA ── */}
         <div className="we-acts" style={{
-          display:   "flex",
-          gap:       10,
-          animation: reducedMotion.current ? undefined : "weFadeUp 0.4s ease 1.1s both",
-          opacity:   reducedMotion.current ? 1 : 0,
+          marginTop: 28, display: "flex", gap: 10,
+          ...beat(BC),
         }}>
           <button
             onClick={handleDismiss}
             style={{
-              flex:         1,
-              padding:      "12px 0",
-              borderRadius: 10,
-              fontSize:     14,
-              fontWeight:   700,
-              cursor:       "pointer",
-              border:       "none",
-              background:   "#B8862A",
-              color:        "#1C1917",
-              transition:   "opacity .15s",
+              flex: 1, padding: "13px 0", borderRadius: 10,
+              fontSize: 14, fontWeight: 700, cursor: "pointer",
+              border: "none", background: "#B8862A", color: "#1C1917",
+              transition: "opacity .15s",
             }}
             onMouseEnter={(e) => { (e.target as HTMLElement).style.opacity = "0.85" }}
             onMouseLeave={(e) => { (e.target as HTMLElement).style.opacity = "1" }}
           >
-            Build my timeline
+            See Your Timeline
           </button>
           <button
             onClick={handleDismiss}
             style={{
-              flex:         "0 0 auto",
-              padding:      "12px 16px",
-              borderRadius: 10,
-              fontSize:     13,
-              fontWeight:   500,
-              cursor:       "pointer",
-              background:   "rgba(255,255,255,0.07)",
-              border:       "1px solid rgba(255,255,255,0.12)",
-              color:        "rgba(255,255,255,0.6)",
-              transition:   "opacity .15s",
+              flex: "0 0 auto", padding: "13px 16px", borderRadius: 10,
+              fontSize: 13, fontWeight: 500, cursor: "pointer",
+              background: "rgba(255,255,255,0.07)",
+              border: "1px solid rgba(255,255,255,0.12)",
+              color: "rgba(255,255,255,0.6)",
+              transition: "opacity .15s",
             }}
           >
             Skip

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useCallback } from "react"
 import { useLineageStore } from "@/store/lineage-store"
-import type { CelebrationPayload, CelebrationTier } from "@/types"
+import type { CelebrationPayload, CelebrationTier, CelebrationCta } from "@/types"
 
 // ─── CSS keyframes injected once ─────────────────────────────────────────────
 
@@ -165,6 +165,15 @@ function CelebrationToast({ payload, onDismiss }: {
             {payload.stat}
           </p>
         )}
+        {payload.stats && payload.stats.length > 0 && (
+          <div style={{ margin: "6px 0 0", display: "flex", flexDirection: "column", gap: 2 }}>
+            {payload.stats.map((s, i) => (
+              <p key={i} style={{ margin: 0, fontSize: 10, color: "#78716C", fontFamily: "'IBM Plex Mono', monospace" }}>
+                <span style={{ color: "#A8A29E" }}>{s.value}</span>{" "}{s.label}
+              </p>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
@@ -294,7 +303,7 @@ function CelebrationModal({ payload, onDismiss }: {
           </p>
         )}
 
-        {/* Stat */}
+        {/* Stat (single line) */}
         {payload.stat && (
           <p className="celeb-body" style={{
             margin:      "8px 0 0",
@@ -307,6 +316,32 @@ function CelebrationModal({ payload, onDismiss }: {
           }}>
             {payload.stat}
           </p>
+        )}
+
+        {/* Stats (structured list) */}
+        {payload.stats && payload.stats.length > 0 && (
+          <div className="celeb-body" style={{
+            margin: "10px auto 0",
+            maxWidth: 280,
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+            animation: reducedMotion.current ? undefined : "celebFadeUp 0.4s ease 0.55s both",
+            opacity: reducedMotion.current ? 1 : 0,
+          }}>
+            {payload.stats.map((s, i) => (
+              <div key={i} style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "baseline",
+                fontSize: 12,
+                fontFamily: "'IBM Plex Mono', monospace",
+              }}>
+                <span style={{ color: "#78716C" }}>{s.label}</span>
+                <span style={{ color: accentColor, fontWeight: 600 }}>{s.value}</span>
+              </div>
+            ))}
+          </div>
         )}
 
         {/* Next Thread */}
@@ -332,25 +367,47 @@ function CelebrationModal({ payload, onDismiss }: {
             opacity:    reducedMotion.current ? 1 : 0,
           }}
         >
-          <button
-            onClick={onDismiss}
-            style={{
-              width:        "100%",
-              padding:      "10px 0",
-              borderRadius: 8,
-              fontSize:     13,
-              fontWeight:   600,
-              cursor:       "pointer",
-              border:       "none",
-              background:   accentColor,
-              color:        "#1C1917",
-              transition:   "opacity .15s",
-            }}
-            onMouseEnter={(e) => { (e.target as HTMLElement).style.opacity = "0.85" }}
-            onMouseLeave={(e) => { (e.target as HTMLElement).style.opacity = "1" }}
-          >
-            {payload.tier >= 4 ? "Let's go" : "Nice!"}
-          </button>
+          {payload.cta ? (
+            <button
+              onClick={() => { payload.cta!.action(); onDismiss() }}
+              style={{
+                width:        "100%",
+                padding:      "10px 0",
+                borderRadius: 8,
+                fontSize:     13,
+                fontWeight:   600,
+                cursor:       "pointer",
+                border:       "none",
+                background:   accentColor,
+                color:        "#1C1917",
+                transition:   "opacity .15s",
+              }}
+              onMouseEnter={(e) => { (e.target as HTMLElement).style.opacity = "0.85" }}
+              onMouseLeave={(e) => { (e.target as HTMLElement).style.opacity = "1" }}
+            >
+              {payload.cta.label}
+            </button>
+          ) : (
+            <button
+              onClick={onDismiss}
+              style={{
+                width:        "100%",
+                padding:      "10px 0",
+                borderRadius: 8,
+                fontSize:     13,
+                fontWeight:   600,
+                cursor:       "pointer",
+                border:       "none",
+                background:   accentColor,
+                color:        "#1C1917",
+                transition:   "opacity .15s",
+              }}
+              onMouseEnter={(e) => { (e.target as HTMLElement).style.opacity = "0.85" }}
+              onMouseLeave={(e) => { (e.target as HTMLElement).style.opacity = "1" }}
+            >
+              {payload.tier >= 4 ? "Let's go" : "Nice!"}
+            </button>
+          )}
         </div>
       </div>
     </div>
