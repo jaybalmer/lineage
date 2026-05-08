@@ -15,7 +15,10 @@ import { CommunityLink } from "@/components/ui/community-link"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import { isAuthUser } from "@/store/lineage-store"
 import { notFound } from "next/navigation"
-import type { Claim, Story } from "@/types"
+import { ClaimRequestModal } from "@/components/ui/claim-request-modal"
+import { VouchCard, type ClaimRequestWithClaimant } from "@/components/ui/vouch-card"
+import { isClaimRequestOpen, userHasOpenClaim, pluralize } from "@/lib/claim-request-helpers"
+import type { Claim, ClaimRequestStatus, Story } from "@/types"
 
 const TIER_BADGE: Record<string, { symbol: string; label: string; color: string }> = {
   annual:   { symbol: "◈", label: "MEMBER",    color: "#f97316" },
@@ -33,6 +36,8 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   const [dbClaims, setDbClaims] = useState<Claim[]>([])
   const [stories, setStories] = useState<Story[]>([])
   const [showInviteModal, setShowInviteModal] = useState(false)
+  const [claimRequests, setClaimRequests] = useState<ClaimRequestWithClaimant[]>([])
+  const [showClaimModal, setShowClaimModal] = useState(false)
 
   // Show post-onboarding welcome banner (once, on first profile visit after signup)
   useEffect(() => {
@@ -80,6 +85,11 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
         .then((r) => r.json())
         .then((data) => { if (Array.isArray(data)) setStories(data as Story[]) })
     }
+
+    fetch(`/api/claim-requests?node_id=${encodeURIComponent(resolvedId)}`)
+      .then((r) => r.json())
+      .then((data) => { if (Array.isArray(data)) setClaimRequests(data as ClaimRequestWithClaimant[]) })
+      .catch(() => {})
   }, [catalogLoaded, resolvedId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Wait for catalog to hydrate before 404-ing
@@ -117,6 +127,17 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   const memberBadge = person.membership_tier && TIER_BADGE[person.membership_tier]
     ? TIER_BADGE[person.membership_tier]
     : isCurrentUser && membership.tier !== "free" ? TIER_BADGE[membership.tier] : null
+
+  // ── Claim-request gating (PB-008 Phase 2 Session 2) ──────────────────────
+  const openClaimRequests = claimRequests.filter(isClaimRequestOpen)
+  const isAuth = isAuthUser(activePersonId)
+  const nodeIsClaimable = person.node_status === "catalog" || person.node_status === "unclaimed"
+  const showThisIsMe =
+    isAuth &&
+    !isCurrentUser &&
+    nodeIsClaimable &&
+    !userHasOpenClaim(openClaimRequests, activePersonId)
+  const showVouchSurface = isAuth && openClaimRequests.length > 0
 
   return (
     <div className="min-h-screen bg-background">
@@ -280,6 +301,15 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
               </p>
               {isAuthUser(activePersonId) && (
                 <div className="flex items-center gap-3 mt-2">
+                  {showThisIsMe && (
+                    <button
+                      onClick={() => setShowClaimModal(true)}
+                      className="text-xs font-semibold transition-colors hover:opacity-80"
+                      style={{ color: "#3b82f6" }}
+                    >
+                      This is me →
+                    </button>
+                  )}
                   <button
                     onClick={() => setShowInviteModal(true)}
                     className="text-xs font-medium transition-colors hover:opacity-80"
@@ -290,6 +320,57 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                 </div>
               )}
             </div>
+          </div>
+        )}
+
+        {/* ── "This is me" CTA when banner not shown (e.g. catalog tier) ── */}
+        {!isCurrentUser && tier !== "unclaimed" && showThisIsMe && (
+          <div className="mb-6 rounded-xl p-4 flex items-start gap-3 border border-blue-200 bg-blue-50">
+            <span className="text-base shrink-0 text-blue-600">👤</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900 mb-0.5">Is this you?</p>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Claim this profile to add your timeline and verify the connections others have made.
+              </p>
+              <button
+                onClick={() => setShowClaimModal(true)}
+                className="text-xs font-semibold text-blue-700 hover:text-blue-900 transition-colors mt-2"
+              >
+                This is me →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Vouch surface: open claim requests on this profile ── */}
+        {showVouchSurface && (
+          <div className="mb-6">
+            <div className="text-[10px] font-semibold text-muted uppercase tracking-widest mb-2">
+              Open claim {pluralize(openClaimRequests.length, "request", "requests")}
+            </div>
+            {openClaimRequests.map((r) => (
+              <VouchCard
+                key={r.id}
+                request={r}
+                currentUserId={activePersonId}
+                onVouched={(next: { status: ClaimRequestStatus; vouch_count: number }) => {
+                  setClaimRequests((prev) =>
+                    prev.map((p) =>
+                      p.id === r.id
+                        ? {
+                            ...p,
+                            status: next.status,
+                            vouches_received: [
+                              ...(p.vouches_received ?? []),
+                              { voucher_id: activePersonId, relationship: "rode_with", note: null, created_at: new Date().toISOString() },
+                            ],
+                          }
+                        : p,
+                    ),
+                  )
+                }}
+              />
+            ))}
           </div>
         )}
 
@@ -402,6 +483,21 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
           personName={person.display_name}
           predicate="rode_with"
           onClose={() => setShowInviteModal(false)}
+        />
+      )}
+
+      {showClaimModal && (
+        <ClaimRequestModal
+          personId={resolvedId}
+          personName={person.display_name}
+          onClose={() => setShowClaimModal(false)}
+          onCreated={(req) => {
+            setClaimRequests((prev) => [
+              ...prev,
+              { ...req, claimant: { display_name: "You", avatar_url: null } },
+            ])
+            setShowClaimModal(false)
+          }}
         />
       )}
     </div>
