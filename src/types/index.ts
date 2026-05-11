@@ -396,6 +396,26 @@ export interface ClaimRequest {
   updated_at: string
 }
 
+// ─── Merge execution (PB-008 Phase 2 Session 3) ──────────────────────────────
+
+export type MergePath = "claim_in_place" | "merge"
+
+/** Return shape of the public.merge_person() RPC. */
+export interface MergePersonResult {
+  path: MergePath
+  noop: boolean
+  ghost_id: string
+  canonical_id: string
+  /** Per-table arrays of repointed row ids: { "claims_subject_id": [id, ...], ... } */
+  references_repointed: Record<string, string[]>
+  /** Per-table arrays of deduplicated row ids (ghost-side rows removed because canonical already had a row at the same composite PK). */
+  references_deduplicated: Record<string, string[]>
+  /** Count of person_slug_aliases rows that had their person_id retargeted from ghost to canonical. */
+  alias_rewrites: number
+  /** Count of competing pending/vouched claim_requests on this node that were auto-denied. */
+  claim_requests_auto_denied: number
+}
+
 // ─── UI-focused composite types ──────────────────────────────────────────────
 
 export interface TimelineEntry {

@@ -7,7 +7,7 @@ import {
   claimDeniedHtml,
   sendClaimEmail,
 } from "@/lib/emails/claim-emails"
-import type { ClaimRequest } from "@/types"
+import type { ClaimRequest, MergePersonResult } from "@/types"
 
 function trackEvent(origin: string, event: string, props: Record<string, unknown>) {
   void fetch(`${origin}/api/track/claim-event`, {
@@ -15,6 +15,21 @@ function trackEvent(origin: string, event: string, props: Record<string, unknown
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ event, props }),
   }).catch(() => {})
+}
+
+function trackError(origin: string, tag: string, payload: Record<string, unknown>) {
+  void fetch(`${origin}/api/track/claim-error`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ tag, payload }),
+  }).catch(() => {})
+}
+
+function sumDedupCounts(refs: Record<string, string[]> | null | undefined): number {
+  if (!refs) return 0
+  let total = 0
+  for (const arr of Object.values(refs)) total += Array.isArray(arr) ? arr.length : 0
+  return total
 }
 
 type Action =
@@ -42,18 +57,22 @@ function parseAction(body: unknown): Action | null {
 //   { action: "deny" }
 //   { action: "update_notes", editor_notes: string | null }
 //
-// Approve / deny stub:
-//   - Flips status, writes resolved_at, resolved_by, status_reason.
-//   - Does NOT touch people.node_status / claimed_by — that lives in
-//     Session 3's merge handler so all people-level state changes go through
-//     a single auditable path (merge_log).
-//   - On approve: writes any required person_slug_aliases rows mirroring
-//     Session 1 conventions, then revalidateTag("person-redirects", { expire: 0 })
-//     so middleware sees the new aliases on the very next request. Next 16
-//     deprecated the single-arg form; { expire: 0 } is the immediate-expiry
-//     pattern the docs recommend for "external trigger, refresh now" cases.
-//     updateTag would be the Server-Action-only equivalent.
-//   - Emails the claimant on approve / deny.
+// Approve path (PB-008 Phase 2 Session 3):
+//   Delegates to public.merge_person() — a single Postgres transaction that
+//   flips claim status, repoints every people-referencing FK from the ghost
+//   row to the claimant's canonical row (Path B) or claims the ghost in
+//   place (Path A), auto-denies competing pending claims, writes merge_log,
+//   and (Path B) hard-deletes the ghost. Idempotent: re-clicking or two
+//   simultaneous calls both resolve to noop=true via the FOR UPDATE lock on
+//   the claim_requests row inside the RPC.
+//
+// After a non-noop success, revalidateTag("person-redirects", { expire: 0 })
+// flushes the proxy's alias map so the merged URL redirects immediately.
+// Two-arg form is required by Next 16; updateTag() is Server-Action-only
+// and would 500 in a Route Handler.
+//
+// Deny + update_notes paths are unchanged from Session 2 — simple field
+// writes with a race guard on status.
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
@@ -122,14 +141,119 @@ export async function PATCH(
     )
   }
 
-  const newStatus = action.action === "approve" ? "approved" : "denied"
-  const statusReason = action.action === "approve" ? "editor_approved" : "editor_denied"
+  // ── APPROVE path: route everything through public.merge_person() ─────────
+  // The RPC handles status flip, FK repoint, ghost delete, merge_log write,
+  // alias inserts, and competing-claim auto-deny — all in one transaction.
+  // Idempotent + concurrent-safe: the FOR UPDATE lock on claim_requests
+  // inside the RPC serialises racing approvers; the loser falls through the
+  // idempotency check and returns noop=true.
+  if (action.action === "approve") {
+    const { data: rpcData, error: rpcError } = await db.rpc("merge_person", {
+      p_claim_request_id: id,
+      p_admin_id: user.id,
+    })
 
+    if (rpcError) {
+      const msg = rpcError.message ?? ""
+      if (msg.includes("canonical_row_lookup_ambiguous")) {
+        trackError(origin, "canonical_row_lookup_ambiguous", {
+          claim_request_id: id, claimant_id: current.claimant_id, node_id: current.node_id,
+        })
+        return NextResponse.json(
+          { error: "Claimant has multiple candidate canonical rows — manual admin review required." },
+          { status: 409 },
+        )
+      }
+      if (msg.includes("path_b_unavailable_non_uuid_ghost_id") || msg.includes("path_b_unavailable_non_uuid_canonical_id")) {
+        trackError(origin, "fk_repoint_orphan", {
+          claim_request_id: id, node_id: current.node_id, reason: "non_uuid_id",
+        })
+        return NextResponse.json(
+          { error: "This person's id is not in UUID format; merge cannot run safely until the id is migrated." },
+          { status: 409 },
+        )
+      }
+      if (msg.includes("merge_idempotency_check_failed")) {
+        trackError(origin, "merge_idempotency_check_failed", {
+          claim_request_id: id, message: msg,
+        })
+        return NextResponse.json(
+          { error: "Merge state inconsistent — escalate." },
+          { status: 500 },
+        )
+      }
+      if (msg.includes("claim_request_not_actionable") || msg.includes("claim_request_not_found") || msg.includes("ghost_row_missing")) {
+        return NextResponse.json({ error: msg }, { status: 409 })
+      }
+      console.error("[admin claim PATCH approve rpc]", rpcError)
+      trackError(origin, "merge_partial_failure", { claim_request_id: id, message: msg })
+      return NextResponse.json({ error: "Merge failed" }, { status: 500 })
+    }
+
+    const result = rpcData as MergePersonResult
+
+    // Cache-bust the redirect map ONLY if a real merge happened. Noop replays
+    // don't change the alias surface, so we skip the revalidate to avoid a
+    // thundering-herd of refreshes when admins double-click approve.
+    if (!result.noop) {
+      revalidateTag("person-redirects", { expire: 0 })
+    }
+
+    trackEvent(origin, "claim_approved", {
+      claim_request_id: id,
+      path: result.path,
+      noop: result.noop,
+      ghost_id: result.ghost_id,
+      canonical_id: result.canonical_id,
+      references_repointed: result.references_repointed,
+      deduplicated: sumDedupCounts(result.references_deduplicated),
+      alias_rewrites: result.alias_rewrites,
+      claim_requests_auto_denied: result.claim_requests_auto_denied,
+    })
+
+    // Re-load the (now resolved) claim_request so the response matches the
+    // pre-RPC shape clients expect.
+    const { data: resolved, error: reloadErr } = await db
+      .from("claim_requests")
+      .select("*")
+      .eq("id", id)
+      .single()
+    if (reloadErr || !resolved) {
+      console.error("[admin claim PATCH approve reload]", reloadErr)
+      return NextResponse.json({ error: "Approved but failed to reload" }, { status: 500 })
+    }
+
+    // Email claimant — skipped on noop replays so we don't double-send.
+    if (!result.noop) {
+      try {
+        const [{ data: claimantUser }, { data: person }] = await Promise.all([
+          db.auth.admin.getUserById(current.claimant_id),
+          db.from("people").select("display_name").eq("id", result.canonical_id).maybeSingle(),
+        ])
+        const email = claimantUser.user?.email
+        const personName = person?.display_name ?? "your profile"
+        if (email) {
+          const profileLink = `${origin}/people/${nameToSlug(personName) || result.canonical_id}`
+          void sendClaimEmail({
+            to: email,
+            subject: `Your claim was approved`,
+            html: claimApprovedHtml(personName, profileLink),
+          })
+        }
+      } catch (err) {
+        console.error("[admin claim PATCH approve email]", err)
+      }
+    }
+
+    return NextResponse.json(resolved)
+  }
+
+  // ── DENY path: simple status flip (no merge) ─────────────────────────────
   const { data: updated, error: updateError } = await db
     .from("claim_requests")
     .update({
-      status: newStatus,
-      status_reason: statusReason,
+      status: "denied",
+      status_reason: "editor_denied",
       resolved_at: nowIso,
       resolved_by: user.id,
       updated_at: nowIso,
@@ -140,48 +264,18 @@ export async function PATCH(
     .single()
 
   if (updateError || !updated) {
-    console.error("[admin claim PATCH transition]", updateError)
+    console.error("[admin claim PATCH deny]", updateError)
     return NextResponse.json(
       { error: "Status changed in another session; please refresh" },
       { status: 409 },
     )
   }
 
-  // ── Emit alias rows + cache bust on approve ──
-  if (action.action === "approve") {
-    try {
-      const [{ data: person }, { data: claimant }] = await Promise.all([
-        db.from("people").select("display_name").eq("id", current.node_id).maybeSingle(),
-        db.from("profiles").select("display_name").eq("id", current.claimant_id).maybeSingle(),
-      ])
-      const personName = person?.display_name ?? ""
-      const claimantName = claimant?.display_name ?? ""
-      const oldSlug = personName ? nameToSlug(personName) : ""
-      const newSlug = claimantName ? nameToSlug(claimantName) : oldSlug
-
-      // Session 2 only flips claim status; Session 3 will perform the
-      // people-row updates that produce a real slug change. Until then
-      // oldSlug === newSlug for almost every row, so the upsert is a
-      // no-op write. We still call revalidateTag to keep the cache in sync.
-      if (oldSlug && oldSlug !== newSlug) {
-        await db.from("person_slug_aliases").upsert({
-          alias: oldSlug,
-          person_id: current.node_id,
-          reason: "reslugged",
-        })
-      }
-    } catch (err) {
-      console.error("[admin claim PATCH] alias write failed:", err)
-    }
-    revalidateTag("person-redirects", { expire: 0 })
-  }
-
-  // ── Email claimant + track ──
   trackEvent(origin, "claim_status_changed", {
     claim_request_id: id,
     from: current.status,
-    to: newStatus,
-    reason: statusReason,
+    to: "denied",
+    reason: "editor_denied",
   })
 
   try {
@@ -191,15 +285,7 @@ export async function PATCH(
     ])
     const email = claimantUser.user?.email
     const personName = person?.display_name ?? "your profile"
-
-    if (email && action.action === "approve") {
-      const profileLink = `${origin}/people/${nameToSlug(personName) || current.node_id}`
-      void sendClaimEmail({
-        to: email,
-        subject: `Your claim was approved`,
-        html: claimApprovedHtml(personName, profileLink),
-      })
-    } else if (email && action.action === "deny") {
+    if (email) {
       void sendClaimEmail({
         to: email,
         subject: `About your claim on ${personName}`,
@@ -207,7 +293,7 @@ export async function PATCH(
       })
     }
   } catch (err) {
-    console.error("[admin claim PATCH] email/lookup failed:", err)
+    console.error("[admin claim PATCH deny email/lookup]", err)
   }
 
   return NextResponse.json(updated)
