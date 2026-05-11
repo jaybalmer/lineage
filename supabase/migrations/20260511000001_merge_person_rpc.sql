@@ -89,6 +89,30 @@ CREATE TABLE IF NOT EXISTS public.merge_log (
   created_at               timestamptz NOT NULL DEFAULT now()
 );
 
+-- merge_log may pre-exist from Phase 2 SQL Step 5 without the path column
+-- (path was added as adjustment 4 in Session 3 so Path A also writes a row).
+-- Idempotent forward-only ALTERs handle the upgrade.
+ALTER TABLE public.merge_log ADD COLUMN IF NOT EXISTS path text;
+
+-- Backfill any pre-existing rows (none expected; defensive). The old
+-- merge_log was Path-B-only, so 'merge' is the correct value.
+UPDATE public.merge_log SET path = 'merge' WHERE path IS NULL;
+
+ALTER TABLE public.merge_log ALTER COLUMN path SET NOT NULL;
+
+-- Add CHECK constraint only if it doesn't already exist.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+     WHERE conrelid = 'public.merge_log'::regclass
+       AND conname  = 'merge_log_path_check'
+  ) THEN
+    ALTER TABLE public.merge_log
+      ADD CONSTRAINT merge_log_path_check CHECK (path IN ('claim_in_place', 'merge'));
+  END IF;
+END $$;
+
 CREATE INDEX IF NOT EXISTS idx_merge_log_ghost     ON public.merge_log (ghost_id);
 CREATE INDEX IF NOT EXISTS idx_merge_log_canonical ON public.merge_log (canonical_id);
 CREATE INDEX IF NOT EXISTS idx_merge_log_claim_req ON public.merge_log (claim_request_id);
