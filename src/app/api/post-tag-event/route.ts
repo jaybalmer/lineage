@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth"
-import { fireTagEvents } from "@/lib/invite-tracking"
+import { fireTagEvents } from "@/lib/invite-tracking-server"
 
 // ── POST /api/post-tag-event ──────────────────────────────────────────────────
 //

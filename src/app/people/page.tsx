@@ -9,6 +9,7 @@ import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import { RiderAvatar, getRiderTier, type RiderTier } from "@/components/ui/rider-avatar"
+import { isInvitableNodeStatus, trackInviteEvent } from "@/lib/invite-tracking"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import type { Person } from "@/types"
@@ -132,9 +133,16 @@ function RiderRow({ person, isMe, onInvite, claims, activeCommunitySlug }: {
 
       {!isMe && (
         <div className="flex items-center gap-1.5 shrink-0">
-          {kind === "unclaimed" && onInvite && (
+          {isInvitableNodeStatus(person.node_status) && onInvite && (
             <button
-              onClick={() => onInvite(person)}
+              onClick={() => {
+                trackInviteEvent("invite_prompt_clicked", {
+                  surface: "person_list",
+                  person_id: person.id,
+                  node_status: person.node_status,
+                })
+                onInvite(person)
+              }}
               className="px-2.5 py-1.5 rounded-lg border border-border-default text-[11px] text-muted hover:text-foreground hover:bg-surface-hover transition-colors shrink-0"
               title="Invite this rider to claim their profile"
             >
@@ -403,6 +411,7 @@ function RidersPageInner() {
           personId={invitePerson.id}
           personName={invitePerson.display_name}
           predicate="rode_with"
+          surface="person_list"
           onClose={() => setInvitePerson(null)}
         />
       )}

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { requireAuth } from "@/lib/auth"
-import { fireTagEvents } from "@/lib/invite-tracking"
+import { fireTagEvents } from "@/lib/invite-tracking-server"
 
 function getServiceClient() {
   return createClient(
