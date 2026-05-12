@@ -307,26 +307,56 @@ export const useLineageStore = create<LineageStore>()(
         // Optimistic update
         set((s) => ({ sessionClaims: [...s.sessionClaims, claim] }))
 
-        // Persist to DB for authenticated users
         const { activePersonId } = get()
-        if (isAuthUser(activePersonId)) {
+        if (!isAuthUser(activePersonId)) return
+
+        // Silent-failures brief Finding #5: the FTUE wizard sets a UUID-format
+        // activePersonId before the user has confirmed their email, so this
+        // path used to fire a DB insert with no JWT — RLS denied, the rollback
+        // toast appeared, but the confirmation email had already been sent
+        // by supabase.auth.signUp upstream. Gate the DB write on an actual
+        // session: when there isn’t one, the claim stays in sessionClaims and
+        // /auth/complete migrates it after the magic link is followed.
+        supabase.auth.getSession().then(({ data: { session } }) => {
+          if (!session) return
+
           supabase
             .from("claims")
             .insert({ ...claim, asserted_by: activePersonId })
             .then(({ error }) => {
               if (error) {
-                // Rollback optimistic update
                 set((s) => ({ sessionClaims: s.sessionClaims.filter((c) => c.id !== claim.id) }))
                 get().addToast("Failed to save claim. Please try again.")
-              } else {
-                // Move from sessionClaims → dbClaims
-                set((s) => ({
-                  sessionClaims: s.sessionClaims.filter((c) => c.id !== claim.id),
-                  dbClaims: [...s.dbClaims, claim],
-                }))
+                return
+              }
+              set((s) => ({
+                sessionClaims: s.sessionClaims.filter((c) => c.id !== claim.id),
+                dbClaims: [...s.dbClaims, claim],
+              }))
+
+              // Ambient-growth fan-out (Finding #1): notify the bridge route
+              // about every person id named in this claim (other than the
+              // asserter themselves — distinct_tagger_summary excludes self-
+              // tags anyway, so calling for the asserter is wasted work).
+              // Fire-and-forget; the response is for telemetry only.
+              const personIds: string[] = []
+              if (claim.subject_type === "person" && claim.subject_id && claim.subject_id !== activePersonId) {
+                personIds.push(claim.subject_id)
+              }
+              if (claim.object_type === "person" && claim.object_id && claim.object_id !== activePersonId) {
+                personIds.push(claim.object_id)
+              }
+              if (personIds.length > 0) {
+                fetch("/api/post-tag-event", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ person_ids: personIds }),
+                }).catch((e) => {
+                  console.error("[addClaim] post-tag-event call failed:", e)
+                })
               }
             })
-        }
+        })
       },
       removeClaim: (id) => {
         const { activePersonId } = get()
