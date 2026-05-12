@@ -17,6 +17,7 @@ import { isAuthUser } from "@/store/lineage-store"
 import { notFound } from "next/navigation"
 import { ClaimRequestModal } from "@/components/ui/claim-request-modal"
 import { VouchCard, type ClaimRequestWithClaimant } from "@/components/ui/vouch-card"
+import { HelpConnectCard } from "@/components/ui/help-connect-card"
 import { isClaimRequestOpen, userHasOpenClaim, pluralize } from "@/lib/claim-request-helpers"
 import type { Claim, ClaimRequestStatus, Story } from "@/types"
 
@@ -137,6 +138,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
     !isCurrentUser &&
     nodeIsClaimable &&
     !userHasOpenClaim(openClaimRequests, activePersonId)
+  const showHelpConnect = isAuth && !isCurrentUser && nodeIsClaimable
   const showVouchSurface = isAuth && openClaimRequests.length > 0
 
   return (
@@ -340,6 +342,11 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
               </button>
             </div>
           </div>
+        )}
+
+        {/* ── Help-Connect card: additive surface on unclaimed profiles ── */}
+        {showHelpConnect && (
+          <HelpConnectCard personId={resolvedId} personName={person.display_name} />
         )}
 
         {/* ── Vouch surface: open claim requests on this profile ── */}
