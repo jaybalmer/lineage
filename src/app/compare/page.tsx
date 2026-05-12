@@ -491,8 +491,9 @@ function ComparePageInner() {
       setPersonBDbClaims([])
       return
     }
+    // PB-009 Phase 1: compare-tool public read through claims_public.
     supabase
-      .from("claims")
+      .from("claims_public")
       .select("*")
       .eq("subject_id", personB.id)
       .eq("visibility", "public")

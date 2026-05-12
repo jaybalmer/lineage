@@ -10,6 +10,56 @@ export type VerificationTier = "standard" | "elevated" | "protected"
 export type ClaimRequestStatus = "pending" | "vouched" | "approved" | "denied" | "expired"
 export type PersonRedirectReason = "merged" | "reslugged" | "manual"
 
+// ─── PB-009 Tag Events (Phase 1 foundation) ─────────────────────────────────
+
+export type TagEventSource = "member" | "public_timeline_embed" | "editor" | "system"
+export type TagEventStatus = "pending" | "approved" | "declined" | "disabled"
+export type TagEventSubjectTier = "standard" | "elevated" | "protected" | "unclaimed" | "catalog"
+export type TagEventDeclineCategory = "this_wasnt_me" | "wrong_moment" | "preference" | "spam" | "other"
+export type TagEventDisplayState = "hidden" | "attributed" | "anonymous_aggregate"
+export type VisitorDisplaySetting = "hidden" | "attributed" | "anonymous_aggregate"
+
+/** Visitor record captured for source='public_timeline_embed' (PB-010 Phase 6 populates). */
+export interface TagEventVisitorRecord {
+  name?: string
+  email_hash?: string
+  ip_hash?: string
+  visitor_role?: string
+}
+
+/** moment_ref shape: which row in story_riders or claims this tag_event pairs with. */
+export interface TagEventMomentRef {
+  story_id?: string
+  claim_id?: string
+  rider_id?: string
+  event_id?: string
+  place_id?: string
+  day_id?: string
+}
+
+export interface TagEvent {
+  id: string
+  source: TagEventSource
+  asserter_id: string | null
+  asserter_visitor_record: TagEventVisitorRecord | null
+  subject_id: string
+  subject_tier_at_assert: TagEventSubjectTier
+  predicate: string
+  moment_ref: TagEventMomentRef
+  community_id: string | null
+  status: TagEventStatus
+  decision_by: string | null
+  decision_at: string | null
+  decision_reason_category: TagEventDeclineCategory | null
+  decision_reason_note: string | null
+  co_sign_by: string | null
+  co_sign_at: string | null
+  display_state: TagEventDisplayState
+  expires_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 // ─── Person redirects (PB-008 Phase 2 Session 1) ────────────────────────────
 
 export interface PersonSlugAlias {
@@ -97,6 +147,13 @@ export interface Person {
   community_slugs?: string[]
   /** Primary community for this person (profiles table) */
   primary_community_id?: string
+  // PB-009 Phase 1
+  /** Cached subject tier for fast read at tag-insert time. Populated by Phase 4. */
+  node_tier_cache?: TagEventSubjectTier
+  /** Timestamp of the last tier transition. */
+  tier_changed_at?: string | null
+  /** Default render mode for visitor-asserted tags. Per-moment overrides take precedence (Phase 6). */
+  public_default_visitor_display?: VisitorDisplaySetting
 }
 
 export interface Place {
@@ -117,6 +174,8 @@ export interface Place {
   added_by?: string
   /** Community slugs this place belongs to (populated from junction table) */
   community_slugs?: string[]
+  /** PB-009 Phase 1: per-moment override for visitor-tag display (Phase 6 renders). */
+  visitor_display_override?: VisitorDisplaySetting | null
 }
 
 export type BrandCategory = "board_brand" | "outerwear" | "bindings" | "boots" | "retailer" | "media" | "other"
@@ -183,6 +242,8 @@ export interface Event {
   brand_ids?: string[]
   /** Community slugs this event belongs to (populated from junction table) */
   community_slugs?: string[]
+  /** PB-009 Phase 1: per-moment override for visitor-tag display (Phase 6 renders). */
+  visitor_display_override?: VisitorDisplaySetting | null
 }
 
 export type EntityType = "person" | "place" | "org" | "board" | "event"
@@ -227,6 +288,8 @@ export interface Claim {
   // Competition-specific fields (competed_at claims only)
   division?: string   // e.g. "Open Men", "Masters", "Boardercross"
   result?: string     // e.g. "1st", "3rd", "DNF", "Top 10"
+  // PB-009 Phase 1: paired tag_event for person-implicating claims (NULL for self-claims and grandfathered rows)
+  tag_event_id?: string | null
 }
 
 // ─── Connection Summary ───────────────────────────────────────────────────────
@@ -367,6 +430,8 @@ export interface Story {
   url?: string | null
   // Community scoping — every story belongs to exactly one community
   community_id?: string
+  /** PB-009 Phase 1: per-moment override for visitor-tag display (Phase 6 renders). */
+  visitor_display_override?: VisitorDisplaySetting | null
 }
 
 // ─── Claim Requests ─────────────────────────────────────────────────────────

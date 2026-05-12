@@ -331,8 +331,11 @@ export default function ProfilePage() {
         }
       })
 
+    // PB-009 Phase 1: own-profile read through claims_public. In Phase 2,
+    // pending tags addressed to this user will instead surface in /me/tags;
+    // for Phase 1 every row is 'approved' so behaviour is unchanged.
     supabase
-      .from("claims")
+      .from("claims_public")
       .select("*")
       .eq("subject_id", activePersonId)
       .then(({ data, error }) => {

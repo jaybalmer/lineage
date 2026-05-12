@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { requireAuth } from "@/lib/auth"
 import { fireTagEvents } from "@/lib/invite-tracking-server"
+import { pairStoryRiderTagEvents } from "@/lib/tag-events"
 
 function getServiceClient() {
   return createClient(
@@ -26,13 +27,18 @@ export async function GET(req: NextRequest) {
   try {
     const supabase = getServiceClient()
 
+    // PB-009 Phase 1: rider_ids are fetched separately from story_riders_public
+    // so the read goes through the approved-only view. Boards and photos stay
+    // as embedded selects (not subject to PB-009 — neither table implicates a
+    // person tag). The embed pattern can't directly reference a view with
+    // PostgREST's relationship inference in every case, so the explicit
+    // separate-fetch removes that risk.
     let query = supabase
       .from("stories")
       .select(`
         *,
         photos:story_photos(id, url, caption, sort_order),
         boards:story_boards(board_id),
-        riders:story_riders(rider_id),
         author:profiles!author_id(display_name, avatar_url)
       `)
       .eq("visibility", "public")
@@ -57,7 +63,7 @@ export async function GET(req: NextRequest) {
 
     if (riderId) {
       const { data: ids } = await supabase
-        .from("story_riders")
+        .from("story_riders_public")
         .select("story_id")
         .eq("rider_id", riderId)
       const storyIds = (ids ?? []).map((r: { story_id: string }) => r.story_id)
@@ -68,13 +74,27 @@ export async function GET(req: NextRequest) {
     const { data, error } = await query
     if (error) throw error
 
+    // Fetch rider_ids for the resulting stories from the approved-only view.
+    const storyIds = (data ?? []).map((s: Record<string, unknown>) => s.id as string)
+    let ridersByStory: Map<string, string[]> = new Map()
+    if (storyIds.length > 0) {
+      const { data: riderRows } = await supabase
+        .from("story_riders_public")
+        .select("story_id, rider_id")
+        .in("story_id", storyIds)
+      for (const r of (riderRows ?? []) as { story_id: string; rider_id: string }[]) {
+        const arr = ridersByStory.get(r.story_id) ?? []
+        arr.push(r.rider_id)
+        ridersByStory.set(r.story_id, arr)
+      }
+    }
+
     // Normalise joined arrays to flat ID arrays
     const stories = (data ?? []).map((s: Record<string, unknown>) => ({
       ...s,
       board_ids: ((s.boards as { board_id: string }[]) ?? []).map((b) => b.board_id),
-      rider_ids: ((s.riders as { rider_id: string }[]) ?? []).map((r) => r.rider_id),
+      rider_ids: ridersByStory.get(s.id as string) ?? [],
       boards: undefined,
-      riders: undefined,
     }))
 
     return NextResponse.json(stories)
@@ -152,6 +172,17 @@ export async function POST(req: NextRequest) {
         rider_ids.map((rid: string) => ({ story_id: storyId, rider_id: rid }))
       )
       if (error) throw new Error(`story_riders insert failed: ${error.message}`)
+
+      // PB-009 Phase 1: pair every story_riders row with a tag_event. Phase 1
+      // status defaults to 'approved' so behaviour is unchanged; the rows
+      // exist so the _public view enforces correctly and Phase 2's owner
+      // inbox has data to drive.
+      const { paired, failed } = await pairStoryRiderTagEvents(supabase, {
+        storyId, riderIds: rider_ids as string[], authorId: user.id,
+      })
+      if (failed > 0) {
+        console.error(`[stories POST] tag_event pairing: ${paired} ok, ${failed} failed`)
+      }
     }
 
     // Ambient-growth threshold: fire post-tag-event for every rider that's a
@@ -267,6 +298,20 @@ export async function PATCH(req: NextRequest) {
         (rider_ids as string[]).map((rid) => ({ story_id: id, rider_id: rid }))
       )
       if (error) throw new Error(`story_riders insert failed: ${error.message}`)
+
+      // PB-009 Phase 1: pair every story_riders row with a tag_event. PATCH
+      // replaces the full set, so we pair the entire new payload. Pre-
+      // existing tag_events for riders that survived the replace are NOT
+      // re-used — they were attached to the deleted rows. This means an
+      // unchanged rider gets a fresh tag_event_id, which is acceptable in
+      // Phase 1 because behaviour stays 'approved'. Phase 2 can refine by
+      // diffing rider sets before pairing.
+      const { paired, failed } = await pairStoryRiderTagEvents(supabase, {
+        storyId: id, riderIds: rider_ids as string[], authorId: user.id,
+      })
+      if (failed > 0) {
+        console.error(`[stories PATCH] tag_event pairing: ${paired} ok, ${failed} failed`)
+      }
     }
 
     // Fan-out tag events for any riders newly added (PATCH replaces the whole

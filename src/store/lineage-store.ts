@@ -159,7 +159,10 @@ export const useLineageStore = create<LineageStore>()(
           supabase.from("events").select("*"),
           supabase.from("event_series").select("*"),
           supabase.from("people").select("*"),
-          supabase.from("claims").select("*"),
+          // PB-009 Phase 1: read through claims_public to filter to approved
+          // (or grandfathered NULL tag_event_id) rows. Writes still go to
+          // claims directly via addClaim/updateClaim/removeClaim below.
+          supabase.from("claims_public").select("*"),
           // Registered users live in profiles, not people — fetch both and merge
           supabase.from("profiles").select(
             "id, display_name, birth_year, riding_since, privacy_level, bio, links, home_resort_id, membership_tier, node_status"
@@ -334,11 +337,13 @@ export const useLineageStore = create<LineageStore>()(
                 dbClaims: [...s.dbClaims, claim],
               }))
 
-              // Ambient-growth fan-out (Finding #1): notify the bridge route
-              // about every person id named in this claim (other than the
+              // Ambient-growth fan-out (Finding #1) + PB-009 tag_event
+              // pairing. Every person id named in this claim (other than the
               // asserter themselves — distinct_tagger_summary excludes self-
-              // tags anyway, so calling for the asserter is wasted work).
-              // Fire-and-forget; the response is for telemetry only.
+              // tags anyway, so calling for the asserter is wasted work) gets
+              // a paired tag_event server-side. The route now takes claim_id
+              // + predicate so it can FK tag_event_id back onto the claim
+              // row. Fire-and-forget; the response is for telemetry only.
               const personIds: string[] = []
               if (claim.subject_type === "person" && claim.subject_id && claim.subject_id !== activePersonId) {
                 personIds.push(claim.subject_id)
@@ -350,7 +355,11 @@ export const useLineageStore = create<LineageStore>()(
                 fetch("/api/post-tag-event", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ person_ids: personIds }),
+                  body: JSON.stringify({
+                    person_ids: personIds,
+                    claim_id: claim.id,
+                    predicate: claim.predicate,
+                  }),
                 }).catch((e) => {
                   console.error("[addClaim] post-tag-event call failed:", e)
                 })
