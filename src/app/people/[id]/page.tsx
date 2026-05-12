@@ -13,6 +13,8 @@ import { supabase } from "@/lib/supabase"
 import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
+import { HelpConnectCard } from "@/components/ui/help-connect-card"
+import { isInvitableNodeStatus, trackInviteEvent } from "@/lib/invite-tracking"
 import { isAuthUser } from "@/store/lineage-store"
 import { notFound } from "next/navigation"
 import { ClaimRequestModal } from "@/components/ui/claim-request-modal"
@@ -257,9 +259,16 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                 <span className="text-foreground font-bold">{personClaims.length}</span> claims
               </span>
               <div className="flex gap-2">
-                {tier === "unclaimed" && isAuthUser(activePersonId) && (
+                {isInvitableNodeStatus(person.node_status) && isAuthUser(activePersonId) && (
                   <button
-                    onClick={() => setShowInviteModal(true)}
+                    onClick={() => {
+                      trackInviteEvent("invite_prompt_clicked", {
+                        surface: "person_profile",
+                        person_id: resolvedId,
+                        node_status: person.node_status,
+                      })
+                      setShowInviteModal(true)
+                    }}
                     className="px-3 py-2 rounded-lg border text-xs font-medium transition-all"
                     style={{ borderColor: "#3b82f640", color: "#3b82f6", background: "#3b82f610" }}
                   >
@@ -311,7 +320,14 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                     </button>
                   )}
                   <button
-                    onClick={() => setShowInviteModal(true)}
+                    onClick={() => {
+                      trackInviteEvent("invite_prompt_clicked", {
+                        surface: "person_profile_banner",
+                        person_id: resolvedId,
+                        node_status: person.node_status,
+                      })
+                      setShowInviteModal(true)
+                    }}
                     className="text-xs font-medium transition-colors hover:opacity-80"
                     style={{ color: "#3b82f6" }}
                   >
@@ -340,6 +356,22 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
               </button>
             </div>
           </div>
+        )}
+
+        {/* ── Help connect this person (Session 4 Item 2) ──────────────────
+            Shown to any authed visitor (not the subject themselves) when the
+            profile is invitable. Sits alongside "This is me" — copy-link and
+            email-share are always visible, no extra click required. */}
+        {!isCurrentUser && isAuth && isInvitableNodeStatus(person.node_status) && (
+          <HelpConnectCard
+            personId={resolvedId}
+            personName={person.display_name}
+            inviterName={
+              (profileOverride?.display_name as string | undefined) ??
+              catalog.people.find((p) => p.id === activePersonId)?.display_name ??
+              "Someone"
+            }
+          />
         )}
 
         {/* ── Vouch surface: open claim requests on this profile ── */}
@@ -482,6 +514,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
           personId={resolvedId}
           personName={person.display_name}
           predicate="rode_with"
+          surface="person_profile"
           onClose={() => setShowInviteModal(false)}
         />
       )}

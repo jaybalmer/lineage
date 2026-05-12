@@ -324,6 +324,26 @@ export const useLineageStore = create<LineageStore>()(
                   sessionClaims: s.sessionClaims.filter((c) => c.id !== claim.id),
                   dbClaims: [...s.dbClaims, claim],
                 }))
+
+                // PB-008 Phase 2 Session 4 (Item 1) — bridge to server-side
+                // threshold helper. Claims insert directly from this client
+                // (not via an API route), so we POST the person ids that
+                // were tagged after a successful insert. Fire-and-forget.
+                const tagged: string[] = []
+                if (claim.subject_type === "person" && claim.subject_id !== activePersonId) {
+                  tagged.push(claim.subject_id)
+                }
+                if (claim.object_type === "person" && claim.object_id && claim.object_id !== activePersonId) {
+                  tagged.push(claim.object_id)
+                }
+                if (tagged.length > 0) {
+                  void fetch("/api/post-tag-event", {
+                    method: "POST",
+                    headers: { "content-type": "application/json" },
+                    body: JSON.stringify({ person_ids: tagged }),
+                    keepalive: true,
+                  }).catch(() => {})
+                }
               }
             })
         }
@@ -599,7 +619,8 @@ export const useLineageStore = create<LineageStore>()(
       ridingDays: [],
       addRidingDay: (day) => {
         set((s) => ({ ridingDays: [...s.ridingDays, day] }))
-        if (isAuthUser(get().activePersonId)) {
+        const activePersonId = get().activePersonId
+        if (isAuthUser(activePersonId)) {
           supabase.from("riding_days").insert({
             id: day.id, date: day.date, place_id: day.place_id,
             rider_ids: day.rider_ids, note: day.note ?? null,
@@ -608,6 +629,18 @@ export const useLineageStore = create<LineageStore>()(
             if (error) {
               set((s) => ({ ridingDays: s.ridingDays.filter((d) => d.id !== day.id) }))
               get().addToast("Failed to save riding day. Please try again.")
+              return
+            }
+            // PB-008 Phase 2 Session 4 (Item 1) — bridge to threshold helper.
+            // Same rationale as addClaim above.
+            const tagged = (day.rider_ids ?? []).filter((id) => id && id !== activePersonId)
+            if (tagged.length > 0) {
+              void fetch("/api/post-tag-event", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ person_ids: tagged }),
+                keepalive: true,
+              }).catch(() => {})
             }
           })
         }

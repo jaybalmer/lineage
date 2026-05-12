@@ -8,6 +8,7 @@ import { PLACES, ORGS, BOARDS, PEOPLE, EVENTS } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import { RiderAvatar, getInitials } from "@/components/ui/rider-avatar"
+import { isInvitableNodeStatus } from "@/lib/invite-tracking"
 import type { Predicate, EntityType, ConfidenceLevel, PrivacyLevel, Board, Person } from "@/types"
 
 const inputCls =
@@ -348,6 +349,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
   const [showInvite, setShowInvite] = useState(false)
   const [invitePersonId, setInvitePersonId] = useState("")
   const [invitePersonName, setInvitePersonName] = useState("")
+  const [inviteSurface, setInviteSurface] = useState<"post_claim" | "post_claim_companion">("post_claim")
 
   const entityType = predicate ? PREDICATE_ENTITY_TYPE[predicate] : null
 
@@ -512,20 +514,37 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
         created_at: new Date().toISOString(),
       })
       const p = allPeople.find((p) => p.id === personId)
-      if (!p || p.community_status === "unverified") {
+      // Gate on node_status (catalog | unclaimed) per PB-008 Phase 2.
+      // Falls back to the old community_status check for any rows that
+      // pre-date the backfill and don't have node_status set.
+      const invitable =
+        p && (isInvitableNodeStatus(p.node_status) ||
+              (!p.node_status && p.community_status === "unverified"))
+      if (invitable || !p) {
         unverifiedCompanions.push(p ?? { id: personId, display_name: "", privacy_level: "public" })
       }
     }
 
-    // Show invite nudge for person-type claims or first unverified companion
-    if (PREDICATE_ENTITY_TYPE[predicate] === "person" && selectedEntity) {
+    // Show invite nudge for person-type claims or first unverified companion.
+    // For person-type claims we still gate to invitable node_status — no
+    // point prompting an invite for an already-claimed rider.
+    const personTypeTarget = PREDICATE_ENTITY_TYPE[predicate] === "person" && selectedEntity
+      ? allPeople.find((p) => p.id === entityId)
+      : null
+    const personTypeInvitable = personTypeTarget &&
+      (isInvitableNodeStatus(personTypeTarget.node_status) ||
+       (!personTypeTarget.node_status && personTypeTarget.community_status === "unverified"))
+
+    if (personTypeTarget && personTypeInvitable) {
       setInvitePersonId(entityId)
       setInvitePersonName(getEntityLabel(selectedEntity))
+      setInviteSurface("post_claim")
       setShowInvite(true)
     } else if (unverifiedCompanions.length > 0) {
       const first = unverifiedCompanions[0]
       setInvitePersonId(first.id)
       setInvitePersonName(first.display_name)
+      setInviteSurface("post_claim_companion")
       setShowInvite(true)
     } else {
       onClose()
@@ -539,6 +558,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
         personId={invitePersonId}
         personName={invitePersonName}
         predicate={predicate}
+        surface={inviteSurface}
         onClose={onClose}
       />
     )

@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth, getServiceClient } from "@/lib/auth"
+import {
+  isInvitableNodeStatus,
+  trackInviteErrorServer,
+  trackInviteEventServer,
+} from "@/lib/invite-tracking"
+import { inviteEmailHtml } from "@/lib/emails/invite-emails"
 
 function escapeHtml(str: string): string {
   return str
@@ -8,45 +14,6 @@ function escapeHtml(str: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;")
-}
-
-// ─── Email HTML ───────────────────────────────────────────────────────────────
-function inviteEmailHtml(inviterName: string, personName: string, link: string): string {
-  return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-  <div style="max-width:480px;margin:40px auto;padding:32px;background:#141414;border-radius:16px;border:1px solid #2a2a2a;">
-    <!-- Logo -->
-    <div style="text-align:center;margin-bottom:28px;">
-      <span style="font-size:28px;">⬡</span>
-      <span style="display:block;font-size:13px;font-weight:600;letter-spacing:0.15em;color:#71717a;margin-top:4px;text-transform:uppercase;">Lineage</span>
-    </div>
-    <!-- Headline -->
-    <h1 style="margin:0 0 12px;font-size:20px;font-weight:700;color:#e5e5e5;line-height:1.3;">
-      ${inviterName} added you to their snowboard lineage
-    </h1>
-    <!-- Body -->
-    <p style="margin:0 0 20px;font-size:14px;color:#71717a;line-height:1.6;">
-      ${inviterName} says they rode with <strong style="color:#e5e5e5;">${personName}</strong> — that might be you.
-      They&rsquo;ve added you to their timeline on Lineage, a snowboard history app for tracking your quiver, mountains, and crew.
-    </p>
-    <p style="margin:0 0 28px;font-size:14px;color:#71717a;line-height:1.6;">
-      Claim your profile to verify the connection and start building your own lineage.
-    </p>
-    <!-- CTA -->
-    <div style="text-align:center;margin-bottom:28px;">
-      <a href="${link}" style="display:inline-block;padding:14px 32px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:600;">
-        Claim my profile →
-      </a>
-    </div>
-    <!-- Fine print -->
-    <p style="margin:0;font-size:11px;color:#3f3f46;text-align:center;line-height:1.5;">
-      This link expires in 7 days. If you weren&rsquo;t expecting this, you can ignore it.
-    </p>
-  </div>
-</body>
-</html>`
 }
 
 // ─── POST /api/invite ─────────────────────────────────────────────────────────
@@ -77,8 +44,31 @@ export async function POST(req: NextRequest) {
     const origin = req.headers.get("origin") || "https://lineage.wtf"
     const link = `${origin}/claim/${token}`
 
-    // Insert invite record -- use authenticated user's ID
     const supabase = getServiceClient()
+
+    // Verify the target is still invitable before doing anything else.
+    // node_status changes (catalog/unclaimed → claimed/verified) can race
+    // against stale client UI, so we check server-side and surface the
+    // mismatch via tracking.
+    const { data: targetRow } = await supabase
+      .from("people")
+      .select("node_status")
+      .eq("id", person_id)
+      .maybeSingle()
+
+    if (targetRow && !isInvitableNodeStatus(targetRow.node_status)) {
+      trackInviteErrorServer(origin, "invite_target_not_claimable", {
+        person_id,
+        node_status: targetRow.node_status,
+        inviter_id: user.id,
+      })
+      return NextResponse.json(
+        { error: "This rider has already claimed their profile." },
+        { status: 409 },
+      )
+    }
+
+    // Insert invite record -- use authenticated user's ID
     const { error: insertError } = await supabase.from("invites").insert({
       id: token,
       person_id,
@@ -91,6 +81,12 @@ export async function POST(req: NextRequest) {
 
     if (insertError) {
       console.error("Invite insert error:", insertError)
+      trackInviteErrorServer(origin, "invite_db_insert_failed", {
+        person_id,
+        inviter_id: user.id,
+        code: insertError.code,
+        message: insertError.message,
+      })
       // Don't hard-fail — still return a usable link
     }
 
@@ -121,9 +117,22 @@ export async function POST(req: NextRequest) {
         })
       } catch (emailErr) {
         console.error("Resend error:", emailErr)
+        trackInviteErrorServer(origin, "invite_resend_failed", {
+          person_id,
+          inviter_id: user.id,
+          message: emailErr instanceof Error ? emailErr.message : String(emailErr),
+        })
         // Don't fail the request if email sending fails
       }
     }
+
+    trackInviteEventServer(origin, "invite_link_created", {
+      surface: "server",
+      person_id,
+      predicate,
+      has_email: Boolean(email),
+      inviter_id: user.id,
+    })
 
     return NextResponse.json({ token, link })
   } catch (err) {

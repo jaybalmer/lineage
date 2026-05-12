@@ -1,14 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { CommunityLink } from "@/components/ui/community-link"
 import { cn, nameToSlug, parseYouTubeId } from "@/lib/utils"
 import { orgSlug } from "@/lib/mock-data"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
-import { useLineageStore } from "@/store/lineage-store"
-import { getRiderTier } from "@/components/ui/rider-avatar"
-import type { Story } from "@/types"
+import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
+import { useLineageStore, isAuthUser } from "@/store/lineage-store"
+import { getRiderTier, RiderAvatar } from "@/components/ui/rider-avatar"
+import { isInvitableNodeStatus, trackInviteEvent } from "@/lib/invite-tracking"
+import type { Person, Story } from "@/types"
 
 interface StoryCardProps {
   story: Story
@@ -22,13 +24,15 @@ function formatStoryDate(dateStr: string): string {
 }
 
 export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
-  const { catalog } = useLineageStore()
+  const { catalog, activePersonId } = useLineageStore()
   const [displayStory, setDisplayStory] = useState(story)
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [invitee, setInvitee] = useState<Person | null>(null)
+  const [picker, setPicker] = useState(false)
 
   const photos = displayStory.photos ?? []
 
@@ -47,7 +51,26 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
     .filter(Boolean)
   const taggedRiders = (displayStory.rider_ids ?? [])
     .map((id) => catalog.people.find((p) => p.id === id))
-    .filter(Boolean)
+    .filter(Boolean) as Person[]
+
+  // Only show invite prompt to the author of the story when they're authed.
+  // We don't want to nag third-party viewers to invite someone else's tags.
+  const viewerIsAuthor = isOwn && isAuthUser(activePersonId)
+  const unclaimedRiders = viewerIsAuthor
+    ? taggedRiders.filter((r) => isInvitableNodeStatus(r.node_status))
+    : []
+
+  // Fire impression once per render where the prompt is actually shown
+  useEffect(() => {
+    if (unclaimedRiders.length > 0) {
+      trackInviteEvent("invite_prompt_shown", {
+        surface: "story_card",
+        story_id: displayStory.id,
+        count: unclaimedRiders.length,
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unclaimedRiders.length, displayStory.id])
 
   const hasLinks = linkedPlace || linkedEvent || linkedOrg || linkedBoards.length > 0 || taggedRiders.length > 0
 
@@ -257,6 +280,81 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
             )
           })}
         </div>
+      )}
+
+      {/* ── Unclaimed-rider invite prompt (author-only) ── */}
+      {unclaimedRiders.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-dashed border-blue-500/20 flex items-center gap-2 text-[11px]">
+          <span className="text-muted">
+            {unclaimedRiders.length === 1
+              ? `${unclaimedRiders[0].display_name} hasn't joined yet`
+              : `${unclaimedRiders.length} riders tagged here haven't joined yet`}
+          </span>
+          <button
+            onClick={() => {
+              trackInviteEvent("invite_prompt_clicked", {
+                surface: "story_card",
+                story_id: displayStory.id,
+                count: unclaimedRiders.length,
+              })
+              if (unclaimedRiders.length === 1) {
+                setInvitee(unclaimedRiders[0])
+              } else {
+                setPicker(true)
+              }
+            }}
+            className="font-semibold transition-colors hover:opacity-80"
+            style={{ color: "#3b82f6" }}
+          >
+            Invite →
+          </button>
+        </div>
+      )}
+
+      {/* Mini picker when multiple unclaimed riders are tagged */}
+      {picker && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm" onClick={() => setPicker(false)} />
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
+            <div className="pointer-events-auto w-full max-w-xs bg-surface border border-border-default rounded-2xl shadow-2xl overflow-hidden">
+              <div className="px-4 pt-4 pb-3 border-b border-border-default flex items-center justify-between">
+                <h3 className="text-sm font-bold text-foreground">Invite a rider</h3>
+                <button
+                  onClick={() => setPicker(false)}
+                  className="w-6 h-6 flex items-center justify-center rounded-md text-muted hover:text-foreground hover:bg-surface-hover transition-colors text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="px-2 py-2 max-h-72 overflow-y-auto">
+                {unclaimedRiders.map((rider) => (
+                  <button
+                    key={rider.id}
+                    onClick={() => {
+                      setPicker(false)
+                      setInvitee(rider)
+                    }}
+                    className="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-surface-hover transition-colors text-left"
+                  >
+                    <RiderAvatar person={rider} size="sm" />
+                    <span className="text-sm text-foreground flex-1 truncate">{rider.display_name}</span>
+                    <span className="text-[11px] font-medium" style={{ color: "#3b82f6" }}>Invite</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {invitee && (
+        <InviteRiderModal
+          personId={invitee.id}
+          personName={invitee.display_name}
+          predicate="rode_with"
+          surface="story_card"
+          onClose={() => setInvitee(null)}
+        />
       )}
 
       {/* ── Delete confirm ── */}

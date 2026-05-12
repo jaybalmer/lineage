@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { requireAuth } from "@/lib/auth"
+import { maybeFireThresholdNotification } from "@/lib/invite-tracking-server"
 
 function getServiceClient() {
   return createClient(
@@ -147,6 +148,14 @@ export async function POST(req: NextRequest) {
       await supabase.from("story_riders").insert(
         rider_ids.map((rid: string) => ({ story_id: storyId, rider_id: rid }))
       )
+
+      // PB-008 Phase 2 Session 4 (Item 1) — ambient growth loop.
+      // Fire threshold check per tagged rider. Helper never throws; we
+      // intentionally don't await so a slow Resend doesn't delay the response.
+      const origin = req.headers.get("origin") ?? req.nextUrl.origin
+      for (const rid of rider_ids as string[]) {
+        void maybeFireThresholdNotification(origin, rid, user.id)
+      }
     }
 
     return NextResponse.json({ id: storyId }, { status: 201 })
@@ -251,6 +260,15 @@ export async function PATCH(req: NextRequest) {
       await supabase.from("story_riders").insert(
         (rider_ids as string[]).map((rid) => ({ story_id: id, rider_id: rid }))
       )
+
+      // PB-008 Phase 2 Session 4 (Item 1) — ambient growth loop on edit.
+      // Tagger is the story's author (we already verified user.id === author_id
+      // for write authorisation above). PATCH replaces the rider set wholesale,
+      // so every current rider counts as a fresh-write candidate for threshold.
+      const origin = req.headers.get("origin") ?? req.nextUrl.origin
+      for (const rid of rider_ids as string[]) {
+        void maybeFireThresholdNotification(origin, rid, user.id)
+      }
     }
 
     // Return updated photos list

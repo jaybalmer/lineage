@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireEditor, getServiceClient } from "@/lib/auth"
+import { maybeFireThresholdNotification } from "@/lib/invite-tracking-server"
 
 interface ConfirmEntry {
   name: string
@@ -119,6 +120,14 @@ export async function POST(req: NextRequest) {
         )
       }
       claimsCreated = claimRows.length
+
+      // PB-008 Phase 2 Session 4 (Item 1) — threshold check per inserted claim.
+      // subject_id is the tagged person, tagger is the editor running the
+      // scan-results import. Fire-and-forget; helper never throws.
+      const origin = req.headers.get("origin") ?? req.nextUrl.origin
+      for (const row of claimRows) {
+        void maybeFireThresholdNotification(origin, row.subject_id, added_by)
+      }
     }
   }
 
