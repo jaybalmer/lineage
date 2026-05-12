@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { requireAuth } from "@/lib/auth"
+import { fireTagEvents } from "@/lib/invite-tracking"
 
 function getServiceClient() {
   return createClient(
@@ -125,28 +126,41 @@ export async function POST(req: NextRequest) {
 
     const storyId = story.id
 
-    // Insert photos
+    // Junction inserts surface errors. Before PB-008 Phase 2 these awaited
+    // without checking the return; story_riders silently lost ghost riders
+    // because of a stale FK to profiles(id). Now every junction failure is
+    // visible to the caller.
     if (photos.length > 0) {
-      await supabase.from("story_photos").insert(
+      const { error } = await supabase.from("story_photos").insert(
         photos.map((p: { url: string; caption?: string; sort_order?: number }, i: number) => ({
           story_id: storyId, url: p.url, caption: p.caption ?? null,
           sort_order: p.sort_order ?? i,
         }))
       )
+      if (error) throw new Error(`story_photos insert failed: ${error.message}`)
     }
 
-    // Insert board links
     if (board_ids.length > 0) {
-      await supabase.from("story_boards").insert(
+      const { error } = await supabase.from("story_boards").insert(
         board_ids.map((bid: string) => ({ story_id: storyId, board_id: bid }))
       )
+      if (error) throw new Error(`story_boards insert failed: ${error.message}`)
     }
 
-    // Insert rider tags
     if (rider_ids.length > 0) {
-      await supabase.from("story_riders").insert(
+      const { error } = await supabase.from("story_riders").insert(
         rider_ids.map((rid: string) => ({ story_id: storyId, rider_id: rid }))
       )
+      if (error) throw new Error(`story_riders insert failed: ${error.message}`)
+    }
+
+    // Ambient-growth threshold: fire post-tag-event for every rider that's a
+    // person id, in the background. Failures are non-fatal — the story is
+    // already saved and the event endpoint logs its own errors.
+    if (rider_ids.length > 0) {
+      fireTagEvents(rider_ids as string[], user.id).catch((e) => {
+        console.error("[stories] post-tag-event background fan-out failed:", e)
+      })
     }
 
     return NextResponse.json({ id: storyId }, { status: 201 })
@@ -239,18 +253,30 @@ export async function PATCH(req: NextRequest) {
       )
     }
 
-    // Replace junction rows
+    // Replace junction rows — surface errors instead of swallowing them.
     await supabase.from("story_boards").delete().eq("story_id", id)
     await supabase.from("story_riders").delete().eq("story_id", id)
     if (board_ids.length > 0) {
-      await supabase.from("story_boards").insert(
+      const { error } = await supabase.from("story_boards").insert(
         (board_ids as string[]).map((bid) => ({ story_id: id, board_id: bid }))
       )
+      if (error) throw new Error(`story_boards insert failed: ${error.message}`)
     }
     if (rider_ids.length > 0) {
-      await supabase.from("story_riders").insert(
+      const { error } = await supabase.from("story_riders").insert(
         (rider_ids as string[]).map((rid) => ({ story_id: id, rider_id: rid }))
       )
+      if (error) throw new Error(`story_riders insert failed: ${error.message}`)
+    }
+
+    // Fan-out tag events for any riders newly added (PATCH replaces the whole
+    // set, so we treat every rider in the new payload as a tag for threshold
+    // purposes; the dedup UNIQUE on person_invite_notifications keeps email
+    // sends idempotent).
+    if (rider_ids.length > 0) {
+      fireTagEvents(rider_ids as string[], user.id).catch((e) => {
+        console.error("[stories PATCH] post-tag-event background fan-out failed:", e)
+      })
     }
 
     // Return updated photos list

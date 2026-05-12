@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef, useCallback } from "react"
+import { useState, useRef, useCallback, useEffect } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 import { cn, parseYouTubeId } from "@/lib/utils"
@@ -131,8 +131,19 @@ interface AddStoryModalProps {
 type UploadState = { file: File; preview: string; uploading: boolean; url?: string }
 
 export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStoryModalProps) {
-  const { activePersonId, profileOverride, catalog } = useLineageStore()
+  const { activePersonId, profileOverride, catalog, loadCatalog } = useLineageStore()
   const isEditing = !!editStory
+
+  // Silent-failures brief Finding #4: the catalog is fetched once at app boot
+  // by <CatalogLoader/> and never invalidated, so deleted/merged ghosts linger
+  // in rider autocomplete until a hard reload. Re-fetching when the modal
+  // mounts (i.e. when the user is about to open a rider dropdown) catches the
+  // common case "another tab deleted/merged a person while this session sat
+  // open". Fire-and-forget — the dropdown reads from `catalog.people` which
+  // updates when loadCatalog resolves.
+  useEffect(() => {
+    loadCatalog()
+  }, [loadCatalog])
 
   const [title, setTitle]       = useState(editStory?.title ?? "")
   const [body, setBody]         = useState(editStory?.body ?? "")

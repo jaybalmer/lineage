@@ -318,7 +318,14 @@ interface AddClaimModalProps {
 }
 
 export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalProps) {
-  const { activePersonId, addClaim, userEntities, catalog } = useLineageStore()
+  const { activePersonId, addClaim, userEntities, catalog, loadCatalog } = useLineageStore()
+
+  // Silent-failures brief Finding #4: refresh the public catalog whenever the
+  // modal opens, so deleted/merged ghosts disappear from the riders/entities
+  // picker on the next open rather than only after a hard reload.
+  useEffect(() => {
+    loadCatalog()
+  }, [loadCatalog])
 
   const defaultPredicate = FILTER_DEFAULT_PREDICATE[defaultFilter] ?? null
   const [predicate, setPredicate] = useState<Predicate | null>(defaultPredicate)
@@ -494,23 +501,51 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
       ...(predicate === "competed_at" && result.trim() ? { result: result.trim() } : {}),
     })
 
-    // Create companion claims (one per tagged person, same place/event + dates)
+    // Silent-failures brief Finding #3: when the predicate is rode_at and the
+    // user tagged companions, write rode_with edges from the asserter to each
+    // companion. Previously this loop wrote parallel claims with the companion
+    // as the subject — those silently dropped under the claims RLS (asserter
+    // can only insert claims where they’re the subject). Keeping the asserter
+    // as the subject and using rode_with as the predicate fixes that path and
+    // produces semantically correct edges for the ghost-tagging count.
+    //
+    // For other COMPANION_PREDICATES (worked_at, competed_at, spectated_at,
+    // organized_at) we keep the existing parallel-claim shape — those are
+    // outside the brief and have different semantics ("we both worked there",
+    // "we both competed") that don’t collapse to rode_with.
     const unverifiedCompanions: Person[] = []
     for (const personId of companions) {
-      addClaim({
-        id: generateId("claim"),
-        subject_id: personId,
-        subject_type: "person",
-        predicate,
-        object_id: entityId,
-        object_type: PREDICATE_ENTITY_TYPE[predicate],
-        start_date: effectiveStartDate,
-        end_date: effectiveEndDate,
-        confidence: "self-reported",
-        visibility: "public",
-        asserted_by: activePersonId,
-        created_at: new Date().toISOString(),
-      })
+      if (predicate === "rode_at") {
+        addClaim({
+          id: generateId("claim"),
+          subject_id: activePersonId,
+          subject_type: "person",
+          predicate: "rode_with",
+          object_id: personId,
+          object_type: "person",
+          start_date: resolvedStartDate,
+          end_date: resolvedEndDate,
+          confidence: "self-reported",
+          visibility,
+          asserted_by: activePersonId,
+          created_at: new Date().toISOString(),
+        })
+      } else {
+        addClaim({
+          id: generateId("claim"),
+          subject_id: personId,
+          subject_type: "person",
+          predicate,
+          object_id: entityId,
+          object_type: PREDICATE_ENTITY_TYPE[predicate],
+          start_date: effectiveStartDate,
+          end_date: effectiveEndDate,
+          confidence: "self-reported",
+          visibility: "public",
+          asserted_by: activePersonId,
+          created_at: new Date().toISOString(),
+        })
+      }
       const p = allPeople.find((p) => p.id === personId)
       if (!p || p.community_status === "unverified") {
         unverifiedCompanions.push(p ?? { id: personId, display_name: "", privacy_level: "public" })
