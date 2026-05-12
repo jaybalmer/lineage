@@ -11,6 +11,7 @@ import { RiderCard } from "@/components/ui/rider-card"
 import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { TimelinePlayer } from "@/components/ui/timeline-player"
+import { BulkInvitePrompt } from "@/components/ui/bulk-invite-prompt"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import type { Claim, PrivacyLevel, Story, TriggerPrefs } from "@/types"
@@ -538,6 +539,17 @@ export default function ProfilePage() {
             triggerPrefs={triggerPrefs}
             onAddClaim={() => setAddingClaim(true)}
             onAddStory={() => setAddingStory(true)}
+          />
+        )}
+
+        {/* Invite-discovery prompt — surfaces unclaimed riders the viewer has tagged */}
+        {isAuthUser(activePersonId) && catalogLoaded && (
+          <BulkInvitePrompt
+            activePersonId={activePersonId}
+            claims={personClaims}
+            allClaims={allClaims}
+            stories={stories}
+            people={catalog.people}
           />
         )}
 

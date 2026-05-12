@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { PREDICATE_LABELS } from "@/lib/utils"
+import { trackInviteError, trackInviteEvent, type InviteSurface } from "@/lib/invite-tracking"
 import type { Predicate } from "@/types"
 
 interface InviteRiderModalProps {
@@ -10,9 +11,11 @@ interface InviteRiderModalProps {
   personName: string
   predicate: Predicate
   onClose: () => void
+  /** Where the modal was opened from — used for analytics. */
+  surface?: InviteSurface
 }
 
-export function InviteRiderModal({ personId, personName, predicate, onClose }: InviteRiderModalProps) {
+export function InviteRiderModal({ personId, personName, predicate, onClose, surface = "person_profile" }: InviteRiderModalProps) {
   const { activePersonId, profileOverride, catalog } = useLineageStore()
   const [email, setEmail] = useState("")
   const [sending, setSending] = useState(false)
@@ -20,6 +23,20 @@ export function InviteRiderModal({ personId, personName, predicate, onClose }: I
   const [link, setLink] = useState("")
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState("")
+
+  // Fire open event once on mount. We track dismissal separately so we can
+  // measure open-without-action drop-off; doneRef prevents the dismissal
+  // event from firing when the modal closes after a successful send.
+  const doneRef = useRef(false)
+  useEffect(() => {
+    trackInviteEvent("invite_modal_opened", { surface, person_id: personId, predicate })
+    return () => {
+      if (!doneRef.current) {
+        trackInviteEvent("invite_modal_dismissed", { surface, person_id: personId, predicate })
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Resolve inviter display name
   const inviterName =
@@ -48,20 +65,38 @@ export function InviteRiderModal({ personId, personName, predicate, onClose }: I
       const data = await res.json() as { token?: string; link?: string; error?: string }
       if (!res.ok || !data.link) {
         setError(data.error ?? "Something went wrong. Try again.")
+        trackInviteError("invite_post_fetch_failed", {
+          surface,
+          person_id: personId,
+          status: res.status,
+          server_error: data.error,
+        })
         setSending(false)
         return
       }
       setLink(data.link)
       setDone(true)
+      doneRef.current = true
+      trackInviteEvent("invite_link_created", {
+        surface,
+        person_id: personId,
+        predicate,
+        has_email: Boolean(sendEmail && email.trim()),
+      })
+      if (sendEmail && email.trim()) {
+        trackInviteEvent("invite_email_sent", { surface, person_id: personId, predicate })
+      }
       // Auto-copy to clipboard
       try {
         await navigator.clipboard.writeText(data.link)
         setCopied(true)
+        trackInviteEvent("invite_link_copied", { surface, person_id: personId, auto: true })
       } catch {
         // clipboard not available
       }
     } catch {
       setError("Network error. Check your connection.")
+      trackInviteError("invite_post_fetch_failed", { surface, person_id: personId, reason: "network" })
     } finally {
       setSending(false)
     }
@@ -72,6 +107,7 @@ export function InviteRiderModal({ personId, personName, predicate, onClose }: I
     try {
       await navigator.clipboard.writeText(link)
       setCopied(true)
+      trackInviteEvent("invite_link_copied", { surface, person_id: personId, auto: false })
       setTimeout(() => setCopied(false), 2500)
     } catch {
       // fallback: show the link
