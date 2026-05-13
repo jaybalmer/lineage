@@ -197,8 +197,12 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Only /[community]/timeline requires auth — all browse pages stay public
-  const isProtected = /^\/[^/]+\/timeline/.test(request.nextUrl.pathname)
+  // /[community]/timeline and /me/* (PB-009 Phase 2 owner inbox + settings)
+  // require auth — all browse pages stay public.
+  const path = request.nextUrl.pathname
+  const isProtected =
+    /^\/[^/]+\/timeline/.test(path) ||
+    path === "/me" || path.startsWith("/me/")
 
   if (!user && isProtected) {
     const url = request.nextUrl.clone()

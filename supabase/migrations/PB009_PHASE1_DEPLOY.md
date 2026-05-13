@@ -148,9 +148,10 @@ If a migration fails partway:
 
 ## Phase-2 handoff notes
 
-The single point of behaviour change for Phase 2 is `defaultStatusForPhase1`
-in `src/lib/tag-events.ts`. Flip the `case "member"` branch to return
-`"pending"` and the `/me/tags` build can begin.
+The single point of behaviour change for Phase 2 is `defaultStatusForSource`
+in `src/lib/tag-events.ts` (renamed from `defaultStatusForPhase1` at the
+start of Phase 2). Flip the `case "member"` branch to return `"pending"`
+and the `/me/tags` build can begin.
 
 The block-cascade trigger and the `tag_trust` table are ready for Phase 2
 without further migration. The owner inbox should:

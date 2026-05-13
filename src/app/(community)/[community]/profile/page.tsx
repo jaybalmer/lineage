@@ -268,6 +268,7 @@ export default function ProfilePage() {
     deletedClaimIds, claimOverrides, profileOverride, ridingDays,
     membership, triggerPrefs, setTriggerPrefs, setShowMemberCard,
     catalog, catalogLoaded, queueCelebration, setShowWelcomeCelebration,
+    pendingTagCount,
   } = useLineageStore()
 
   const myDays = ridingDays.filter((d) => d.created_by === activePersonId)
@@ -479,6 +480,20 @@ export default function ProfilePage() {
       )}
 
       <div className="max-w-3xl mx-auto px-4 py-10">
+
+        {/* PB-009 Phase 2: pending-tag pill — owner-only by virtue of this
+            page being the active user's own profile (no [id] segment). */}
+        {pendingTagCount > 0 && (
+          <Link
+            href="/me/tags"
+            className="inline-flex items-center gap-2 px-3 py-1.5 mb-4 rounded-full bg-blue-600/10 text-blue-700 hover:bg-blue-600/20 transition-colors text-xs font-medium"
+          >
+            <span>
+              {pendingTagCount} {pendingTagCount === 1 ? "tag" : "tags"} pending review
+            </span>
+            <span aria-hidden>→</span>
+          </Link>
+        )}
 
         {/* ── Rider Card ── */}
         {person && (
