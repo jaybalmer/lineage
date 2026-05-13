@@ -343,9 +343,21 @@ export default function ProfilePage() {
         if (!error && data) setDbClaims(data as Claim[])
       })
 
-    fetch(`/api/stories?author_id=${activePersonId}&limit=100`)
-      .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setStories(data as Story[]) })
+    // PB-009 Phase 2: own profile shows stories authored by + tagged-in.
+    // Tagged-in reads through story_riders_public, so pending tags stay hidden
+    // until approved via /me/tags.
+    Promise.all([
+      fetch(`/api/stories?author_id=${activePersonId}&limit=100`).then((r) => r.json()).catch(() => []),
+      fetch(`/api/stories?rider_id=${activePersonId}&limit=100`).then((r) => r.json()).catch(() => []),
+    ]).then(([authored, taggedIn]) => {
+      const byId = new Map<string, Story>()
+      for (const s of (Array.isArray(authored)  ? authored  : []) as Story[]) byId.set(s.id, s)
+      for (const s of (Array.isArray(taggedIn)  ? taggedIn  : []) as Story[]) byId.set(s.id, s)
+      const merged = Array.from(byId.values()).sort((a, b) =>
+        (b.story_date ?? "").localeCompare(a.story_date ?? "")
+      )
+      setStories(merged)
+    })
   }, [activePersonId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const allClaims    = getAllClaims(sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId)

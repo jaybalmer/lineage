@@ -82,11 +82,23 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
       .eq("visibility", "public")
       .then(({ data }) => setDbClaims((data ?? []) as Claim[]))
 
+    // PB-009 Phase 2: public person profile shows stories authored by + tagged-in.
+    // Tagged-in reads through story_riders_public, so pending tags stay hidden
+    // until the tagged rider approves them via /me/tags.
     const isProperUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(resolvedId)
     if (isProperUuid) {
-      fetch(`/api/stories?author_id=${resolvedId}&limit=100`)
-        .then((r) => r.json())
-        .then((data) => { if (Array.isArray(data)) setStories(data as Story[]) })
+      Promise.all([
+        fetch(`/api/stories?author_id=${resolvedId}&limit=100`).then((r) => r.json()).catch(() => []),
+        fetch(`/api/stories?rider_id=${resolvedId}&limit=100`).then((r) => r.json()).catch(() => []),
+      ]).then(([authored, taggedIn]) => {
+        const byId = new Map<string, Story>()
+        for (const s of (Array.isArray(authored) ? authored : []) as Story[]) byId.set(s.id, s)
+        for (const s of (Array.isArray(taggedIn) ? taggedIn : []) as Story[]) byId.set(s.id, s)
+        const merged = Array.from(byId.values()).sort((a, b) =>
+          (b.story_date ?? "").localeCompare(a.story_date ?? "")
+        )
+        setStories(merged)
+      })
     }
 
     fetch(`/api/claim-requests?node_id=${encodeURIComponent(resolvedId)}`)
