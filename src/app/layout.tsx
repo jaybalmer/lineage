@@ -4,6 +4,7 @@ import "./globals.css"
 import { CatalogLoader } from "@/components/catalog-loader"
 import { ClientOverlays } from "@/components/ClientOverlays"
 import { PasswordGate } from "@/components/PasswordGate"
+import { PendingTagPoller } from "@/components/pending-tag-poller"
 import { Analytics } from "@vercel/analytics/next"
 import { Toasts } from "@/components/ui/toast"
 
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="bg-background text-foreground antialiased min-h-screen">
         <PasswordGate>
           <CatalogLoader />
+          <PendingTagPoller />
           <ClientOverlays />
           {children}
         </PasswordGate>

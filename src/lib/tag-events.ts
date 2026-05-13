@@ -86,18 +86,40 @@ export function expiryForSource(source: TagEventSource): string | null {
   }
 }
 
-// ── Default status for Phase 1 ──────────────────────────────────────────────
-// Phase 1: every NEW source='member' insert lands as 'approved' so the live
-// product behaviour stays unchanged. Phase 2 will flip this default to
-// 'pending' once /me/tags exists. The single point of change is here.
+// ── Default status for new tag_event inserts ───────────────────────────────
+// Single source of truth for status defaults at insert time, keyed on source.
+// Member tags land as 'pending' and route through the Owner Inbox at /me/tags
+// before becoming publicly visible. Rollback: flipping `case "member"` back
+// to 'approved' restores pre-Phase-2 product behaviour without a data
+// migration — pending rows already in the DB are unaffected by the rollback
+// and can be cleaned up offline.
 
-export function defaultStatusForPhase1(source: TagEventSource): TagEventStatus {
+export function defaultStatusForSource(source: TagEventSource): TagEventStatus {
   switch (source) {
-    case "member":               return "approved"
+    case "member":               return "pending"
     case "editor":               return "approved"
     case "system":               return "approved"
     case "public_timeline_embed":return "pending"  // PB-010 default
     default:                     return "pending"
+  }
+}
+
+// ── Predicate → human-readable label (Phase 2) ─────────────────────────────
+// Returns the predicate clause used in the Owner Inbox: the UI renders
+// `${asserterName} ${tagPredicateLabel(predicate)}`, so the returned string
+// is the verb phrase with the subject ("you") embedded, no leading asserter.
+// Fallback covers any predicate added later without a brief update.
+
+export function tagPredicateLabel(predicate: string): string {
+  switch (predicate) {
+    case "story_tag":     return "tagged you in a story"
+    case "rode_with":     return "said you rode together"
+    case "shot_by":       return "said you photographed them"
+    case "sponsored_by":  return "said you sponsored them"
+    case "coached_by":    return "said you coached them"
+    case "part_of_team":  return "added you to a team"
+    case "organized":     return "said you organized an event"
+    default:              return `tagged you in a ${predicate}`
   }
 }
 
@@ -133,7 +155,7 @@ export async function insertTagEvent(
   input: InsertTagEventInput,
 ): Promise<string | null> {
   const subjectTier = await getSubjectTier(supabase, input.subjectId)
-  const status = defaultStatusForPhase1(input.source)
+  const status = defaultStatusForSource(input.source)
   const displayState = defaultDisplayStateForSource(input.source)
   // Approved rows don't expire; pending rows get the source-typed TTL.
   const expiresAt = status === "approved" ? null : expiryForSource(input.source)

@@ -45,13 +45,14 @@ function isActive(navHref: string, pathname: string) {
 //     has its own ref and state (avoids the shared-ref-rendered-twice bug) ────
 
 interface AvatarDropdownProps {
-  initial:      string
-  displayName:  string
-  tier:         string
-  totalTokens:  number
+  initial:           string
+  displayName:       string
+  tier:              string
+  totalTokens:       number
+  pendingTagCount:   number
 }
 
-function AvatarDropdown({ initial, displayName, tier, totalTokens }: AvatarDropdownProps) {
+function AvatarDropdown({ initial, displayName, tier, totalTokens, pendingTagCount }: AvatarDropdownProps) {
   const path     = usePathname()
   const router   = useRouter()
   const [open, setOpen] = useState(false)
@@ -83,12 +84,21 @@ function AvatarDropdown({ initial, displayName, tier, totalTokens }: AvatarDropd
     <div ref={ref} className="relative flex-shrink-0">
       <button
         onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-1.5 rounded-full focus:outline-none"
+        className="flex items-center gap-1.5 rounded-full focus:outline-none relative"
         aria-label="User menu"
       >
         <div className="w-7 h-7 rounded-full bg-[#F5F2EE] flex items-center justify-center text-xs font-semibold text-[#1C1917] hover:bg-[#D6CEBF] transition-colors">
           {getInitials(displayName || "?")}
         </div>
+        {pendingTagCount > 0 && (
+          <span
+            className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-blue-600 text-white"
+            style={{ fontSize: 9, fontWeight: 700, lineHeight: 1 }}
+            aria-label={`${pendingTagCount} pending tags`}
+          >
+            {pendingTagCount > 99 ? "99+" : pendingTagCount}
+          </span>
+        )}
         {tierBadge && (
           <span className="hidden sm:inline px-1.5 py-0.5 rounded-full"
             style={{ background: `${tierBadge.color}20`, color: tierBadge.color, fontSize: 8, letterSpacing: 0.5, fontWeight: 700 }}>
@@ -121,6 +131,19 @@ function AvatarDropdown({ initial, displayName, tier, totalTokens }: AvatarDropd
             className="flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
             style={{ fontSize: 11 }}>
             My Timeline
+          </Link>
+          <Link href="/me/tags"
+            className="flex items-center justify-between px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
+            style={{ fontSize: 11 }}>
+            <span>Tags</span>
+            {pendingTagCount > 0 && (
+              <span
+                className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-blue-600 text-white"
+                style={{ fontSize: 9, fontWeight: 700 }}
+              >
+                {pendingTagCount > 99 ? "99+" : pendingTagCount}
+              </span>
+            )}
           </Link>
           <Link href="/account/membership"
             className="flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
@@ -307,7 +330,7 @@ function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug, communit
 
 export function Nav() {
   const path = usePathname()
-  const { activePersonId, profileOverride, loadDbEntities, membership, activeCommunitySlug, communities } = useLineageStore()
+  const { activePersonId, profileOverride, loadDbEntities, membership, activeCommunitySlug, communities, pendingTagCount } = useLineageStore()
   const basePerson    = getPersonById(activePersonId)
   const loadedForId   = useRef<string | null>(null)
 
@@ -326,7 +349,7 @@ export function Nav() {
   const tier        = membership.tier
   const totalTokens = membership.token_balance.founder * 2 + membership.token_balance.member + membership.token_balance.contribution
 
-  const dropdownProps = { initial, displayName, tier, totalTokens }
+  const dropdownProps = { initial, displayName, tier, totalTokens, pendingTagCount }
 
   return (
     <nav className="border-b border-border-default bg-bg-nav sticky top-0 z-50">

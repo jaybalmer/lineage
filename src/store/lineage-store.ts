@@ -123,6 +123,12 @@ interface LineageStore {
   // Error state
   catalogError: string | null
 
+  // PB-009 Phase 2: Owner Inbox pending-tag count for the avatar dropdown badge
+  // and profile pill. Refreshed by <PendingTagPoller /> on app mount + every 30s.
+  pendingTagCount: number
+  setPendingTagCount: (n: number) => void
+  refreshPendingTagCount: () => void
+
   // Toast notifications
   toasts: { id: string; message: string; type: "error" | "info" }[]
   addToast: (message: string, type?: "error" | "info") => void
@@ -707,6 +713,24 @@ export const useLineageStore = create<LineageStore>()(
       authReady: false,
       setAuthReady: (ready) => set({ authReady: ready }),
 
+      pendingTagCount: 0,
+      setPendingTagCount: (n) => set({ pendingTagCount: n }),
+      refreshPendingTagCount: () => {
+        // Mock + unauth users have no tag_events rows; skip the round-trip.
+        if (!isAuthUser(get().activePersonId)) {
+          set({ pendingTagCount: 0 })
+          return
+        }
+        fetch("/api/me/tags?status=pending")
+          .then((r) => r.ok ? r.json() : null)
+          .then((r) => {
+            if (r && typeof r.pendingCount === "number") {
+              set({ pendingTagCount: r.pendingCount })
+            }
+          })
+          .catch(() => { /* silent — header badge can stay stale */ })
+      },
+
       membership: {
         tier: "free",
         status: "active",
@@ -761,7 +785,7 @@ export const useLineageStore = create<LineageStore>()(
       // Don't persist catalog or dbClaims — catalog always starts from mock data
       // and gets overwritten by loadCatalog(); dbClaims are always reloaded from DB
       partialize: (s) => {
-        const { dbClaims: _db, catalog: _cat, catalogLoaded: _cl, showMemberCard: _smc, authReady: _ar, communities: _comm, catalogError: _ce, toasts: _t, celebrationQueue: _cq, showWelcomeCelebration: _swc, ...rest } = s
+        const { dbClaims: _db, catalog: _cat, catalogLoaded: _cl, showMemberCard: _smc, authReady: _ar, communities: _comm, catalogError: _ce, toasts: _t, celebrationQueue: _cq, showWelcomeCelebration: _swc, pendingTagCount: _ptc, ...rest } = s
         return rest
       },
     }

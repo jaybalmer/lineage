@@ -268,6 +268,7 @@ export default function ProfilePage() {
     deletedClaimIds, claimOverrides, profileOverride, ridingDays,
     membership, triggerPrefs, setTriggerPrefs, setShowMemberCard,
     catalog, catalogLoaded, queueCelebration, setShowWelcomeCelebration,
+    pendingTagCount,
   } = useLineageStore()
 
   const myDays = ridingDays.filter((d) => d.created_by === activePersonId)
@@ -342,9 +343,21 @@ export default function ProfilePage() {
         if (!error && data) setDbClaims(data as Claim[])
       })
 
-    fetch(`/api/stories?author_id=${activePersonId}&limit=100`)
-      .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setStories(data as Story[]) })
+    // PB-009 Phase 2: own profile shows stories authored by + tagged-in.
+    // Tagged-in reads through story_riders_public, so pending tags stay hidden
+    // until approved via /me/tags.
+    Promise.all([
+      fetch(`/api/stories?author_id=${activePersonId}&limit=100`).then((r) => r.json()).catch(() => []),
+      fetch(`/api/stories?rider_id=${activePersonId}&limit=100`).then((r) => r.json()).catch(() => []),
+    ]).then(([authored, taggedIn]) => {
+      const byId = new Map<string, Story>()
+      for (const s of (Array.isArray(authored)  ? authored  : []) as Story[]) byId.set(s.id, s)
+      for (const s of (Array.isArray(taggedIn)  ? taggedIn  : []) as Story[]) byId.set(s.id, s)
+      const merged = Array.from(byId.values()).sort((a, b) =>
+        (b.story_date ?? "").localeCompare(a.story_date ?? "")
+      )
+      setStories(merged)
+    })
   }, [activePersonId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const allClaims    = getAllClaims(sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId)
@@ -479,6 +492,20 @@ export default function ProfilePage() {
       )}
 
       <div className="max-w-3xl mx-auto px-4 py-10">
+
+        {/* PB-009 Phase 2: pending-tag pill — owner-only by virtue of this
+            page being the active user's own profile (no [id] segment). */}
+        {pendingTagCount > 0 && (
+          <Link
+            href="/me/tags"
+            className="inline-flex items-center gap-2 px-3 py-1.5 mb-4 rounded-full bg-blue-600/10 text-blue-700 hover:bg-blue-600/20 transition-colors text-xs font-medium"
+          >
+            <span>
+              {pendingTagCount} {pendingTagCount === 1 ? "tag" : "tags"} pending review
+            </span>
+            <span aria-hidden>→</span>
+          </Link>
+        )}
 
         {/* ── Rider Card ── */}
         {person && (
