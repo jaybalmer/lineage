@@ -86,12 +86,21 @@ END $$;
 -- ── claims (person-implicating, non-self) ──────────────────────────────────
 -- A claim is "person-implicating" when subject OR object is a person OTHER
 -- than the asserter. Self-claims (subject = asserter or object = asserter
--- with the other side being a place/board/event) keep tag_event_id = NULL —
+-- with the other side being a place/board/event) keep tag_event_id = NULL --
 -- they're not really tags, just first-person history records.
 --
 -- When BOTH sides are non-asserter persons (rare: a third-party rode_with
 -- assertion) we pick the subject side. The other side stays unpaired in
 -- Phase 1; Phase 2's editor queue can split or escalate as needed.
+--
+-- ── asserter_id is NULL for system-source backfill ─────────────────────────
+-- Matches the story_riders backfill pattern above (and the brief's example).
+-- source='system' means the synthetic actor created this row retroactively,
+-- so no profile is the legitimate "asserter" for FK purposes. Some prod claims
+-- have asserted_by pointing at orphaned UUIDs (deleted profiles, merged
+-- ghosts, pre-auth scratch IDs); attributing them via FK to profiles would
+-- fail. Attribution remains recoverable through moment_ref.claim_id ->
+-- claims.asserted_by for any audit that needs it.
 
 DO $$
 DECLARE
@@ -127,8 +136,7 @@ BEGIN
                THEN subject_id
              ELSE object_id
            END AS tagged_person_id,
-           predicate,
-           asserted_by
+           predicate
       FROM unbacked
   ),
   inserted AS (
@@ -137,7 +145,7 @@ BEGIN
       predicate, moment_ref, status, decision_at, display_state
     )
     SELECT 'system'::tag_event_source,
-           t.asserted_by,
+           NULL,
            t.tagged_person_id,
            'standard'::tag_event_subject_tier,
            t.predicate,
@@ -166,6 +174,6 @@ BEGIN
   RAISE NOTICE 'claims backfill: % person-implicating rows remain unpaired (expected 0)', post_unbacked;
 
   IF post_unbacked <> 0 THEN
-    RAISE WARNING 'claims backfill left % person-implicating rows unpaired — investigate before running enforcement', post_unbacked;
+    RAISE WARNING 'claims backfill left % person-implicating rows unpaired - investigate before running enforcement', post_unbacked;
   END IF;
 END $$;
