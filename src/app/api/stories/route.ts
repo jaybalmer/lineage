@@ -284,42 +284,71 @@ export async function PATCH(req: NextRequest) {
       )
     }
 
-    // Replace junction rows — surface errors instead of swallowing them.
+    // Boards junction — boards don't tag persons, so wipe-and-rebuild is fine.
     await supabase.from("story_boards").delete().eq("story_id", id)
-    await supabase.from("story_riders").delete().eq("story_id", id)
     if (board_ids.length > 0) {
       const { error } = await supabase.from("story_boards").insert(
         (board_ids as string[]).map((bid) => ({ story_id: id, board_id: bid }))
       )
       if (error) throw new Error(`story_boards insert failed: ${error.message}`)
     }
-    if (rider_ids.length > 0) {
+
+    // PB-009 follow-up: diff rider sets instead of wipe-and-rebuild. Survivors
+    // keep their existing tag_event so an approved rider stays approved after
+    // an unrelated title edit (the prior Phase 1 wipe was acceptable only
+    // because every fresh tag was 'approved' anyway; once the Phase 2 flip
+    // landed, wipe-and-rebuild silently re-pendinged every approved rider on
+    // every story edit). Removed riders flip their tag_event to 'disabled'
+    // so the tagged rider sees the unattributed moment in /me/tags Disabled.
+    // Added riders get fresh tag_events at the source-default status.
+    const uniqueRiderIds: string[] = Array.from(new Set(rider_ids as string[]))
+    const { data: oldRows } = await supabase
+      .from("story_riders")
+      .select("rider_id, tag_event_id")
+      .eq("story_id", id)
+    const oldByRider = new Map<string, string | null>(
+      ((oldRows ?? []) as { rider_id: string; tag_event_id: string | null }[])
+        .map((r) => [r.rider_id, r.tag_event_id])
+    )
+    const newRiderSet = new Set(uniqueRiderIds)
+    const removedRiderIds = [...oldByRider.keys()].filter((rid) => !newRiderSet.has(rid))
+    const addedRiderIds   = uniqueRiderIds.filter((rid) => !oldByRider.has(rid))
+
+    if (removedRiderIds.length > 0) {
+      const tagIdsToDisable = removedRiderIds
+        .map((rid) => oldByRider.get(rid) ?? null)
+        .filter((tid): tid is string => !!tid)
+      if (tagIdsToDisable.length > 0) {
+        await supabase
+          .from("tag_events")
+          .update({ status: "disabled", decision_at: new Date().toISOString() })
+          .in("id", tagIdsToDisable)
+      }
+      await supabase
+        .from("story_riders")
+        .delete()
+        .eq("story_id", id)
+        .in("rider_id", removedRiderIds)
+    }
+
+    if (addedRiderIds.length > 0) {
       const { error } = await supabase.from("story_riders").insert(
-        (rider_ids as string[]).map((rid) => ({ story_id: id, rider_id: rid }))
+        addedRiderIds.map((rid) => ({ story_id: id, rider_id: rid }))
       )
       if (error) throw new Error(`story_riders insert failed: ${error.message}`)
 
-      // PB-009 Phase 1: pair every story_riders row with a tag_event. PATCH
-      // replaces the full set, so we pair the entire new payload. Pre-
-      // existing tag_events for riders that survived the replace are NOT
-      // re-used — they were attached to the deleted rows. This means an
-      // unchanged rider gets a fresh tag_event_id, which is acceptable in
-      // Phase 1 because behaviour stays 'approved'. Phase 2 can refine by
-      // diffing rider sets before pairing.
       const { paired, failed } = await pairStoryRiderTagEvents(supabase, {
-        storyId: id, riderIds: rider_ids as string[], authorId: user.id,
+        storyId: id, riderIds: addedRiderIds, authorId: user.id,
       })
       if (failed > 0) {
         console.error(`[stories PATCH] tag_event pairing: ${paired} ok, ${failed} failed`)
       }
     }
 
-    // Fan-out tag events for any riders newly added (PATCH replaces the whole
-    // set, so we treat every rider in the new payload as a tag for threshold
-    // purposes; the dedup UNIQUE on person_invite_notifications keeps email
-    // sends idempotent).
-    if (rider_ids.length > 0) {
-      fireTagEvents(rider_ids as string[], user.id).catch((e) => {
+    // Fan-out invite-notification side-effects only for newly added riders;
+    // survivors already got their notification on the prior write.
+    if (addedRiderIds.length > 0) {
+      fireTagEvents(addedRiderIds, user.id).catch((e) => {
         console.error("[stories PATCH] post-tag-event background fan-out failed:", e)
       })
     }
@@ -357,6 +386,26 @@ export async function DELETE(req: NextRequest) {
   if (!existing) return NextResponse.json({ error: "Story not found" }, { status: 404 })
   if (existing.author_id !== user.id) {
     return NextResponse.json({ error: "Not authorized to delete this story" }, { status: 403 })
+  }
+
+  // PB-009 follow-up: disable any tag_events paired with this story BEFORE
+  // deleting. tag_events has no FK from stories — without this step the rows
+  // would be orphaned at their last status (typically 'approved') and would
+  // keep showing in the tagged rider's /me/tags Approved filter despite the
+  // moment no longer existing.
+  const { data: srRows } = await supabase
+    .from("story_riders")
+    .select("tag_event_id")
+    .eq("story_id", id)
+    .not("tag_event_id", "is", null)
+  const tagIdsToDisable = ((srRows ?? []) as { tag_event_id: string | null }[])
+    .map((r) => r.tag_event_id)
+    .filter((tid): tid is string => !!tid)
+  if (tagIdsToDisable.length > 0) {
+    await supabase
+      .from("tag_events")
+      .update({ status: "disabled", decision_at: new Date().toISOString() })
+      .in("id", tagIdsToDisable)
   }
 
   const { error } = await supabase.from("stories").delete().eq("id", id)
