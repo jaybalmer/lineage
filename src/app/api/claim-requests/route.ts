@@ -91,7 +91,10 @@ export async function POST(req: NextRequest) {
         .select("id, display_name, node_status, is_notable, is_deceased")
         .eq("id", nodeId)
         .maybeSingle(),
-      db.from("claims")
+      // PB-009 Phase 1: read through claims_public so declined tags don't
+      // inflate the verification-tier count. Phase 1 has every row as
+      // 'approved' so this is currently a no-op; Phase 2+ this matters.
+      db.from("claims_public")
         .select("*", { count: "exact", head: true })
         .eq("subject_id", nodeId),
     ])

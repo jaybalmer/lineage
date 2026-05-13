@@ -49,8 +49,9 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
           })
         }
       })
+    // PB-009 Phase 1: other-profile public read through claims_public.
     supabase
-      .from("claims")
+      .from("claims_public")
       .select("*")
       .eq("subject_id", id)
       .eq("visibility", "public")

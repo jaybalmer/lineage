@@ -317,6 +317,12 @@ Strength: **strong** ≥20, **medium** ≥8, **light** >0, **none** = 0
 
 8. **Stories name conflict on boards page** — the boards page has a local `StoryCard` function component and a `stories` state variable for the legacy board_stories table. New story state uses `richStories` / `setRichStories`, and the import uses `StoryCard as RichStoryCard`.
 
+9. **PB-009 view discipline — read through `*_public`, write to the underlying table.** Phase 1 introduced `tag_events` and the `story_riders_public` / `claims_public` views. Every public read of `story_riders` or `claims` must query the `_public` view. Write paths (POST/PATCH/INSERT/UPDATE/DELETE) keep using the underlying table. Helpers live in `src/lib/tag-events.ts`:
+   - `pairStoryRiderTagEvents()` — call after a `story_riders.insert()` to create paired tag_events
+   - `pairClaimTagEvents()` — call after a `claims.insert()` to create paired tag_events
+   - `insertTagEvent()` — primitive for one-off tag_event creation
+   Phase 1 default: every `source='member'` and `source='editor'` tag lands as `status='approved'` so behaviour is unchanged. Phase 2 flips member tags to `'pending'` and adds the `/me/tags` inbox; the single flag for that lives in `defaultStatusForPhase1()`.
+
 ---
 
 ## Membership System

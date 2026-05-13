@@ -74,8 +74,9 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   // Fetch Supabase claims for this rider — fires once resolved ID is known
   useEffect(() => {
     if (!catalogLoaded || !resolvedId) return
+    // PB-009 Phase 1: person-detail public read through claims_public.
     supabase
-      .from("claims")
+      .from("claims_public")
       .select("*")
       .eq("subject_id", resolvedId)
       .eq("visibility", "public")

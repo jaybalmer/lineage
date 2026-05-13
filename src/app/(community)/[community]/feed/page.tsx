@@ -115,7 +115,8 @@ export default function FeedPage() {
         : Promise.resolve([]),
       filter !== "stories"
         ? supabase
-            .from("claims")
+            // PB-009 Phase 1: feed reads through claims_public.
+            .from("claims_public")
             .select("*")
             .eq("visibility", "public")
             .order("created_at", { ascending: false })

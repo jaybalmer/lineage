@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireEditor, getServiceClient } from "@/lib/auth"
+import { insertTagEvent } from "@/lib/tag-events"
 
 interface ConfirmEntry {
   name: string
@@ -65,10 +66,15 @@ export async function POST(req: NextRequest) {
   }
 
   // ── 2. Optionally check for existing claims to avoid duplicates ───────────
+  // PB-009 Phase 1: dedup against claims_public so a previously-declined
+  // competed_at row doesn't block re-creation. Phase 1 has every row as
+  // 'approved' so this is currently identical to reading the table. Phase 2+
+  // we revisit — a declined claim might mean "person said this wasn't them",
+  // in which case re-creating is undesirable.
   let existingClaimPersonIds = new Set<string>()
   if (create_claims && event_id) {
     const { data: existingClaims } = await client
-      .from("claims")
+      .from("claims_public")
       .select("subject_id")
       .eq("predicate", "competed_at")
       .eq("object_id", event_id)
@@ -119,6 +125,35 @@ export async function POST(req: NextRequest) {
         )
       }
       claimsCreated = claimRows.length
+
+      // PB-009 Phase 1: pair each editor-asserted competed_at claim with a
+      // tag_event. source='editor' lands as 'approved' in Phase 1, same as
+      // 'member', but Phase 2's editor queue distinguishes the source for
+      // analytics and Phase 5's protected-tier co-sign routing relies on it.
+      // Failures are logged but do not 500 — the claim rows are saved and the
+      // _public view falls back to "treat NULL tag_event_id as approved".
+      let pairFailures = 0
+      for (const row of claimRows) {
+        const tagEventId = await insertTagEvent(client, {
+          source: "editor",
+          asserterId: added_by,
+          subjectId: row.subject_id,
+          predicate: row.predicate,
+          momentRef: { claim_id: row.id },
+        })
+        if (!tagEventId) { pairFailures += 1; continue }
+        const { error: updateErr } = await client
+          .from("claims")
+          .update({ tag_event_id: tagEventId })
+          .eq("id", row.id)
+        if (updateErr) {
+          console.error("[scan-results/confirm] claims.tag_event_id update failed:", updateErr.message)
+          pairFailures += 1
+        }
+      }
+      if (pairFailures > 0) {
+        console.error(`[scan-results/confirm] ${pairFailures}/${claimRows.length} tag_event pairings failed`)
+      }
     }
   }
 

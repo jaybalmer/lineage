@@ -48,8 +48,9 @@ export default function ConnectionPage({ params }: { params: Promise<{ id: strin
           })
         }
       })
+    // PB-009 Phase 1: connection detail public read through claims_public.
     supabase
-      .from("claims")
+      .from("claims_public")
       .select("*")
       .eq("subject_id", id)
       .eq("visibility", "public")

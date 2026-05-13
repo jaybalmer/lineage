@@ -66,8 +66,9 @@ export default function Home() {
 
   // Find the rider with the most claims for the browse link
   useEffect(() => {
+    // PB-009 Phase 1: public homepage browse read — go through claims_public.
     supabase
-      .from("claims")
+      .from("claims_public")
       .select("subject_id")
       .then(async ({ data }) => {
         if (!data || data.length === 0) return
