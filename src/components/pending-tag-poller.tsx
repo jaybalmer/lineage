@@ -16,16 +16,24 @@ const POLL_MS = 30_000
 const INTRO_FLAG = "lineage-tags-intro-seen"
 
 export function PendingTagPoller() {
-  const { activePersonId, authReady, pendingTagCount, refreshPendingTagCount, addToast } = useLineageStore()
+  const {
+    activePersonId, authReady, pendingTagCount, refreshPendingTagCount,
+    membership, refreshEditorQueuePendingCount, addToast,
+  } = useLineageStore()
 
   useEffect(() => {
     if (!authReady) return
     if (!isAuthUser(activePersonId)) return
 
     refreshPendingTagCount()
-    const id = setInterval(refreshPendingTagCount, POLL_MS)
+    if (membership?.is_editor) refreshEditorQueuePendingCount()
+
+    const id = setInterval(() => {
+      refreshPendingTagCount()
+      if (membership?.is_editor) refreshEditorQueuePendingCount()
+    }, POLL_MS)
     return () => clearInterval(id)
-  }, [authReady, activePersonId, refreshPendingTagCount])
+  }, [authReady, activePersonId, membership?.is_editor, refreshPendingTagCount, refreshEditorQueuePendingCount])
 
   useEffect(() => {
     if (!authReady) return

@@ -1706,7 +1706,7 @@ export default function AdminPage() {
   const [pwInput, setPwInput] = useState("")
   const [pwError, setPwError] = useState(false)
   const [sessionUnlocked, setSessionUnlocked] = useState(false)
-  const { catalog, membership, authReady } = useLineageStore()
+  const { catalog, membership, authReady, editorQueuePendingCount } = useLineageStore()
 
   const isEditor = membership.is_editor || sessionUnlocked
 
@@ -1784,13 +1784,29 @@ export default function AdminPage() {
                 Add and edit snowboarding history data. Click any row to edit it. Use &ldquo;Paste rows&rdquo; to bulk import from Google Sheets.
               </p>
             </div>
-            <Link
-              href="/admin/results-scanner"
-              className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-border-default text-xs text-foreground hover:bg-surface-hover transition-colors"
-            >
-              <span>📋</span>
-              Results Scanner
-            </Link>
+            <div className="flex items-center gap-2">
+              {membership.is_editor && (
+                <Link
+                  href="/admin/tag-queue"
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-border-default text-xs text-foreground hover:bg-surface-hover transition-colors"
+                >
+                  <span>🛡️</span>
+                  Tag Queue
+                  {editorQueuePendingCount > 0 && (
+                    <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-amber-600 text-white text-[10px] font-semibold">
+                      {editorQueuePendingCount}
+                    </span>
+                  )}
+                </Link>
+              )}
+              <Link
+                href="/admin/results-scanner"
+                className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-border-default text-xs text-foreground hover:bg-surface-hover transition-colors"
+              >
+                <span>📋</span>
+                Results Scanner
+              </Link>
+            </div>
           </div>
         </div>
 

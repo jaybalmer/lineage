@@ -8,6 +8,9 @@ import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { cn, formatSmartDate } from "@/lib/utils"
 import { getInitials } from "@/components/ui/rider-avatar"
 import { tagPredicateLabel } from "@/lib/tag-events"
+import { labelForDeclineCategory } from "@/lib/decline-categories"
+import { DeclineModal } from "@/components/ui/decline-modal"
+import { ReportTagModal } from "@/components/ui/report-tag-modal"
 import type {
   TagEvent,
   TagEventStatus,
@@ -50,14 +53,6 @@ const SOURCE_CHIPS: { value: TagEventSource | "all"; label: string }[] = [
   { value: "system",                label: "System"      },
 ]
 
-const DECLINE_CATEGORIES: { value: TagEventDeclineCategory; label: string }[] = [
-  { value: "this_wasnt_me", label: "This wasn't me"               },
-  { value: "wrong_moment",  label: "Wrong event or moment"        },
-  { value: "preference",    label: "I'd rather not be tagged here"},
-  { value: "spam",          label: "Appears to be spam"           },
-  { value: "other",         label: "Other"                        },
-]
-
 // ── Page ────────────────────────────────────────────────────────────────────
 
 export default function MeTagsPage() {
@@ -70,6 +65,9 @@ export default function MeTagsPage() {
 
   // Decline picker (single or bulk)
   const [declineTarget, setDeclineTarget] = useState<{ ids: string[]; mode: "single" | "bulk" } | null>(null)
+  // PB-009 Phase 3 — report picker (single)
+  const [reportTarget, setReportTarget] = useState<{ id: string } | null>(null)
+  const [reportSubmitting, setReportSubmitting] = useState(false)
 
   const refresh = useCallback(() => {
     if (!isAuthUser(activePersonId)) return
@@ -298,7 +296,7 @@ export default function MeTagsPage() {
                   {/* Decline reason (when shown in declined filter) */}
                   {t.status === "declined" && t.decision_reason_category && (
                     <div className="mt-2 text-[11px] text-muted">
-                      Declined: {DECLINE_CATEGORIES.find((c) => c.value === t.decision_reason_category)?.label ?? t.decision_reason_category}
+                      Declined: {labelForDeclineCategory(t.decision_reason_category)}
                     </div>
                   )}
 
@@ -377,13 +375,22 @@ export default function MeTagsPage() {
       )}
 
       {/* Decline category picker modal */}
-      {declineTarget && (
-        <DeclineModal
-          count={declineTarget.ids.length}
-          onCancel={() => setDeclineTarget(null)}
-          onConfirm={(category, note) => decide(declineTarget.ids, "decline", category, note)}
-        />
-      )}
+      <DeclineModal
+        open={declineTarget !== null}
+        count={declineTarget?.ids.length ?? 1}
+        onCancel={() => setDeclineTarget(null)}
+        onConfirm={async (category, note) => {
+          if (declineTarget) await decide(declineTarget.ids, "decline", category, note)
+        }}
+      />
+
+      {/* PB-009 Phase 3 — report tag modal */}
+      <ReportTagModal
+        open={reportTarget !== null}
+        onCancel={() => setReportTarget(null)}
+        onConfirm={async (category, note) => submitReport(category, note)}
+        submitting={reportSubmitting}
+      />
     </>
   )
 
@@ -410,82 +417,34 @@ export default function MeTagsPage() {
       refresh()
     }).catch(() => addToast("Could not block this asserter.", "error"))
   }
-  function report(_tagId: string) {
-    // PB-009 Phase 3: wire abuse report to editor queue.
-    addToast("We'll review this — editors notified.")
+  function report(tagId: string) {
+    setReportTarget({ id: tagId })
+  }
+
+  async function submitReport(category: TagEventDeclineCategory, note?: string) {
+    if (!reportTarget) return
+    setReportSubmitting(true)
+    try {
+      const r = await fetch(`/api/me/tags/${reportTarget.id}/report`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ category, note }),
+      })
+      if (!r.ok) {
+        const { error } = await r.json().catch(() => ({ error: "Report failed" }))
+        addToast(error ?? "Report failed", "error")
+        return
+      }
+      const j = await r.json() as { already_reported?: boolean }
+      if (j.already_reported) {
+        addToast("You've already reported this tag.")
+      } else {
+        addToast("Thanks — your report is in the editor queue.")
+      }
+      setReportTarget(null)
+    } finally {
+      setReportSubmitting(false)
+    }
   }
 }
 
-// ── Decline category picker modal ──────────────────────────────────────────
-
-function DeclineModal({
-  count,
-  onCancel,
-  onConfirm,
-}: {
-  count: number
-  onCancel: () => void
-  onConfirm: (category: TagEventDeclineCategory, note?: string) => void
-}) {
-  const [category, setCategory] = useState<TagEventDeclineCategory | null>(null)
-  const [note,     setNote]     = useState("")
-
-  const canConfirm = category !== null
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="bg-surface border border-border-default rounded-xl max-w-md w-full p-5 shadow-xl">
-        <h2 className="text-lg font-semibold text-foreground mb-1">
-          Decline {count > 1 ? `${count} tags` : "tag"}
-        </h2>
-        <p className="text-sm text-muted mb-4">Tell us why — the asserter will see only the category, not the note.</p>
-
-        <div className="flex flex-col gap-2 mb-4">
-          {DECLINE_CATEGORIES.map((c) => (
-            <label key={c.value} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="decline-category"
-                checked={category === c.value}
-                onChange={() => setCategory(c.value)}
-                className="h-4 w-4"
-              />
-              <span className="text-sm text-foreground">{c.label}</span>
-            </label>
-          ))}
-        </div>
-
-        {category === "other" && (
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value.slice(0, 280))}
-            placeholder="Tell us more (optional, 280 char max)"
-            className="w-full p-2 rounded-lg border border-border-default bg-background text-foreground text-sm mb-4"
-            rows={3}
-          />
-        )}
-
-        <div className="flex justify-end gap-2">
-          <button
-            onClick={onCancel}
-            className="px-3 py-1.5 rounded-lg text-sm text-muted hover:text-foreground"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={() => canConfirm && onConfirm(category!, category === "other" ? note : undefined)}
-            disabled={!canConfirm}
-            className={cn(
-              "px-3 py-1.5 rounded-lg text-sm",
-              canConfirm
-                ? "bg-red-600 text-white hover:bg-red-700"
-                : "bg-surface-active text-muted cursor-not-allowed",
-            )}
-          >
-            Decline
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}

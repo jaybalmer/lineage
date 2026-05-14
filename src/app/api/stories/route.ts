@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { requireAuth } from "@/lib/auth"
 import { fireTagEvents } from "@/lib/invite-tracking-server"
-import { pairStoryRiderTagEvents } from "@/lib/tag-events"
+import { pairStoryRiderTagEvents, isAsserterGloballyBlocked } from "@/lib/tag-events"
+import { logTagActions } from "@/lib/tag-action-log"
 
 function getServiceClient() {
   return createClient(
@@ -125,6 +126,18 @@ export async function POST(req: NextRequest) {
 
     if (!story_date) {
       return NextResponse.json({ error: "story_date is required" }, { status: 400 })
+    }
+
+    // PB-009 Phase 3: refuse the entire write if the author is globally
+    // restricted AND the story tags riders. Stories with no riders are not
+    // person-implicating, so a restricted author can still write them.
+    // Tag-only restriction is Q4's locked decision.
+    if ((rider_ids as string[]).length > 0
+        && await isAsserterGloballyBlocked(supabase, user.id)) {
+      return NextResponse.json(
+        { ok: false, reason: "globally_blocked", error: "You don't have permission to create tags right now." },
+        { status: 403 },
+      )
     }
 
     // Insert story -- author_id always comes from the authenticated session
@@ -332,6 +345,16 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (addedRiderIds.length > 0) {
+      // PB-009 Phase 3: refuse adding new riders if the author is globally
+      // restricted. Survivor + removed paths still run because they don't
+      // create new tags; this only gates new additions.
+      if (await isAsserterGloballyBlocked(supabase, user.id)) {
+        return NextResponse.json(
+          { ok: false, reason: "globally_blocked", error: "You don't have permission to create tags right now." },
+          { status: 403 },
+        )
+      }
+
       const { error } = await supabase.from("story_riders").insert(
         addedRiderIds.map((rid) => ({ story_id: id, rider_id: rid }))
       )
@@ -402,10 +425,51 @@ export async function DELETE(req: NextRequest) {
     .map((r) => r.tag_event_id)
     .filter((tid): tid is string => !!tid)
   if (tagIdsToDisable.length > 0) {
+    // Fetch asserter + prior status for action log denormalisation
+    const { data: priorEvs } = await supabase
+      .from("tag_events")
+      .select("id, asserter_id, status")
+      .in("id", tagIdsToDisable)
+    const priorById = new Map(
+      ((priorEvs ?? []) as { id: string; asserter_id: string | null; status: string }[])
+        .map((e) => [e.id, e]),
+    )
+
     await supabase
       .from("tag_events")
-      .update({ status: "disabled", decision_at: new Date().toISOString() })
+      .update({
+        status:                   "disabled",
+        decision_at:              new Date().toISOString(),
+        decision_reason_category: "lifecycle_destroyed",
+      })
       .in("id", tagIdsToDisable)
+
+    // PB-009 Phase 3: auto-close any open tag_reports against these tag_events
+    // as resolved_moment_destroyed. The report has no actionable target once
+    // the underlying story is gone.
+    await supabase
+      .from("tag_reports")
+      .update({
+        status:      "resolved_moment_destroyed",
+        reviewed_at: new Date().toISOString(),
+      })
+      .in("tag_event_id", tagIdsToDisable)
+      .eq("status", "open")
+
+    // Log the lifecycle_disable for each affected tag_event
+    await logTagActions(supabase, tagIdsToDisable.map((tid) => {
+      const prior = priorById.get(tid)
+      return {
+        tagEventId:     tid,
+        asserterId:     prior?.asserter_id ?? null,
+        actorId:        null,
+        actorRole:      "system" as const,
+        action:         "lifecycle_disable" as const,
+        priorStatus:    (prior?.status ?? null) as null | "pending" | "approved" | "declined" | "disabled",
+        newStatus:      "disabled" as const,
+        reasonCategory: "lifecycle_destroyed" as const,
+      }
+    }))
   }
 
   const { error } = await supabase.from("stories").delete().eq("id", id)

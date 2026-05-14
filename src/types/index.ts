@@ -15,7 +15,61 @@ export type PersonRedirectReason = "merged" | "reslugged" | "manual"
 export type TagEventSource = "member" | "public_timeline_embed" | "editor" | "system"
 export type TagEventStatus = "pending" | "approved" | "declined" | "disabled"
 export type TagEventSubjectTier = "standard" | "elevated" | "protected" | "unclaimed" | "catalog"
-export type TagEventDeclineCategory = "this_wasnt_me" | "wrong_moment" | "preference" | "spam" | "other"
+export type TagEventDeclineCategory =
+  | "this_wasnt_me"
+  | "wrong_moment"
+  | "preference"
+  | "spam"
+  | "other"
+  | "lifecycle_destroyed"  // PB-009 Phase 3: paired tag_event disabled when the underlying story/claim was deleted
+
+// ─── PB-009 Phase 3 — reports, action log, decision notifications ───────────
+
+export type TagReportStatus = "open" | "reviewed" | "dismissed" | "resolved_moment_destroyed"
+
+export type TagActionActorRole = "owner" | "editor" | "asserter" | "reporter" | "system"
+
+export type TagActionKind =
+  | "approve"
+  | "decline"
+  | "override_approve"
+  | "override_decline"
+  | "block_cascade"
+  | "trust_cascade"
+  | "lifecycle_disable"
+  | "restrict_asserter"
+  | "unrestrict_asserter"
+  | "report_open"
+  | "report_close_action"
+  | "report_close_dismiss"
+  | "report_resolved_moment_destroyed"
+
+export interface TagReport {
+  id: string
+  tag_event_id: string
+  reported_by: string
+  reason_category: TagEventDeclineCategory
+  reason_note: string | null
+  status: TagReportStatus
+  reviewed_by: string | null
+  reviewed_at: string | null
+  created_at: string
+}
+
+export interface TagActionLogEntry {
+  id: string
+  tag_event_id: string | null
+  asserter_id: string | null
+  actor_id: string | null
+  actor_role: TagActionActorRole
+  action: TagActionKind
+  prior_status: TagEventStatus | null
+  new_status: TagEventStatus | null
+  reason_category: TagEventDeclineCategory | null
+  reason_note: string | null
+  related_report: string | null
+  created_at: string
+}
 export type TagEventDisplayState = "hidden" | "attributed" | "anonymous_aggregate"
 export type VisitorDisplaySetting = "hidden" | "attributed" | "anonymous_aggregate"
 

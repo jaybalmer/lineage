@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
+import type { SupabaseClient } from "@supabase/supabase-js"
 import { requireAuth, getServiceClient } from "@/lib/auth"
+import { isUserFacingDeclineCategory } from "@/lib/decline-categories"
+import { logTagAction, logTagActions } from "@/lib/tag-action-log"
 import type { TagEventDeclineCategory } from "@/types"
 
 // PATCH /api/me/tags/[id]/decide
@@ -9,10 +12,11 @@ import type { TagEventDeclineCategory } from "@/types"
 // on the row before update so a stale UI doesn't drive an already-decided
 // row into a different terminal state (returns 409 instead of silently
 // overwriting decision_at).
-
-const DECLINE_CATEGORIES = new Set<TagEventDeclineCategory>([
-  "this_wasnt_me", "wrong_moment", "preference", "spam", "other",
-])
+//
+// PB-009 Phase 3 (§9 owner-decide lifecycle): every owner decision auto-
+// closes any open tag_reports against this tag_event (status='reviewed'),
+// and writes per-decision tag_action_log rows for forensics. Editor
+// peer-accountability counts depend on this.
 
 export async function PATCH(
   req: NextRequest,
@@ -31,7 +35,7 @@ export async function PATCH(
 
   const { data: ev, error: readErr } = await db
     .from("tag_events")
-    .select("id, subject_id, status")
+    .select("id, subject_id, asserter_id, status")
     .eq("id", id)
     .maybeSingle()
   if (readErr) return NextResponse.json({ error: readErr.message }, { status: 500 })
@@ -54,12 +58,23 @@ export async function PATCH(
       decision_at: now,
     }).eq("id", id)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    await closeOpenReports(db, id, user.id, now, ev.asserter_id as string | null)
+    await logTagAction(db, {
+      tagEventId:  id,
+      asserterId:  (ev.asserter_id as string | null) ?? null,
+      actorId:     user.id,
+      actorRole:   "owner",
+      action:      "approve",
+      priorStatus: "pending",
+      newStatus:   "approved",
+    })
     return NextResponse.json({ ok: true })
   }
 
   // Decline
   const category = body.decline_category as TagEventDeclineCategory | undefined
-  if (!category || !DECLINE_CATEGORIES.has(category)) {
+  if (!category || !isUserFacingDeclineCategory(category)) {
     return NextResponse.json({ error: "decline_category required" }, { status: 400 })
   }
   const note = category === "other" && typeof body.decline_note === "string"
@@ -74,5 +89,46 @@ export async function PATCH(
     decision_reason_note: note,
   }).eq("id", id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await closeOpenReports(db, id, user.id, now, ev.asserter_id as string | null)
+  await logTagAction(db, {
+    tagEventId:     id,
+    asserterId:     (ev.asserter_id as string | null) ?? null,
+    actorId:        user.id,
+    actorRole:      "owner",
+    action:         "decline",
+    priorStatus:    "pending",
+    newStatus:      "declined",
+    reasonCategory: category,
+    reasonNote:     note,
+  })
   return NextResponse.json({ ok: true })
+}
+
+// Helper: close any open reports against this tag_event when the OWNER acts.
+// Owner decision is more direct evidence than editor review for non-abuse
+// cases — reports filed against an owner-decided tag are answered.
+async function closeOpenReports(
+  db: SupabaseClient,
+  tagEventId: string,
+  ownerId: string,
+  now: string,
+  asserterId: string | null,
+): Promise<void> {
+  const { data: closed } = await db
+    .from("tag_reports")
+    .update({ status: "reviewed", reviewed_by: ownerId, reviewed_at: now })
+    .eq("tag_event_id", tagEventId)
+    .eq("status", "open")
+    .select("id")
+  const ids = ((closed ?? []) as { id: string }[]).map((r) => r.id)
+  if (ids.length === 0) return
+  await logTagActions(db, ids.map((rid) => ({
+    tagEventId:    tagEventId,
+    asserterId,
+    actorId:       ownerId,
+    actorRole:     "owner" as const,
+    action:        "report_close_action" as const,
+    relatedReport: rid,
+  })))
 }
