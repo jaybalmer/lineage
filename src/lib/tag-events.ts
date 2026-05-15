@@ -105,21 +105,24 @@ export function defaultStatusForSource(source: TagEventSource): TagEventStatus {
 }
 
 // ── Predicate → human-readable label (Phase 2) ─────────────────────────────
-// Returns the predicate clause used in the Owner Inbox: the UI renders
-// `${asserterName} ${tagPredicateLabel(predicate)}`, so the returned string
-// is the verb phrase with the subject ("you") embedded, no leading asserter.
+// Returns the predicate clause used after the asserter name. The Owner Inbox
+// at /me/tags renders this as second-person ("tagged you in a story"); the
+// editor queue and other third-party views pass the owner's name so it reads
+// as "tagged <Owner> in a story".
+//
 // Fallback covers any predicate added later without a brief update.
 
-export function tagPredicateLabel(predicate: string): string {
+export function tagPredicateLabel(predicate: string, ownerName?: string): string {
+  const subject = ownerName ?? "you"
   switch (predicate) {
-    case "story_tag":     return "tagged you in a story"
-    case "rode_with":     return "said you rode together"
-    case "shot_by":       return "said you photographed them"
-    case "sponsored_by":  return "said you sponsored them"
-    case "coached_by":    return "said you coached them"
-    case "part_of_team":  return "added you to a team"
-    case "organized":     return "said you organized an event"
-    default:              return `tagged you in a ${predicate}`
+    case "story_tag":     return `tagged ${subject} in a story`
+    case "rode_with":     return ownerName ? `said they rode with ${ownerName}` : "said you rode together"
+    case "shot_by":       return ownerName ? `said ${ownerName} photographed them` : "said you photographed them"
+    case "sponsored_by":  return ownerName ? `said ${ownerName} sponsored them` : "said you sponsored them"
+    case "coached_by":    return ownerName ? `said ${ownerName} coached them` : "said you coached them"
+    case "part_of_team":  return `added ${subject} to a team`
+    case "organized":     return ownerName ? `said ${ownerName} organized an event` : "said you organized an event"
+    default:              return `tagged ${subject} in a ${predicate}`
   }
 }
 

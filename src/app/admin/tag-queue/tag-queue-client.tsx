@@ -114,7 +114,7 @@ export function TagQueueClient() {
         addToast(error ?? "Decline failed", "error")
         return
       }
-      addToast("Tag declined; owner notified.")
+      addToast("Tag removed; owner notified.")
       setDeclineTarget(null)
       refresh()
       refreshEditorQueuePendingCount()
@@ -245,27 +245,39 @@ export function TagQueueClient() {
                   />
 
                   <div className="flex-1 min-w-0">
-                    {/* Tag content line */}
+                    {/* Tag content line — third-party voice with owner name embedded */}
                     <div className="text-sm">
                       <span className="font-medium text-foreground">{row.asserter?.display_name ?? "Unknown asserter"}</span>
-                      <span className="text-muted"> {tagPredicateLabel(ev.predicate)}</span>
+                      <span className="text-muted"> {tagPredicateLabel(ev.predicate, row.owner?.display_name ?? undefined)}</span>
+                    </div>
+
+                    {/* Status + Moment ref subtext */}
+                    <div className="text-xs text-muted mt-0.5 flex items-center gap-2">
+                      <span className={cn(
+                        "inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium uppercase tracking-wider",
+                        ev.status === "pending"  && "bg-amber-500/10 text-amber-400 border border-amber-500/20",
+                        ev.status === "approved" && "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
+                        ev.status === "declined" && "bg-zinc-500/10 text-zinc-400 border border-zinc-500/20",
+                        ev.status === "disabled" && "bg-zinc-500/10 text-zinc-400 border border-zinc-500/20",
+                      )}>
+                        {ev.status}
+                      </span>
+                      {(ref.story_id || ref.claim_id) && (
+                        <>
+                          {ref.story_id ? <Link href={`/stories/${ref.story_id}`} className="hover:underline">story</Link> : <span>claim</span>}
+                          <span>·</span>
+                          <span>{formatSmartDate(ev.created_at)}</span>
+                        </>
+                      )}
                       {row.owner && (
                         <>
-                          <span className="text-muted"> </span>
-                          <Link href={`/people/${row.owner.id}`} className="font-medium text-foreground hover:underline">
+                          <span>·</span>
+                          <Link href={`/people/${row.owner.id}`} className="hover:underline text-foreground/70">
                             {row.owner.display_name ?? "Unknown owner"}
                           </Link>
                         </>
                       )}
                     </div>
-
-                    {/* Moment ref subtext */}
-                    {(ref.story_id || ref.claim_id) && (
-                      <div className="text-xs text-muted mt-0.5">
-                        {ref.story_id ? <Link href={`/stories/${ref.story_id}`} className="hover:underline">story</Link> : "claim"}
-                        {" · "}{formatSmartDate(ev.created_at)}
-                      </div>
-                    )}
 
                     {/* Asserter context */}
                     <div className="text-xs text-muted mt-2">
@@ -314,14 +326,21 @@ export function TagQueueClient() {
                           Dismiss reports
                         </button>
                       )}
-                      {ev.status === "pending" && (
+                      {ev.status === "pending" ? (
                         <button
                           onClick={() => setDeclineTarget(row)}
                           className="px-3 py-1.5 rounded-lg text-xs bg-red-600 text-white hover:bg-red-700"
                         >
-                          Decline tag
+                          Remove tag
                         </button>
-                      )}
+                      ) : ev.status === "approved" ? (
+                        <span
+                          className="px-3 py-1.5 rounded-lg text-xs bg-surface-active text-muted border border-border-default cursor-not-allowed"
+                          title="Override removal of approved tags lands in Phase 4. Phase 3 ships preemptive removal of pending tags only."
+                        >
+                          Remove tag (Phase 4)
+                        </span>
+                      ) : null}
                       {ev.asserter_id && !isRestricted && (
                         <button
                           onClick={() => openRestrictModal(row)}
@@ -365,9 +384,9 @@ export function TagQueueClient() {
         open={declineTarget !== null}
         onCancel={() => setDeclineTarget(null)}
         onConfirm={async (cat, note) => declineTag(cat, note)}
-        title="Decline tag"
+        title="Remove tag"
         description="Owner will be notified by category. Note is editor-only."
-        confirmLabel="Decline"
+        confirmLabel="Remove tag"
         destructive
         submitting={submitting}
       />
