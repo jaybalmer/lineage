@@ -517,7 +517,7 @@ function AddRiderToEvent({
 
   function handleCreateRider() {
     if (!newRiderName.trim()) return
-    const personId = `person_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`
+    const personId = crypto.randomUUID()
     addUserPerson({
       id: personId,
       display_name: newRiderName.trim(),

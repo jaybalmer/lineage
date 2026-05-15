@@ -181,7 +181,7 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
       })
       onAdded(id)
     } else if (entityType === "person") {
-      const id = generateId("rider")
+      const id = crypto.randomUUID()
       addUserPerson({
         id,
         display_name: displayName.trim(),
