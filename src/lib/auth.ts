@@ -53,3 +53,38 @@ export async function requireEditor(): Promise<
 
   return { user, profile, response: null }
 }
+
+/**
+ * PB-009 Phase 3 — tightened gate for moderation surfaces.
+ *
+ * Unlike requireEditor() (founding OR is_editor), this helper requires
+ * is_editor=true. Founding membership alone does NOT grant moderation
+ * access. Used by /admin/tag-queue, /admin/asserters/[id], and the
+ * /api/admin/tag-events/* + /api/admin/asserters/* route families. Keep
+ * requireEditor() in place for the existing claim-request UI; those
+ * surfaces are intentionally open to founding members.
+ */
+export async function requireModerator(): Promise<
+  | { user: { id: string; email?: string }; profile: Record<string, unknown>; response: null }
+  | { user: null; profile: null; response: NextResponse }
+> {
+  const { user, response } = await requireAuth()
+  if (response) return { user: null, profile: null, response }
+
+  const db = getServiceClient()
+  const { data: profile } = await db
+    .from("profiles")
+    .select("is_editor, membership_tier")
+    .eq("id", user.id)
+    .single()
+
+  if (!profile?.is_editor) {
+    return {
+      user: null,
+      profile: null,
+      response: NextResponse.json({ error: "Forbidden" }, { status: 403 }),
+    }
+  }
+
+  return { user, profile, response: null }
+}

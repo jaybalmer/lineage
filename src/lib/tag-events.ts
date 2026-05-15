@@ -105,21 +105,24 @@ export function defaultStatusForSource(source: TagEventSource): TagEventStatus {
 }
 
 // ── Predicate → human-readable label (Phase 2) ─────────────────────────────
-// Returns the predicate clause used in the Owner Inbox: the UI renders
-// `${asserterName} ${tagPredicateLabel(predicate)}`, so the returned string
-// is the verb phrase with the subject ("you") embedded, no leading asserter.
+// Returns the predicate clause used after the asserter name. The Owner Inbox
+// at /me/tags renders this as second-person ("tagged you in a story"); the
+// editor queue and other third-party views pass the owner's name so it reads
+// as "tagged <Owner> in a story".
+//
 // Fallback covers any predicate added later without a brief update.
 
-export function tagPredicateLabel(predicate: string): string {
+export function tagPredicateLabel(predicate: string, ownerName?: string): string {
+  const subject = ownerName ?? "you"
   switch (predicate) {
-    case "story_tag":     return "tagged you in a story"
-    case "rode_with":     return "said you rode together"
-    case "shot_by":       return "said you photographed them"
-    case "sponsored_by":  return "said you sponsored them"
-    case "coached_by":    return "said you coached them"
-    case "part_of_team":  return "added you to a team"
-    case "organized":     return "said you organized an event"
-    default:              return `tagged you in a ${predicate}`
+    case "story_tag":     return `tagged ${subject} in a story`
+    case "rode_with":     return ownerName ? `said they rode with ${ownerName}` : "said you rode together"
+    case "shot_by":       return ownerName ? `said ${ownerName} photographed them` : "said you photographed them"
+    case "sponsored_by":  return ownerName ? `said ${ownerName} sponsored them` : "said you sponsored them"
+    case "coached_by":    return ownerName ? `said ${ownerName} coached them` : "said you coached them"
+    case "part_of_team":  return `added ${subject} to a team`
+    case "organized":     return ownerName ? `said ${ownerName} organized an event` : "said you organized an event"
+    default:              return `tagged ${subject} in a ${predicate}`
   }
 }
 
@@ -185,12 +188,52 @@ export async function insertTagEvent(
   return data.id as string
 }
 
+// ── Global-block precheck (Phase 3) ─────────────────────────────────────────
+//
+// Editors can restrict an asserter from creating new tags by inserting a
+// scope='global', block_kind='user' row into tag_blocklist. Before any
+// new tag_event paired-write fires we ask: is this asserter currently
+// globally restricted? If so, the caller refuses the underlying write —
+// the alternative (insert with tag_event_id=NULL) would render as approved
+// via the _public view because legacy rows are treated that way.
+//
+// Soft-fail-closed: on DB error, return false so legitimate writes still
+// land. The cost of a missed block (one more tag from a restricted asserter
+// until editor takes another action) is lower than the cost of refusing
+// every write during a transient Supabase blip.
+export async function isAsserterGloballyBlocked(
+  supabase: SupabaseClient,
+  asserterId: string,
+): Promise<boolean> {
+  if (!asserterId) return false
+  const { data, error } = await supabase
+    .from("tag_blocklist")
+    .select("id")
+    .eq("blocked_party", asserterId)
+    .eq("block_kind", "user")
+    .eq("scope", "global")
+    .limit(1)
+    .maybeSingle()
+  if (error) {
+    console.error("[tag-events] global block check failed:", error.message)
+    return false
+  }
+  return data !== null
+}
+
 // ── Story-rider write-path helper ───────────────────────────────────────────
 // Inserts one tag_event per rider id, then updates the story_riders row with
 // the new tag_event_id. Asserter is the story's author. Subject is each
 // rider_id. Self-tags (author tagging themselves in their own story) get a
 // tag_event too — they're trivially approved, but having the row keeps the
 // view filter coherent and Phase 2's owner inbox can ignore them.
+
+export interface PairResult {
+  paired: number
+  failed: number
+  refused: number
+  refusalReason?: "globally_blocked"
+}
 
 export async function pairStoryRiderTagEvents(
   supabase: SupabaseClient,
@@ -200,7 +243,20 @@ export async function pairStoryRiderTagEvents(
     authorId: string
     communityId?: string | null
   },
-): Promise<{ paired: number; failed: number }> {
+): Promise<PairResult> {
+  // Phase 3 precheck — globally restricted asserter cannot create new tags.
+  // Caller is expected to also refuse the underlying story_riders.insert(),
+  // otherwise the junction row lands with tag_event_id=NULL and the _public
+  // view treats it as approved.
+  if (await isAsserterGloballyBlocked(supabase, args.authorId)) {
+    return {
+      paired: 0,
+      failed: 0,
+      refused: args.riderIds.length,
+      refusalReason: "globally_blocked",
+    }
+  }
+
   let paired = 0
   let failed = 0
 
@@ -228,7 +284,7 @@ export async function pairStoryRiderTagEvents(
       paired += 1
     }
   }
-  return { paired, failed }
+  return { paired, failed, refused: 0 }
 }
 
 // ── Claim write-path helper ─────────────────────────────────────────────────
@@ -240,6 +296,10 @@ export async function pairStoryRiderTagEvents(
 //
 // Returns the count of paired tag_events for telemetry / debugging.
 
+export interface ClaimPairResult extends PairResult {
+  firstTagEventId: string | null
+}
+
 export async function pairClaimTagEvents(
   supabase: SupabaseClient,
   args: {
@@ -249,7 +309,23 @@ export async function pairClaimTagEvents(
     predicate: string
     communityId?: string | null
   },
-): Promise<{ paired: number; failed: number; firstTagEventId: string | null }> {
+): Promise<ClaimPairResult> {
+  // Phase 3 precheck — see pairStoryRiderTagEvents for rationale. Note that
+  // claims are inserted client-side from the store; this precheck is the
+  // defense-in-depth half of the Q2 dual-precheck design. The client-side
+  // GET /api/me/can-tag precheck refuses early; this server-side check
+  // refuses after the fact and triggers the caller to delete the orphan
+  // claim. See /api/post-tag-event for the rollback wiring.
+  if (await isAsserterGloballyBlocked(supabase, args.asserterId)) {
+    return {
+      paired: 0,
+      failed: 0,
+      refused: args.personIds.length,
+      refusalReason: "globally_blocked",
+      firstTagEventId: null,
+    }
+  }
+
   let paired = 0
   let failed = 0
   let firstTagEventId: string | null = null
@@ -284,5 +360,5 @@ export async function pairClaimTagEvents(
     }
     paired += 1
   }
-  return { paired, failed, firstTagEventId }
+  return { paired, failed, refused: 0, firstTagEventId }
 }

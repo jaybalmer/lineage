@@ -6,9 +6,10 @@ import { cn, nameToSlug, parseYouTubeId } from "@/lib/utils"
 import { orgSlug } from "@/lib/mock-data"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
-import { useLineageStore } from "@/store/lineage-store"
+import { ReportTagModal } from "@/components/ui/report-tag-modal"
+import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { getRiderTier } from "@/components/ui/rider-avatar"
-import type { Story } from "@/types"
+import type { Story, TagEventDeclineCategory } from "@/types"
 
 interface StoryCardProps {
   story: Story
@@ -22,13 +23,66 @@ function formatStoryDate(dateStr: string): string {
 }
 
 export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
-  const { catalog } = useLineageStore()
+  const { catalog, activePersonId, addToast } = useLineageStore()
   const [displayStory, setDisplayStory] = useState(story)
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [editing, setEditing] = useState(false)
+
+  // PB-009 Phase 3 — per-rider abuse-report flow. Any signed-in member (other
+  // than the rider themselves) can report a tag they see on the card. The
+  // lookup endpoint resolves (story_id, rider_id) → tag_event_id; the report
+  // endpoint posts the category. Author can also report — Q1 said "any
+  // logged-in member can report any tag" without an author carve-out.
+  const [reportTarget, setReportTarget] = useState<{ tagEventId: string; riderName: string } | null>(null)
+  const [reportSubmitting, setReportSubmitting] = useState(false)
+  const [reportOpening, setReportOpening] = useState<string | null>(null)  // rider id while loading
+  const viewerSignedIn = isAuthUser(activePersonId)
+
+  async function openReportForRider(riderId: string, riderName: string) {
+    setReportOpening(riderId)
+    try {
+      const r = await fetch(`/api/me/lookup-tag-event?story_id=${displayStory.id}&rider_id=${riderId}`)
+      if (!r.ok) {
+        addToast("Couldn't find a tag to report for this rider.", "error")
+        return
+      }
+      const j = await r.json() as { tag_event_id: string }
+      setReportTarget({ tagEventId: j.tag_event_id, riderName })
+    } catch {
+      addToast("Report lookup failed.", "error")
+    } finally {
+      setReportOpening(null)
+    }
+  }
+
+  async function submitReport(category: TagEventDeclineCategory, note?: string) {
+    if (!reportTarget) return
+    setReportSubmitting(true)
+    try {
+      const r = await fetch(`/api/me/tags/${reportTarget.tagEventId}/report`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ category, note }),
+      })
+      if (!r.ok) {
+        const { error } = await r.json().catch(() => ({ error: "Report failed" }))
+        addToast(error ?? "Report failed", "error")
+        return
+      }
+      const j = await r.json() as { already_reported?: boolean }
+      if (j.already_reported) {
+        addToast("You've already reported this tag.")
+      } else {
+        addToast("Thanks — your report is in the editor queue.")
+      }
+      setReportTarget(null)
+    } finally {
+      setReportSubmitting(false)
+    }
+  }
 
   const photos = displayStory.photos ?? []
 
@@ -240,20 +294,41 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
             if (!rider) return null
             const riderTier = getRiderTier(rider)
             const isUnclaimed = riderTier === "unclaimed" || riderTier === "catalog"
+            const canReport = viewerSignedIn && activePersonId !== rider.id
+            const isLoading = reportOpening === rider.id
             return (
-              <CommunityLink
-                key={rider.id}
-                href={`/people/${nameToSlug(rider.display_name)}`}
-                className={cn(
-                  "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full transition-colors",
-                  isUnclaimed
-                    ? "bg-blue-500/5 border border-dashed border-blue-500/30 text-blue-400/70 hover:bg-blue-500/10"
-                    : "bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20"
+              <span key={rider.id} className="inline-flex items-center">
+                <CommunityLink
+                  href={`/people/${nameToSlug(rider.display_name)}`}
+                  className={cn(
+                    "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full transition-colors",
+                    canReport ? "rounded-r-none" : "",
+                    isUnclaimed
+                      ? "bg-blue-500/5 border border-dashed border-blue-500/30 text-blue-400/70 hover:bg-blue-500/10"
+                      : "bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20"
+                  )}
+                  title={isUnclaimed ? `${rider.display_name} hasn't joined yet` : undefined}
+                >
+                  👤 {rider.display_name}
+                </CommunityLink>
+                {canReport && (
+                  <button
+                    type="button"
+                    onClick={() => openReportForRider(rider.id, rider.display_name)}
+                    disabled={isLoading}
+                    className={cn(
+                      "inline-flex items-center text-[11px] px-1.5 py-0.5 rounded-full rounded-l-none border-l-0 transition-colors",
+                      isUnclaimed
+                        ? "bg-blue-500/5 border border-dashed border-blue-500/30 text-blue-400/70 hover:bg-blue-500/10"
+                        : "bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20"
+                    )}
+                    title={`Report tag of ${rider.display_name}`}
+                    aria-label={`Report tag of ${rider.display_name}`}
+                  >
+                    {isLoading ? "…" : "⚑"}
+                  </button>
                 )}
-                title={isUnclaimed ? `${rider.display_name} hasn't joined yet` : undefined}
-              >
-                👤 {rider.display_name}
-              </CommunityLink>
+              </span>
             )
           })}
         </div>
@@ -287,6 +362,14 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
           onClose={() => setLightboxIdx(null)}
         />
       )}
+
+      {/* ── PB-009 Phase 3 — report tag modal ── */}
+      <ReportTagModal
+        open={reportTarget !== null}
+        onCancel={() => setReportTarget(null)}
+        onConfirm={async (category, note) => submitReport(category, note)}
+        submitting={reportSubmitting}
+      />
     </div>
     </>
   )

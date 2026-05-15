@@ -129,6 +129,13 @@ interface LineageStore {
   setPendingTagCount: (n: number) => void
   refreshPendingTagCount: () => void
 
+  // PB-009 Phase 3: Editor queue pending-count for the /admin Queue tab badge.
+  // Same poller fires both fetches; the editor variant only runs when the
+  // current user has is_editor=true (gated in PendingTagPoller).
+  editorQueuePendingCount: number
+  setEditorQueuePendingCount: (n: number) => void
+  refreshEditorQueuePendingCount: () => void
+
   // Toast notifications
   toasts: { id: string; message: string; type: "error" | "info" }[]
   addToast: (message: string, type?: "error" | "info") => void
@@ -319,6 +326,13 @@ export const useLineageStore = create<LineageStore>()(
         const { activePersonId } = get()
         if (!isAuthUser(activePersonId)) return
 
+        // PB-009 Phase 3: precheck whether this claim would create new tags
+        // for OTHER people. Self-only claims (no person subject/object other
+        // than the asserter) never create tag_events, so no precheck needed.
+        const wouldTagOthers =
+          (claim.subject_type === "person" && !!claim.subject_id && claim.subject_id !== activePersonId) ||
+          (claim.object_type  === "person" && !!claim.object_id  && claim.object_id  !== activePersonId)
+
         // Silent-failures brief Finding #5: the FTUE wizard sets a UUID-format
         // activePersonId before the user has confirmed their email, so this
         // path used to fire a DB insert with no JWT — RLS denied, the rollback
@@ -326,8 +340,28 @@ export const useLineageStore = create<LineageStore>()(
         // by supabase.auth.signUp upstream. Gate the DB write on an actual
         // session: when there isn’t one, the claim stays in sessionClaims and
         // /auth/complete migrates it after the magic link is followed.
-        supabase.auth.getSession().then(({ data: { session } }) => {
+        supabase.auth.getSession().then(async ({ data: { session } }) => {
           if (!session) return
+
+          // Q2a precheck — only when the claim would tag others. A 403 here
+          // refuses early with a generic message. The server-side rollback in
+          // /api/post-tag-event is the defense-in-depth (Q2b).
+          if (wouldTagOthers) {
+            try {
+              const r = await fetch("/api/me/can-tag")
+              if (r.ok) {
+                const j = await r.json() as { can_tag?: boolean; reason?: string }
+                if (j.can_tag === false) {
+                  set((s) => ({ sessionClaims: s.sessionClaims.filter((c) => c.id !== claim.id) }))
+                  get().addToast("You don't have permission to create tags right now.")
+                  return
+                }
+              }
+            } catch {
+              // Soft-fail-closed: precheck error doesn't refuse the write.
+              // Server-side rollback in /api/post-tag-event will catch a real block.
+            }
+          }
 
           supabase
             .from("claims")
@@ -729,6 +763,29 @@ export const useLineageStore = create<LineageStore>()(
             }
           })
           .catch(() => { /* silent — header badge can stay stale */ })
+      },
+
+      // PB-009 Phase 3 — editor queue badge count. Gated by membership.is_editor
+      // in PendingTagPoller so non-editor users never hit the 403.
+      editorQueuePendingCount: 0,
+      setEditorQueuePendingCount: (n) => set({ editorQueuePendingCount: n }),
+      refreshEditorQueuePendingCount: () => {
+        if (!isAuthUser(get().activePersonId)) {
+          set({ editorQueuePendingCount: 0 })
+          return
+        }
+        if (!get().membership?.is_editor) {
+          set({ editorQueuePendingCount: 0 })
+          return
+        }
+        fetch("/api/admin/tag-queue/count")
+          .then((r) => r.ok ? r.json() : null)
+          .then((r) => {
+            if (r && typeof r.count === "number") {
+              set({ editorQueuePendingCount: r.count })
+            }
+          })
+          .catch(() => { /* silent — badge can stay stale */ })
       },
 
       membership: {

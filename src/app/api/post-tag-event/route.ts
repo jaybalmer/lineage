@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { requireAuth } from "@/lib/auth"
 import { fireTagEvents } from "@/lib/invite-tracking-server"
-import { pairClaimTagEvents } from "@/lib/tag-events"
+import { pairClaimTagEvents, isAsserterGloballyBlocked } from "@/lib/tag-events"
 
 function getServiceClient() {
   return createClient(
@@ -66,6 +66,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ results: [], paired: 0 })
   }
 
+  // PB-009 Phase 3: server-side defense-in-depth precheck. The store does a
+  // GET /api/me/can-tag precheck before client-side claims.insert(), but a
+  // bypassed client (or a bug) could still land an orphan claim. If we detect
+  // a globally-blocked asserter here, delete the just-inserted claim row and
+  // refuse — the orphan deletion is the rollback (Q2b).
+  const supabase = getServiceClient()
+  if (typeof parsed.claim_id === "string" && parsed.claim_id) {
+    if (await isAsserterGloballyBlocked(supabase, user.id)) {
+      await supabase.from("claims").delete().eq("id", parsed.claim_id).eq("asserted_by", user.id)
+      return NextResponse.json(
+        { ok: false, reason: "globally_blocked", error: "You don't have permission to create tags right now." },
+        { status: 403 },
+      )
+    }
+  }
+
   // PB-008 fan-out
   const results = await fireTagEvents(personIds as string[], user.id)
 
@@ -77,7 +93,6 @@ export async function POST(req: NextRequest) {
     const predicate = typeof parsed.predicate === "string" && parsed.predicate
       ? parsed.predicate
       : "claim_tag"
-    const supabase = getServiceClient()
     const pairResult = await pairClaimTagEvents(supabase, {
       claimId: parsed.claim_id,
       asserterId: user.id,
