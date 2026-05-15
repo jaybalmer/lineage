@@ -62,6 +62,7 @@ export default function MeTagsPage() {
   const [data,     setData]     = useState<ListResponse | null>(null)
   const [loading,  setLoading]  = useState(true)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [requireApproval, setRequireApproval] = useState<boolean>(false)
 
   // Decline picker (single or bulk)
   const [declineTarget, setDeclineTarget] = useState<{ ids: string[]; mode: "single" | "bulk" } | null>(null)
@@ -83,6 +84,12 @@ export default function MeTagsPage() {
     if (!authReady) return
     if (!isAuthUser(activePersonId)) { setLoading(false); return }
     refresh()
+    // Read the visibility-gate preference so the header copy reflects which
+    // mode the user is in. Failure is non-fatal — default to permissive.
+    fetch("/api/me/tag-privacy")
+      .then((r) => r.ok ? r.json() : { require_tag_approval: false })
+      .then((r: { require_tag_approval: boolean }) => setRequireApproval(Boolean(r.require_tag_approval)))
+      .catch(() => setRequireApproval(false))
   }, [authReady, activePersonId, refresh])
 
   // ── Selection ─────────────────────────────────────────────────────────────
@@ -162,13 +169,28 @@ export default function MeTagsPage() {
           <div>
             <h1 className="text-2xl font-semibold text-foreground">Your tags</h1>
             <p className="text-sm text-muted mt-1">
-              Review tags from other riders before they appear on your profile.
+              {status === "pending"
+                ? requireApproval
+                  ? "Tags waiting for your approval before they appear publicly."
+                  : "Recent tags from other riders. Decline to remove; approve to confirm."
+                : "Tags from other riders that you've already decided on."}
             </p>
           </div>
           {pendingCount > 0 && (
             <div className="text-xs text-muted">{pendingCount} pending</div>
           )}
         </div>
+
+        {/* Permissive-default reminder + link to gate setting */}
+        {!requireApproval && status === "pending" && (
+          <div className="mb-3 text-[11px] text-muted">
+            Tags appear immediately by default.{" "}
+            <Link href="/me/settings/tag-privacy" className="underline hover:text-foreground">
+              Require approval first
+            </Link>
+            {" "}to gate them.
+          </div>
+        )}
 
         {/* Filter chip row — status group then source group */}
         <div className="flex items-center gap-1 overflow-x-auto py-2 mb-2 scrollbar-none">

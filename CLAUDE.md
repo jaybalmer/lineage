@@ -321,7 +321,14 @@ Strength: **strong** ≥20, **medium** ≥8, **light** >0, **none** = 0
    - `pairStoryRiderTagEvents()` — call after a `story_riders.insert()` to create paired tag_events
    - `pairClaimTagEvents()` — call after a `claims.insert()` to create paired tag_events
    - `insertTagEvent()` — primitive for one-off tag_event creation
-   Phase 1 default: every `source='member'` and `source='editor'` tag lands as `status='approved'` so behaviour is unchanged. Phase 2 flips member tags to `'pending'` and adds the `/me/tags` inbox; the single flag for that lives in `defaultStatusForPhase1()`.
+   Phase 1 default: every `source='member'` and `source='editor'` tag lands as `status='approved'` so behaviour is unchanged. Phase 2 flips member tags to `'pending'` and adds the `/me/tags` inbox; the single flag for that lives in `defaultStatusForSource()`.
+
+10. **PB-009 visibility default is permissive.** Pending member tags are publicly visible by default. The `story_riders_public` and `claims_public` views show a row when:
+    - `tag_event_id IS NULL` (grandfathered), OR
+    - `tag_events.status = 'approved'`, OR
+    - `tag_events.status = 'pending' AND profiles.require_tag_approval IS NOT TRUE`
+
+    A user opts into consent-first gating by toggling `profiles.require_tag_approval = true` from `/me/settings/tag-privacy` (`/api/me/tag-privacy` PATCH). When on, pending tags against that subject stay hidden until approved at `/me/tags`. `declined` and `disabled` rows are hidden in both modes. Owners can decline any tag at any time regardless of the gate. The flag is read at query time, so flipping it gates existing pending tags retroactively.
 
 ---
 
