@@ -9,6 +9,28 @@ export function getServiceClient(): SupabaseClient {
   )
 }
 
+// Idempotently insert a minimal profile row for an auth user that doesn't
+// already have one. Guards the orphan-auth-user case where signup was abandoned
+// between magic-link click and onboarding completion — without this, every
+// auth-gated surface (/api/me, /me/tags, etc.) silently fails for that user.
+// Existing rows are untouched; onboarding fills the real fields via UPDATE.
+//
+// profiles.display_name is NOT NULL, so the placeholder mirrors the fallback
+// in /auth/complete: email local-part, else "Rider".
+export async function ensureProfile(userId: string, email?: string): Promise<void> {
+  const placeholderName = email?.split("@")[0] || "Rider"
+  const db = getServiceClient()
+  const { error } = await db
+    .from("profiles")
+    .upsert(
+      { id: userId, display_name: placeholderName, privacy_level: "public" },
+      { onConflict: "id", ignoreDuplicates: true }
+    )
+  if (error) {
+    console.error("ensureProfile failed:", { userId, error })
+  }
+}
+
 /** Verify the caller has a valid session. Returns { user } on success or { response } with a 401. */
 export async function requireAuth(): Promise<
   | { user: { id: string; email?: string }; response: null }
@@ -23,6 +45,8 @@ export async function requireAuth(): Promise<
       response: NextResponse.json({ error: "Unauthorized" }, { status: 401 }),
     }
   }
+
+  await ensureProfile(user.id, user.email)
 
   return { user, response: null }
 }

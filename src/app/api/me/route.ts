@@ -1,29 +1,20 @@
 import { NextResponse } from "next/server"
-import { createServerSupabaseClient } from "@/lib/supabase-server"
-import { createClient } from "@supabase/supabase-js"
+import { requireAuth, getServiceClient } from "@/lib/auth"
 
 // ── GET /api/me ───────────────────────────────────────────────────────────────
 // Returns the current user's profile + membership data.
-// Uses the service role key to bypass RLS — the session cookie is used only
-// to identify the user, not to gate the read.
+// requireAuth() identifies the caller and idempotently bootstraps a profile row
+// if one is missing (defends against the orphan-auth-user case). The read uses
+// the service role client to bypass RLS.
 export async function GET() {
   try {
-    // 1. Identify the calling user via their session cookie (SSR client)
-    const sessionClient = await createServerSupabaseClient()
-    const { data: { user }, error: authErr } = await sessionClient.auth.getUser()
-
-    if (authErr || !user) {
+    const { user, response } = await requireAuth()
+    if (response) {
+      // Preserve the original error shape for existing clients (catalog-loader, etc.)
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
     }
 
-    // 2. Fetch profile using service role (bypasses RLS)
-    const serviceClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      { auth: { persistSession: false } }
-    )
-
-    const { data: profile, error: profileErr } = await serviceClient
+    const { data: profile, error: profileErr } = await getServiceClient()
       .from("profiles")
       .select(`
         display_name, birth_year, riding_since, privacy_level,
