@@ -5,9 +5,10 @@ import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 
 const ITEMS: { href: string; label: string }[] = [
-  { href: "/me/tags",           label: "Tags"     },
-  { href: "/me/settings/trust", label: "Trusted"  },
-  { href: "/me/settings/blocks",label: "Blocked"  },
+  { href: "/me/tags",                 label: "Tags"        },
+  { href: "/me/settings/tag-privacy", label: "Tag privacy" },
+  { href: "/me/settings/trust",       label: "Trusted"     },
+  { href: "/me/settings/blocks",      label: "Blocked"     },
 ]
 
 export function MeSubNav({ pendingTagCount }: { pendingTagCount?: number }) {
