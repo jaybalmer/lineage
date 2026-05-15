@@ -1,0 +1,79 @@
+-- Backfill: clean up orphan auth.users rows that have no matching profiles row.
+--
+-- Background
+-- ----------
+-- Lineage signup: magic-link click → auth.users row created → /auth/complete
+-- writes the profiles row → onboarding fills the rest. If anything between the
+-- click and onboarding completion is abandoned, the auth user exists with no
+-- profile. /api/me 404s, /me/tags renders empty, every user-keyed surface
+-- silently fails.
+--
+-- The forward-looking fix landed in src/lib/auth.ts (ensureProfile() called
+-- from requireAuth and /api/me). This file documents the one-shot SQL needed
+-- to clean up the four orphan rows that existed in prod on 2026-05-15.
+--
+-- Run these statements manually in the Supabase SQL editor — they are not part
+-- of an automated migration pipeline. The file is checked in so the cleanup is
+-- auditable alongside the code fix.
+--
+-- ─── 1. Identify orphans ───────────────────────────────────────────────────
+--
+--   SELECT u.id, u.email, u.created_at, u.last_sign_in_at, p.display_name
+--   FROM auth.users u
+--   LEFT JOIN profiles p ON p.id = u.id
+--   WHERE p.id IS NULL
+--   ORDER BY u.last_sign_in_at DESC NULLS LAST;
+--
+-- Confirmed orphans as of 2026-05-15:
+--   661de319-…  jaybalmer+daveach@gmail.com    (Jay test account → DELETE)
+--   7b3725e7-…  jaybalmer+culling@gmail.com    (Jay test account → DELETE)
+--   cb4afb32-…  jay@heyvoter.com               (Jay older email   → DELETE)
+--   5bc0f590-…  eriktraulsen@hotmail.com       (real user, abandoned → HYDRATE)
+--
+-- ─── 2. Inspect content dependencies before deleting ──────────────────────
+-- Confirm each orphan authored nothing referenced by FKs (asserter_id is text
+-- on claims; cast both sides for the join).
+--
+--   WITH orphans AS (
+--     SELECT u.id FROM auth.users u
+--     LEFT JOIN profiles p ON p.id = u.id
+--     WHERE p.id IS NULL
+--   )
+--   SELECT
+--     o.id,
+--     (SELECT count(*) FROM tag_events WHERE asserter_id = o.id)            AS asserter_tags,
+--     (SELECT count(*) FROM stories    WHERE author_id   = o.id)            AS authored_stories,
+--     (SELECT count(*) FROM claims     WHERE asserted_by::text = o.id::text) AS authored_claims
+--   FROM orphans o;
+--
+-- If counts are all 0 for a row, deletion is safe. If any are non-zero, hydrate
+-- instead (so the user can complete signup without losing their content).
+--
+-- ─── 3a. Delete Jay's three test orphans ──────────────────────────────────
+--
+--   DELETE FROM auth.users WHERE id IN (
+--     '661de319-…'::uuid,  -- jaybalmer+daveach@gmail.com
+--     '7b3725e7-…'::uuid,  -- jaybalmer+culling@gmail.com
+--     'cb4afb32-…'::uuid   -- jay@heyvoter.com
+--   );
+--
+-- ─── 3b. Hydrate Erik's row (real user) ───────────────────────────────────
+-- Creates a minimal profile so the next sign-in is a no-op for ensureProfile()
+-- and Erik can complete onboarding from where he left off. display_name is
+-- NOT NULL on profiles, so we seed the email local-part as a placeholder —
+-- onboarding's UPDATE will overwrite it once Erik enters his real name.
+--
+--   INSERT INTO profiles (id, display_name, privacy_level)
+--   VALUES (
+--     '5bc0f590-c69e-40de-b4c1-85bf7645fb92'::uuid,
+--     'eriktraulsen',
+--     'public'
+--   );
+--
+-- ─── 4. Verify ─────────────────────────────────────────────────────────────
+--
+--   SELECT count(*) FROM auth.users u
+--   LEFT JOIN profiles p ON p.id = u.id
+--   WHERE p.id IS NULL;
+--
+-- Expected: 0.
