@@ -6,7 +6,7 @@
 //   - getSubjectTier(subject_id)         — which tier moderates this person
 //   - expiryForSource(source)            — TTL for pending tags (Phase 4)
 //   - insertTagEventForStoryRider(...)   — used by /api/stories POST + PATCH
-//   - insertTagEventForClaim(...)        — used by /api/post-tag-event
+//   - insertTagEventForClaim(...)        — used by /api/tag-event
 //
 // Phase 1 defaults source='member' inserts to status='approved' to preserve
 // existing product behaviour. Phase 2 will flip the member default to
@@ -288,7 +288,7 @@ export async function pairStoryRiderTagEvents(
 }
 
 // ── Claim write-path helper ─────────────────────────────────────────────────
-// Used by /api/post-tag-event after the client-side claim insert lands. For a
+// Used by /api/tag-event after the client-side claim insert lands. For a
 // person-implicating claim we insert ONE tag_event per non-asserter person in
 // (subject, object) and FK the claim's tag_event_id to the FIRST one. Storing
 // moment_ref={claim_id} on each lets us reconstruct the relationship even
@@ -315,7 +315,7 @@ export async function pairClaimTagEvents(
   // defense-in-depth half of the Q2 dual-precheck design. The client-side
   // GET /api/me/can-tag precheck refuses early; this server-side check
   // refuses after the fact and triggers the caller to delete the orphan
-  // claim. See /api/post-tag-event for the rollback wiring.
+  // claim. See /api/tag-event for the rollback wiring.
   if (await isAsserterGloballyBlocked(supabase, args.asserterId)) {
     return {
       paired: 0,

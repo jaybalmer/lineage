@@ -198,12 +198,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Ambient-growth threshold: fire post-tag-event for every rider that's a
+    // Ambient-growth threshold: fire tag-event for every rider that's a
     // person id, in the background. Failures are non-fatal — the story is
     // already saved and the event endpoint logs its own errors.
     if (rider_ids.length > 0) {
       fireTagEvents(rider_ids as string[], user.id).catch((e) => {
-        console.error("[stories] post-tag-event background fan-out failed:", e)
+        console.error("[stories] tag-event background fan-out failed:", e)
       })
     }
 
@@ -372,7 +372,7 @@ export async function PATCH(req: NextRequest) {
     // survivors already got their notification on the prior write.
     if (addedRiderIds.length > 0) {
       fireTagEvents(addedRiderIds, user.id).catch((e) => {
-        console.error("[stories PATCH] post-tag-event background fan-out failed:", e)
+        console.error("[stories PATCH] tag-event background fan-out failed:", e)
       })
     }
 

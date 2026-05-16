@@ -345,7 +345,7 @@ export const useLineageStore = create<LineageStore>()(
 
           // Q2a precheck — only when the claim would tag others. A 403 here
           // refuses early with a generic message. The server-side rollback in
-          // /api/post-tag-event is the defense-in-depth (Q2b).
+          // /api/tag-event is the defense-in-depth (Q2b).
           if (wouldTagOthers) {
             try {
               const r = await fetch("/api/me/can-tag")
@@ -359,7 +359,7 @@ export const useLineageStore = create<LineageStore>()(
               }
             } catch {
               // Soft-fail-closed: precheck error doesn't refuse the write.
-              // Server-side rollback in /api/post-tag-event will catch a real block.
+              // Server-side rollback in /api/tag-event will catch a real block.
             }
           }
 
@@ -392,7 +392,7 @@ export const useLineageStore = create<LineageStore>()(
                 personIds.push(claim.object_id)
               }
               if (personIds.length > 0) {
-                fetch("/api/post-tag-event", {
+                fetch("/api/tag-event", {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({
@@ -401,7 +401,7 @@ export const useLineageStore = create<LineageStore>()(
                     predicate: claim.predicate,
                   }),
                 }).catch((e) => {
-                  console.error("[addClaim] post-tag-event call failed:", e)
+                  console.error("[addClaim] tag-event call failed:", e)
                 })
               }
             })

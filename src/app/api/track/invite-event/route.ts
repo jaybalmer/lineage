@@ -5,7 +5,7 @@ import { NextResponse } from "next/server"
 // and is easy to fill in once the SDK is added.
 //
 // Expected payload (sent fire-and-forget by invite UI, /api/invite,
-// /api/post-tag-event, and maybeFireThresholdNotification):
+// /api/tag-event, and maybeFireThresholdNotification):
 //   {
 //     event:
 //       | "invite_modal_opened"
