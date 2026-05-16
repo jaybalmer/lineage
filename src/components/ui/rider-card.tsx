@@ -38,8 +38,6 @@ const THEMES = {
   },
 } as const
 
-type ThemeKey = keyof typeof THEMES
-
 const TIER_LABEL: Record<string, { text: string; color: string; bg: string }> = {
   annual:   { text: "MEMBER",            color: "#3b82f6", bg: "#3b82f622" },
   lifetime: { text: "LIFETIME MEMBER",   color: "#8b5cf6", bg: "#8b5cf622" },
@@ -148,17 +146,8 @@ export function RiderCard({
     ? new Date().getFullYear() - person.riding_since
     : null
 
-  // Card theme (persisted per-browser)
-  const [theme, setTheme] = useState<ThemeKey>(() => {
-    if (typeof window === "undefined") return "alpine"
-    return (localStorage.getItem("lineage_card_theme") as ThemeKey | null) ?? "alpine"
-  })
-  const t = THEMES[theme]
-
-  function pickTheme(key: ThemeKey) {
-    setTheme(key)
-    localStorage.setItem("lineage_card_theme", key)
-  }
+  // Card theme — fixed to alpine; tint picker removed per product direction.
+  const t = THEMES.alpine
 
   // ── Avatar ────────────────────────────────────────────────────────────────
   const [avatarUrl, setAvatarUrl] = useState<string | null>(
@@ -334,24 +323,6 @@ export function RiderCard({
                 {bgError && (
                   <span className="text-[10px] text-red-400">{bgError}</span>
                 )}
-              </div>
-
-              {/* Top-right: theme colour dots */}
-              <div className="absolute top-3 right-3 flex gap-1.5 z-10">
-                {(Object.keys(THEMES) as ThemeKey[]).map((key) => (
-                  <button
-                    key={key}
-                    onClick={() => pickTheme(key)}
-                    title={THEMES[key].label}
-                    className="rounded-full border transition-transform"
-                    style={{
-                      width: 14, height: 14,
-                      background: THEMES[key].accent,
-                      borderColor: theme === key ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.2)",
-                      transform: theme === key ? "scale(1.35)" : "scale(1)",
-                    }}
-                  />
-                ))}
               </div>
             </>
           )}
