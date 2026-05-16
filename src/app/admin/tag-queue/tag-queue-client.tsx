@@ -334,11 +334,10 @@ export function TagQueueClient() {
                           Remove tag
                         </button>
                       ) : ev.status === "approved" ? (
-                        <span
-                          className="px-3 py-1.5 rounded-lg text-xs bg-surface-active text-muted border border-border-default cursor-not-allowed"
-                          title="Override removal of approved tags lands in Phase 4. Phase 3 ships preemptive removal of pending tags only."
-                        >
-                          Remove tag (Phase 4)
+                        // PB-009 Phase 4 (substantive, post-launch) will reintroduce a Remove
+                        // action on approved-status tags. Memory: project_pb009_phase4_strategy.md.
+                        <span className="text-xs text-muted italic">
+                          Already approved. Restrict the asserter to remove globally.
                         </span>
                       ) : null}
                       {ev.asserter_id && !isRestricted && (
