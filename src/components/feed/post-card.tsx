@@ -514,33 +514,45 @@ function EntityBlock({ claim, entityName, isOwn, readOnly }: EntityBlockProps) {
 const PLACE_PREDICATES_SET = new Set(["rode_at", "worked_at"])
 const EVENT_PREDICATES_SET = new Set(["competed_at", "spectated_at", "organized_at"])
 
-function CompanionAvatars({ claim }: { claim: Claim }) {
+function CompanionAvatars({ claim, explicitCompanionIds }: { claim: Claim; explicitCompanionIds?: string[] }) {
   const { catalog } = useLineageStore()
 
   const isPlace = PLACE_PREDICATES_SET.has(claim.predicate)
   const isEvent = EVENT_PREDICATES_SET.has(claim.predicate)
-  if (!isPlace && !isEvent) return null
 
-  const relevantPredicates = isPlace
-    ? [...PLACE_PREDICATES_SET]
-    : [...EVENT_PREDICATES_SET]
+  // Explicit companions come from the AddClaimModal rode_at fan-out, folded
+  // back in by groupRodeAtCompanions. They always render when present.
+  const explicitIds = explicitCompanionIds ?? []
 
+  // Implicit companions: other riders who logged the same place/event in the
+  // same year. Only computed for place/event claims with a known year.
   const claimYear = claim.start_date?.slice(0, 4)
-  if (!claimYear) return null
+  const implicitIds: string[] = (() => {
+    if (!isPlace && !isEvent) return []
+    if (!claimYear) return []
+    const relevantPredicates = isPlace
+      ? [...PLACE_PREDICATES_SET]
+      : [...EVENT_PREDICATES_SET]
+    return [
+      ...new Set(
+        catalog.claims
+          .filter(
+            (c) =>
+              c.object_id === claim.object_id &&
+              relevantPredicates.includes(c.predicate) &&
+              c.subject_id !== claim.subject_id &&
+              c.start_date?.slice(0, 4) === claimYear
+          )
+          .map((c) => c.subject_id)
+      ),
+    ]
+  })()
 
-  // Find other riders who have claims at the same place/event in the same year
+  // Merge — explicit first so the fold-in riders lead the chip list
+  const explicitSet = new Set(explicitIds)
   const companionIds = [
-    ...new Set(
-      catalog.claims
-        .filter(
-          (c) =>
-            c.object_id === claim.object_id &&
-            relevantPredicates.includes(c.predicate) &&
-            c.subject_id !== claim.subject_id &&
-            c.start_date?.slice(0, 4) === claimYear
-        )
-        .map((c) => c.subject_id)
-    ),
+    ...explicitIds,
+    ...implicitIds.filter((id) => !explicitSet.has(id)),
   ].slice(0, 6)
 
   if (companionIds.length === 0) return null
@@ -576,7 +588,7 @@ function CompanionAvatars({ claim }: { claim: Claim }) {
 
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 
-export function PostCard({ claim, isOwn, readOnly }: { claim: Claim; isOwn?: boolean; readOnly?: boolean }) {
+export function PostCard({ claim, isOwn, readOnly, explicitCompanionIds }: { claim: Claim; isOwn?: boolean; readOnly?: boolean; explicitCompanionIds?: string[] }) {
   const { catalog, userEntities, removeClaim, membership } = useLineageStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -812,7 +824,7 @@ export function PostCard({ claim, isOwn, readOnly }: { claim: Claim; isOwn?: boo
         )}
 
         {/* Companion avatars — other riders tagged at same place/event/year */}
-        {!readOnly && <CompanionAvatars claim={claim} />}
+        {!readOnly && <CompanionAvatars claim={claim} explicitCompanionIds={explicitCompanionIds} />}
       </div>
 
       {/* ── Verification gate modal (Section 6.3) ── */}
