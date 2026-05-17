@@ -8,6 +8,7 @@ import { PLACES, ORGS, BOARDS, PEOPLE, EVENTS } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import { RiderAvatar, getInitials } from "@/components/ui/rider-avatar"
+import { isInvitableNodeStatus } from "@/lib/invite-tracking"
 import type { Predicate, EntityType, ConfidenceLevel, PrivacyLevel, Board, Person } from "@/types"
 
 const inputCls =
@@ -547,13 +548,19 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
         })
       }
       const p = allPeople.find((p) => p.id === personId)
-      if (!p || p.community_status === "unverified") {
-        unverifiedCompanions.push(p ?? { id: personId, display_name: "", privacy_level: "public" })
+      // Only invite riders whose node_status is invitable (catalog/unclaimed).
+      // claimed/verified riders already have auth-bound profiles.
+      if (p && isInvitableNodeStatus(p.node_status)) {
+        unverifiedCompanions.push(p)
       }
     }
 
-    // Show invite nudge for person-type claims or first unverified companion
-    if (PREDICATE_ENTITY_TYPE[predicate] === "person" && selectedEntity) {
+    // Show invite nudge for person-type claims (only when the tagged rider
+    // has no auth-bound profile) or first invitable companion.
+    const directPerson = PREDICATE_ENTITY_TYPE[predicate] === "person" && selectedEntity
+      ? (selectedEntity as Person)
+      : null
+    if (directPerson && isInvitableNodeStatus(directPerson.node_status)) {
       setInvitePersonId(entityId)
       setInvitePersonName(getEntityLabel(selectedEntity))
       setShowInvite(true)
