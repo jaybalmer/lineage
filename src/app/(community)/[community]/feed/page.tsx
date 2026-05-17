@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useMemo, useState, useEffect, useCallback } from "react"
 import { Nav } from "@/components/ui/nav"
 import { StoryCard } from "@/components/feed/story-card"
 import { PostCard } from "@/components/feed/post-card"
@@ -9,6 +9,7 @@ import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 import Link from "next/link"
 import { nameToSlug } from "@/lib/utils"
+import { groupRodeAtCompanions } from "@/lib/companion-grouping"
 import type { Story, Claim } from "@/types"
 
 // ── Vague relative time ────────────────────────────────────────────────────────
@@ -155,6 +156,22 @@ export default function FeedPage() {
     return catalog.people.find((p) => p.id === claim.subject_id)
   }
 
+  // Fold companion `rode_with` rows into their matching `rode_at` row so the
+  // feed shows one card per place visit. Pagination can split a rode_at and
+  // its rode_with siblings across pages — they were written within ms of each
+  // other so this is rare, but when it happens we just leave the orphan
+  // rode_with cards in place until the matching rode_at loads.
+  const { absorbedIds, companionMap } = useMemo(() => {
+    const allClaims = entries.flatMap((e) => (e.kind === "claim" ? [e.claim] : []))
+    const result = groupRodeAtCompanions(allClaims)
+    const survivors = new Set(result.claims.map((c) => c.id))
+    const absorbed = new Set<string>()
+    for (const c of allClaims) {
+      if (!survivors.has(c.id)) absorbed.add(c.id)
+    }
+    return { absorbedIds: absorbed, companionMap: result.companionMap }
+  }, [entries])
+
   return (
     <div className="min-h-screen bg-background">
       <Nav />
@@ -206,6 +223,9 @@ export default function FeedPage() {
         ) : (
           <div className="space-y-5">
             {entries.map((entry) => {
+              if (entry.kind === "claim" && absorbedIds.has(entry.claim.id)) {
+                return null
+              }
               if (entry.kind === "story") {
                 const authorName = entry.story.author?.display_name
                 const ago = timeAgo(entry.story.created_at)
@@ -238,7 +258,11 @@ export default function FeedPage() {
                     action={action}
                     ago={ago}
                   />
-                  <PostCard claim={entry.claim} isOwn={entry.claim.subject_id === activePersonId} />
+                  <PostCard
+                    claim={entry.claim}
+                    isOwn={entry.claim.subject_id === activePersonId}
+                    explicitCompanionIds={companionMap.get(entry.claim.id)}
+                  />
                 </div>
               )
             })}
