@@ -9,6 +9,7 @@ import { StartCard } from "@/components/feed/start-card"
 import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { cn } from "@/lib/utils"
+import { groupRodeAtCompanions } from "@/lib/companion-grouping"
 
 type FilterType = "all" | "places" | "gear" | "people" | "orgs" | "events" | "stories"
 
@@ -110,13 +111,20 @@ export function FeedView({
   const [addingClaim, setAddingClaim] = useState(false)
   const [addingStory, setAddingStory] = useState(false)
 
+  // Fold companion `rode_with` rows into their matching `rode_at` row so the
+  // timeline renders one card per place visit. See companion-grouping.ts.
+  const { groupedClaims, companionMap } = useMemo(() => {
+    const result = groupRodeAtCompanions(claims)
+    return { groupedClaims: result.claims, companionMap: result.companionMap }
+  }, [claims])
+
   const items = useMemo((): FeedItem[] => {
     const claimItems: FeedItem[] = (() => {
       if (filter === "stories") return []
       const predicates = filter !== "all" ? FILTER_PREDICATES[filter as Exclude<FilterType, "stories">] : []
       const filtered = predicates.length > 0
-        ? claims.filter((c) => predicates.includes(c.predicate))
-        : claims
+        ? groupedClaims.filter((c) => predicates.includes(c.predicate))
+        : groupedClaims
       return filtered.map((claim) => ({
         kind: "claim" as const,
         claim,
@@ -151,18 +159,19 @@ export function FeedView({
       if (a.sortDate !== b.sortDate) return dir * (a.sortDate - b.sortDate)
       return predicateRank(a) - predicateRank(b)
     })
-  }, [claims, days, stories, filter, ridingSince, order])
+  }, [groupedClaims, days, stories, filter, ridingSince, order])
 
   const grouped = useMemo(() => groupByDecade(items), [items])
   const decades = Object.keys(grouped).sort((a, b) =>
     order === "asc" ? a.localeCompare(b) : b.localeCompare(a)
   )
 
-  // Count per filter tab
+  // Count per filter tab — uses the grouped claim set so the counts match
+  // what the user sees after the rode_with fold.
   const filterCounts = useMemo((): Record<FilterType, number> => {
-    const countFor = (preds: string[]) => claims.filter((c) => preds.includes(c.predicate)).length
+    const countFor = (preds: string[]) => groupedClaims.filter((c) => preds.includes(c.predicate)).length
     return {
-      all: claims.length + days.length + stories.length,
+      all: groupedClaims.length + days.length + stories.length,
       places: countFor(FILTER_PREDICATES.places),
       gear: countFor(FILTER_PREDICATES.gear),
       people: countFor(FILTER_PREDICATES.people),
@@ -170,7 +179,7 @@ export function FeedView({
       events: countFor(FILTER_PREDICATES.events),
       stories: stories.length,
     }
-  }, [claims, days, stories])
+  }, [groupedClaims, days, stories])
 
   return (
     <div>
@@ -289,7 +298,11 @@ export function FeedView({
                         )} />
                       )}
                       {item.kind === "claim" ? (
-                        <PostCard claim={item.claim} isOwn={isOwn} />
+                        <PostCard
+                          claim={item.claim}
+                          isOwn={isOwn}
+                          explicitCompanionIds={companionMap.get(item.claim.id)}
+                        />
                       ) : item.kind === "day" ? (
                         <DayPostCard day={item.day} isOwn={isOwn} />
                       ) : item.kind === "story" ? (
