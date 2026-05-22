@@ -88,6 +88,8 @@ export function FeedView({
   personName,
   isOwn,
   hideActionButtons = false,
+  hideFilters = false,
+  readOnly = false,
   ridingSince,
   person,
   onStoryAdded,
@@ -100,6 +102,8 @@ export function FeedView({
   personName: string
   isOwn?: boolean
   hideActionButtons?: boolean
+  hideFilters?: boolean
+  readOnly?: boolean
   ridingSince?: number
   person?: Person
   onStoryAdded?: (s: Story) => void
@@ -210,6 +214,7 @@ export function FeedView({
       )}
 
       {/* Filter chips with counts */}
+      {!hideFilters && (
       <div className="flex gap-2 flex-wrap mb-6">
         {(Object.keys(FILTER_LABELS) as FilterType[]).map((f) => {
           const isStoriesChip = f === "stories"
@@ -239,6 +244,7 @@ export function FeedView({
           )
         })}
       </div>
+      )}
 
       {/* Feed grouped by decade */}
       {decades.length === 0 && (
@@ -289,7 +295,7 @@ export function FeedView({
                         )} />
                       )}
                       {item.kind === "claim" ? (
-                        <PostCard claim={item.claim} isOwn={isOwn} />
+                        <PostCard claim={item.claim} isOwn={isOwn} readOnly={readOnly} />
                       ) : item.kind === "day" ? (
                         <DayPostCard day={item.day} isOwn={isOwn} />
                       ) : item.kind === "story" ? (

@@ -318,9 +318,10 @@ interface EntityBlockProps {
   claim: Claim
   entityName: string
   isOwn?: boolean
+  readOnly?: boolean
 }
 
-function EntityBlock({ claim, entityName, isOwn }: EntityBlockProps) {
+function EntityBlock({ claim, entityName, isOwn, readOnly }: EntityBlockProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const type = claim.object_type
   const id = claim.object_id
@@ -441,18 +442,28 @@ function EntityBlock({ claim, entityName, isOwn }: EntityBlockProps) {
       )}
 
       <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border-default">
-        <CommunityLink href={href} className="flex-shrink-0">
-          {graphic}
-        </CommunityLink>
+        {readOnly ? (
+          <div className="flex-shrink-0">{graphic}</div>
+        ) : (
+          <CommunityLink href={href} className="flex-shrink-0">
+            {graphic}
+          </CommunityLink>
+        )}
 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              <CommunityLink href={href} className="block">
-                <p className="font-bold text-foreground text-base leading-snug hover:text-blue-300 transition-colors truncate">
+              {readOnly ? (
+                <p className="font-bold text-foreground text-base leading-snug truncate">
                   {displayName}
                 </p>
-              </CommunityLink>
+              ) : (
+                <CommunityLink href={href} className="block">
+                  <p className="font-bold text-foreground text-base leading-snug hover:text-blue-300 transition-colors truncate">
+                    {displayName}
+                  </p>
+                </CommunityLink>
+              )}
               {subtitle && (
                 <p className="text-xs text-muted mt-0.5 capitalize">{subtitle}</p>
               )}
@@ -464,7 +475,14 @@ function EntityBlock({ claim, entityName, isOwn }: EntityBlockProps) {
         </div>
 
         {/* Thumbnail slot — click to open lightbox */}
-        {imageUrl ? (
+        {readOnly ? (
+          imageUrl ? (
+            <div className="w-14 h-14 rounded-lg overflow-hidden border border-border-default flex-shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={imageUrl} alt={displayName} className="w-full h-full object-cover" />
+            </div>
+          ) : null
+        ) : imageUrl ? (
           <button
             onClick={() => setLightboxOpen(true)}
             className="w-14 h-14 rounded-lg overflow-hidden border border-border-default flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-blue-500 group relative"
@@ -558,7 +576,7 @@ function CompanionAvatars({ claim }: { claim: Claim }) {
 
 // ─── PostCard ─────────────────────────────────────────────────────────────────
 
-export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
+export function PostCard({ claim, isOwn, readOnly }: { claim: Claim; isOwn?: boolean; readOnly?: boolean }) {
   const { catalog, userEntities, removeClaim, membership } = useLineageStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const [editing, setEditing] = useState(false)
@@ -625,6 +643,7 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
           claim={claim}
           entityName={entityName}
           isOwn={isOwn}
+          readOnly={readOnly}
         />
 
         {/* Metadata row: predicate + date + badges + privacy + menu */}
@@ -664,7 +683,7 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
               <span className="text-xs text-muted" title="Shared">👥</span>
             )}
 
-            {!isOwn && claim.object_type && claim.object_id && (
+            {!isOwn && !readOnly && claim.object_type && claim.object_id && (
               <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                 <QuickClaimPopover
                   entityId={claim.object_id}
@@ -674,7 +693,7 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
               </div>
             )}
 
-            {isOwn && (
+            {isOwn && !readOnly && (
               <div className="relative">
                 <button
                   onClick={() => { setMenuOpen((o) => !o); setConfirmDelete(false) }}
@@ -793,7 +812,7 @@ export function PostCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
         )}
 
         {/* Companion avatars — other riders tagged at same place/event/year */}
-        <CompanionAvatars claim={claim} />
+        {!readOnly && <CompanionAvatars claim={claim} />}
       </div>
 
       {/* ── Verification gate modal (Section 6.3) ── */}
