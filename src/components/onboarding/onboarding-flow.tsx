@@ -212,7 +212,10 @@ function BrandSelect({
 // ─── Main flow ────────────────────────────────────────────────────────────────
 
 function generateClaimId() {
-  return `ob-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+  // Real UUID so the Postgres `claims.id` uuid column accepts it. The old
+  // `ob-${ts}-${rand}` format would error with "invalid input syntax for
+  // type uuid" if claims.id is uuid-typed.
+  return crypto.randomUUID()
 }
 
 export function OnboardingFlow() {
