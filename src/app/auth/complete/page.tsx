@@ -21,6 +21,13 @@ export default function AuthCompletePage() {
 
       setStatus("Saving your lineage…")
 
+      // Read state directly from the persisted store, not the render-time
+      // closure. The closured `store` snapshot can hold an initial empty
+      // sessionClaims array if Zustand persist hydration completed after
+      // first render — which silently skips the migrate. getState() reads
+      // live state at the moment we need it.
+      const { onboarding, sessionClaims } = useLineageStore.getState()
+
       // ── 1. Profile upsert (new users only) ────────────────────────────────
       const { data: existingProfile } = await supabase
         .from("profiles")
@@ -29,7 +36,6 @@ export default function AuthCompletePage() {
         .single()
 
       if (!existingProfile) {
-        const { onboarding } = store
         const { error: profileError } = await supabase.from("profiles").upsert({
           id: user.id,
           display_name:
@@ -45,14 +51,15 @@ export default function AuthCompletePage() {
       }
 
       // ── 2. Migrate session claims ─────────────────────────────────────────
-      if (store.sessionClaims.length > 0) {
-        const migrated = store.sessionClaims.map((claim) => ({
+      if (sessionClaims.length > 0) {
+        const migrated = sessionClaims.map((claim) => ({
           ...claim,
           subject_id:   user.id,
           asserted_by:  user.id,
         }))
         const { error } = await supabase.from("claims").insert(migrated)
-        if (!error) store.clearSessionClaims()
+        if (error) console.error("Migrate session claims failed:", error)
+        else store.clearSessionClaims()
       }
 
       // ── 3. Read canonical profile back from DB ────────────────────────────
@@ -63,9 +70,9 @@ export default function AuthCompletePage() {
         .single()
 
       store.setProfileOverride({
-        display_name:   savedProfile?.display_name  ?? store.onboarding.display_name?.trim(),
-        birth_year:     savedProfile?.birth_year    ?? store.onboarding.birth_year,
-        riding_since:   savedProfile?.riding_since  ?? store.onboarding.start_year,
+        display_name:   savedProfile?.display_name  ?? onboarding.display_name?.trim(),
+        birth_year:     savedProfile?.birth_year    ?? onboarding.birth_year,
+        riding_since:   savedProfile?.riding_since  ?? onboarding.start_year,
         privacy_level: (savedProfile?.privacy_level ?? "public") as "private" | "shared" | "public",
       })
       store.setActivePersonId(user.id)

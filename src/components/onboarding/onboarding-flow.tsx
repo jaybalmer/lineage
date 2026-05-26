@@ -5,20 +5,20 @@ import { useRouter } from "next/navigation"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
-import { supabase } from "@/lib/supabase"
-import type { Place, Predicate } from "@/types"
+import { TimelineAhaStep } from "@/components/onboarding/timeline-aha"
+import { SaveStep } from "@/components/onboarding/save-step"
+import type { Claim, Org, Place, Predicate } from "@/types"
 
 // ─── Step IDs ─────────────────────────────────────────────────────────────────
 
 type StepId =
-  | "welcome"
+  | "land"
   | "name"
   | "start_year"
-  | "first_board"
-  | "first_place"
-  | "riding_intensity"
-  | "riding_details"
-  | "account"
+  | "last_place"
+  | "first_board_brand"
+  | "timeline_aha"
+  | "save"
 
 // ─── Progress bar ─────────────────────────────────────────────────────────────
 
@@ -126,23 +126,96 @@ function PlaceSelect({
   )
 }
 
-// ─── Password strength ────────────────────────────────────────────────────────
+// ─── Brand search select ──────────────────────────────────────────────────────
 
-function passwordStrength(pw: string): { score: number; label: string; color: string } {
-  if (pw.length === 0) return { score: 0, label: "", color: "" }
-  if (pw.length < 6) return { score: 1, label: "Too short", color: "bg-red-500" }
-  if (pw.length < 8) return { score: 2, label: "Weak", color: "bg-amber-500" }
-  const has = (re: RegExp) => re.test(pw)
-  const extras = [has(/[A-Z]/), has(/[0-9]/), has(/[^A-Za-z0-9]/)].filter(Boolean).length
-  if (extras >= 2) return { score: 4, label: "Strong", color: "bg-emerald-500" }
-  if (extras >= 1) return { score: 3, label: "Good", color: "bg-blue-500" }
-  return { score: 2, label: "Weak", color: "bg-amber-500" }
+function BrandSelect({
+  items,
+  value,
+  onChange,
+}: {
+  items: Org[]
+  value?: string
+  onChange: (id: string) => void
+}) {
+  const [query, setQuery] = useState("")
+  const [showModal, setShowModal] = useState(false)
+
+  const selectedItem = items.find((i) => i.id === value)
+
+  const filtered = items.filter((i) =>
+    i.name.toLowerCase().includes(query.toLowerCase())
+  )
+
+  if (value && selectedItem) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className="flex-1 bg-blue-950/30 border border-blue-900/40 rounded-lg px-4 py-3 text-sm text-blue-200">
+          {selectedItem.name}
+        </div>
+        <button
+          onClick={() => onChange("")}
+          className="text-muted hover:text-foreground transition-colors px-2 py-3 text-sm"
+        >
+          ×
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div>
+      {showModal && (
+        <AddEntityModal
+          entityType="org"
+          initialName={query}
+          onClose={() => setShowModal(false)}
+          onAdded={(id) => {
+            onChange(id)
+            setShowModal(false)
+          }}
+        />
+      )}
+      <input
+        autoFocus
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search brands…"
+        className={inputCls}
+      />
+      {query.length > 0 && (
+        <div className="mt-2 max-h-44 overflow-y-auto rounded-lg border border-border-default divide-y divide-[#1e1e1e]">
+          {filtered.slice(0, 8).map((item) => (
+            <button
+              key={item.id}
+              onClick={() => { onChange(item.id); setQuery("") }}
+              className="w-full text-left px-4 py-2.5 text-sm text-muted hover:bg-surface-hover transition-colors"
+            >
+              {item.name}
+            </button>
+          ))}
+          {query.trim().length > 0 && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="w-full text-left px-4 py-2.5 text-sm text-blue-400 hover:bg-surface-hover transition-colors flex items-center gap-1.5"
+            >
+              <span className="font-bold">+</span>
+              Add &ldquo;{query.trim()}&rdquo; as a new brand
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 // ─── Main flow ────────────────────────────────────────────────────────────────
 
 function generateClaimId() {
-  return `ob-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+  // Real UUID so the Postgres `claims.id` uuid column accepts it. The old
+  // `ob-${ts}-${rand}` format would error with "invalid input syntax for
+  // type uuid" if claims.id is uuid-typed.
+  return crypto.randomUUID()
 }
 
 export function OnboardingFlow() {
@@ -156,19 +229,18 @@ export function OnboardingFlow() {
     setActivePersonId,
     catalog,
     addClaim,
+    removeClaim,
+    updateClaim,
     activeCommunitySlug,
   } = useLineageStore()
+  const sessionClaims = useLineageStore((s) => s.sessionClaims)
 
   const step = onboarding.step
-
-  // Account step state (not persisted to store)
-  const [password, setPassword] = useState("")
-  const [submitting, setSubmitting] = useState(false)
-  const [submitError, setSubmitError] = useState<string | null>(null)
-  const [emailConfirmPending, setEmailConfirmPending] = useState(false)
   const [claimContext, setClaimContext] = useState<{ inviterName?: string } | null>(null)
 
-  // Pre-fill from invite claim link (sessionStorage set by /claim/[token] page)
+  // Pre-fill from invite claim link (sessionStorage set by /claim/[token] page).
+  // Invited users fall through the organic flow until the dedicated aha-card arc ships;
+  // the existing /auth/complete invite-merge still repoints their ghost claims on save.
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem("lineage_claim_prefill")
@@ -190,96 +262,81 @@ export function OnboardingFlow() {
     } catch { /* sessionStorage may not be available */ }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Dynamic step list based on answers ───────────────────────────────────
+  // ── Fixed organic step path ───────────────────────────────────────────────
 
-  const steps: StepId[] = useMemo(() => {
-    const base: StepId[] = [
-      "welcome",
-      "name",
-      "start_year",
-      "first_board",
-      "first_place",
-      "riding_intensity",
-    ]
-    if (onboarding.riding_intensity === "a_lot" || onboarding.riding_intensity === "my_life") {
-      base.push("riding_details")
-    }
-    base.push("account")
-    return base
-  }, [onboarding.riding_intensity])
+  const steps: StepId[] = useMemo(
+    () => ["land", "name", "start_year", "last_place", "first_board_brand", "timeline_aha", "save"],
+    []
+  )
 
-  const currentStepId: StepId = steps[step] ?? "account"
+  const currentStepId: StepId = steps[step] ?? "save"
   const totalSteps = steps.length
 
-  // ── Apply claims after account creation ──────────────────────────────────
+  const brandItems = useMemo(
+    () => (catalog.orgs as Org[]).filter((o) => o.org_type === "brand"),
+    [catalog.orgs]
+  )
 
-  const applyOnboardingClaims = (personId: string) => {
-    const claimYear = onboarding.start_year ?? new Date().getFullYear()
-    const startDate = `${claimYear}-01-01`
+  // ── Claim creation (pre-auth → sessionClaims; migrated at /auth/complete) ──
+  // Keep at most one claim per FTUE predicate so re-picking or clearing a
+  // selection never leaves a duplicate behind. subject_id/asserted_by are
+  // placeholders here; /auth/complete overwrites them with the real user id.
 
-    if (onboarding.first_place_id) {
-      addClaim({
-        id: generateClaimId(),
-        subject_id: personId,
-        subject_type: "person",
-        predicate: "rode_at" as Predicate,
-        object_id: onboarding.first_place_id,
-        object_type: "place",
-        start_date: startDate,
-        confidence: "self-reported",
-        visibility: "public",
-        asserted_by: personId,
-        created_at: new Date().toISOString(),
-      })
-    }
+  const replaceClaim = (predicate: Predicate, claim: Claim | null) => {
+    useLineageStore
+      .getState()
+      .sessionClaims.filter((c) => c.predicate === predicate)
+      .forEach((c) => removeClaim(c.id))
+    if (claim) addClaim(claim)
   }
 
-  // ── Account creation ──────────────────────────────────────────────────────
-
-  const handleSignup = async () => {
-    const email = onboarding.email?.trim() ?? ""
-    if (!email || !password || password.length < 8) return
-
-    setSubmitting(true)
-    setSubmitError(null)
-
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-    })
-
-    setSubmitting(false)
-
-    if (error) {
-      setSubmitError(error.message)
-      return
-    }
-
-    setProfileOverride({
-      display_name: onboarding.display_name?.trim() || email.split("@")[0],
-      ...(onboarding.birth_year && { birth_year: onboarding.birth_year }),
-      riding_since: onboarding.start_year,
-      privacy_level: "private",
-    })
-
-    const userId = data.user?.id ?? `local-${Date.now()}`
-    setActivePersonId(userId)
-    applyOnboardingClaims(userId)
-    completeOnboarding()
-
-    if (typeof window !== "undefined") {
-      localStorage.setItem("lineage_onboarding_banner_pending", "1")
-    }
-
-    if (data.session) {
-      router.replace(`/${activeCommunitySlug}/timeline`)
-    } else {
-      setEmailConfirmPending(true)
-    }
+  const handlePlace = (id: string) => {
+    setOnboardingField("first_place_id", id || undefined)
+    replaceClaim(
+      "rode_at",
+      id
+        ? {
+            id: generateClaimId(),
+            subject_id: "ftue-self",
+            subject_type: "person",
+            predicate: "rode_at",
+            object_id: id,
+            object_type: "place",
+            start_date: `${new Date().getFullYear()}-01-01`,
+            confidence: "self-reported",
+            visibility: "public",
+            asserted_by: "ftue-self",
+            created_at: new Date().toISOString(),
+          }
+        : null
+    )
   }
 
-  // Dev bypass
+  const handleBrand = (id: string) => {
+    setOnboardingField("first_board_id", id || undefined)
+    const year = onboarding.start_year ?? new Date().getFullYear()
+    replaceClaim(
+      "fan_of",
+      id
+        ? {
+            id: generateClaimId(),
+            subject_id: "ftue-self",
+            subject_type: "person",
+            predicate: "fan_of",
+            object_id: id,
+            object_type: "org",
+            start_date: `${year}-01-01`,
+            confidence: "self-reported",
+            visibility: "public",
+            asserted_by: "ftue-self",
+            created_at: new Date().toISOString(),
+          }
+        : null
+    )
+  }
+
+  // Dev bypass — skip the OAuth gate locally. Binds the session claims to the
+  // dev user so they render on the timeline just like the real save path would.
   const devBypass = () => {
     const devId = `dev-${Date.now().toString(36)}`
     setProfileOverride({
@@ -289,7 +346,9 @@ export function OnboardingFlow() {
       privacy_level: "private",
     })
     setActivePersonId(devId)
-    applyOnboardingClaims(devId)
+    useLineageStore.getState().sessionClaims.forEach((c) =>
+      updateClaim(c.id, { subject_id: devId, asserted_by: devId })
+    )
     completeOnboarding()
     router.replace(`/${activeCommunitySlug}/timeline`)
   }
@@ -299,38 +358,38 @@ export function OnboardingFlow() {
   const canContinue = () => {
     if (currentStepId === "name") return !!onboarding.display_name?.trim()
     if (currentStepId === "start_year") return !!onboarding.start_year
-    if (currentStepId === "riding_intensity") return !!onboarding.riding_intensity
-    if (currentStepId === "account") {
-      const e = onboarding.email?.trim() ?? ""
-      return (
-        e.includes("@") &&
-        e.length > 4 &&
-        password.length >= 8 &&
-        !submitting &&
-        !emailConfirmPending
-      )
-    }
     return true
   }
 
   const next = () => {
-    if (currentStepId === "account") {
-      handleSignup()
-    } else if (step < totalSteps - 1) {
-      setOnboardingStep(step + 1)
-    }
+    if (currentStepId === "save") return
+    if (step < totalSteps - 1) setOnboardingStep(step + 1)
   }
 
   const back = () => {
     if (step > 0) setOnboardingStep(step - 1)
   }
 
-  const pw = passwordStrength(password)
+  const displayName = onboarding.display_name?.trim() || "You"
+
+  const primaryLabel =
+    currentStepId === "land"
+      ? "Get started"
+      : currentStepId === "timeline_aha"
+      ? "Save my lineage"
+      : currentStepId === "last_place"
+      ? (onboarding.first_place_id ? "Continue" : "Skip for now")
+      : currentStepId === "first_board_brand"
+      ? (onboarding.first_board_id ? "Continue" : "Skip for now")
+      : "Continue"
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <div
+      className="min-h-screen bg-background flex items-center justify-center px-4"
+      data-ftue-step={currentStepId}
+    >
       <div className="w-full max-w-lg">
 
         {/* Header */}
@@ -345,27 +404,26 @@ export function OnboardingFlow() {
         {/* Step content */}
         <div className="min-h-[380px]">
 
-          {/* ── Welcome ── */}
-          {currentStepId === "welcome" && (
+          {/* ── Land ── */}
+          {currentStepId === "land" && (
             <div className="space-y-5">
               {claimContext ? (
                 <>
                   <div className="bg-blue-950/40 border border-blue-900/50 rounded-xl px-4 py-3 text-sm text-blue-200">
-                    <span className="font-semibold">{claimContext.inviterName}</span> added you to their snowboard lineage.
-                    {" "}Claim your profile to verify the connection.
+                    <span className="font-semibold">{claimContext.inviterName}</span> added you to their snowboard lineage. Claim your spot to make it yours.
                   </div>
-                  <h1 className="text-2xl font-bold text-foreground">Claim your profile</h1>
+                  <h1 className="text-2xl font-bold text-foreground">Claim your lineage</h1>
                 </>
               ) : (
                 <>
                   <h1 className="text-2xl font-bold text-foreground leading-snug">
-                    Welcome to the community of snowboarders.
+                    Lineage is a living record of snowboarding.
                   </h1>
                   <p className="text-muted leading-relaxed text-sm">
-                    Lineage is where riders document their history — the boards they rode, the mountains they called home, the contests they threw down at. Together, we&apos;re building a living record of the sport.
+                    Claim a couple of real moments. They land on your personal timeline and become part of the community&apos;s collective history.
                   </p>
                   <p className="text-muted leading-relaxed text-sm">
-                    We&apos;ll ask a few quick questions to get your timeline started. Takes about two minutes.
+                    Two quick claims, then it&apos;s yours to save. Takes about a minute.
                   </p>
                 </>
               )}
@@ -417,224 +475,53 @@ export function OnboardingFlow() {
             </div>
           )}
 
-          {/* ── First board ── */}
-          {currentStepId === "first_board" && (
+          {/* ── Last place ── */}
+          {currentStepId === "last_place" && (
             <div className="space-y-4">
               <div>
-                <h2 className="text-xl font-bold text-foreground mb-1">
-                  What was your first board?
-                </h2>
+                <h2 className="text-xl font-bold text-foreground mb-1">Where do you ride?</h2>
                 <p className="text-muted text-sm">
-                  Brand name is plenty — add a model or year if you remember.
-                  <span className="ml-1.5 text-muted/60">Optional.</span>
-                </p>
-              </div>
-              <input
-                autoFocus
-                type="text"
-                value={onboarding.first_board_text ?? ""}
-                onChange={(e) => setOnboardingField("first_board_text", e.target.value)}
-                onKeyDown={(e) => { if (e.key === "Enter") next() }}
-                placeholder="e.g. Burton, Lib Tech Skate Banana"
-                className={inputCls}
-              />
-            </div>
-          )}
-
-          {/* ── First place ── */}
-          {currentStepId === "first_place" && (
-            <div className="space-y-4">
-              <div>
-                <h2 className="text-xl font-bold text-foreground mb-1">
-                  Where did you first ride?
-                </h2>
-                <p className="text-muted text-sm">
-                  The mountain or resort where it all started.
+                  The mountain or resort you call home.
                   <span className="ml-1.5 text-muted/60">Optional.</span>
                 </p>
               </div>
               <PlaceSelect
                 items={catalog.places as Place[]}
                 value={onboarding.first_place_id}
-                onChange={(id) => setOnboardingField("first_place_id", id || undefined)}
+                onChange={handlePlace}
               />
             </div>
           )}
 
-          {/* ── Riding intensity ── */}
-          {currentStepId === "riding_intensity" && (
+          {/* ── First board brand ── */}
+          {currentStepId === "first_board_brand" && (
             <div className="space-y-4">
               <div>
-                <h2 className="text-xl font-bold text-foreground mb-1">
-                  How much did you ride?
-                </h2>
-                <p className="text-muted text-sm">At your peak — when you were most into it.</p>
-              </div>
-              <div className="space-y-2">
-                {([
-                  ["casual", "Casually", "Went when I could — a few times a season"],
-                  ["a_lot", "A lot", "Most weekends, every season"],
-                  ["my_life", "It was my life", "I was deep in it"],
-                ] as const).map(([value, label, sublabel]) => (
-                  <button
-                    key={value}
-                    onClick={() => setOnboardingField("riding_intensity", value)}
-                    className={cn(
-                      "w-full text-left px-4 py-3.5 rounded-lg border transition-all",
-                      onboarding.riding_intensity === value
-                        ? "bg-blue-950/40 border-blue-700/50 text-foreground"
-                        : "bg-surface border-border-default text-muted hover:bg-surface-hover hover:text-foreground"
-                    )}
-                  >
-                    <div className="font-medium text-sm">{label}</div>
-                    <div className="text-xs text-muted mt-0.5">{sublabel}</div>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── Riding details (sponsored + compete) ── */}
-          {currentStepId === "riding_details" && (
-            <div className="space-y-7">
-              <div>
-                <h2 className="text-xl font-bold text-foreground mb-1">A bit more about your riding</h2>
-                <p className="text-muted text-sm">Helps us understand where you fit in the history.</p>
-              </div>
-
-              <div className="space-y-2.5">
-                <p className="text-sm font-medium text-foreground">Were you ever sponsored?</p>
-                <div className="flex gap-2">
-                  {([true, false] as const).map((v) => (
-                    <button
-                      key={String(v)}
-                      onClick={() => setOnboardingField("was_sponsored", v)}
-                      className={cn(
-                        "flex-1 px-4 py-2.5 rounded-lg border text-sm transition-all",
-                        onboarding.was_sponsored === v
-                          ? "bg-blue-950/40 border-blue-700/50 text-blue-200"
-                          : "bg-surface border-border-default text-muted hover:bg-surface-hover"
-                      )}
-                    >
-                      {v ? "Yes" : "No"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-2.5">
-                <p className="text-sm font-medium text-foreground">Did you compete?</p>
-                <div className="flex gap-2">
-                  {([true, false] as const).map((v) => (
-                    <button
-                      key={String(v)}
-                      onClick={() => setOnboardingField("did_compete", v)}
-                      className={cn(
-                        "flex-1 px-4 py-2.5 rounded-lg border text-sm transition-all",
-                        onboarding.did_compete === v
-                          ? "bg-blue-950/40 border-blue-700/50 text-blue-200"
-                          : "bg-surface border-border-default text-muted hover:bg-surface-hover"
-                      )}
-                    >
-                      {v ? "Yes" : "No"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── Account ── */}
-          {currentStepId === "account" && !emailConfirmPending && (
-            <div className="space-y-5">
-              <div>
-                <h2 className="text-xl font-bold text-foreground mb-1">Last thing — create your account</h2>
-                <p className="text-muted text-sm leading-relaxed">
-                  Your email and password let you sign back in from any device.
+                <h2 className="text-xl font-bold text-foreground mb-1">What brand do you ride?</h2>
+                <p className="text-muted text-sm">
+                  Pick the brand on your board.
+                  <span className="ml-1.5 text-muted/60">Optional.</span>
                 </p>
               </div>
-
-              <div className="space-y-3">
-                <input
-                  autoFocus
-                  type="email"
-                  value={onboarding.email ?? ""}
-                  onChange={(e) => setOnboardingField("email", e.target.value)}
-                  placeholder="you@example.com"
-                  className={inputCls}
-                />
-                <div>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && canContinue()) next() }}
-                    placeholder="At least 8 characters"
-                    className={inputCls}
-                  />
-                  {password.length > 0 && (
-                    <div className="mt-2 flex items-center gap-2">
-                      <div className="flex gap-0.5 flex-1">
-                        {[1, 2, 3, 4].map((i) => (
-                          <div
-                            key={i}
-                            className={cn(
-                              "h-0.5 flex-1 rounded-full transition-all duration-300",
-                              pw.score >= i ? pw.color : "bg-border-default"
-                            )}
-                          />
-                        ))}
-                      </div>
-                      {pw.label && (
-                        <span className="text-xs text-muted shrink-0">{pw.label}</span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {submitError && (
-                <p className="text-sm text-red-400 bg-red-950/30 border border-red-900/40 rounded-lg px-4 py-3">
-                  {submitError}
-                </p>
-              )}
-
-              <p className="text-xs text-muted">
-                We&apos;ll never share your email. Used only to restore your session.
-              </p>
-
-              {process.env.NODE_ENV === "development" && (
-                <button
-                  onClick={devBypass}
-                  className="w-full px-4 py-2 rounded-lg text-xs text-amber-400 border border-amber-900/50 bg-amber-950/20 hover:bg-amber-950/40 transition-colors"
-                >
-                  Skip — dev only
-                </button>
-              )}
+              <BrandSelect
+                items={brandItems}
+                value={onboarding.first_board_id}
+                onChange={handleBrand}
+              />
             </div>
           )}
 
-          {/* ── Email confirmation pending ── */}
-          {currentStepId === "account" && emailConfirmPending && (
-            <div className="space-y-4 text-center pt-8">
-              <div className="text-5xl">📬</div>
-              <h2 className="text-xl font-bold text-foreground">One more step</h2>
-              <p className="text-muted text-sm leading-relaxed">
-                We sent a confirmation link to{" "}
-                <span className="text-foreground font-medium">{onboarding.email}</span>.
-                Click it, then sign in with your email and password.
-              </p>
-              <p className="text-xs text-muted pt-2">
-                Didn&apos;t get it?{" "}
-                <button
-                  onClick={() => setEmailConfirmPending(false)}
-                  className="text-blue-400 hover:underline"
-                >
-                  Try again
-                </button>
-              </p>
-            </div>
+          {/* ── Timeline aha ── */}
+          {currentStepId === "timeline_aha" && (
+            <TimelineAhaStep
+              claims={sessionClaims}
+              displayName={displayName}
+              startYear={onboarding.start_year}
+            />
           )}
+
+          {/* ── Save ── */}
+          {currentStepId === "save" && <SaveStep />}
         </div>
 
         {/* Navigation */}
@@ -643,36 +530,35 @@ export function OnboardingFlow() {
             onClick={back}
             className={cn(
               "text-sm text-muted hover:text-foreground transition-colors",
-              (step === 0 || emailConfirmPending) && "invisible"
+              step === 0 && "invisible"
             )}
           >
             ← Back
           </button>
 
-          <button
-            onClick={next}
-            disabled={!canContinue()}
-            className={cn(
-              "px-6 py-2.5 rounded-lg text-sm font-medium transition-all",
-              canContinue()
-                ? "bg-[#1C1917] text-[#F5F2EE] hover:bg-[#292524]"
-                : "bg-surface-active text-muted cursor-not-allowed"
-            )}
-          >
-            {emailConfirmPending
-              ? "Waiting for confirmation…"
-              : currentStepId === "account"
-              ? submitting
-                ? "Creating account…"
-                : "Create account →"
-              : currentStepId === "welcome"
-              ? "Get started"
-              : currentStepId === "first_board" || currentStepId === "first_place"
-              ? onboarding[currentStepId === "first_board" ? "first_board_text" : "first_place_id"]
-                ? "Continue"
-                : "Skip for now"
-              : "Continue"}
-          </button>
+          {currentStepId === "save" ? (
+            process.env.NODE_ENV === "development" ? (
+              <button
+                onClick={devBypass}
+                className="px-3 py-2 rounded-lg text-xs text-amber-400 border border-amber-900/50 bg-amber-950/20 hover:bg-amber-950/40 transition-colors"
+              >
+                Skip — dev only
+              </button>
+            ) : null
+          ) : (
+            <button
+              onClick={next}
+              disabled={!canContinue()}
+              className={cn(
+                "px-6 py-2.5 rounded-lg text-sm font-medium transition-all",
+                canContinue()
+                  ? "bg-[#1C1917] text-[#F5F2EE] hover:bg-[#292524]"
+                  : "bg-surface-active text-muted cursor-not-allowed"
+              )}
+            >
+              {primaryLabel}
+            </button>
+          )}
         </div>
       </div>
     </div>
