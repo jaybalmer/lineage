@@ -252,7 +252,7 @@ export default function MeTagsPage() {
           {tags.map((t) => {
             const asserter = t.asserter_id ? asserters[t.asserter_id] ?? null : null
             const asserterName = asserter?.display_name
-              ?? (t.source === "system" ? "Lineage" : "Unknown rider")
+              ?? (t.source === "system" ? "Linestry" : "Unknown rider")
             const ref = (t.moment_ref ?? {}) as { story_id?: string; claim_id?: string }
             const moment: MomentSummary | null = ref.story_id
               ? moments[ref.story_id] ?? null

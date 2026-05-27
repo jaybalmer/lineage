@@ -630,7 +630,7 @@ function ComparePageInner() {
                     confirmed their side yet
                   </div>
                   <CopyButton
-                    text={`Hey ${personB.display_name}, check out our snowboarding connection on Lineage — ${personA.display_name} + ${personB.display_name}: ${summary.headline}\n\nAdd your timeline at lineage.app/compare`}
+                    text={`Hey ${personB.display_name}, check out our snowboarding connection on Linestry — ${personA.display_name} + ${personB.display_name}: ${summary.headline}\n\nAdd your timeline at linestry.com/compare`}
                     label={`✉ Invite ${personB.display_name.split(" ")[0]}`}
                   />
                 </div>

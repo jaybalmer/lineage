@@ -71,7 +71,7 @@ export default function MemberCardPage({ params }: { params: Promise<{ username:
       {/* Wordmark */}
       <div className="mb-8 flex items-center gap-2">
         <span className="text-[#B8862A] text-lg">⬡</span>
-        <span className="text-muted text-xs tracking-widest font-medium">LINEAGE</span>
+        <span className="text-muted text-xs tracking-widest font-medium">LINESTRY</span>
       </div>
 
       {/* Tier badge */}
@@ -87,7 +87,7 @@ export default function MemberCardPage({ params }: { params: Promise<{ username:
 
       {/* Tagline */}
       <p className="text-muted mt-6 text-xs text-center max-w-xs leading-relaxed">
-        {person.display_name} is a verified member of the Lineage community —
+        {person.display_name} is a verified member of the Linestry community —
         part of the collective history of snowboarding.
       </p>
 

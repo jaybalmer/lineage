@@ -6,7 +6,7 @@
 // editor override) never sends two emails for the same decision.
 //
 // Editor identity is NOT surfaced in the owner email — the decline reason
-// is shown as a category label, and the email signature says "the Lineage
+// is shown as a category label, and the email signature says "the Linestry
 // moderation team" (peer accountability for editors stays internal per Q3).
 
 import type { SupabaseClient } from "@supabase/supabase-js"
@@ -68,7 +68,7 @@ export async function fireEditorDeclineNotification(
     const resend = new Resend(key)
     const categoryLabel = labelForDeclineCategory(args.reasonCategory)
     await resend.emails.send({
-      from: "Lineage <noreply@lineage.wtf>",
+      from: "Linestry <noreply@linestry.com>",
       to: ownerEmail,
       subject: "A tag against your timeline was declined",
       html: editorDeclineHtml({
@@ -89,8 +89,8 @@ function editorDeclineHtml(args: { ownerName: string | null; categoryLabel: stri
     <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 560px; margin: 0 auto;">
       <p>${hello}</p>
       <p>A pending tag against your timeline was reviewed and declined. Category: <strong>${escapeHtml(args.categoryLabel)}</strong>.</p>
-      <p>You can review your tag history any time at <a href="https://lineage.wtf/me/tags">lineage.wtf/me/tags</a>.</p>
-      <p style="color: #666; font-size: 13px;">— the Lineage moderation team</p>
+      <p>You can review your tag history any time at <a href="https://linestry.com/me/tags">linestry.com/me/tags</a>.</p>
+      <p style="color: #666; font-size: 13px;">— the Linestry moderation team</p>
     </div>
   `
 }

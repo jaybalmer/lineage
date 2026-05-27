@@ -37,7 +37,7 @@ const FEATURES = [
   {
     icon: "✕",
     title: "Find where your lines cross",
-    desc: "Same mountain in '04? Same event the year everything changed? Lineage surfaces the unexpected overlaps you didn't know you had.",
+    desc: "Same mountain in '04? Same event the year everything changed? Linestry surfaces the unexpected overlaps you didn't know you had.",
     accent: "border-violet-700",
   },
   {
@@ -102,7 +102,7 @@ export default function Home() {
             className="font-bold text-foreground leading-none tracking-tight"
             style={{ fontSize: "clamp(4rem, 14vw, 7.5rem)", letterSpacing: "-0.03em" }}
           >
-            Lineage<span className="inline-block rounded-full bg-[#B8862A]" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em" }} />
+            Linestry<span className="inline-block rounded-full bg-[#B8862A]" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em" }} />
           </div>
         </div>
 
@@ -111,7 +111,7 @@ export default function Home() {
         </h1>
 
         <p className="text-muted text-base leading-relaxed max-w-xl mx-auto mb-6">
-          Lineage is a new kind of social platform where people build personal timelines
+          Linestry is a new kind of social platform where people build personal timelines
           of their experiences, and together those timelines form a collective record
           that connects us.
         </p>
@@ -156,7 +156,7 @@ export default function Home() {
                       )}
                     </div>
                     <div className="text-muted text-sm font-mono">
-                      lineage.wtf/<span className="text-foreground">{comm.slug}</span>
+                      linestry.com/<span className="text-foreground">{comm.slug}</span>
                     </div>
 
                     {/* CTAs — only for active communities */}
@@ -197,7 +197,7 @@ export default function Home() {
       <div className="max-w-3xl mx-auto px-6 py-6 text-center">
         <p className="text-foreground text-xl font-semibold italic leading-snug">
           Every community has a history.<br />
-          Lineage helps map it.
+          Linestry helps map it.
         </p>
       </div>
 

@@ -15,8 +15,8 @@ const dmSerif = DM_Serif_Display({
 })
 
 export const metadata: Metadata = {
-  title: "Lineage Community Tech",
-  description: "A living, time-aware, community-authored snowboarding lineage graph",
+  title: "Linestry",
+  description: "A living, community-authored snowboarding history graph",
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

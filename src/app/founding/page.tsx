@@ -59,7 +59,7 @@ export default function FoundingPage() {
             THE FIRST 500
           </div>
           <p className="text-muted mb-8" style={{ fontSize: 12, lineHeight: 1.8, maxWidth: 520 }}>
-            These are the people who believed in Lineage before it was proven.
+            These are the people who believed in Linestry before it was proven.
             Their names are part of the record — permanently.
           </p>
 

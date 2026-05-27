@@ -111,7 +111,7 @@ export function SaveStep() {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-bold text-foreground mb-1">Save your lineage</h2>
+        <h2 className="text-xl font-bold text-foreground mb-1">Save your linestry</h2>
         <p className="text-muted text-sm leading-relaxed">
           Pick how you want to sign in. Your moments are waiting on the other side.
         </p>

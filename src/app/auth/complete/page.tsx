@@ -19,7 +19,7 @@ export default function AuthCompletePage() {
       if (handled) return
       handled = true
 
-      setStatus("Saving your lineage…")
+      setStatus("Saving your linestry…")
 
       // Read state directly from the persisted store, not the render-time
       // closure. The closured `store` snapshot can hold an initial empty
@@ -130,7 +130,7 @@ export default function AuthCompletePage() {
         store.setTriggerPrefs({ welcome_pending: true })
       }
 
-      setStatus("Done! Opening your lineage…")
+      setStatus("Done! Opening your linestry…")
       router.replace(`/${activeCommunitySlug}/profile`)
     }
 

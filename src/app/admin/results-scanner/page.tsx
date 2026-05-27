@@ -305,7 +305,7 @@ export default function ResultsScannerPage() {
           <div className="text-4xl mb-4">✓</div>
           <h1 className="text-2xl font-bold mb-2">Import complete</h1>
           <p className="text-muted text-sm mb-8">
-            Results processed and added to the Lineage database.
+            Results processed and added to the Linestry database.
           </p>
           <div className="flex justify-center gap-6 mb-10">
             <Stat n={doneResult.matched} label="existing people linked" color="green" />

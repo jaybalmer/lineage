@@ -132,8 +132,8 @@ export function BulkInvitePrompt(props: BulkInvitePromptProps) {
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground mb-0.5">
             {count === 1
-              ? "1 rider in your timeline hasn't joined Lineage yet"
-              : `${count} riders in your timeline haven't joined Lineage yet`}
+              ? "1 rider in your timeline hasn't joined Linestry yet"
+              : `${count} riders in your timeline haven't joined Linestry yet`}
           </p>
           <p className="text-xs text-muted leading-relaxed">
             Invite them so they can claim their profiles and verify the connections.

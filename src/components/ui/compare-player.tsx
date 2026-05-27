@@ -410,7 +410,7 @@ function CompareOutroView({ slide, active, onClose }: { slide: CompareOutroSlide
     <div className="flex flex-col items-center justify-center h-full text-center px-8">
       <div className={`transition-all duration-700 ${show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
         <div className="text-6xl mb-6">⬡</div>
-        <div className="text-white/50 text-sm uppercase tracking-[0.3em] mb-3">Lineage</div>
+        <div className="text-white/50 text-sm uppercase tracking-[0.3em] mb-3">Linestry</div>
         <h2 className="text-3xl sm:text-4xl font-black text-white mb-3">
           {slide.nameA.split(" ")[0]}<span className="text-white/30 font-thin mx-3">×</span>{slide.nameB.split(" ")[0]}
         </h2>

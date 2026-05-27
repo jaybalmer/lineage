@@ -3,7 +3,7 @@ import { ImageResponse } from "next/og"
 export const size        = { width: 32, height: 32 }
 export const contentType = "image/png"
 
-// Blue  → Vercel production  (lineage.wtf)
+// Blue  → Vercel production  (linestry.com)
 // Amber → local dev + preview builds
 const PROD_COLOR    = "#3b82f6"
 const DEV_COLOR     = "#f59e0b"

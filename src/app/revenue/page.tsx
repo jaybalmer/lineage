@@ -90,7 +90,7 @@ export default function RevenuePage() {
               HOW REVENUE<br />SHARING WORKS
             </div>
             <p className="text-muted mt-4" style={{ fontSize: 12, lineHeight: 1.8, maxWidth: 520 }}>
-              20% of everything Lineage earns flows back to the community that built it.
+              20% of everything Linestry earns flows back to the community that built it.
               Here&apos;s exactly how.
             </p>
           </div>
@@ -330,7 +330,7 @@ export default function RevenuePage() {
                 </p>
                 <p className="text-foreground">
                   <span className="text-muted">Payout method (v1):</span>{" "}
-                  Platform credit, spendable in the Lineage marketplace (events, gear, travel).
+                  Platform credit, spendable in the Linestry marketplace (events, gear, travel).
                   Cash-out option planned for a future version.
                 </p>
                 <p className="text-foreground">

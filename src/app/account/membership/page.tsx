@@ -192,7 +192,7 @@ function ShareCard({
   const [copied, setCopied] = useState(false)
 
   const copyLink = () => {
-    navigator.clipboard.writeText("https://lineage.wtf/membership")
+    navigator.clipboard.writeText("https://linestry.com/membership")
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -222,7 +222,7 @@ function ShareCard({
           <span style={{
             fontFamily: "'Barlow Condensed', sans-serif",
             fontSize: 11, fontWeight: 700, letterSpacing: 4, color: "#71717a",
-          }}>LINEAGE</span>
+          }}>LINESTRY</span>
         </div>
 
         {/* Symbol + tier */}
@@ -251,7 +251,7 @@ function ShareCard({
 
         {/* Footer */}
         <div className="mt-4 pt-3" style={{ borderTop: "1px solid #1e2d3d" }}>
-          <div style={{ fontSize: 9, color: "#52525b", letterSpacing: 2 }}>LINEAGE.WTF</div>
+          <div style={{ fontSize: 9, color: "#52525b", letterSpacing: 2 }}>LINESTRY.COM</div>
         </div>
       </div>
 
@@ -267,7 +267,7 @@ function ShareCard({
           className="px-4 py-2 rounded-full border border-border-default text-muted hover:text-foreground hover:border-foreground transition-all"
           style={{ fontSize: 9, letterSpacing: 1, background: "none", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace" }}
         >
-          {copied ? "✓ Copied!" : "Copy lineage.wtf/membership"}
+          {copied ? "✓ Copied!" : "Copy linestry.com/membership"}
         </button>
       </div>
     </div>
@@ -304,7 +304,7 @@ function GiftSection() {
         GIFT A MEMBERSHIP
       </div>
       <p className="text-muted mb-4" style={{ fontSize: 10, lineHeight: 1.7 }}>
-        Give a fellow rider an annual membership — $25, one year of access to Lineage with
+        Give a fellow rider an annual membership — $25, one year of access to Linestry with
         member tokens and revenue share.
       </p>
 
@@ -429,7 +429,7 @@ function MembershipDashboard() {
         <Nav />
         <div className="max-w-sm mx-auto px-4 pt-24 text-center space-y-5">
           <div className="text-3xl">⬡</div>
-          <p className="text-foreground font-semibold" style={{ fontSize: 14 }}>Sign in to Lineage</p>
+          <p className="text-foreground font-semibold" style={{ fontSize: 14 }}>Sign in to Linestry</p>
           <p className="text-muted" style={{ fontSize: 12 }}>Sign in to view your membership and profile.</p>
           <Link href="/auth/signin"
             className="inline-block w-full px-6 py-3 rounded-xl bg-[#1C1917] text-[#F5F2EE] font-semibold hover:bg-[#292524] transition-colors"

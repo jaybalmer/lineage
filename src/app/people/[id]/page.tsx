@@ -285,7 +285,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                     className="px-3 py-2 rounded-lg border text-xs font-medium transition-all"
                     style={{ borderColor: "#3b82f640", color: "#3b82f6", background: "#3b82f610" }}
                   >
-                    Invite to Lineage
+                    Invite to Linestry
                   </button>
                 )}
                 <Link href={`/compare?b=${resolvedId}`}>
@@ -344,7 +344,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                     className="text-xs font-medium transition-colors hover:opacity-80"
                     style={{ color: "#3b82f6" }}
                   >
-                    Invite to Lineage →
+                    Invite to Linestry →
                   </button>
                 </div>
               )}

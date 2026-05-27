@@ -257,7 +257,7 @@ export function MemberCardTile({ data, animate = false, replayKey = 0 }: {
         fontSize: 11, fontWeight: 500, color: "rgba(255,255,255,0.25)",
         letterSpacing: "0.06em", margin: 0,
       }}>
-        lineage.wtf
+        linestry.com
       </p>
     </div>
   )
@@ -338,7 +338,7 @@ export function MemberCardOverlay() {
 
   function handleShare() {
     const slug = nameToSlug(displayName)
-    navigator.clipboard.writeText(`https://lineage.wtf/member/${slug}/card`)
+    navigator.clipboard.writeText(`https://linestry.com/member/${slug}/card`)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
