@@ -81,7 +81,7 @@ function getCelebrationForNewClaim(claim: Claim, claimCount: number, catalog: {
       tier: 2 as const,
       icon: "🤝",
       title: `${personName} added to your crew`,
-      body: "The people you ride with are part of your lineage. Your network in the community just grew.",
+      body: "The people you ride with are part of your linestry. Your network in the community just grew.",
       stat: claimCount === 1 ? "Your first entry" : `Entry #${claimCount} on your timeline`,
       nextThread: "Tag them in a story or connect them to an event you shared.",
       contentType: "person" as const,
@@ -138,7 +138,7 @@ function getMilestoneCelebration(count: number) {
     icon: "🔥",
     title: "10 entries — double digits",
     body: "You're not just a member, you're a contributor. Your timeline is one of the most complete in the community.",
-    nextThread: "Share your profile link — your lineage is worth showing off.",
+    nextThread: "Share your profile link — your linestry is worth showing off.",
     accentColor: "#f59e0b",
     contentType: "milestone" as const,
   }

@@ -155,7 +155,7 @@ export default function ClaimPage() {
           <div className="text-4xl">✅</div>
           <h1 className="text-xl font-bold text-foreground">Profile already claimed</h1>
           <p className="text-sm text-muted">
-            Someone has already claimed this profile. If that was you, sign in to see your lineage.
+            Someone has already claimed this profile. If that was you, sign in to see your linestry.
           </p>
           <button
             onClick={() => router.push("/onboarding")}

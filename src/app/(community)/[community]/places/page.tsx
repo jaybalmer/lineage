@@ -117,7 +117,7 @@ function PlacesPageInner() {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-foreground">Places</h1>
-            <p className="text-sm text-muted mt-1">Resorts, shops, and zones in the lineage</p>
+            <p className="text-sm text-muted mt-1">Resorts, shops, and zones in the linestry</p>
           </div>
           <button
             onClick={() => setAddOpen(true)}
