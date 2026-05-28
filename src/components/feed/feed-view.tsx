@@ -263,7 +263,7 @@ export function FeedView({
             {filter === "stories"
                 ? isOwn ? "No stories yet. Add one to capture a moment." : `${personName} hasn't added any stories yet.`
                 : isOwn
-                  ? "No claims yet. Start building your lineage."
+                  ? "No claims yet. Start building your linestry."
                   : `${personName} hasn't added any claims yet.`}
           </div>
         </div>
