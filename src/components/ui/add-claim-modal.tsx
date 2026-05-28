@@ -609,7 +609,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
         <div className="relative w-full max-w-lg bg-surface border border-border-default rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
           {/* Header */}
           <div className="px-6 pt-5 pb-4 border-b border-border-default flex-shrink-0">
-            <h2 className="text-base font-bold text-foreground">Add to your lineage</h2>
+            <h2 className="text-base font-bold text-foreground">Add to your linestry</h2>
             <p className="text-xs text-muted mt-0.5">Build your snowboarding history, one claim at a time</p>
           </div>
 
@@ -1041,7 +1041,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                   : "bg-surface-active text-muted cursor-not-allowed"
               )}
             >
-              {companions.length > 0 ? `Add to lineage (+${companions.length} rider${companions.length > 1 ? "s" : ""})` : "Add to lineage"}
+              {companions.length > 0 ? `Add to linestry (+${companions.length} rider${companions.length > 1 ? "s" : ""})` : "Add to linestry"}
             </button>
           </div>
         </div>

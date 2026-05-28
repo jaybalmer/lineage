@@ -318,7 +318,7 @@ export default function ConnectionsPage() {
           <div className="text-2xl mb-2">🤙</div>
           <div className="text-sm font-medium text-foreground mb-1">Know someone who should be here?</div>
           <p className="text-xs text-muted mb-4">
-            Invite them to add their lineage, or send them a verification request to confirm an overlap.
+            Invite them to add their linestry, or send them a verification request to confirm an overlap.
           </p>
           <button className="px-4 py-2 bg-surface-hover border border-border-default rounded-lg text-sm text-muted hover:text-foreground transition-all">
             Invite a rider
