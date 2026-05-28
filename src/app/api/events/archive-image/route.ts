@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     const fetchRes = await fetch(sourceUrl, {
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; Lineage/1.0)",
+        "User-Agent": "Mozilla/5.0 (compatible; Linestry/1.0)",
         "Accept": "image/*,*/*;q=0.8",
       },
     })

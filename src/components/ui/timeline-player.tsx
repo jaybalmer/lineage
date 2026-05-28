@@ -311,7 +311,7 @@ function IntroSlideView({ slide, active }: { slide: IntroSlide; active: boolean 
         style={{ opacity: show ? 1 : 0, transform: show ? "translateY(0) scale(1)" : "translateY(30px) scale(0.96)", transition: "opacity 0.8s ease, transform 0.8s ease" }}
       >
         <div className="text-8xl mb-5" style={{ filter: "drop-shadow(0 0 24px rgba(100,140,255,0.5))" }}>🏔</div>
-        <div className="text-white/40 text-xs uppercase tracking-[0.35em] mb-4 font-mono">Your Lineage</div>
+        <div className="text-white/40 text-xs uppercase tracking-[0.35em] mb-4 font-mono">Your Linestry</div>
         <h1
           className="font-black text-white leading-none mb-5"
           style={{ fontSize: "clamp(3rem, 12vw, 6.5rem)", letterSpacing: "-0.02em", textShadow: "0 0 60px rgba(100,150,255,0.3)" }}
@@ -474,12 +474,12 @@ function OutroSlideView({ slide, active, onClose }: { slide: OutroSlide; active:
         style={{ opacity: show ? 1 : 0, transform: show ? "translateY(0)" : "translateY(30px)", transition: "opacity 0.8s ease, transform 0.8s ease" }}
       >
         <div className="text-7xl mb-6" style={{ filter: "drop-shadow(0 0 20px rgba(160,100,255,0.5))" }}>⬡</div>
-        <div className="text-white/35 text-xs uppercase tracking-[0.4em] mb-4 font-mono">Lineage.wtf</div>
+        <div className="text-white/35 text-xs uppercase tracking-[0.4em] mb-4 font-mono">Linestry.com</div>
         <h2
           className="font-black text-white leading-tight mb-4"
           style={{ fontSize: "clamp(2rem, 8vw, 4rem)", letterSpacing: "-0.02em" }}
         >
-          That&apos;s {slide.name}&apos;s<br />lineage.
+          That&apos;s {slide.name}&apos;s<br />linestry.
         </h2>
         <p className="text-white/35 text-sm mb-12 font-mono">Every board, mountain, and moment.</p>
         <button

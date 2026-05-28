@@ -376,7 +376,7 @@ export function OnboardingFlow() {
     currentStepId === "land"
       ? "Get started"
       : currentStepId === "timeline_aha"
-      ? "Save my lineage"
+      ? "Save my linestry"
       : currentStepId === "last_place"
       ? (onboarding.first_place_id ? "Continue" : "Skip for now")
       : currentStepId === "first_board_brand"
@@ -396,7 +396,7 @@ export function OnboardingFlow() {
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-8">
             <span className="text-[#B8862A] text-xl">⬡</span>
-            <span className="font-semibold text-foreground">Lineage</span>
+            <span className="font-semibold text-foreground">Linestry</span>
           </div>
           <ProgressBar step={step} total={totalSteps} />
         </div>
@@ -410,14 +410,14 @@ export function OnboardingFlow() {
               {claimContext ? (
                 <>
                   <div className="bg-blue-950/40 border border-blue-900/50 rounded-xl px-4 py-3 text-sm text-blue-200">
-                    <span className="font-semibold">{claimContext.inviterName}</span> added you to their snowboard lineage. Claim your spot to make it yours.
+                    <span className="font-semibold">{claimContext.inviterName}</span> added you to their snowboard linestry. Claim your spot to make it yours.
                   </div>
-                  <h1 className="text-2xl font-bold text-foreground">Claim your lineage</h1>
+                  <h1 className="text-2xl font-bold text-foreground">Claim your linestry</h1>
                 </>
               ) : (
                 <>
                   <h1 className="text-2xl font-bold text-foreground leading-snug">
-                    Lineage is a living record of snowboarding.
+                    Linestry is a living record of snowboarding.
                   </h1>
                   <p className="text-muted leading-relaxed text-sm">
                     Claim a couple of real moments. They land on your personal timeline and become part of the community&apos;s collective history.

@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
   try {
     const res = await fetch(url, {
       headers: {
-        "User-Agent": "Mozilla/5.0 (compatible; Lineage/1.0; +https://lineage.wtf)",
+        "User-Agent": "Mozilla/5.0 (compatible; Linestry/1.0; +https://linestry.com)",
         "Accept": "text/html",
       },
       signal: AbortSignal.timeout(6000),

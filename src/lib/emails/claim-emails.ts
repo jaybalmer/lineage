@@ -17,7 +17,7 @@ function shell(headline: string, body: string, cta?: { label: string; href: stri
   <div style="max-width:480px;margin:40px auto;padding:32px;background:#141414;border-radius:16px;border:1px solid #2a2a2a;">
     <div style="text-align:center;margin-bottom:28px;">
       <span style="font-size:28px;">⬡</span>
-      <span style="display:block;font-size:13px;font-weight:600;letter-spacing:0.15em;color:#71717a;margin-top:4px;text-transform:uppercase;">Lineage</span>
+      <span style="display:block;font-size:13px;font-weight:600;letter-spacing:0.15em;color:#71717a;margin-top:4px;text-transform:uppercase;">Linestry</span>
     </div>
     <h1 style="margin:0 0 12px;font-size:20px;font-weight:700;color:#e5e5e5;line-height:1.3;">
       ${headline}
@@ -31,7 +31,7 @@ function shell(headline: string, body: string, cta?: { label: string; href: stri
       </a>
     </div>` : ""}
     <p style="margin:0;font-size:11px;color:#3f3f46;text-align:center;line-height:1.5;">
-      &mdash; Lineage
+      &mdash; Linestry
     </p>
   </div>
 </body>
@@ -43,7 +43,7 @@ export function claimSubmittedHtml(personName: string, vouchesRequired: number):
   const vouchWord = pluralize(vouchesRequired, "vouch", "vouches")
   return shell(
     `Your claim on ${safeName}`,
-    `<p style="margin:0 0 14px;">We received your request to claim <strong style="color:#e5e5e5;">${safeName}</strong> on Lineage.</p>
+    `<p style="margin:0 0 14px;">We received your request to claim <strong style="color:#e5e5e5;">${safeName}</strong> on Linestry.</p>
      <p style="margin:0;">Other members can vouch for you on the profile. ${vouchesRequired} ${vouchWord} from people who know you will move this forward. We&rsquo;ll email when something changes.</p>`,
   )
 }
@@ -98,7 +98,7 @@ export async function sendClaimEmail(args: SendArgs): Promise<void> {
     const { Resend } = await import("resend")
     const resend = new Resend(key)
     await resend.emails.send({
-      from: "Lineage <noreply@lineage.wtf>",
+      from: "Linestry <noreply@linestry.com>",
       to: args.to,
       subject: args.subject,
       html: args.html,

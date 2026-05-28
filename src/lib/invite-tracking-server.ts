@@ -75,10 +75,10 @@ function thresholdEmailHtml(personName: string, count: number): string {
   <div style="max-width:480px;margin:40px auto;padding:32px;background:#141414;border-radius:16px;border:1px solid #2a2a2a;">
     <div style="text-align:center;margin-bottom:28px;">
       <span style="font-size:28px;">⧡</span>
-      <span style="display:block;font-size:13px;font-weight:600;letter-spacing:0.15em;color:#71717a;margin-top:4px;text-transform:uppercase;">Lineage</span>
+      <span style="display:block;font-size:13px;font-weight:600;letter-spacing:0.15em;color:#71717a;margin-top:4px;text-transform:uppercase;">Linestry</span>
     </div>
     <h1 style="margin:0 0 12px;font-size:20px;font-weight:700;color:#e5e5e5;line-height:1.3;">
-      ${safe} is showing up more on Lineage
+      ${safe} is showing up more on Linestry
     </h1>
     <p style="margin:0 0 20px;font-size:14px;color:#71717a;line-height:1.6;">
       ${count} different riders have now tagged <strong style="color:#e5e5e5;">${safe}</strong> in their snowboarding timelines.
@@ -88,8 +88,8 @@ function thresholdEmailHtml(personName: string, count: number): string {
       If that’s actually you, claim the profile to take ownership of the history people are writing together.
     </p>
     <div style="text-align:center;margin-bottom:28px;">
-      <a href="https://lineage.wtf" style="display:inline-block;padding:14px 32px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:600;">
-        Open Lineage →
+      <a href="https://linestry.com" style="display:inline-block;padding:14px 32px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:600;">
+        Open Linestry →
       </a>
     </div>
     <p style="margin:0;font-size:11px;color:#3f3f46;text-align:center;line-height:1.5;">
@@ -107,9 +107,9 @@ async function sendThresholdEmail(args: { to: string; personName: string; count:
     const { Resend } = await import("resend")
     const resend = new Resend(key)
     await resend.emails.send({
-      from: "Lineage <noreply@lineage.wtf>",
+      from: "Linestry <noreply@linestry.com>",
       to: args.to,
-      subject: `${args.personName} is showing up more on Lineage`,
+      subject: `${args.personName} is showing up more on Linestry`,
       html: thresholdEmailHtml(args.personName, args.count),
     })
   } catch (err) {

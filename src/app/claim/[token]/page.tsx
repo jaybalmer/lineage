@@ -119,7 +119,7 @@ export default function ClaimPage() {
             onClick={() => router.push("/")}
             className="mt-4 px-6 py-2.5 rounded-xl bg-surface-hover border border-border-default text-sm text-foreground hover:bg-surface-active transition-colors"
           >
-            Go to Lineage
+            Go to Linestry
           </button>
         </div>
       </div>
@@ -134,13 +134,13 @@ export default function ClaimPage() {
           <div className="text-4xl">⏳</div>
           <h1 className="text-xl font-bold text-foreground">This invite has expired</h1>
           <p className="text-sm text-muted">
-            {invite?.inviter_name} can send you a new invite from their Lineage profile.
+            {invite?.inviter_name} can send you a new invite from their Linestry profile.
           </p>
           <button
             onClick={() => router.push("/")}
             className="mt-4 px-6 py-2.5 rounded-xl bg-[#1C1917] text-sm font-semibold text-[#F5F2EE] hover:bg-[#292524] transition-colors"
           >
-            Visit Lineage
+            Visit Linestry
           </button>
         </div>
       </div>
@@ -178,7 +178,7 @@ export default function ClaimPage() {
         {/* Logo */}
         <div className="text-center space-y-1">
           <div className="text-4xl">⬡</div>
-          <p className="text-xs font-semibold text-muted uppercase tracking-widest">Lineage</p>
+          <p className="text-xs font-semibold text-muted uppercase tracking-widest">Linestry</p>
         </div>
 
         {/* Card */}
@@ -215,8 +215,8 @@ export default function ClaimPage() {
           {/* Description */}
           <div className="px-5 pb-4">
             <p className="text-xs text-muted leading-relaxed">
-              Lineage is a snowboard history app — your quiver, the mountains you&apos;ve ridden, and the crew you&apos;ve ridden with.
-              Claim this profile to verify {invite?.inviter_name}&apos;s connection and start building your own lineage.
+              Linestry is a snowboard history app — your quiver, the mountains you&apos;ve ridden, and the crew you&apos;ve ridden with.
+              Claim this profile to verify {invite?.inviter_name}&apos;s connection and start building your own linestry.
             </p>
           </div>
 

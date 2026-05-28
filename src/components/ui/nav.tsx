@@ -223,7 +223,7 @@ function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug, communit
       {/* Row 1: logo + avatar */}
       <div className="flex items-center h-12 px-4 gap-3">
         <Link href="/" className="font-black text-xl text-[#F5F2EE] tracking-tight flex-shrink-0">
-          Lineage<span className="inline-block rounded-full bg-[#B8862A]" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em" }} />
+          Linestry<span className="inline-block rounded-full bg-[#B8862A]" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em" }} />
         </Link>
         {inCommunity && (
           <Link href={`/${communitySlug}`} className="flex items-center gap-1.5 flex-shrink-0">

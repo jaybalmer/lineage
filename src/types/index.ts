@@ -1,4 +1,4 @@
-// Core entity types for Lineage
+// Core entity types for Linestry
 
 export type PrivacyLevel = "private" | "shared" | "public"
 export type ConfidenceLevel = "self-reported" | "corroborated" | "documented" | "partner-verified"

@@ -127,7 +127,7 @@ export function InviteRiderModal({ personId, personName, predicate, onClose, sur
           <div className="flex items-center justify-between px-5 pt-5 pb-4 border-b border-border-default">
             <div>
               <h2 className="text-base font-bold text-foreground">Invite {personName}</h2>
-              <p className="text-xs text-muted mt-0.5">They can claim their profile on Lineage</p>
+              <p className="text-xs text-muted mt-0.5">They can claim their profile on Linestry</p>
             </div>
             <button
               onClick={onClose}

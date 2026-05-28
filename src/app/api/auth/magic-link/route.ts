@@ -20,7 +20,7 @@ function magicLinkEmailHtml(link: string): string {
     <!-- Logo -->
     <div style="text-align:center;margin-bottom:32px;">
       <span style="font-size:32px;line-height:1;">⬡</span>
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.25em;color:#3b82f6;margin-top:6px;text-transform:uppercase;">Lineage</div>
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.25em;color:#3b82f6;margin-top:6px;text-transform:uppercase;">Linestry</div>
     </div>
 
     <!-- Headline -->
@@ -28,14 +28,14 @@ function magicLinkEmailHtml(link: string): string {
       Your sign-in link
     </h1>
     <p style="margin:0 0 28px;font-size:14px;color:#71717a;line-height:1.6;text-align:center;">
-      Click below to sign in to Lineage. This link expires in <strong style="color:#a1a1aa;">1 hour</strong>.
+      Click below to sign in to Linestry. This link expires in <strong style="color:#a1a1aa;">1 hour</strong>.
     </p>
 
     <!-- CTA -->
     <div style="text-align:center;margin-bottom:28px;">
       <a href="${link}"
         style="display:inline-block;padding:15px 36px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:600;letter-spacing:0.01em;">
-        Sign in to Lineage →
+        Sign in to Linestry →
       </a>
     </div>
 
@@ -78,9 +78,9 @@ export async function POST(req: NextRequest) {
 
     // Generate the magic link via Supabase admin API
     // redirectTo must point to /auth/complete so the session hash is handled correctly
-    const ALLOWED_ORIGINS = ["https://lineage.wtf", "https://lineage.community", "http://localhost:3000"]
+    const ALLOWED_ORIGINS = ["https://linestry.com", "https://lineage.wtf", "https://lineage.community", "http://localhost:3000"]
     const reqOrigin = req.headers.get("origin")
-    const origin = reqOrigin && ALLOWED_ORIGINS.includes(reqOrigin) ? reqOrigin : "https://lineage.wtf"
+    const origin = reqOrigin && ALLOWED_ORIGINS.includes(reqOrigin) ? reqOrigin : "https://linestry.com"
     const { data, error: genError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
       email: email.trim().toLowerCase(),
@@ -100,9 +100,9 @@ export async function POST(req: NextRequest) {
     const { Resend } = await import("resend")
     const resend = new Resend(resendKey)
     const { error: sendError } = await resend.emails.send({
-      from: "Lineage <noreply@lineage.wtf>",
+      from: "Linestry <noreply@linestry.com>",
       to: email.trim().toLowerCase(),
-      subject: "Your Lineage sign-in link",
+      subject: "Your Linestry sign-in link",
       html: magicLinkEmailHtml(magicLink),
     })
 

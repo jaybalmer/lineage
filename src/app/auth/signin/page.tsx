@@ -50,7 +50,7 @@ export default function SignInPage() {
             <span className="text-[#B8862A] text-4xl">⬡</span>
           </Link>
           <h1 className="mt-3 text-foreground font-semibold" style={{ fontSize: 16 }}>
-            Sign in to Lineage
+            Sign in to Linestry
           </h1>
         </div>
 

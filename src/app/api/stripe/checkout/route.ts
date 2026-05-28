@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
   const stripe = new Stripe(stripeKey)
 
-  const origin = req.headers.get("origin") ?? "https://lineage.wtf"
+  const origin = req.headers.get("origin") ?? "https://linestry.com"
 
   try {
     const isRecurring = tier === "annual"

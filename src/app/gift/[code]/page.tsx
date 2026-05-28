@@ -110,14 +110,14 @@ export default function GiftRedemptionPage() {
               </div>
               {giftedBy && (
                 <p className="text-muted mb-6" style={{ fontSize: 11, lineHeight: 1.7 }}>
-                  {giftedBy} gifted you an annual membership to Lineage.
+                  {giftedBy} gifted you an annual membership to Linestry.
                 </p>
               )}
 
               {!isAuth ? (
                 <div>
                   <p className="text-muted mb-4" style={{ fontSize: 11, lineHeight: 1.7 }}>
-                    Create or sign in to your Lineage account to claim your membership.
+                    Create or sign in to your Linestry account to claim your membership.
                   </p>
                   <Link href={`/auth/signin?redirect=/gift/${code}`}
                     className="inline-block px-6 py-3 rounded-full font-bold"
@@ -156,7 +156,7 @@ export default function GiftRedemptionPage() {
                 MEMBERSHIP ACTIVATED
               </div>
               <p className="text-muted mb-6" style={{ fontSize: 11, lineHeight: 1.7 }}>
-                You&apos;re now an annual member of Lineage. Welcome to the community.
+                You&apos;re now an annual member of Linestry. Welcome to the community.
               </p>
               <Link href="/account/membership"
                 className="inline-block px-6 py-3 rounded-full font-bold hover:opacity-80 transition-opacity"

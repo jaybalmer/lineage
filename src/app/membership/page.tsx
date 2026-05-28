@@ -183,7 +183,7 @@ export default function MembershipPage() {
               <span style={{ color: "#f59e0b" }}>SNOWBOARDING'S HISTORY</span>
             </div>
             <p className="text-muted mt-4 max-w-xl mx-auto" style={{ fontSize: 13, lineHeight: 1.7 }}>
-              Lineage is community-owned. Members verify the record,<br />
+              Linestry is community-owned. Members verify the record,<br />
               vote on the platform, and share in what we build together.
             </p>
             <a href="#tiers" className="inline-block mt-6 text-muted hover:text-foreground transition-colors" style={{ fontSize: 11, letterSpacing: 1 }}>
@@ -340,7 +340,7 @@ export default function MembershipPage() {
                   HOW REVENUE SHARING WORKS
                 </div>
                 <p className="text-muted" style={{ fontSize: 11, lineHeight: 1.6, maxWidth: 480 }}>
-                  20% of everything Lineage earns flows back to the community that built it.
+                  20% of everything Linestry earns flows back to the community that built it.
                   Tokens determine your share. Even free riders accumulate tokens toward the day they join.
                 </p>
               </div>
@@ -389,7 +389,7 @@ export default function MembershipPage() {
                   THE FIRST 500
                 </div>
                 <p className="text-muted" style={{ fontSize: 11, lineHeight: 1.6 }}>
-                  Meet the people who believed in Lineage before it proved itself.
+                  Meet the people who believed in Linestry before it proved itself.
                 </p>
               </div>
               <Link href="/founding"
