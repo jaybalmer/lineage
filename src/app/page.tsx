@@ -155,7 +155,7 @@ export default function Home() {
                         </span>
                       )}
                     </div>
-                    <div className="text-muted text-sm font-mono">
+                    <div className="text-muted text-sm">
                       linestry.com/<span className="text-foreground">{comm.slug}</span>
                     </div>
 
