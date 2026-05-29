@@ -46,7 +46,7 @@ const TYPE_COLORS_LIGHT: Record<CollectiveType, string> = {
   rider: "#6d28d9",  // violet-700
   event: "#b45309",  // amber-700
   board: "#047857",  // emerald-700
-  brand: "#0f766e",  // teal-700
+  brand: "#0891B2",  // cyan-600
   place: "#0D9488",  // teal
 }
 
