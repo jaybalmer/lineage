@@ -763,7 +763,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                         if (item.kind === "place") {
                           const confColor = CONFIDENCE_COLORS[item.claim.confidence] ?? "text-muted"
                           return (
-                            <div key={item.claim.id} className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 border-l-blue-800 rounded-xl">
+                            <div key={item.claim.id} className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 border-l-teal-700 rounded-xl">
                               <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">📍</div>
                               <div className="flex-1 min-w-0">
                                 <div className="text-sm font-medium text-foreground">{item.place.name}</div>
@@ -972,7 +972,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                   if (!place) return null
                   const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-muted"
                   return (
-                    <div key={claim.id} className="flex items-start gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 border-l-blue-800 rounded-xl">
+                    <div key={claim.id} className="flex items-start gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 border-l-teal-700 rounded-xl">
                       <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">📍</div>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-foreground">{place.name}</div>
