@@ -303,7 +303,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                 </button>
               ) : (
                 <div className="w-24 h-24 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center">
-                  <div className="w-6 h-6 rounded-full bg-[#2563EB]" />
+                  <div className="w-6 h-6 rounded-full bg-[#0D9488]" />
                 </div>
               )}
               {/* Vote buttons */}
@@ -409,7 +409,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                         <button
                           type="submit"
                           disabled={suggesting || uploadingPhoto || !suggestUrl.trim()}
-                          className="px-3 py-1.5 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-xs font-medium hover:bg-[#292524] disabled:opacity-50 transition-colors"
+                          className="px-3 py-1.5 rounded-lg bg-[#1C1917] text-white text-xs font-medium hover:bg-[#292524] disabled:opacity-50 transition-colors"
                         >
                           {suggesting ? "Saving…" : "Save"}
                         </button>
@@ -745,7 +745,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
               <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">Add a claim</div>
               <p className="text-xs text-muted mb-3">Did you ride here? Work here? Compete here?</p>
               <CommunityLink href="/profile">
-                <button className="w-full px-3 py-2 bg-[#1C1917] rounded-lg text-xs text-[#F5F2EE] font-medium hover:bg-[#292524] transition-colors">
+                <button className="w-full px-3 py-2 bg-[#1C1917] rounded-lg text-xs text-white font-medium hover:bg-[#292524] transition-colors">
                   + Add to my profile
                 </button>
               </CommunityLink>

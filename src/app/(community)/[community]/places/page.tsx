@@ -13,7 +13,7 @@ import { CommunityLink } from "@/components/ui/community-link"
 import type { Place } from "@/types"
 
 const PLACE_TYPE_COLORS: Record<string, string> = {
-  resort: "#2563EB",
+  resort: "#0D9488",
   shop: "#0891B2",
   zone: "#059669",
   city: "#7C3AED",
@@ -39,9 +39,9 @@ function PlaceCard({ place }: { place: Place }) {
   return (
     <div className="flex items-center gap-2">
       <CommunityLink href={`/places/${placeSlug(place)}`} className="flex-1 min-w-0 block">
-        <div className="bg-surface border-2 border-blue-600 rounded-xl p-4 hover:opacity-90 transition-all">
+        <div className="bg-surface border-2 border-teal-600 rounded-xl p-4 hover:opacity-90 transition-all">
           <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full shrink-0" style={{ background: PLACE_TYPE_COLORS[place.place_type] ?? "#2563EB" }} />
+            <div className="w-3 h-3 rounded-full shrink-0" style={{ background: PLACE_TYPE_COLORS[place.place_type] ?? "#0D9488" }} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-foreground text-sm">{place.name}</span>
@@ -121,7 +121,7 @@ function PlacesPageInner() {
           </div>
           <button
             onClick={() => setAddOpen(true)}
-            className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-[#F5F2EE] hover:bg-[#292524] transition-all"
+            className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-all"
           >
             + Add place
           </button>

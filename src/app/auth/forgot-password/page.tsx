@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
+import { BrandMark } from "@/components/ui/brand-mark"
 
 export default function ForgotPasswordPage() {
   const [email, setSent_email] = useState("")
@@ -34,13 +35,13 @@ export default function ForgotPasswordPage() {
   return (
     <div
       className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center px-4"
-      style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+      style={{ fontFamily: "var(--font-body)" }}
     >
       <div className="w-full max-w-sm space-y-8">
 
         <div className="text-center">
           <Link href="/" className="inline-block">
-            <span className="text-[#B8862A] text-4xl">⬡</span>
+            <BrandMark size={36} className="text-accent" />
           </Link>
           <h1 className="mt-3 text-foreground font-semibold" style={{ fontSize: 16 }}>
             Reset your password
@@ -94,7 +95,7 @@ export default function ForgotPasswordPage() {
             <button
               type="submit"
               disabled={loading || !email.trim()}
-              className="w-full px-6 py-3 rounded-xl bg-[#1C1917] text-[#F5F2EE] font-semibold hover:bg-[#292524] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full px-6 py-3 rounded-xl bg-[#1C1917] text-white font-semibold hover:bg-[#292524] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               style={{ fontSize: 13 }}
             >
               {loading ? "Sending…" : "Send reset link →"}

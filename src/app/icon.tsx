@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og"
+import { brandMarkSvgString } from "@/components/ui/brand-mark"
 
 export const size        = { width: 32, height: 32 }
 export const contentType = "image/png"
@@ -11,6 +12,7 @@ const DEV_COLOR     = "#f59e0b"
 export default function Icon() {
   const isProd = process.env.VERCEL_ENV === "production"
   const color  = isProd ? PROD_COLOR : DEV_COLOR
+  const mark   = "data:image/svg+xml," + encodeURIComponent(brandMarkSvgString(color))
 
   return new ImageResponse(
     (
@@ -24,43 +26,8 @@ export default function Icon() {
           background: "transparent",
         }}
       >
-        {/* Outer hexagon */}
-        <div
-          style={{
-            width: 30,
-            height: 30,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: color,
-            clipPath:
-              "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)",
-          }}
-        >
-          {/* Inner hexagon ring */}
-          <div
-            style={{
-              width: 18,
-              height: 18,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "rgba(0,0,0,0.18)",
-              clipPath:
-                "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)",
-            }}
-          >
-            {/* White center dot */}
-            <div
-              style={{
-                width: 6,
-                height: 6,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.9)",
-              }}
-            />
-          </div>
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img width={30} height={30} src={mark} alt="" />
       </div>
     ),
     { ...size }

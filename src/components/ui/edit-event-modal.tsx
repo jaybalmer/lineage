@@ -470,7 +470,7 @@ export function EditEventModal({ event, onClose, onSaved }: EditEventModalProps)
             className={cn(
               "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
               canSubmit() && !saving
-                ? "bg-[#1C1917] text-[#F5F2EE] hover:bg-[#292524]"
+                ? "bg-[#1C1917] text-white hover:bg-[#292524]"
                 : "bg-surface-active text-muted cursor-not-allowed"
             )}
           >

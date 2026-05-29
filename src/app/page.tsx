@@ -9,9 +9,9 @@ import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 import { COMMUNITY_SLUGS } from "@/lib/community"
 
-/** Community dot colors — gold for active, muted for coming soon */
+/** Community dot colors: blue for active, muted for coming soon */
 const COMMUNITY_DOT_COLOR: Record<string, string> = {
-  snowboarding: "#B8862A",
+  snowboarding: "#3b82f6",
   surf: "#78716C",
   skate: "#78716C",
   ski: "#78716C",
@@ -102,7 +102,7 @@ export default function Home() {
             className="font-bold text-foreground leading-none tracking-tight"
             style={{ fontSize: "clamp(4rem, 14vw, 7.5rem)", letterSpacing: "-0.03em" }}
           >
-            Linestry<span className="inline-block rounded-full bg-[#B8862A]" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em" }} />
+            Linestry<span className="inline-block rounded-full bg-accent" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em" }} />
           </div>
         </div>
 
@@ -137,7 +137,7 @@ export default function Home() {
                   {isActive ? (
                     <div
                       className="w-10 h-10 rounded-full flex-shrink-0 mt-0.5"
-                      style={{ background: COMMUNITY_DOT_COLOR[comm.slug] ?? "#B8862A" }}
+                      style={{ background: COMMUNITY_DOT_COLOR[comm.slug] ?? "#3b82f6" }}
                     />
                   ) : (
                     <div className="w-10 h-10 rounded-full flex-shrink-0 mt-0.5 bg-muted/20 border border-border-default" />
@@ -165,14 +165,14 @@ export default function Home() {
                         {isAuth ? (
                           <Link
                             href={`/${comm.slug}/profile`}
-                            className="px-5 py-2 rounded-lg bg-[#1C1917] text-[#F5F2EE] font-semibold text-xs hover:bg-[#292524] transition-colors"
+                            className="px-5 py-2 rounded-lg bg-[#1C1917] text-white font-semibold text-xs hover:bg-[#292524] transition-colors"
                           >
                             My Timeline
                           </Link>
                         ) : (
                           <Link
                             href="/onboarding"
-                            className="px-5 py-2 rounded-lg bg-[#1C1917] text-[#F5F2EE] font-semibold text-xs hover:bg-[#292524] transition-colors"
+                            className="px-5 py-2 rounded-lg bg-[#1C1917] text-white font-semibold text-xs hover:bg-[#292524] transition-colors"
                           >
                             Start Your Timeline
                           </Link>

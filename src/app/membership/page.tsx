@@ -166,8 +166,8 @@ export default function MembershipPage() {
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500;700&display=swap" />
 
       <style>{`
-        .ms-page { font-family: 'IBM Plex Mono', monospace; }
-        .ms-heading { font-family: 'Barlow Condensed', sans-serif; }
+        .ms-page { font-family: var(--font-body); }
+        .ms-heading { font-family: var(--font-display); }
       `}</style>
 
       <div className="ms-page min-h-screen bg-background text-foreground">
@@ -221,7 +221,7 @@ export default function MembershipPage() {
                     color: "#000",
                     fontSize: 11,
                     letterSpacing: 1,
-                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontFamily: "var(--font-body)",
                     opacity: loading === "founding" ? 0.7 : 1,
                     cursor: loading === "founding" ? "wait" : "pointer",
                     border: "none",
@@ -272,7 +272,7 @@ export default function MembershipPage() {
                       </span>
                     </div>
                     <div className="flex items-baseline gap-1.5">
-                      <span style={{ fontSize: 28, fontWeight: 700, color: hex, fontFamily: "'Barlow Condensed', sans-serif", lineHeight: 1 }}>
+                      <span style={{ fontSize: 28, fontWeight: 700, color: hex, fontFamily: "var(--font-display)", lineHeight: 1 }}>
                         {tier.priceLabel}
                       </span>
                       <span className="text-muted" style={{ fontSize: 10 }}>
@@ -306,7 +306,7 @@ export default function MembershipPage() {
                         color: tier.id === "founding" ? "#000" : hex,
                         fontSize: 10,
                         letterSpacing: 1,
-                        fontFamily: "'IBM Plex Mono', monospace",
+                        fontFamily: "var(--font-body)",
                         cursor: loading ? "wait" : "pointer",
                         opacity: loading && loading !== tier.id ? 0.5 : 1,
                       }}
@@ -373,7 +373,7 @@ export default function MembershipPage() {
                   borderColor: "#3b82f644", color: "#3b82f6",
                   fontSize: 10, letterSpacing: 1, whiteSpace: "nowrap",
                   background: "transparent", cursor: "pointer",
-                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontFamily: "var(--font-body)",
                 }}>
                 Gift annual membership — $25 →
               </button>

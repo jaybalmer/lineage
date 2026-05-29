@@ -217,7 +217,7 @@ function BoardPicker({ allBoards, onSelect }: BoardPickerProps) {
             className={cn(
               "px-3 py-1.5 rounded-lg text-xs font-medium transition-all",
               customYear && parseInt(customYear) >= 1965
-                ? "bg-[#1C1917] text-[#F5F2EE] hover:bg-[#292524]"
+                ? "bg-[#1C1917] text-white hover:bg-[#292524]"
                 : "bg-surface-active text-muted cursor-not-allowed"
             )}
           >
@@ -1037,7 +1037,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
               className={cn(
                 "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
                 canSave
-                  ? "bg-[#1C1917] text-[#F5F2EE] hover:bg-[#292524]"
+                  ? "bg-[#1C1917] text-white hover:bg-[#292524]"
                   : "bg-surface-active text-muted cursor-not-allowed"
               )}
             >

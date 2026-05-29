@@ -91,7 +91,7 @@ function CelebrationToast({ payload, onDismiss }: {
   payload: CelebrationPayload
   onDismiss: () => void
 }) {
-  const accentColor = payload.accentColor ?? "#B8862A"
+  const accentColor = payload.accentColor ?? "#3b82f6"
   const autoDismissMs = getAutoDismissMs(payload.tier, payload.autoDismissMs)
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -133,7 +133,7 @@ function CelebrationToast({ payload, onDismiss }: {
           {payload.icon && (
             <span style={{ fontSize: isTier2 ? 20 : 16, lineHeight: 1 }}>{payload.icon}</span>
           )}
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#F5F2EE", lineHeight: 1.3 }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: "#FFFFFF", lineHeight: 1.3 }}>
             {payload.title}
           </p>
           <button
@@ -161,14 +161,14 @@ function CelebrationToast({ payload, onDismiss }: {
           </p>
         )}
         {payload.stat && (
-          <p style={{ margin: "4px 0 0", fontSize: 10, color: "#78716C", fontFamily: "'IBM Plex Mono', monospace" }}>
+          <p style={{ margin: "4px 0 0", fontSize: 10, color: "#78716C", fontFamily: "var(--font-body)" }}>
             {payload.stat}
           </p>
         )}
         {payload.stats && payload.stats.length > 0 && (
           <div style={{ margin: "6px 0 0", display: "flex", flexDirection: "column", gap: 2 }}>
             {payload.stats.map((s, i) => (
-              <p key={i} style={{ margin: 0, fontSize: 10, color: "#78716C", fontFamily: "'IBM Plex Mono', monospace" }}>
+              <p key={i} style={{ margin: 0, fontSize: 10, color: "#78716C", fontFamily: "var(--font-body)" }}>
                 <span style={{ color: "#A8A29E" }}>{s.value}</span>{" "}{s.label}
               </p>
             ))}
@@ -185,7 +185,7 @@ function CelebrationModal({ payload, onDismiss }: {
   payload: CelebrationPayload
   onDismiss: () => void
 }) {
-  const accentColor = payload.accentColor ?? "#B8862A"
+  const accentColor = payload.accentColor ?? "#3b82f6"
   const burstRef = useRef<HTMLDivElement>(null)
   const reducedMotion = useRef(false)
 
@@ -279,7 +279,7 @@ function CelebrationModal({ payload, onDismiss }: {
           margin:      "0 0 8px",
           fontSize:    isTier4Plus ? 22 : 18,
           fontWeight:  700,
-          color:       "#F5F2EE",
+          color:       "#FFFFFF",
           lineHeight:  1.25,
           animation:   reducedMotion.current ? undefined : "celebFadeUp 0.4s ease 0.3s both",
           opacity:     reducedMotion.current ? 1 : 0,
@@ -309,7 +309,7 @@ function CelebrationModal({ payload, onDismiss }: {
             margin:      "8px 0 0",
             fontSize:    11,
             color:       accentColor,
-            fontFamily:  "'IBM Plex Mono', monospace",
+            fontFamily:  "var(--font-body)",
             letterSpacing: "0.05em",
             animation:   reducedMotion.current ? undefined : "celebFadeUp 0.4s ease 0.55s both",
             opacity:     reducedMotion.current ? 1 : 0,
@@ -335,7 +335,7 @@ function CelebrationModal({ payload, onDismiss }: {
                 justifyContent: "space-between",
                 alignItems: "baseline",
                 fontSize: 12,
-                fontFamily: "'IBM Plex Mono', monospace",
+                fontFamily: "var(--font-body)",
               }}>
                 <span style={{ color: "#78716C" }}>{s.label}</span>
                 <span style={{ color: accentColor, fontWeight: 600 }}>{s.value}</span>

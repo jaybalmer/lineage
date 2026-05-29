@@ -178,16 +178,16 @@ function FtueGuide({ triggerPrefs, onAddClaim, onAddStory }: {
       marginBottom: 20,
       padding:      "16px 18px",
       borderRadius: 12,
-      background:   "#B8862A0A",
-      border:       "1px solid #B8862A28",
+      background:   "#3b82f60A",
+      border:       "1px solid #3b82f628",
     }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#F5F2EE", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "'IBM Plex Mono', monospace" }}>
+        <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#1C1917", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "var(--font-body)" }}>
           First steps
         </p>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <p style={{ margin: 0, fontSize: 11, color: "#78716C", fontFamily: "'IBM Plex Mono', monospace" }}>
+          <p style={{ margin: 0, fontSize: 11, color: "#78716C", fontFamily: "var(--font-body)" }}>
             {completedCount} of {totalCount}
           </p>
           <button
@@ -200,8 +200,8 @@ function FtueGuide({ triggerPrefs, onAddClaim, onAddStory }: {
       </div>
 
       {/* Progress bar */}
-      <div style={{ height: 3, background: "#B8862A20", borderRadius: 2, marginBottom: 14, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${progressPct}%`, background: "#B8862A", borderRadius: 2, transition: "width 0.4s ease" }} />
+      <div style={{ height: 3, background: "#3b82f620", borderRadius: 2, marginBottom: 14, overflow: "hidden" }}>
+        <div style={{ height: "100%", width: `${progressPct}%`, background: "#3b82f6", borderRadius: 2, transition: "width 0.4s ease" }} />
       </div>
 
       {/* Steps */}
@@ -213,15 +213,15 @@ function FtueGuide({ triggerPrefs, onAddClaim, onAddStory }: {
             <div key={step.key} style={{ display: "flex", alignItems: "center", gap: 10 }}>
               <div style={{
                 width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
-                background:  done ? "#B8862A" : "transparent",
-                border:      done ? "none" : "1.5px solid #B8862A44",
+                background:  done ? "#3b82f6" : "transparent",
+                border:      done ? "none" : "1.5px solid #3b82f644",
                 display:     "flex", alignItems: "center", justifyContent: "center",
                 transition:  "background 0.3s ease",
               }}>
-                {done && <span style={{ fontSize: 10, color: "#1C1917", fontWeight: 700 }}>✓</span>}
+                {done && <span style={{ fontSize: 10, color: "#FFFFFF", fontWeight: 700 }}>✓</span>}
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ fontSize: 12, color: done ? "#78716C" : "#F5F2EE", textDecoration: done ? "line-through" : "none", transition: "color 0.2s" }}>
+                <span style={{ fontSize: 12, color: done ? "#78716C" : "#1C1917", textDecoration: done ? "line-through" : "none", transition: "color 0.2s" }}>
                   {step.label}
                 </span>
                 {!done && (
@@ -239,13 +239,13 @@ function FtueGuide({ triggerPrefs, onAddClaim, onAddStory }: {
                     fontSize:     11,
                     fontWeight:   500,
                     cursor:       "pointer",
-                    border:       "1px solid #B8862A44",
+                    border:       "1px solid #3b82f644",
                     background:   "transparent",
-                    color:        "#B8862A",
+                    color:        "#2563EB",
                     flexShrink:   0,
                     transition:   "background 0.15s",
                   }}
-                  onMouseEnter={(e) => { (e.target as HTMLElement).style.background = "#B8862A18" }}
+                  onMouseEnter={(e) => { (e.target as HTMLElement).style.background = "#3b82f618" }}
                   onMouseLeave={(e) => { (e.target as HTMLElement).style.background = "transparent" }}
                 >
                   Add
@@ -458,7 +458,7 @@ export default function ProfilePage() {
         title: "First session complete",
         body: "You've added a board, tagged an event, connected with a rider, and shared a story. Your timeline is alive.",
         nextThread: "Keep building — the more you add, the richer the collective history gets.",
-        accentColor: "#B8862A",
+        accentColor: "#3b82f6",
         contentType: "milestone",
       })
     }
@@ -527,11 +527,11 @@ export default function ProfilePage() {
           <div className="flex items-center gap-4 mb-4 flex-wrap">
             <Link href="/account/membership"
               className="flex items-center gap-1.5 text-muted hover:text-foreground transition-colors"
-              style={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}>
+              style={{ fontSize: 10, fontFamily: "var(--font-body)" }}>
               <span style={{ color: "#f59e0b" }}>◆</span>
               <span>{membership.token_balance.founder * 2 + membership.token_balance.member + membership.token_balance.contribution} tokens</span>
             </Link>
-            <span className="text-muted" style={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace" }}>· Revenue share active</span>
+            <span className="text-muted" style={{ fontSize: 10, fontFamily: "var(--font-body)" }}>· Revenue share active</span>
           </div>
         )}
 
@@ -556,7 +556,7 @@ export default function ProfilePage() {
             </button>
             <button
               onClick={() => setAddingClaim(true)}
-              className="px-3 py-2 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-sm font-medium hover:bg-[#292524] transition-colors"
+              className="px-3 py-2 rounded-lg bg-[#1C1917] text-white text-sm font-medium hover:bg-[#292524] transition-colors"
             >
               + Add claim
             </button>
@@ -586,7 +586,7 @@ export default function ProfilePage() {
         {/* Membership upsell for free users with 20+ entries (replaces old milestone cards) */}
         {membership.tier === "free" && personClaims.length >= 20 && !triggerPrefs.milestone_card_20_dismissed && (
           <div className="mb-4 p-4 rounded-xl border"
-            style={{ borderColor: "#B8862A30", background: "#B8862A08", fontFamily: "'IBM Plex Mono', monospace" }}>
+            style={{ borderColor: "#f59e0b30", background: "#f59e0b08", fontFamily: "var(--font-body)" }}>
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-foreground" style={{ fontSize: 11, lineHeight: 1.7 }}>

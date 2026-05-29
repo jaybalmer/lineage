@@ -260,9 +260,9 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
           {linkedPlace && (
             <CommunityLink
               href={`/places/${linkedPlace.id}`}
-              className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-[#292524]/20 transition-colors"
+              className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 hover:bg-[#292524]/20 transition-colors"
             >
-              <div className="w-2 h-2 rounded-full bg-blue-600 flex-shrink-0" /> {linkedPlace.name}
+              <div className="w-2 h-2 rounded-full bg-teal-600 flex-shrink-0" /> {linkedPlace.name}
             </CommunityLink>
           )}
           {linkedEvent && (

@@ -4,6 +4,7 @@ import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
+import { BrandMark } from "@/components/ui/brand-mark"
 import { supabase } from "@/lib/supabase"
 import { useEffect, useState, useCallback, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
@@ -95,7 +96,7 @@ function CelebrationOverlay({
       />
 
       <div className="relative z-10 w-full max-w-md text-center space-y-6"
-        style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+        style={{ fontFamily: "var(--font-body)" }}>
 
         {/* Symbol burst */}
         <div style={{ fontSize: 48, color, lineHeight: 1 }}>{symbol}</div>
@@ -105,7 +106,7 @@ function CelebrationOverlay({
           {isFounding && memberNumber && (
             <div
               style={{
-                fontFamily: "'Barlow Condensed', sans-serif",
+                fontFamily: "var(--font-display)",
                 fontSize: 72, fontWeight: 800,
                 color, letterSpacing: 2, lineHeight: 1,
               }}
@@ -115,7 +116,7 @@ function CelebrationOverlay({
           )}
           <div
             style={{
-              fontFamily: "'Barlow Condensed', sans-serif",
+              fontFamily: "var(--font-display)",
               fontSize: isFounding ? 28 : 36, fontWeight: 800,
               color: "#e5e5e5", letterSpacing: 4, marginTop: isFounding ? 8 : 0,
             }}
@@ -166,7 +167,7 @@ function CelebrationOverlay({
           style={{
             background: color, color: isFounding ? "#000" : "#fff",
             fontSize: 13, letterSpacing: 1,
-            fontFamily: "'IBM Plex Mono', monospace",
+            fontFamily: "var(--font-body)",
           }}
         >
           Continue to my membership →
@@ -218,9 +219,9 @@ function ShareCard({
       >
         {/* Logo row */}
         <div className="flex items-center gap-2 mb-4">
-          <span style={{ fontSize: 20, color }}>⬡</span>
+          <BrandMark size={20} color={color} />
           <span style={{
-            fontFamily: "'Barlow Condensed', sans-serif",
+            fontFamily: "var(--font-display)",
             fontSize: 11, fontWeight: 700, letterSpacing: 4, color: "#71717a",
           }}>LINESTRY</span>
         </div>
@@ -229,7 +230,7 @@ function ShareCard({
         <div className="flex items-baseline gap-3 mb-1">
           <span style={{ fontSize: 32, color, lineHeight: 1 }}>{symbol}</span>
           <span style={{
-            fontFamily: "'Barlow Condensed', sans-serif",
+            fontFamily: "var(--font-display)",
             fontSize: 22, fontWeight: 800, color: "#e5e5e5", letterSpacing: 2,
           }}>
             {label.toUpperCase()}
@@ -239,7 +240,7 @@ function ShareCard({
         {/* Member number */}
         {memberNumber && (
           <div style={{
-            fontFamily: "'Barlow Condensed', sans-serif",
+            fontFamily: "var(--font-display)",
             fontSize: 48, fontWeight: 800, color, letterSpacing: 2, lineHeight: 1, marginBottom: 4,
           }}>
             #{padMemberNumber(memberNumber)}
@@ -265,7 +266,7 @@ function ShareCard({
         <button
           onClick={copyLink}
           className="px-4 py-2 rounded-full border border-border-default text-muted hover:text-foreground hover:border-foreground transition-all"
-          style={{ fontSize: 9, letterSpacing: 1, background: "none", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace" }}
+          style={{ fontSize: 9, letterSpacing: 1, background: "none", cursor: "pointer", fontFamily: "var(--font-body)" }}
         >
           {copied ? "✓ Copied!" : "Copy linestry.com/membership"}
         </button>
@@ -316,7 +317,7 @@ function GiftSection() {
           <button
             onClick={() => { navigator.clipboard.writeText(giftLink); setCopied(true); setTimeout(() => setCopied(false), 2000) }}
             className="px-5 py-2 rounded-full border border-border-default text-muted hover:text-foreground hover:border-foreground transition-all"
-            style={{ fontSize: 10, letterSpacing: 1, background: "none", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace" }}
+            style={{ fontSize: 10, letterSpacing: 1, background: "none", cursor: "pointer", fontFamily: "var(--font-body)" }}
           >
             {copied ? "✓ Link copied!" : "Copy gift link →"}
           </button>
@@ -332,7 +333,7 @@ function GiftSection() {
           style={{
             background: "#3b82f6", color: "#fff",
             fontSize: 10, letterSpacing: 1,
-            fontFamily: "'IBM Plex Mono', monospace", cursor: loading ? "wait" : "pointer",
+            fontFamily: "var(--font-body)", cursor: loading ? "wait" : "pointer",
           }}
         >
           {loading ? "Generating..." : "Generate gift link →"}
@@ -425,14 +426,14 @@ function MembershipDashboard() {
   // ── Not authenticated ────────────────────────────────────────────────────
   if (!isAuth) {
     return (
-      <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+      <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "var(--font-body)" }}>
         <Nav />
         <div className="max-w-sm mx-auto px-4 pt-24 text-center space-y-5">
-          <div className="text-3xl">⬡</div>
+          <div className="flex justify-center text-accent"><BrandMark size={30} /></div>
           <p className="text-foreground font-semibold" style={{ fontSize: 14 }}>Sign in to Linestry</p>
           <p className="text-muted" style={{ fontSize: 12 }}>Sign in to view your membership and profile.</p>
           <Link href="/auth/signin"
-            className="inline-block w-full px-6 py-3 rounded-xl bg-[#1C1917] text-[#F5F2EE] font-semibold hover:bg-[#292524] transition-colors"
+            className="inline-block w-full px-6 py-3 rounded-xl bg-[#1C1917] text-white font-semibold hover:bg-[#292524] transition-colors"
             style={{ fontSize: 13 }}>
             Sign in →
           </Link>
@@ -463,7 +464,7 @@ function MembershipDashboard() {
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;800&family=IBM+Plex+Mono:wght@400;700&display=swap" />
-      <style>{`.md-page { font-family: 'IBM Plex Mono', monospace; } .md-heading { font-family: 'Barlow Condensed', sans-serif; }`}</style>
+      <style>{`.md-page { font-family: var(--font-body); } .md-heading { font-family: var(--font-display); }`}</style>
 
       {/* Celebration overlay — shows while polling or until dismissed */}
       {showCelebration && (success || pollDone) && (
@@ -523,7 +524,7 @@ function MembershipDashboard() {
               {tier === "free" && (
                 <Link href="/membership"
                   className="shrink-0 px-4 py-2 rounded-full font-bold transition-all hover:opacity-80"
-                  style={{ background: "#3b82f6", color: "#fff", fontSize: 9, letterSpacing: 1, fontFamily: "'IBM Plex Mono', monospace" }}>
+                  style={{ background: "#3b82f6", color: "#fff", fontSize: 9, letterSpacing: 1, fontFamily: "var(--font-body)" }}>
                   Become a member →
                 </Link>
               )}
@@ -558,7 +559,7 @@ function MembershipDashboard() {
                 { label: "Contribution", count: token_balance.contribution,  color: "#10b981", weight: "1×" },
               ].map(({ label: l, count, color: c, weight }) => (
                 <div key={l} className="rounded-xl border border-border-default p-3 text-center">
-                  <div style={{ fontSize: 22, fontWeight: 700, color: c, fontFamily: "'Barlow Condensed', sans-serif", lineHeight: 1 }}>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: c, fontFamily: "var(--font-display)", lineHeight: 1 }}>
                     {count}
                   </div>
                   <div className="text-muted mt-1" style={{ fontSize: 8, letterSpacing: 0.5 }}>{l.toUpperCase()}</div>
@@ -635,7 +636,7 @@ function MembershipDashboard() {
               <button
                 onClick={() => openStripePortal()}
                 className="px-5 py-2 rounded-full border border-border-default text-muted hover:text-foreground hover:border-foreground transition-all"
-                style={{ fontSize: 10, letterSpacing: 1, background: "none", cursor: "pointer", fontFamily: "'IBM Plex Mono', monospace" }}>
+                style={{ fontSize: 10, letterSpacing: 1, background: "none", cursor: "pointer", fontFamily: "var(--font-body)" }}>
                 Manage billing →
               </button>
             </div>

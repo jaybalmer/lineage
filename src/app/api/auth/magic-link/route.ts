@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
+import { emailHeaderHtml, emailFooterHtml } from "@/lib/emails/shared-header"
 
 // ─── Supabase admin client (service role required for generateLink) ───────────
 function getSupabaseAdmin() {
@@ -15,13 +16,9 @@ function magicLinkEmailHtml(link: string): string {
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-  <div style="max-width:480px;margin:40px auto;padding:36px 32px;background:#141414;border-radius:16px;border:1px solid #2a2a2a;">
-
-    <!-- Logo -->
-    <div style="text-align:center;margin-bottom:32px;">
-      <span style="font-size:32px;line-height:1;">⬡</span>
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.25em;color:#3b82f6;margin-top:6px;text-transform:uppercase;">Linestry</div>
-    </div>
+  <div style="max-width:480px;margin:40px auto;background:#141414;border-radius:16px;border:1px solid #2a2a2a;overflow:hidden;">
+    ${emailHeaderHtml()}
+    <div style="padding:36px 32px;">
 
     <!-- Headline -->
     <h1 style="margin:0 0 10px;font-size:22px;font-weight:700;color:#e5e5e5;line-height:1.3;text-align:center;">
@@ -54,6 +51,8 @@ function magicLinkEmailHtml(link: string): string {
     <p style="margin:0;font-size:11px;color:#3f3f46;text-align:center;line-height:1.5;">
       If you didn&rsquo;t request this, you can safely ignore it — your account is secure.
     </p>
+    </div>
+    ${emailFooterHtml()}
   </div>
 </body>
 </html>`

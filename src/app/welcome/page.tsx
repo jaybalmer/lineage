@@ -47,7 +47,7 @@ function WelcomeInner() {
 
   // Blurred timeline background behind the overlay
   return (
-    <div className="min-h-screen bg-background" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+    <div className="min-h-screen bg-background" style={{ fontFamily: "var(--font-body)" }}>
       {/* Blurred timeline stub — dimly visible behind overlay */}
       <div style={{ filter: "blur(4px)", opacity: 0.25, pointerEvents: "none", padding: "80px 40px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 24 }}>

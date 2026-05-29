@@ -446,7 +446,7 @@ export interface CelebrationPayload {
   stat?: string         // e.g. "Board #3 in your quiver" (single line)
   stats?: CelebrationStat[]  // structured stat list (label/value pairs)
   cta?: CelebrationCta       // actionable button (fires callback + dismisses)
-  accentColor?: string  // defaults to gold #B8862A
+  accentColor?: string  // defaults to blue #3b82f6
   autoDismissMs?: number // for Tier 1-2; if omitted, uses tier default
   contentType?: "board" | "event" | "person" | "story" | "welcome" | "milestone"
 }

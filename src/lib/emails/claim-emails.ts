@@ -1,4 +1,5 @@
 import { pluralize } from "@/lib/claim-request-helpers"
+import { emailHeaderHtml, emailFooterHtml } from "@/lib/emails/shared-header"
 
 function escapeHtml(str: string): string {
   return str
@@ -14,25 +15,22 @@ function shell(headline: string, body: string, cta?: { label: string; href: stri
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
-  <div style="max-width:480px;margin:40px auto;padding:32px;background:#141414;border-radius:16px;border:1px solid #2a2a2a;">
-    <div style="text-align:center;margin-bottom:28px;">
-      <span style="font-size:28px;">⬡</span>
-      <span style="display:block;font-size:13px;font-weight:600;letter-spacing:0.15em;color:#71717a;margin-top:4px;text-transform:uppercase;">Linestry</span>
+  <div style="max-width:480px;margin:40px auto;background:#141414;border-radius:16px;border:1px solid #2a2a2a;overflow:hidden;">
+    ${emailHeaderHtml()}
+    <div style="padding:32px;">
+      <h1 style="margin:0 0 12px;font-size:20px;font-weight:700;color:#e5e5e5;line-height:1.3;">
+        ${headline}
+      </h1>
+      <div style="margin:0 0 28px;font-size:14px;color:#71717a;line-height:1.6;">
+        ${body}
+      </div>
+      ${cta ? `<div style="text-align:center;">
+        <a href="${cta.href}" style="display:inline-block;padding:14px 32px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:600;">
+          ${cta.label}
+        </a>
+      </div>` : ""}
     </div>
-    <h1 style="margin:0 0 12px;font-size:20px;font-weight:700;color:#e5e5e5;line-height:1.3;">
-      ${headline}
-    </h1>
-    <div style="margin:0 0 28px;font-size:14px;color:#71717a;line-height:1.6;">
-      ${body}
-    </div>
-    ${cta ? `<div style="text-align:center;margin-bottom:28px;">
-      <a href="${cta.href}" style="display:inline-block;padding:14px 32px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:600;">
-        ${cta.label}
-      </a>
-    </div>` : ""}
-    <p style="margin:0;font-size:11px;color:#3f3f46;text-align:center;line-height:1.5;">
-      &mdash; Linestry
-    </p>
+    ${emailFooterHtml()}
   </div>
 </body>
 </html>`

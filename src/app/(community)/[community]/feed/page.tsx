@@ -203,7 +203,7 @@ export default function FeedPage() {
                 filter === f
                   ? f === "stories"
                     ? "bg-violet-700 border-violet-700 text-foreground"
-                    : "bg-[#1C1917] border-[#1C1917] text-[#F5F2EE]"
+                    : "bg-[#1C1917] border-[#1C1917] text-white"
                   : "border-border-default text-muted hover:text-foreground"
               }`}
             >

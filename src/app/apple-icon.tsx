@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og"
+import { brandMarkSvgString } from "@/components/ui/brand-mark"
 
 export const size        = { width: 180, height: 180 }
 export const contentType = "image/png"
@@ -6,9 +7,13 @@ export const contentType = "image/png"
 const PROD_COLOR = "#3b82f6"
 const DEV_COLOR  = "#f59e0b"
 
+// Cream mark sits on the colored tile (matches the reversed email header).
+const MARK_COLOR = "#F6F6F5"
+
 export default function AppleIcon() {
   const isProd = process.env.VERCEL_ENV === "production"
   const color  = isProd ? PROD_COLOR : DEV_COLOR
+  const mark   = "data:image/svg+xml," + encodeURIComponent(brandMarkSvgString(MARK_COLOR))
 
   return new ImageResponse(
     (
@@ -23,43 +28,8 @@ export default function AppleIcon() {
           borderRadius: 36,
         }}
       >
-        {/* Outer hexagon */}
-        <div
-          style={{
-            width: 120,
-            height: 120,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            background: "rgba(255,255,255,0.15)",
-            clipPath:
-              "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)",
-          }}
-        >
-          {/* Inner hexagon */}
-          <div
-            style={{
-              width: 70,
-              height: 70,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              background: "rgba(255,255,255,0.2)",
-              clipPath:
-                "polygon(50% 0%, 93% 25%, 93% 75%, 50% 100%, 7% 75%, 7% 25%)",
-            }}
-          >
-            {/* Center dot */}
-            <div
-              style={{
-                width: 24,
-                height: 24,
-                borderRadius: "50%",
-                background: "rgba(255,255,255,0.95)",
-              }}
-            />
-          </div>
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img width={120} height={120} src={mark} alt="" />
       </div>
     ),
     { ...size }

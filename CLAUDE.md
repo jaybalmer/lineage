@@ -187,23 +187,32 @@ Active state: Row 2 = `bg-blue-600 text-white`; Row 3 = `bg-surface-active text-
 
 ## Styling
 
-**Tailwind v4** — theme tokens defined in `src/app/globals.css`:
+**Tailwind v4** (no config file). Theme tokens live in `src/app/globals.css`, defined on `:root` (light), `.dark`, and `.postcard`, then exposed to Tailwind through the `@theme inline` block as `--color-*` aliases.
 
 ```css
---background   --surface   --surface-hover   --surface-active
---border-default            --foreground      --muted
+--background  --surface  --surface-hover  --surface-active  --surface-2
+--border (Tailwind class: border-default)   --foreground   --muted
+--accent (#3B82F6)   --accent-strong   --accent-tint
 ```
 
-Light theme: white/light-blue. Dark theme: `.dark` class on `<html>`.
+`--accent` is the Linestry brand blue (#3B82F6). For blue text on a light surface use `--accent-strong` (#2563EB, meets AA contrast); reserve raw #3B82F6 for fills and large display type. In dark mode `--accent-strong` lightens to #60A5FA.
 
-**Postcard pattern:** Story cards, claim cards, day cards use `.postcard` class which forces light theme even in dark mode — consistent card appearance across themes.
+Light theme: white background, near-white `--surface` (#F6F6F5). Dark theme: `.dark` class on `<html>`, warm near-black background (#161413).
 
-**Color conventions:**
-- Stories/narrative → violet (`border-violet-700`, `bg-violet-500/10`)
-- Places → blue
-- Events → amber
-- Boards → emerald
-- Riders/people → violet
+**Typography:** Geologica via `next/font/google`, loaded in `src/app/layout.tsx`. `--font-display` (weight 800) drives the wordmark and headings; `--font-body` (weights 300/500/600/700) covers everything else, with body copy at the light 300 weight. There is no serif or monospace brand font.
+
+**Brand mark:** `src/components/ui/brand-mark.tsx` exports `<BrandMark size color />` (the sprouting-nodes disc) plus `brandMarkSvgString(color)`, a standalone SVG string for the `next/og` image routes (`icon.tsx`, `apple-icon.tsx`, `opengraph-image.tsx`) which cannot render React. There is no hexagon mark and no gold token anywhere.
+
+**Postcard pattern:** Story cards, claim cards, and day cards use the `.postcard` class, which forces light-theme tokens (white surface) even in dark mode for a consistent card look across themes. Do not add dark-mode overrides to card components.
+
+**Tier colors** (the entity type each color represents):
+- Riders / people / stories: violet (`border-violet-700`, `bg-violet-500/10`)
+- Places: teal (anchor #0D9488, Tailwind `teal-*`). Previously blue; moved to teal so it no longer collides with the brand accent.
+- Events: amber
+- Boards: emerald
+- Brands / orgs: cyan
+
+Generic UI blue (links, focus rings, primary buttons) is the brand accent now, not a tier color, so route it through `--accent` / #3B82F6. Before changing any blue value, classify it: Places-tier moves to teal, generic accent stays blue.
 
 ---
 

@@ -304,7 +304,7 @@ function RidersPageInner() {
           </div>
           <button
             onClick={() => setAddOpen(true)}
-            className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-[#F5F2EE] hover:bg-[#292524] transition-all"
+            className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-all"
           >
             + Add rider
           </button>

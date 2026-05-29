@@ -12,6 +12,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { TagEventDeclineCategory } from "@/types"
 import { labelForDeclineCategory } from "@/lib/decline-categories"
+import { emailHeaderHtml, emailFooterHtml } from "@/lib/emails/shared-header"
 
 const NOTIFICATION_TYPE_EDITOR_DECLINE = "editor_decline"
 
@@ -86,11 +87,15 @@ export async function fireEditorDeclineNotification(
 function editorDeclineHtml(args: { ownerName: string | null; categoryLabel: string }): string {
   const hello = args.ownerName ? `Hi ${escapeHtml(args.ownerName)},` : "Hi,"
   return `
-    <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 560px; margin: 0 auto;">
-      <p>${hello}</p>
-      <p>A pending tag against your timeline was reviewed and declined. Category: <strong>${escapeHtml(args.categoryLabel)}</strong>.</p>
-      <p>You can review your tag history any time at <a href="https://linestry.com/me/tags">linestry.com/me/tags</a>.</p>
-      <p style="color: #666; font-size: 13px;">— the Linestry moderation team</p>
+    <div style="margin:0;padding:0;">
+      ${emailHeaderHtml()}
+      <div style="font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 560px; margin: 0 auto; padding: 28px 28px 8px;">
+        <p>${hello}</p>
+        <p>A pending tag against your timeline was reviewed and declined. Category: <strong>${escapeHtml(args.categoryLabel)}</strong>.</p>
+        <p>You can review your tag history any time at <a href="https://linestry.com/me/tags">linestry.com/me/tags</a>.</p>
+        <p style="color: #666; font-size: 13px;">— the Linestry moderation team</p>
+      </div>
+      ${emailFooterHtml()}
     </div>
   `
 }

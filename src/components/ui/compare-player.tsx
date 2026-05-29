@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { computeConnectionSummary } from "@/lib/connection-summary"
+import { BrandMark } from "@/components/ui/brand-mark"
 import type { Claim, Person } from "@/types"
 
 // ─── Slide types ──────────────────────────────────────────────────────────────
@@ -70,7 +71,7 @@ const FACT_ICONS: Record<string, string> = {
   resort: "🏔", event: "🏆", board: "🏂", sponsor: "🎽", team: "🤝", rode_with: "👊",
 }
 const FACT_ACCENTS: Record<string, string> = {
-  resort: "#2563eb", event: "#d97706", board: "#059669",
+  resort: "#0d9488", event: "#d97706", board: "#059669",
   sponsor: "#7c3aed", team: "#7c3aed", rode_with: "#ec4899",
 }
 
@@ -106,7 +107,7 @@ function buildCompareSlides(
     slides.push({
       kind: "compare-shared-stat",
       icon: "🏔",
-      accent: "#2563eb",
+      accent: "#0d9488",
       count: sharedPlaces.length,
       label: "mountain" + (sharedPlaces.length !== 1 ? "s" : "") + " in common",
       items: sharedPlaces.map(f => f.label.replace("Both rode ", "")),
@@ -156,7 +157,7 @@ function buildCompareSlides(
   for (const fact of summary.facts.slice(0, 5)) {
     slides.push({
       kind: "compare-fact",
-      icon: FACT_ICONS[fact.type] ?? "⬡",
+      icon: FACT_ICONS[fact.type] ?? "•",
       accent: FACT_ACCENTS[fact.type] ?? "#3b82f6",
       label: fact.label,
       detail: fact.detail,
@@ -288,7 +289,7 @@ function CompareStrengthView({ slide, active }: { slide: CompareStrengthSlide; a
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-8">
       <div className={`transition-all duration-700 ${show ? "opacity-100 scale-100" : "opacity-0 scale-95"}`}>
-        <div className="text-5xl mb-6">⬡</div>
+        <div className="mb-6 flex justify-center"><BrandMark size={48} color="#3b82f6" /></div>
         <div className="text-xs uppercase tracking-[0.3em] mb-4 font-bold" style={{ color: accent }}>
           {strengthDots[slide.strength] ?? "○○○"}&nbsp;&nbsp;{slide.strength} connection
         </div>
@@ -409,7 +410,7 @@ function CompareOutroView({ slide, active, onClose }: { slide: CompareOutroSlide
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-8">
       <div className={`transition-all duration-700 ${show ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"}`}>
-        <div className="text-6xl mb-6">⬡</div>
+        <div className="mb-6 flex justify-center"><BrandMark size={60} color="#3b82f6" /></div>
         <div className="text-white/50 text-sm uppercase tracking-[0.3em] mb-3">Linestry</div>
         <h2 className="text-3xl sm:text-4xl font-black text-white mb-3">
           {slide.nameA.split(" ")[0]}<span className="text-white/30 font-thin mx-3">×</span>{slide.nameB.split(" ")[0]}
