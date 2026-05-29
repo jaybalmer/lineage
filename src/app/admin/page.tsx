@@ -161,7 +161,7 @@ function PasteArea({
   return (
     <div className="mb-4 border border-blue-800/40 rounded-xl p-4 bg-blue-950/10">
       <div className="text-xs text-blue-300 font-semibold mb-1">Paste from Google Sheets / spreadsheet</div>
-      <div className="text-xs text-muted mb-3 font-mono">
+      <div className="text-xs text-muted mb-3">
         Format: <span className="text-zinc-400">{format}</span>
         <span className="ml-3 text-zinc-600">e.g. {example}</span>
       </div>
@@ -170,7 +170,7 @@ function PasteArea({
         value={text}
         onChange={(e) => setText(e.target.value)}
         rows={6}
-        className="w-full bg-background border border-border-default rounded-lg px-3 py-2 text-sm text-foreground font-mono placeholder-zinc-700 focus:outline-none focus:border-blue-500 resize-none mb-3"
+        className="w-full bg-background border border-border-default rounded-lg px-3 py-2 text-sm text-foreground placeholder-zinc-700 focus:outline-none focus:border-blue-500 resize-none mb-3"
         placeholder={`Paste tab-separated rows here…`}
       />
       <div className="flex gap-2 items-center">
@@ -1491,7 +1491,7 @@ function MembersTable() {
   if (loadError) {
     return (
       <div className="py-12 text-center space-y-2">
-        <p className="text-red-400 text-sm font-mono">Error loading members</p>
+        <p className="text-red-400 text-sm">Error loading members</p>
         <p className="text-muted text-xs">{loadError}</p>
         <button onClick={load} className="text-blue-400 text-xs underline mt-2">Retry</button>
       </div>

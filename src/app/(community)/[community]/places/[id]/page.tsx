@@ -343,7 +343,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-xs text-muted uppercase tracking-widest capitalize">{place.place_type}</span>
-                {place.osm_id && <span className="text-[10px] text-muted font-mono">OSM ✓</span>}
+                {place.osm_id && <span className="text-[10px] text-muted">OSM ✓</span>}
               </div>
               <h1 className="text-2xl font-bold text-foreground">{place.name}</h1>
               {place.region && (
@@ -704,13 +704,13 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                   {place.osm_id && (
                     <div className="flex justify-between">
                       <span className="text-muted">OSM</span>
-                      <span className="font-mono text-muted text-xs">{place.osm_id}</span>
+                      <span className="text-muted text-xs">{place.osm_id}</span>
                     </div>
                   )}
                   {place.wikidata_qid && (
                     <div className="flex justify-between">
                       <span className="text-muted">Wikidata</span>
-                      <span className="font-mono text-muted text-xs">{place.wikidata_qid}</span>
+                      <span className="text-muted text-xs">{place.wikidata_qid}</span>
                     </div>
                   )}
                 </div>
