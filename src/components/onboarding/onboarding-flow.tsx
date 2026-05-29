@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { TimelineAhaStep } from "@/components/onboarding/timeline-aha"
 import { SaveStep } from "@/components/onboarding/save-step"
+import { BrandMark } from "@/components/ui/brand-mark"
 import type { Claim, Org, Place, Predicate } from "@/types"
 
 // ─── Step IDs ─────────────────────────────────────────────────────────────────
@@ -395,7 +396,7 @@ export function OnboardingFlow() {
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-8">
-            <span className="text-[#B8862A] text-xl">⬡</span>
+            <BrandMark size={20} className="text-accent" />
             <span className="font-semibold text-foreground">Linestry</span>
           </div>
           <ProgressBar step={step} total={totalSteps} />
@@ -552,7 +553,7 @@ export function OnboardingFlow() {
               className={cn(
                 "px-6 py-2.5 rounded-lg text-sm font-medium transition-all",
                 canContinue()
-                  ? "bg-[#1C1917] text-[#F5F2EE] hover:bg-[#292524]"
+                  ? "bg-[#1C1917] text-white hover:bg-[#292524]"
                   : "bg-surface-active text-muted cursor-not-allowed"
               )}
             >

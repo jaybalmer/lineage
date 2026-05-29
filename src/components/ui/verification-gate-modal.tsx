@@ -22,7 +22,7 @@ export function VerificationGateModal({ onClose }: Props) {
     >
       <div
         className="bg-surface border border-border-default rounded-2xl w-full max-w-sm p-6"
-        style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+        style={{ fontFamily: "var(--font-body)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Icon */}
@@ -32,7 +32,7 @@ export function VerificationGateModal({ onClose }: Props) {
 
         {/* Title */}
         <div className="text-foreground text-center mb-3"
-          style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 700, letterSpacing: 1 }}>
+          style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 700, letterSpacing: 1 }}>
           VERIFICATION BUILDS<br />OUR COLLECTIVE RECORD
         </div>
 
@@ -56,7 +56,7 @@ export function VerificationGateModal({ onClose }: Props) {
               color: "#fff",
               fontSize: 10,
               letterSpacing: 1.5,
-              fontFamily: "'IBM Plex Mono', monospace",
+              fontFamily: "var(--font-body)",
             }}
           >
             Become a member — $25/year

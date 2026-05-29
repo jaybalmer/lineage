@@ -6,6 +6,7 @@ import Link from "next/link"
 import { useLineageStore } from "@/store/lineage-store"
 import { MemberCardTile, type MemberCardData } from "@/components/ui/member-card-overlay"
 import { nameToSlug } from "@/lib/utils"
+import { BrandMark } from "@/components/ui/brand-mark"
 
 // ─── Tier badge labels ────────────────────────────────────────────────────────
 
@@ -65,12 +66,12 @@ export default function MemberCardPage({ params }: { params: Promise<{ username:
       className="min-h-screen flex flex-col items-center justify-center px-4 py-12"
       style={{
         background: "radial-gradient(ellipse 80% 60% at 50% 30%, rgba(30,40,80,0.6) 0%, #0a0a0a 70%)",
-        fontFamily: "'IBM Plex Mono', monospace",
+        fontFamily: "var(--font-body)",
       }}
     >
       {/* Wordmark */}
       <div className="mb-8 flex items-center gap-2">
-        <span className="text-[#B8862A] text-lg">⬡</span>
+        <BrandMark size={18} className="text-accent" />
         <span className="text-muted text-xs tracking-widest font-medium">LINESTRY</span>
       </div>
 

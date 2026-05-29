@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useLineageStore } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
+import { BrandMark } from "@/components/ui/brand-mark"
 import type { User } from "@supabase/supabase-js"
 
 export default function AuthCompletePage() {
@@ -183,7 +184,7 @@ export default function AuthCompletePage() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-center space-y-3">
-        <div className="text-[#B8862A] text-3xl animate-pulse">⬡</div>
+        <div className="animate-pulse text-accent flex justify-center"><BrandMark size={30} /></div>
         <div className="text-muted text-sm">{status}</div>
       </div>
     </div>

@@ -12,6 +12,7 @@ import { nameToSlug } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
 import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
+import { BrandMark } from "@/components/ui/brand-mark"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import { HelpConnectCard } from "@/components/ui/help-connect-card"
 import { isInvitableNodeStatus, trackInviteEvent } from "@/lib/invite-tracking"
@@ -111,7 +112,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   if (!catalogLoaded) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-[#B8862A] text-3xl animate-pulse">⬡</div>
+        <div className="animate-pulse text-accent"><BrandMark size={30} /></div>
       </div>
     )
   }
@@ -289,12 +290,12 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                   </button>
                 )}
                 <Link href={`/compare?b=${resolvedId}`}>
-                  <button className="px-3 py-2 rounded-lg bg-surface-hover border border-border-default text-xs text-muted hover:text-foreground transition-all">
-                    Compare ⬡
+                  <button className="px-3 py-2 rounded-lg bg-surface-hover border border-border-default text-xs text-muted hover:text-foreground transition-all inline-flex items-center gap-1">
+                    Compare <BrandMark size={12} />
                   </button>
                 </Link>
                 <CommunityLink href={`/connections/${resolvedId}`}>
-                  <button className="px-3 py-2 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-xs font-medium hover:bg-[#292524] transition-all">
+                  <button className="px-3 py-2 rounded-lg bg-[#1C1917] text-white text-xs font-medium hover:bg-[#292524] transition-all">
                     View connection →
                   </button>
                 </CommunityLink>

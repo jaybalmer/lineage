@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { getEntityName, getPersonById } from "@/lib/mock-data"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
+import { BrandMark } from "@/components/ui/brand-mark"
 import type { Claim, Person } from "@/types"
 
 // ─── Slide definitions ─────────────────────────────────────────────────────────
@@ -31,7 +32,7 @@ function buildSlides(person: Person, claims: Claim[], catalog: ReturnType<typeof
   const places = [...new Set(claims.filter(c => c.predicate === "rode_at" || c.predicate === "worked_at").map(c => c.object_id))]
   if (places.length > 0) {
     const names = places.map(id => catalog.places.find(p => p.id === id)?.name ?? getEntityName(id, "place")).filter(Boolean)
-    slides.push({ kind: "stat", icon: "🏔", accent: "#3b82f6", count: places.length, label: "mountain" + (places.length !== 1 ? "s" : ""), sublabel: "ridden", items: names.slice(0, 8) })
+    slides.push({ kind: "stat", icon: "🏔", accent: "#0D9488", count: places.length, label: "mountain" + (places.length !== 1 ? "s" : ""), sublabel: "ridden", items: names.slice(0, 8) })
   }
 
   const boards = [...new Set(claims.filter(c => c.predicate === "owned_board").map(c => c.object_id))]
@@ -71,11 +72,11 @@ function buildSlides(person: Person, claims: Claim[], catalog: ReturnType<typeof
           : (catalog.events.find(e => e.id === claim.object_id)?.name ?? getEntityName(claim.object_id, claim.object_type))
 
     const icons: Record<string, string> = { owned_board: "🏂", rode_at: "🏔", competed_at: "🏆", worked_at: "🔧" }
-    const accents: Record<string, string> = { owned_board: "#10b981", rode_at: "#3b82f6", competed_at: "#f59e0b", worked_at: "#a78bfa" }
+    const accents: Record<string, string> = { owned_board: "#10b981", rode_at: "#0D9488", competed_at: "#f59e0b", worked_at: "#a78bfa" }
 
     slides.push({
       kind: "claim",
-      icon: icons[claim.predicate] ?? "⬡",
+      icon: icons[claim.predicate] ?? "•",
       accent: accents[claim.predicate] ?? "#3b82f6",
       label: PREDICATE_LABELS[claim.predicate] ?? claim.predicate,
       entityName,
@@ -97,7 +98,7 @@ function slideBg(slide: Slide): string {
     return "radial-gradient(ellipse at 60% 40%, #1a0a2e 0%, #06020f 60%, #020104 100%)"
   if (slide.kind === "stat") {
     const map: Record<string, string> = {
-      "#3b82f6": "radial-gradient(ellipse at 15% 65%, #0a2d6e 0%, #040f2a 55%, #010408 100%)",
+      "#0D9488": "radial-gradient(ellipse at 15% 65%, #07403a 0%, #02130f 55%, #010403 100%)",
       "#10b981": "radial-gradient(ellipse at 80% 25%, #053d1a 0%, #011408 55%, #000301 100%)",
       "#f59e0b": "radial-gradient(ellipse at 50% 75%, #3d1f00 0%, #150900 55%, #040200 100%)",
       "#a78bfa": "radial-gradient(ellipse at 30% 40%, #1e0b4a 0%, #09041e 55%, #020108 100%)",
@@ -473,7 +474,7 @@ function OutroSlideView({ slide, active, onClose }: { slide: OutroSlide; active:
         className="relative z-10"
         style={{ opacity: show ? 1 : 0, transform: show ? "translateY(0)" : "translateY(30px)", transition: "opacity 0.8s ease, transform 0.8s ease" }}
       >
-        <div className="text-7xl mb-6" style={{ filter: "drop-shadow(0 0 20px rgba(160,100,255,0.5))" }}>⬡</div>
+        <div className="mb-6 flex justify-center" style={{ filter: "drop-shadow(0 0 20px rgba(59,130,246,0.5))" }}><BrandMark size={72} color="#3b82f6" /></div>
         <div className="text-white/35 text-xs uppercase tracking-[0.4em] mb-4 font-mono">Linestry.com</div>
         <h2
           className="font-black text-white leading-tight mb-4"

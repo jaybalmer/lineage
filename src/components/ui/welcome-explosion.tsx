@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react"
 import { useLineageStore } from "@/store/lineage-store"
+import { BrandMark } from "@/components/ui/brand-mark"
 
 // ─── Era mapping ──────────────────────────────────────────────────────────────
 
@@ -91,7 +92,7 @@ function spawnWelcomeBurst(container: HTMLDivElement) {
   const cx = w / 2
   const cy = h * 0.38  // slightly above center where the hero text lives
 
-  const goldColors = ["#B8862A", "#EF9F27", "#FAC775", "#F5DFA0", "#D4A853"]
+  const confettiColors = ["#3b82f6", "#2563EB", "#60A5FA", "#f59e0b", "#FAC775"]
 
   for (let r = 0; r < 5; r++) {
     const size = 80 + r * 60
@@ -104,7 +105,7 @@ function spawnWelcomeBurst(container: HTMLDivElement) {
       `width:${size}px`,
       `height:${size}px`,
       "border-radius:50%",
-      `border:1.5px solid ${goldColors[r % goldColors.length]}`,
+      `border:1.5px solid ${confettiColors[r % confettiColors.length]}`,
       "pointer-events:none",
       `animation:weRingOut 1.2s ease ${r * 0.2}s both`,
     ].join(";")
@@ -117,7 +118,7 @@ function spawnWelcomeBurst(container: HTMLDivElement) {
     const rad  = (angle * Math.PI) / 180
     const dist = 80 + Math.random() * 120
     const size = 3 + Math.round(Math.random() * 5)
-    const color = goldColors[Math.floor(Math.random() * goldColors.length)]
+    const color = confettiColors[Math.floor(Math.random() * confettiColors.length)]
     const dot  = document.createElement("div")
     dot.style.cssText = [
       "position:absolute",
@@ -247,7 +248,7 @@ export function WelcomeExplosion() {
       {/* Ambient glow */}
       <div style={{
         position:    "absolute", inset: 0, pointerEvents: "none",
-        background:  "radial-gradient(ellipse 60% 50% at 50% 35%, #B8862A14 0%, transparent 70%)",
+        background:  "radial-gradient(ellipse 60% 50% at 50% 35%, #3b82f614 0%, transparent 70%)",
         animation:   rm ? undefined : "weBgPulse 3s ease-in-out infinite",
       }} />
 
@@ -257,15 +258,15 @@ export function WelcomeExplosion() {
         {/* ── Beat 1: "You're in." ── */}
         <div className="we-hero" style={beat(B1)}>
           <div style={{
-            fontSize: 48, marginBottom: 16, color: "#B8862A",
+            marginBottom: 16,
             animation: rm ? undefined : "weHexSpin 8s linear infinite",
             display: "inline-block",
           }}>
-            ⬡
+            <BrandMark size={48} color="#3b82f6" />
           </div>
           <h1 style={{
             margin: 0, fontSize: 36, fontWeight: 800,
-            color: "#F5F2EE", letterSpacing: "-0.02em", lineHeight: 1.1,
+            color: "#F6F6F5", letterSpacing: "-0.02em", lineHeight: 1.1,
           }}>
             You're in.
           </h1>
@@ -285,15 +286,15 @@ export function WelcomeExplosion() {
           <div className="we-body" style={{
             margin: "28px auto 0", maxWidth: 380,
             padding: "16px 20px",
-            background: "#B8862A0F",
-            border: "1px solid #B8862A30",
+            background: "#3b82f60F",
+            border: "1px solid #3b82f630",
             borderRadius: 12,
             ...beat(B3),
           }}>
             {memberLine && (
               <p style={{
                 margin: "0 0 8px", fontSize: 13, fontWeight: 600,
-                color: "#B8862A", fontFamily: "'IBM Plex Mono', monospace",
+                color: "#60A5FA", fontFamily: "var(--font-body)",
                 letterSpacing: "0.04em",
               }}>
                 {memberLine}
@@ -302,7 +303,7 @@ export function WelcomeExplosion() {
             {yearsLine && (
               <p style={{
                 margin: "0 0 6px", fontSize: 15, fontWeight: 600,
-                color: "#F5DFA0", lineHeight: 1.4,
+                color: "#F6F6F5", lineHeight: 1.4,
               }}>
                 {yearsLine}
               </p>
@@ -320,7 +321,7 @@ export function WelcomeExplosion() {
         {/* ── Beat 4: "Your history matters." ── */}
         <p className="we-body" style={{
           margin: "28px 0 0", fontSize: 17, fontWeight: 600,
-          color: "#F5F2EE", lineHeight: 1.5,
+          color: "#F6F6F5", lineHeight: 1.5,
           ...beat(B4),
         }}>
           Your history matters. Let's build it.
@@ -336,7 +337,7 @@ export function WelcomeExplosion() {
             style={{
               flex: 1, padding: "13px 0", borderRadius: 10,
               fontSize: 14, fontWeight: 700, cursor: "pointer",
-              border: "none", background: "#B8862A", color: "#1C1917",
+              border: "none", background: "#3b82f6", color: "#FFFFFF",
               transition: "opacity .15s",
             }}
             onMouseEnter={(e) => { (e.target as HTMLElement).style.opacity = "0.85" }}

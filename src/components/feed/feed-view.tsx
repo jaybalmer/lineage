@@ -45,7 +45,7 @@ function nodeColor(item: FeedItem): string {
   if (item.kind === "story") return "bg-violet-600"
   const p = item.claim.predicate
   if (p === "owned_board") return "bg-emerald-700"
-  if (p === "rode_at" || p === "worked_at") return "bg-blue-700"
+  if (p === "rode_at" || p === "worked_at") return "bg-teal-700"
   if (p === "rode_with" || p === "shot_by" || p === "coached_by") return "bg-violet-700"
   if (p === "competed_at" || p === "spectated_at" || p === "organized_at") return "bg-amber-700"
   if (p === "sponsored_by" || p === "part_of_team" || p === "fan_of") return "bg-zinc-500"
@@ -213,7 +213,7 @@ export function FeedView({
               </button>
               <button
                 onClick={() => setAddingClaim(true)}
-                className="px-3 py-2 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-sm font-medium hover:bg-[#292524] transition-colors"
+                className="px-3 py-2 rounded-lg bg-[#1C1917] text-white text-sm font-medium hover:bg-[#292524] transition-colors"
               >
                 + Add claim
               </button>
@@ -237,7 +237,7 @@ export function FeedView({
                 active
                   ? isStoriesChip
                     ? "bg-violet-700 border-violet-700 text-foreground"
-                    : "bg-[#1C1917] border-[#1C1917] text-[#F5F2EE]"
+                    : "bg-[#1C1917] border-[#1C1917] text-white"
                   : "border-border-default text-muted hover:border-border-default hover:text-foreground"
               }`}
             >

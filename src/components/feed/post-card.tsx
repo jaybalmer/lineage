@@ -30,7 +30,7 @@ import { ImageLightbox } from "@/components/ui/image-lightbox"
 
 // Left border accent color by predicate group
 function accentClass(predicate: Predicate): string {
-  if (predicate === "rode_at" || predicate === "worked_at") return "border-blue-700"
+  if (predicate === "rode_at" || predicate === "worked_at") return "border-teal-700"
   if (predicate === "owned_board") return "border-emerald-700"
   if (predicate === "rode_with" || predicate === "shot_by" || predicate === "coached_by") return "border-violet-700"
   if (predicate === "competed_at" || predicate === "spectated_at" || predicate === "organized_at") return "border-amber-700"
@@ -423,7 +423,7 @@ function EntityBlock({ claim, entityName, isOwn, readOnly }: EntityBlockProps) {
   // Type badge
   const badge = (() => {
     if (type === "board")  return { label: "Snowboard", cls: "text-emerald-700" }
-    if (type === "place")  return { label: (place?.place_type ?? "Place"), cls: "text-blue-700" }
+    if (type === "place")  return { label: (place?.place_type ?? "Place"), cls: "text-teal-700" }
     if (type === "event")  return { label: (event?.event_type?.replace(/-/g, " ") ?? "Event"), cls: "text-amber-700" }
     if (type === "person") return { label: "Rider", cls: "text-violet-700" }
     return { label: (org?.org_type ?? "Org"), cls: "text-muted" }

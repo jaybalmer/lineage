@@ -13,7 +13,7 @@ import type { Story, Claim, Person } from "@/types"
 // ─── Community emoji lookup ──────────────────────────────────────────────────
 
 const COMMUNITY_META: Record<string, { dotColor: string; tagline: string }> = {
-  snowboarding: { dotColor: "#B8862A", tagline: "The living history of snowboarding" },
+  snowboarding: { dotColor: "#3b82f6", tagline: "The living history of snowboarding" },
   surf:         { dotColor: "#78716C", tagline: "The living history of surfing" },
   skate:        { dotColor: "#78716C", tagline: "The living history of skateboarding" },
   ski:          { dotColor: "#78716C", tagline: "The living history of skiing" },
@@ -217,14 +217,14 @@ export default function CommunityHome() {
           {isAuth ? (
             <CommunityLink
               href="/profile"
-              className="px-6 py-2.5 rounded-lg bg-[#1C1917] text-[#F5F2EE] font-semibold text-sm hover:bg-[#292524] transition-colors"
+              className="px-6 py-2.5 rounded-lg bg-[#1C1917] text-white font-semibold text-sm hover:bg-[#292524] transition-colors"
             >
               My Timeline
             </CommunityLink>
           ) : (
             <Link
               href="/onboarding"
-              className="px-6 py-2.5 rounded-lg bg-[#1C1917] text-[#F5F2EE] font-semibold text-sm hover:bg-[#292524] transition-colors"
+              className="px-6 py-2.5 rounded-lg bg-[#1C1917] text-white font-semibold text-sm hover:bg-[#292524] transition-colors"
             >
               Start Your Timeline
             </Link>

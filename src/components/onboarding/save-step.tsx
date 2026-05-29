@@ -129,7 +129,7 @@ export function SaveStep() {
         {!showEmail ? (
           <button
             onClick={() => { setShowEmail(true); setError(null) }}
-            className="w-full px-4 py-3 rounded-lg bg-[#1C1917] text-[#F5F2EE] text-sm font-medium hover:bg-[#292524] transition-colors"
+            className="w-full px-4 py-3 rounded-lg bg-[#1C1917] text-white text-sm font-medium hover:bg-[#292524] transition-colors"
           >
             Continue with email
           </button>
@@ -151,7 +151,7 @@ export function SaveStep() {
                 "w-full px-4 py-3 rounded-lg text-sm font-medium transition-colors",
                 sending
                   ? "bg-surface-active text-muted cursor-not-allowed"
-                  : "bg-[#1C1917] text-[#F5F2EE] hover:bg-[#292524]"
+                  : "bg-[#1C1917] text-white hover:bg-[#292524]"
               )}
             >
               {sending ? "Sending…" : "Send me a sign-in link"}

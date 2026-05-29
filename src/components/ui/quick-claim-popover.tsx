@@ -176,7 +176,7 @@ export function QuickClaimPopover({ entityId, entityType, entityName, entityYear
             className={cn(
               "w-full py-1.5 rounded-lg text-xs font-medium transition-all",
               canAdd
-                ? "bg-[#1C1917] text-[#F5F2EE] hover:bg-[#292524]"
+                ? "bg-[#1C1917] text-white hover:bg-[#292524]"
                 : "bg-surface-hover text-muted cursor-not-allowed"
             )}
           >

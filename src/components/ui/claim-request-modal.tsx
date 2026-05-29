@@ -88,7 +88,7 @@ export function ClaimRequestModal({ personId, personName, onClose, onCreated }: 
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="w-full py-2.5 rounded-xl bg-[#1C1917] text-sm font-semibold text-[#F5F2EE] hover:bg-[#292524] disabled:opacity-50 transition-colors"
+                className="w-full py-2.5 rounded-xl bg-[#1C1917] text-sm font-semibold text-white hover:bg-[#292524] disabled:opacity-50 transition-colors"
               >
                 {submitting ? "Submitting…" : "Submit claim →"}
               </button>

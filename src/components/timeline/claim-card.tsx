@@ -15,7 +15,7 @@ const PLACE_PREDICATES = ["rode_at", "worked_at", "competed_at"]
 const ORG_PREDICATES = ["sponsored_by", "part_of_team", "shot_by", "coached_by"]
 
 const ENTITY_DOT_COLOR: Record<string, string> = {
-  place: "#2563EB",
+  place: "#0D9488",
   person: "#7C3AED",
   event: "#D97706",
   board: "#059669",

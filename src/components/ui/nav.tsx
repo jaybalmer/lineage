@@ -11,9 +11,9 @@ import { getInitials } from "@/components/ui/rider-avatar"
 import { supabase } from "@/lib/supabase"
 
 const TIER_BADGE: Record<string, { label: string; color: string; symbol: string }> = {
-  annual:   { label: "MEMBER",      color: "#B8862A", symbol: "◈" },
+  annual:   { label: "MEMBER",      color: "#f59e0b", symbol: "◈" },
   lifetime: { label: "LIFETIME",    color: "#8b5cf6", symbol: "◆" },
-  founding: { label: "FOUNDING ✦",  color: "#B8862A", symbol: "✦" },
+  founding: { label: "FOUNDING ✦",  color: "#f59e0b", symbol: "✦" },
 }
 
 /** Base paths for community-scoped nav links (prefixed at render time) */
@@ -87,7 +87,7 @@ function AvatarDropdown({ initial, displayName, tier, totalTokens, pendingTagCou
         className="flex items-center gap-1.5 rounded-full focus:outline-none relative"
         aria-label="User menu"
       >
-        <div className="w-7 h-7 rounded-full bg-[#F5F2EE] flex items-center justify-center text-xs font-semibold text-[#1C1917] hover:bg-[#D6CEBF] transition-colors">
+        <div className="w-7 h-7 rounded-full bg-foreground flex items-center justify-center text-xs font-semibold text-background hover:bg-foreground/80 transition-colors">
           {getInitials(displayName || "?")}
         </div>
         {pendingTagCount > 0 && (
@@ -110,7 +110,7 @@ function AvatarDropdown({ initial, displayName, tier, totalTokens, pendingTagCou
       {open && (
         <div
           className="absolute right-0 top-full mt-2 w-52 bg-surface border border-border-default rounded-xl shadow-lg overflow-hidden z-50"
-          style={{ fontFamily: "'IBM Plex Mono', monospace" }}
+          style={{ fontFamily: "var(--font-body)" }}
         >
           {/* Name row */}
           <div className="px-4 py-3 border-b border-border-default">
@@ -156,7 +156,7 @@ function AvatarDropdown({ initial, displayName, tier, totalTokens, pendingTagCou
           {tier === "free" ? (
             <Link href="/membership"
               className="flex items-center justify-between px-4 py-2.5 hover:bg-surface-hover transition-colors"
-              style={{ fontSize: 10, color: "#B8862A" }}>
+              style={{ fontSize: 10, color: "#f59e0b" }}>
               <span>Become a member</span>
               <span>→</span>
             </Link>
@@ -195,7 +195,7 @@ const ROW2_NAV_PATHS = [
 
 /** Community dot colors — gold for active, muted for coming soon */
 const COMMUNITY_DOT_COLOR: Record<string, string> = {
-  snowboarding: "#B8862A",
+  snowboarding: "#3b82f6",
   surf: "#78716C",
   skate: "#78716C",
   ski: "#78716C",
@@ -222,13 +222,13 @@ function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug, communit
     <div>
       {/* Row 1: logo + avatar */}
       <div className="flex items-center h-12 px-4 gap-3">
-        <Link href="/" className="font-black text-xl text-[#F5F2EE] tracking-tight flex-shrink-0">
-          Linestry<span className="inline-block rounded-full bg-[#B8862A]" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em" }} />
+        <Link href="/" className="font-black text-xl text-foreground tracking-tight flex-shrink-0">
+          Linestry<span className="inline-block rounded-full bg-accent" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em" }} />
         </Link>
         {inCommunity && (
           <Link href={`/${communitySlug}`} className="flex items-center gap-1.5 flex-shrink-0">
-            <span className="text-[#F5F2EE]/40 font-black text-xl" style={{ letterSpacing: "-0.03em" }}>/</span>
-            <span className="font-black text-xl text-[#F5F2EE] tracking-tight">{communitySlug}</span>
+            <span className="text-foreground/40 font-black text-xl" style={{ letterSpacing: "-0.03em" }}>/</span>
+            <span className="font-black text-xl text-foreground tracking-tight">{communitySlug}</span>
           </Link>
         )}
         <div className="flex-1" />
@@ -238,7 +238,7 @@ function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug, communit
             <AvatarDropdown {...dropdownProps} />
           ) : (
             <Link href="/auth/signin"
-              className="px-3 py-1.5 rounded-lg bg-[#F5F2EE] text-[#1C1917] text-xs font-semibold hover:bg-[#D6CEBF] transition-colors">
+              className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent-strong transition-colors">
               Sign in
             </Link>
           )}
@@ -246,15 +246,15 @@ function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug, communit
       </div>
 
       {/* Row 2: primary nav — scrollable */}
-      <div className="flex items-center px-4 gap-1 overflow-x-auto border-t border-white/10 py-1.5 scrollbar-none">
+      <div className="flex items-center px-4 gap-1 overflow-x-auto border-t border-border-default py-1.5 scrollbar-none">
         {ROW2_NAV_PATHS.map(({ path: navPath, label, community }) => {
           const href = community ? c(navPath) : navPath
           return (
             <Link key={navPath} href={href} className={cn(
               "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
               isActive(href, path)
-                ? "bg-white/10 text-[#F5F2EE]"
-                : "text-[#F5F2EE]/50 hover:text-[#F5F2EE] hover:bg-white/5"
+                ? "bg-accent-strong text-white"
+                : "text-muted hover:text-foreground hover:bg-surface-hover"
             )}>
               {label}
             </Link>
@@ -264,8 +264,8 @@ function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug, communit
           <Link href="/admin" className={cn(
             "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
             isActive("/admin", path)
-              ? "bg-white/10 text-[#F5F2EE]"
-              : "text-[#F5F2EE]/50 hover:text-[#F5F2EE] hover:bg-white/5"
+              ? "bg-accent-strong text-white"
+              : "text-muted hover:text-foreground hover:bg-surface-hover"
           )}>
             Editor
           </Link>
@@ -273,7 +273,7 @@ function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug, communit
       </div>
 
       {/* Row 3: context-dependent — community nodes OR community list */}
-      <div className="flex items-center px-4 gap-1 overflow-x-auto border-t border-white/10 py-1.5 scrollbar-none">
+      <div className="flex items-center px-4 gap-1 overflow-x-auto border-t border-border-default py-1.5 scrollbar-none">
         {(inCommunity || path === `/${communitySlug}` || path.startsWith("/people")) ? (
           /* Inside a community: show entity nav (Riders, Events, ...) */
           SECONDARY_NAV_PATHS.map(({ path: navPath, label, community }) => {
@@ -282,8 +282,8 @@ function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug, communit
               <Link key={navPath} href={href} className={cn(
                 "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
                 isActive(href, path)
-                  ? "bg-white/15 text-[#F5F2EE]"
-                  : "text-[#F5F2EE]/50 hover:text-[#F5F2EE] hover:bg-white/5"
+                  ? "bg-surface-active text-foreground"
+                  : "text-muted hover:text-foreground hover:bg-surface-hover"
               )}>
                 {label}
               </Link>
@@ -303,10 +303,10 @@ function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug, communit
                 className={cn(
                   "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap flex items-center gap-1.5",
                   isComingSoon
-                    ? "text-[#F5F2EE]/20 cursor-default"
+                    ? "text-foreground/30 cursor-default"
                     : isActive(href, path)
-                      ? "bg-white/15 text-[#F5F2EE]"
-                      : "text-[#F5F2EE]/50 hover:text-[#F5F2EE] hover:bg-white/5"
+                      ? "bg-surface-active text-foreground"
+                      : "text-muted hover:text-foreground hover:bg-surface-hover"
                 )}
               >
                 <div
@@ -315,7 +315,7 @@ function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug, communit
                 />
                 <span>{comm.name}</span>
                 {isComingSoon && (
-                  <span className="text-[9px] uppercase tracking-wider text-[#F5F2EE]/20 ml-0.5">soon</span>
+                  <span className="text-[9px] uppercase tracking-wider text-foreground/30 ml-0.5">soon</span>
                 )}
               </Link>
             )

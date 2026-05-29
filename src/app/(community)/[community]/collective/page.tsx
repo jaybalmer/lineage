@@ -38,7 +38,7 @@ const TYPE_COLORS_DARK: Record<CollectiveType, string> = {
   event: "#00d4ff",  // cyan
   board: "#ff9f43",  // orange
   brand: "#55efc4",  // mint
-  place: "#4fc3f7",  // sky
+  place: "#2dd4bf",  // teal-400
 }
 
 // Light mode: darker versions matching post-card border accents
@@ -47,7 +47,7 @@ const TYPE_COLORS_LIGHT: Record<CollectiveType, string> = {
   event: "#b45309",  // amber-700
   board: "#047857",  // emerald-700
   brand: "#0f766e",  // teal-700
-  place: "#1d4ed8",  // blue-700
+  place: "#0D9488",  // teal
 }
 
 const TYPE_KEYS: CollectiveType[] = ["rider", "event", "board", "brand", "place"]
@@ -327,7 +327,7 @@ export default function CollectivePage() {
 
   // ── Theme-aware colors ────────────────────────────────────────────────────
   const typeColors  = isDark ? TYPE_COLORS_DARK  : TYPE_COLORS_LIGHT
-  const accentColor = "#B8862A"
+  const accentColor = "#3b82f6"
 
   // ── Chart dimensions ──────────────────────────────────────────────────────
   const CHART_H = 160
@@ -403,7 +403,7 @@ export default function CollectivePage() {
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700&family=IBM+Plex+Mono:wght@400;700&display=swap" />
 
       <style>{`
-        .ct-page { font-family: 'IBM Plex Mono', monospace; }
+        .ct-page { font-family: var(--font-body); }
         .ct-page * { box-sizing: border-box; }
         .ct-page ::-webkit-scrollbar { display: none; }
         @keyframes ct-fadeUp { from { opacity:0; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
@@ -421,8 +421,8 @@ export default function CollectivePage() {
 
           {/* ── Page header ──────────────────────────────────────────────── */}
           <div className="mb-6 bg-[#1C1917] rounded-lg px-6 py-5">
-            <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 700, letterSpacing: 3, lineHeight: 1, marginBottom: 4 }}
-              className="text-[#F5F2EE]">
+            <div style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 700, letterSpacing: 3, lineHeight: 1, marginBottom: 4 }}
+              className="text-white">
               COLLECTIVE<span className="inline-block rounded-full" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em", background: accentColor }} />
             </div>
             <div style={{ fontSize: 10, letterSpacing: 2, color: "#78716C" }}>
@@ -443,7 +443,7 @@ export default function CollectivePage() {
                     onClick={() => toggleType(k)}
                     className="flex items-center gap-1 px-2.5 py-1 rounded-full border text-[10px] font-bold transition-all"
                     style={{
-                      fontFamily: "'IBM Plex Mono', monospace",
+                      fontFamily: "var(--font-body)",
                       background:   on ? `${typeColors[k]}18` : "transparent",
                       borderColor:  on ? `${typeColors[k]}80` : "var(--muted)",
                       color:        on ? typeColors[k]         : "var(--muted)",
@@ -471,7 +471,7 @@ export default function CollectivePage() {
                     fontSize: 10,
                     padding: "5px 14px",
                     cursor: "pointer",
-                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontFamily: "var(--font-body)",
                     letterSpacing: 1,
                     fontWeight: mode === m ? 700 : 400,
                   }}
@@ -600,7 +600,7 @@ export default function CollectivePage() {
                     {activeData && (
                       <text x={scrubX} y={10} textAnchor="middle" fontSize="8"
                         fill="var(--foreground)" fillOpacity="0.5"
-                        fontFamily="'IBM Plex Mono', monospace">
+                        fontFamily="var(--font-body)">
                         {activeData.decade ?? activeData.year}
                       </text>
                     )}
@@ -649,7 +649,7 @@ export default function CollectivePage() {
                         <text x={x} y={NODE_Y + 18} textAnchor="middle"
                           fontSize={mode === "decade" ? 9 : 7.5}
                           fill={isAct ? "var(--foreground)" : "var(--muted)"}
-                          fontFamily="'IBM Plex Mono', monospace"
+                          fontFamily="var(--font-body)"
                           style={{ transition: "fill 0.2s" }}
                         >
                           {lbl}
@@ -668,15 +668,15 @@ export default function CollectivePage() {
                   <rect x="1" y="1" width="10" height="10" transform="rotate(45,6,6)"
                     fill="none" stroke={accentColor} strokeWidth="1" />
                 </svg>
-                <span className="text-muted" style={{ fontSize: 8, fontFamily: "'IBM Plex Mono', monospace" }}>your years</span>
+                <span className="text-muted" style={{ fontSize: 8, fontFamily: "var(--font-body)" }}>your years</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <svg width="10" height="10" viewBox="0 0 10 10">
                   <circle cx="5" cy="5" r="3.5" fill="none" stroke="var(--muted)" strokeWidth="1" />
                 </svg>
-                <span className="text-muted" style={{ fontSize: 8, fontFamily: "'IBM Plex Mono', monospace" }}>community</span>
+                <span className="text-muted" style={{ fontSize: 8, fontFamily: "var(--font-body)" }}>community</span>
               </div>
-              <span className="text-muted ml-auto" style={{ fontSize: 8, fontFamily: "'IBM Plex Mono', monospace" }}>
+              <span className="text-muted ml-auto" style={{ fontSize: 8, fontFamily: "var(--font-body)" }}>
                 ← drag or tap to scrub
               </span>
             </div>
@@ -689,17 +689,17 @@ export default function CollectivePage() {
                   {/* Title row */}
                   <div className="flex items-start justify-between gap-3 mb-4">
                     <div>
-                      <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 10, color: accentColor, letterSpacing: 2, marginBottom: 5 }}>
+                      <div style={{ fontFamily: "var(--font-body)", fontSize: 10, color: accentColor, letterSpacing: 2, marginBottom: 5 }}>
                         {activeData.decade ?? activeData.year}
                       </div>
-                      <div style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 20, fontWeight: 700, lineHeight: 1.1 }}
+                      <div style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 700, lineHeight: 1.1 }}
                         className="text-foreground">
                         {activeData.label}
                       </div>
                     </div>
                     {myYears.has(activeData.year) && (
                       <div className="shrink-0 mt-1 px-2 py-1 rounded-full flex items-center gap-1"
-                        style={{ background: "var(--surface-2)", border: `1px solid ${accentColor}44`, fontSize: 9, color: accentColor, fontFamily: "'IBM Plex Mono', monospace" }}>
+                        style={{ background: "var(--surface-2)", border: `1px solid ${accentColor}44`, fontSize: 9, color: accentColor, fontFamily: "var(--font-body)" }}>
                         ◆ yours
                       </div>
                     )}
@@ -722,14 +722,14 @@ export default function CollectivePage() {
                               style={{ padding: "4px 6px", margin: "-4px -6px" }}
                             >
                               <div className="flex items-center gap-2 mb-1">
-                                <span style={{ fontSize: 10, color: typeColors[k], fontFamily: "'IBM Plex Mono', monospace", width: 14 }}>{t.symbol}</span>
-                                <span className="text-foreground flex-1" style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", letterSpacing: 0.5 }}>
+                                <span style={{ fontSize: 10, color: typeColors[k], fontFamily: "var(--font-body)", width: 14 }}>{t.symbol}</span>
+                                <span className="text-foreground flex-1" style={{ fontSize: 9, fontFamily: "var(--font-body)", letterSpacing: 0.5 }}>
                                   {t.label}
                                 </span>
-                                <span style={{ fontSize: 9, color: typeColors[k], fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>
+                                <span style={{ fontSize: 9, color: typeColors[k], fontFamily: "var(--font-body)", fontWeight: 700 }}>
                                   {val.toLocaleString()}
                                 </span>
-                                <span className="text-muted" style={{ fontSize: 8, fontFamily: "'IBM Plex Mono', monospace", width: 28, textAlign: "right" }}>
+                                <span className="text-muted" style={{ fontSize: 8, fontFamily: "var(--font-body)", width: 28, textAlign: "right" }}>
                                   {Math.round(pct)}%
                                 </span>
                                 <span className="text-muted opacity-0 group-hover:opacity-100 transition-opacity" style={{ fontSize: 9 }}>→</span>
@@ -748,8 +748,8 @@ export default function CollectivePage() {
 
                         {/* Total */}
                         <div className="flex justify-between pt-2 border-t border-border-default">
-                          <span className="text-muted" style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", letterSpacing: 1 }}>TOTAL</span>
-                          <span className="text-foreground" style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace", fontWeight: 700 }}>
+                          <span className="text-muted" style={{ fontSize: 9, fontFamily: "var(--font-body)", letterSpacing: 1 }}>TOTAL</span>
+                          <span className="text-foreground" style={{ fontSize: 9, fontFamily: "var(--font-body)", fontWeight: 700 }}>
                             {total.toLocaleString()}
                           </span>
                         </div>
@@ -760,7 +760,7 @@ export default function CollectivePage() {
                 </div>
               ) : (
                 <div className="flex items-center justify-center" style={{ height: 180 }}>
-                  <div className="text-center text-muted" style={{ fontSize: 10, fontFamily: "'IBM Plex Mono', monospace", lineHeight: 2.2, letterSpacing: 0.5 }}>
+                  <div className="text-center text-muted" style={{ fontSize: 10, fontFamily: "var(--font-body)", lineHeight: 2.2, letterSpacing: 0.5 }}>
                     scrub or tap<br />any node to explore
                   </div>
                 </div>
@@ -773,7 +773,7 @@ export default function CollectivePage() {
             {TYPE_KEYS.map(k => (
               <div key={k} className="flex items-center gap-2">
                 <div style={{ width: 18, height: 2, background: typeColors[k], borderRadius: 1, opacity: 0.8 }} />
-                <span className="text-muted" style={{ fontSize: 9, fontFamily: "'IBM Plex Mono', monospace" }}>
+                <span className="text-muted" style={{ fontSize: 9, fontFamily: "var(--font-body)" }}>
                   {TYPE[k].label}
                 </span>
               </div>

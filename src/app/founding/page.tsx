@@ -43,8 +43,8 @@ export default function FoundingPage() {
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;700&display=swap" />
 
       <style>{`
-        .fd-page { font-family: 'IBM Plex Mono', monospace; }
-        .fd-heading { font-family: 'Barlow Condensed', sans-serif; }
+        .fd-page { font-family: var(--font-body); }
+        .fd-heading { font-family: var(--font-display); }
       `}</style>
 
       <div className="fd-page min-h-screen bg-background text-foreground">
@@ -153,7 +153,7 @@ export default function FoundingPage() {
                   color: "#000",
                   fontSize: 11,
                   letterSpacing: 1.5,
-                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontFamily: "var(--font-body)",
                 }}>
                 Claim your founding spot — $100 →
               </Link>

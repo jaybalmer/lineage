@@ -11,11 +11,11 @@ export default function DistributionsPage() {
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Mono:wght@400;700&display=swap" />
 
-      <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+      <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "var(--font-body)" }}>
         <Nav />
         <div className="max-w-3xl mx-auto px-4 pt-12 pb-24">
           <div className="text-muted mb-3" style={{ fontSize: 10, letterSpacing: 2 }}>// DISTRIBUTIONS</div>
-          <div className="text-foreground mb-2" style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 36, fontWeight: 800, letterSpacing: 2 }}>
+          <div className="text-foreground mb-2" style={{ fontFamily: "var(--font-display)", fontSize: 36, fontWeight: 800, letterSpacing: 2 }}>
             DISTRIBUTION LOG
           </div>
           <p className="text-muted mb-10" style={{ fontSize: 11, lineHeight: 1.8 }}>

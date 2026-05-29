@@ -87,7 +87,7 @@ function Stat({ value, label }: { value: string | number; label: string }) {
     <div className="flex flex-col items-center justify-center py-3 px-1 bg-surface-hover">
       <span className="text-xl font-bold text-foreground leading-none tabular-nums">{value}</span>
       <span className="text-[9px] text-muted uppercase tracking-widest mt-1"
-        style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+        style={{ fontFamily: "var(--font-body)" }}>
         {label}
       </span>
     </div>
@@ -389,7 +389,7 @@ export function RiderCard({
                   background: tier.bg,
                   color: tier.color,
                   border: `1px solid ${tier.color}55`,
-                  fontFamily: "'IBM Plex Mono', monospace",
+                  fontFamily: "var(--font-body)",
                 }}
               >
                 {tier.text}

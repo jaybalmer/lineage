@@ -7,6 +7,7 @@ import { useLineageStore, getAllClaims } from "@/store/lineage-store"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
+import { BrandMark } from "@/components/ui/brand-mark"
 import type { Claim, Person, Place, Event } from "@/types"
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
@@ -83,8 +84,8 @@ function ConnectionCard({
         </div>
         <div className="flex gap-1.5 flex-shrink-0">
           <Link href={`/compare?b=${personId}`}>
-            <button className="px-2.5 py-1 bg-surface-hover border border-border-default rounded-lg text-[11px] text-muted hover:text-foreground transition-all whitespace-nowrap">
-              Compare ⬡
+            <button className="px-2.5 py-1 bg-surface-hover border border-border-default rounded-lg text-[11px] text-muted hover:text-foreground transition-all whitespace-nowrap inline-flex items-center gap-1">
+              Compare <BrandMark size={12} />
             </button>
           </Link>
           <CommunityLink href={`/connections/${personId}`}>
@@ -278,7 +279,7 @@ export default function ConnectionsPage() {
         {/* Empty state */}
         {totalConnections === 0 && (
           <div className="text-center py-16 text-muted">
-            <div className="text-4xl mb-4">⬡</div>
+            <div className="mb-4 flex justify-center"><BrandMark size={36} /></div>
             <p className="text-sm font-medium text-foreground mb-1">No connections yet</p>
             <p className="text-xs text-muted max-w-sm mx-auto">
               Add places you&apos;ve ridden, events you&apos;ve competed at, or riders you&apos;ve ridden with — and anyone who shares those moments will appear here.
@@ -299,7 +300,7 @@ export default function ConnectionsPage() {
             <div className="flex items-center gap-3">
               <Link
                 href="/membership"
-                className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#1C1917] text-[#F5F2EE] hover:bg-[#292524] transition-colors"
+                className="px-4 py-2 rounded-lg text-xs font-semibold bg-[#1C1917] text-white hover:bg-[#292524] transition-colors"
               >
                 Become a member →
               </Link>

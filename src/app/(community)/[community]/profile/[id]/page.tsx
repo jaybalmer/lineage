@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabase"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
+import { BrandMark } from "@/components/ui/brand-mark"
 import { notFound } from "next/navigation"
 import type { Claim, Person } from "@/types"
 
@@ -103,12 +104,12 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
               {!isCurrentUser && (
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <Link href={`/compare?b=${id}`}>
-                    <button className="px-3 py-1.5 rounded-lg bg-surface-hover border border-border-default text-xs text-muted hover:border-border-default hover:text-foreground transition-all">
-                      Compare ⬡
+                    <button className="px-3 py-1.5 rounded-lg bg-surface-hover border border-border-default text-xs text-muted hover:border-border-default hover:text-foreground transition-all inline-flex items-center gap-1">
+                      Compare <BrandMark size={12} />
                     </button>
                   </Link>
                   <CommunityLink href={`/connections/${id}`}>
-                    <button className="px-3 py-1.5 rounded-lg bg-[#1C1917] text-xs text-[#F5F2EE] font-medium hover:bg-[#292524] transition-all">
+                    <button className="px-3 py-1.5 rounded-lg bg-[#1C1917] text-xs text-white font-medium hover:bg-[#292524] transition-all">
                       View connection →
                     </button>
                   </CommunityLink>

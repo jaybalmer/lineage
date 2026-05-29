@@ -6,6 +6,7 @@ import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore, getAllClaims } from "@/store/lineage-store"
+import { BrandMark } from "@/components/ui/brand-mark"
 import { PEOPLE, CLAIMS, getEntityName, getPlaceById } from "@/lib/mock-data"
 import { supabase } from "@/lib/supabase"
 import { computeConnectionSummary } from "@/lib/connection-summary"
@@ -569,7 +570,7 @@ function ComparePageInner() {
         {/* No person B selected (and no ?b= param) */}
         {!personB && (
           <div className="border border-dashed border-border-default rounded-xl py-12 text-center">
-            <div className="text-3xl mb-2">⬡</div>
+            <div className="mb-2 flex justify-center text-muted"><BrandMark size={30} /></div>
             <div className="text-sm text-muted">Select a second rider to see their overlap</div>
           </div>
         )}

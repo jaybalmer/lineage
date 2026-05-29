@@ -64,7 +64,7 @@ export default function GiftRedemptionPage() {
       {/* eslint-disable-next-line @next/next/no-page-custom-font */}
       <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=IBM+Plex+Mono:wght@400;700&display=swap" />
 
-      <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "'IBM Plex Mono', monospace" }}>
+      <div className="min-h-screen bg-background text-foreground" style={{ fontFamily: "var(--font-body)" }}>
         <Nav />
         <div className="max-w-md mx-auto px-4 pt-20 pb-24 text-center">
 
@@ -75,7 +75,7 @@ export default function GiftRedemptionPage() {
           {status === "invalid" && (
             <div>
               <div className="text-muted mb-4" style={{ fontSize: 40 }}>◎</div>
-              <div className="text-foreground mb-2" style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 24, fontWeight: 700 }}>
+              <div className="text-foreground mb-2" style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700 }}>
                 INVALID CODE
               </div>
               <p className="text-muted mb-6" style={{ fontSize: 11, lineHeight: 1.7 }}>
@@ -90,7 +90,7 @@ export default function GiftRedemptionPage() {
           {status === "already_redeemed" && (
             <div>
               <div className="text-muted mb-4" style={{ fontSize: 40 }}>◎</div>
-              <div className="text-foreground mb-2" style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 24, fontWeight: 700 }}>
+              <div className="text-foreground mb-2" style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 700 }}>
                 ALREADY REDEEMED
               </div>
               <p className="text-muted mb-6" style={{ fontSize: 11, lineHeight: 1.7 }}>
@@ -105,7 +105,7 @@ export default function GiftRedemptionPage() {
           {status === "valid" && (
             <div>
               <div className="mb-4" style={{ fontSize: 48, color: "#3b82f6" }}>◈</div>
-              <div className="text-foreground mb-2" style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, letterSpacing: 2 }}>
+              <div className="text-foreground mb-2" style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, letterSpacing: 2 }}>
                 YOU&apos;VE BEEN GIFTED<br />A MEMBERSHIP
               </div>
               {giftedBy && (
@@ -121,7 +121,7 @@ export default function GiftRedemptionPage() {
                   </p>
                   <Link href={`/auth/signin?redirect=/gift/${code}`}
                     className="inline-block px-6 py-3 rounded-full font-bold"
-                    style={{ background: "#3b82f6", color: "#fff", fontSize: 11, letterSpacing: 1, fontFamily: "'IBM Plex Mono', monospace" }}>
+                    style={{ background: "#3b82f6", color: "#fff", fontSize: 11, letterSpacing: 1, fontFamily: "var(--font-body)" }}>
                     Sign in to claim →
                   </Link>
                 </div>
@@ -139,7 +139,7 @@ export default function GiftRedemptionPage() {
                     style={{
                       background: "#3b82f6", color: "#fff",
                       fontSize: 11, letterSpacing: 1.5,
-                      fontFamily: "'IBM Plex Mono', monospace",
+                      fontFamily: "var(--font-body)",
                       border: "none", cursor: "pointer",
                     }}>
                     Claim membership →
@@ -152,7 +152,7 @@ export default function GiftRedemptionPage() {
           {status === "redeemed" && (
             <div>
               <div className="mb-4" style={{ fontSize: 48, color: "#10b981" }}>✓</div>
-              <div className="text-foreground mb-2" style={{ fontFamily: "'Barlow Condensed', sans-serif", fontSize: 28, fontWeight: 800, letterSpacing: 2 }}>
+              <div className="text-foreground mb-2" style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, letterSpacing: 2 }}>
                 MEMBERSHIP ACTIVATED
               </div>
               <p className="text-muted mb-6" style={{ fontSize: 11, lineHeight: 1.7 }}>
@@ -160,7 +160,7 @@ export default function GiftRedemptionPage() {
               </p>
               <Link href="/account/membership"
                 className="inline-block px-6 py-3 rounded-full font-bold hover:opacity-80 transition-opacity"
-                style={{ background: "#3b82f6", color: "#fff", fontSize: 10, letterSpacing: 1, fontFamily: "'IBM Plex Mono', monospace" }}>
+                style={{ background: "#3b82f6", color: "#fff", fontSize: 10, letterSpacing: 1, fontFamily: "var(--font-body)" }}>
                 View your membership →
               </Link>
             </div>
