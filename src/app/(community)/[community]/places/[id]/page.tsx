@@ -21,7 +21,7 @@ type PlaceTab = "all" | "riders" | "events" | "stories"
 const EVENT_TYPE_DOT: Record<string, string> = {
   contest: "#D97706",
   "film-shoot": "#7C3AED",
-  trip: "#2563EB",
+  trip: "#E11D48",
   camp: "#059669",
   gathering: "#0891B2",
 }
@@ -29,9 +29,9 @@ const EVENT_TYPE_DOT: Record<string, string> = {
 const EVENT_TYPE_COLOR: Record<string, string> = {
   contest: "border-l-amber-700",
   "film-shoot": "border-l-violet-700",
-  trip: "border-l-emerald-700",
-  camp: "border-l-blue-700",
-  gathering: "border-l-zinc-600",
+  trip: "border-l-rose-700",
+  camp: "border-l-emerald-700",
+  gathering: "border-l-cyan-700",
 }
 
 export default function PlacePage({ params }: { params: Promise<{ id: string }> }) {
