@@ -20,15 +20,15 @@ type MainTab = "all" | "series"
 const ACCENT: Record<EventType, string> = {
   contest: "border-amber-600",
   "film-shoot": "border-violet-600",
-  trip: "border-emerald-600",
-  camp: "border-blue-600",
-  gathering: "border-zinc-400",
+  trip: "border-rose-600",
+  camp: "border-emerald-600",
+  gathering: "border-cyan-600",
 }
 
 const EVENT_DOT_COLOR: Record<EventType, string> = {
   contest: "#D97706",
   "film-shoot": "#7C3AED",
-  trip: "#2563EB",
+  trip: "#E11D48",
   camp: "#059669",
   gathering: "#0891B2",
 }

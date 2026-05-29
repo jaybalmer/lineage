@@ -355,9 +355,9 @@ const CONFIDENCE_COLORS: Record<string, string> = {
 const EVENT_TYPE_COLOR: Record<string, string> = {
   contest: "border-l-amber-700",
   "film-shoot": "border-l-violet-700",
-  trip: "border-l-emerald-700",
-  camp: "border-l-blue-700",
-  gathering: "border-l-zinc-600",
+  trip: "border-l-rose-700",
+  camp: "border-l-emerald-700",
+  gathering: "border-l-cyan-700",
 }
 
 type FeedTab = "all" | "people" | "boards" | "events" | "places" | "stories"
