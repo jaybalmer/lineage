@@ -266,7 +266,7 @@ function SideBySideTimeline({
           if (rowA.length === 0 && rowB.length === 0) return null
           return (
             <div key={decade}>
-              <div className="text-[10px] text-muted uppercase tracking-widest mb-1.5 font-mono">
+              <div className="text-[10px] text-muted uppercase tracking-widest mb-1.5">
                 {decade}s
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -640,7 +640,7 @@ function ComparePageInner() {
 
             {/* Side-by-side timeline */}
             <div className="border border-border-default rounded-xl p-5">
-              <div className="text-xs text-muted uppercase tracking-wider mb-4 font-mono">
+              <div className="text-xs text-muted uppercase tracking-wider mb-4">
                 Timeline comparison
               </div>
               {claimsA.length === 0 && claimsB.length === 0 ? (

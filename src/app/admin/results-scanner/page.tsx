@@ -448,7 +448,7 @@ export default function ResultsScannerPage() {
                 onChange={(e) => setInputText(e.target.value)}
                 placeholder={`Paste results here. Supported formats:\n\n1. Kelly Clark\n2. Torah Bright\n3. Gretchen Bleiler\n\nor CSV:\nplace,name,country\n1,Shaun White,USA\n2,Iouri Podladtchikov,SUI`}
                 rows={14}
-                className="w-full bg-surface border border-border-default rounded-lg px-4 py-3 text-sm text-foreground font-mono placeholder-zinc-600 focus:outline-none focus:border-blue-500 resize-y"
+                className="w-full bg-surface border border-border-default rounded-lg px-4 py-3 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500 resize-y"
               />
             </div>
 

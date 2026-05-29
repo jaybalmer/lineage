@@ -150,7 +150,7 @@ export default function Home() {
                         {comm.name}
                       </span>
                       {!isActive && (
-                        <span className="text-[10px] font-mono uppercase tracking-widest text-muted px-2 py-0.5 rounded-full bg-surface-hover border border-border-default">
+                        <span className="text-[10px] uppercase tracking-widest text-muted px-2 py-0.5 rounded-full bg-surface-hover border border-border-default">
                           Coming soon
                         </span>
                       )}
@@ -212,7 +212,7 @@ export default function Home() {
               <div className="flex items-start gap-3">
                 <span className="text-2xl leading-none mt-0.5">{icon}</span>
                 <div>
-                  <div className="text-[10px] font-mono text-muted mb-1 tabular-nums">
+                  <div className="text-[10px] text-muted mb-1 tabular-nums">
                     {String(i + 1).padStart(2, "0")}
                   </div>
                   <div className="text-sm font-bold text-foreground leading-snug mb-2">{title}</div>

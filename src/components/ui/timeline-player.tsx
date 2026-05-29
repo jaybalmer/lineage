@@ -312,7 +312,7 @@ function IntroSlideView({ slide, active }: { slide: IntroSlide; active: boolean 
         style={{ opacity: show ? 1 : 0, transform: show ? "translateY(0) scale(1)" : "translateY(30px) scale(0.96)", transition: "opacity 0.8s ease, transform 0.8s ease" }}
       >
         <div className="text-8xl mb-5" style={{ filter: "drop-shadow(0 0 24px rgba(100,140,255,0.5))" }}>🏔</div>
-        <div className="text-white/40 text-xs uppercase tracking-[0.35em] mb-4 font-mono">Your Linestry</div>
+        <div className="text-white/40 text-xs uppercase tracking-[0.35em] mb-4">Your Linestry</div>
         <h1
           className="font-black text-white leading-none mb-5"
           style={{ fontSize: "clamp(3rem, 12vw, 6.5rem)", letterSpacing: "-0.02em", textShadow: "0 0 60px rgba(100,150,255,0.3)" }}
@@ -375,7 +375,7 @@ function StatSlideView({ slide, active }: { slide: StatSlide; active: boolean })
         >
           {slide.label}
         </div>
-        <div className="text-white/40 text-base mb-8 uppercase tracking-widest font-mono" style={{ transition: "opacity 0.5s 0.5s ease", opacity: show ? 1 : 0 }}>
+        <div className="text-white/40 text-base mb-8 uppercase tracking-widest" style={{ transition: "opacity 0.5s 0.5s ease", opacity: show ? 1 : 0 }}>
           {slide.sublabel}
         </div>
         {slide.items.length > 0 && (
@@ -420,7 +420,7 @@ function ClaimSlideView({ slide, active }: { slide: ClaimSlide; active: boolean 
       >
         <div className="text-6xl mb-4" style={{ filter: `drop-shadow(0 0 16px ${slide.accent}88)` }}>{slide.icon}</div>
         <div
-          className="text-white/35 uppercase tracking-[0.3em] mb-4 font-mono"
+          className="text-white/35 uppercase tracking-[0.3em] mb-4"
           style={{ fontSize: "0.7rem", transition: "opacity 0.4s 0.2s ease", opacity: show ? 1 : 0 }}
         >
           {slide.label}
@@ -475,14 +475,14 @@ function OutroSlideView({ slide, active, onClose }: { slide: OutroSlide; active:
         style={{ opacity: show ? 1 : 0, transform: show ? "translateY(0)" : "translateY(30px)", transition: "opacity 0.8s ease, transform 0.8s ease" }}
       >
         <div className="mb-6 flex justify-center" style={{ filter: "drop-shadow(0 0 20px rgba(59,130,246,0.5))" }}><BrandMark size={72} color="#3b82f6" /></div>
-        <div className="text-white/35 text-xs uppercase tracking-[0.4em] mb-4 font-mono">Linestry.com</div>
+        <div className="text-white/35 text-xs uppercase tracking-[0.4em] mb-4">Linestry.com</div>
         <h2
           className="font-black text-white leading-tight mb-4"
           style={{ fontSize: "clamp(2rem, 8vw, 4rem)", letterSpacing: "-0.02em" }}
         >
           That&apos;s {slide.name}&apos;s<br />linestry.
         </h2>
-        <p className="text-white/35 text-sm mb-12 font-mono">Every board, mountain, and moment.</p>
+        <p className="text-white/35 text-sm mb-12">Every board, mountain, and moment.</p>
         <button
           onClick={onClose}
           className="px-10 py-3.5 rounded-xl text-black text-sm font-bold transition-all hover:scale-105 active:scale-95"
@@ -620,7 +620,7 @@ export function TimelinePlayer({ person, claims, onClose }: TimelinePlayerProps)
         <div className="relative z-10 flex items-center justify-between px-5 py-2 shrink-0">
           <div className="flex items-center gap-2.5">
             <RiderAvatar person={person} size="sm" ring={!!(person.membership_tier && person.membership_tier !== "free")} />
-            <span className="text-white/50 text-xs font-mono tracking-wide">{person.display_name}</span>
+            <span className="text-white/50 text-xs tracking-wide">{person.display_name}</span>
           </div>
           <div className="flex items-center gap-1.5">
             {/* Mute */}
@@ -668,7 +668,7 @@ export function TimelinePlayer({ person, claims, onClose }: TimelinePlayerProps)
           >
             ← Prev
           </button>
-          <span className="text-white/20 text-xs font-mono">{index + 1} / {slides.length}</span>
+          <span className="text-white/20 text-xs">{index + 1} / {slides.length}</span>
           <button
             onClick={next}
             disabled={isOutro}

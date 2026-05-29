@@ -49,7 +49,7 @@ function PlaceCard({ place }: { place: Place }) {
                   <span className="text-[10px] text-amber-600 border border-amber-500/40 rounded px-1.5 py-0.5">unverified</span>
                 )}
                 {place.osm_id && (
-                  <span className="text-[10px] text-muted font-mono">OSM ✓</span>
+                  <span className="text-[10px] text-muted">OSM ✓</span>
                 )}
               </div>
               <div className="text-xs text-muted mt-0.5">
