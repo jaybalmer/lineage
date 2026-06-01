@@ -54,3 +54,14 @@ export const FALLBACK_LABELS: Record<SchemaNoun, string> = {
 export function communityLabel(schemaNoun: SchemaNoun, community: Community | undefined): string {
   return community?.noun_map?.[schemaNoun] ?? FALLBACK_LABELS[schemaNoun]
 }
+
+/**
+ * Per-community initials override for the avatar pill, keyed by slug. getInitials()
+ * reads a single-word name as its first two letters, so "Snowboarding" resolves to
+ * "SN"; the conventional abbreviation is "SB" (Snow + Board). Communities whose
+ * abbreviation differs from the mechanical default are listed here; everything else
+ * falls back to getInitials() at the call site.
+ */
+export const COMMUNITY_INITIALS: Record<string, string> = {
+  snowboarding: "SB",
+}
