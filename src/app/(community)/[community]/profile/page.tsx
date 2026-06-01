@@ -14,6 +14,7 @@ import { TimelinePlayer } from "@/components/ui/timeline-player"
 import { BulkInvitePrompt } from "@/components/ui/bulk-invite-prompt"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
+import { readSeenIds, writeSeenIds } from "@/lib/seen-celebrations"
 import type { Claim, PrivacyLevel, Story, TriggerPrefs } from "@/types"
 
 // ─── FTUE helpers ─────────────────────────────────────────────────────────────
@@ -363,37 +364,67 @@ export default function ProfilePage() {
   const allClaims    = getAllClaims(sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId)
   const personClaims = allClaims.filter((c) => c.subject_id === activePersonId)
 
-  // Detect new claim additions and fire contextual celebration + milestone checks
+  // Detect new claim additions and fire contextual celebration + milestone checks.
+  //
+  // Bug history: this used to compare personClaims.length against a useRef
+  // baseline. The baseline was seeded on the first effect tick, BEFORE the
+  // async supabase fetch for dbClaims resolved, so every page load went
+  // (small initial count) -> (full count) and re-fired the most-recent
+  // claim's celebration. The fix is two layers:
+  //  1. Persist a per-user set of "seen" claim IDs in localStorage so we
+  //     can tell async-arrival from a fresh add.
+  //  2. Wait for catalogLoaded before doing any work, so entity names
+  //     resolve and the high-water seeding sees the full claim set.
   useEffect(() => {
-    const count = personClaims.length
-    const prev  = prevClaimCountRef.current
+    if (!isAuthUser(activePersonId)) return
+    if (!catalogLoaded) return
 
-    if (prev === null) {
+    const existingSeen = readSeenIds(activePersonId, "claim")
+    const count        = personClaims.length
+    const prev         = prevClaimCountRef.current
+
+    // First visit ever for this (user, browser): silently mark every
+    // currently-loaded claim as seen so existing entries don't replay
+    // their celebrations. Future additions still fire because their IDs
+    // won't be in the persisted set.
+    if (existingSeen === null) {
+      writeSeenIds(activePersonId, "claim", new Set(personClaims.map((c) => c.id)))
       prevClaimCountRef.current = count
       return
     }
 
-    if (count > prev) {
-      // A new claim was just added — fire contextual celebration
-      const newClaim = personClaims[personClaims.length - 1]
-      if (newClaim && catalogLoaded) {
-        const celebration = getCelebrationForNewClaim(newClaim, count, catalog)
-        queueCelebration(celebration)
+    const unseen = personClaims.filter((c) => !existingSeen.has(c.id))
+    if (unseen.length > 0) {
+      // Persist the new seen set first so a re-render mid-effect can't replay.
+      const next = new Set(existingSeen)
+      for (const c of unseen) next.add(c.id)
+      writeSeenIds(activePersonId, "claim", next)
 
-        // Update FTUE step tracking
-        const { predicate } = newClaim
-        if (predicate === "owned_board" && !triggerPrefs.ftue_added_board) {
-          setTriggerPrefs({ ftue_added_board: true })
-        }
-        if ((predicate === "competed_at" || predicate === "spectated_at" || predicate === "rode_at") && !triggerPrefs.ftue_added_event) {
-          setTriggerPrefs({ ftue_added_event: true })
-        }
-        if (predicate === "rode_with" && !triggerPrefs.ftue_connected_person) {
-          setTriggerPrefs({ ftue_connected_person: true })
-        }
+      // Fire the contextual celebration only for the latest unseen claim.
+      // If multiple landed at once (bulk import, async catch-up after a long
+      // offline session), the rest are still marked seen above so they won't
+      // replay later — we just don't spam a stack of toasts.
+      const newClaim = unseen[unseen.length - 1]
+      const celebration = getCelebrationForNewClaim(newClaim, count, catalog)
+      queueCelebration(celebration)
+
+      // FTUE step tracking — driven by the newest claim's predicate.
+      const { predicate } = newClaim
+      if (predicate === "owned_board" && !triggerPrefs.ftue_added_board) {
+        setTriggerPrefs({ ftue_added_board: true })
       }
+      if ((predicate === "competed_at" || predicate === "spectated_at" || predicate === "rode_at") && !triggerPrefs.ftue_added_event) {
+        setTriggerPrefs({ ftue_added_event: true })
+      }
+      if (predicate === "rode_with" && !triggerPrefs.ftue_connected_person) {
+        setTriggerPrefs({ ftue_connected_person: true })
+      }
+    }
 
-      // Check milestones (fire after a brief delay so contextual fires first)
+    // Milestone celebrations — gated by both the persistent triggerPrefs flag
+    // AND a real in-session count increase, so async-arrival of pre-existing
+    // claims doesn't accidentally trip them on first load.
+    if (prev !== null && count > prev) {
       const milestoneDelay = 1200
       if (count === 1 && !triggerPrefs.milestone_first_shown) {
         setTimeout(() => {
@@ -417,19 +448,41 @@ export default function ProfilePage() {
     }
 
     prevClaimCountRef.current = count
-  }, [personClaims.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [personClaims.length, activePersonId, catalogLoaded]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Detect new story additions and fire celebration + step tracking
+  // Detect new story additions and fire celebration + step tracking.
+  //
+  // Same async-load bug as the claims effect above: the stories fetch
+  // resolves AFTER the first effect tick seeds the ref, so every visit
+  // appeared to be a "new story added". Also note that `stories` includes
+  // BOTH authored-by-me and tagged-in-me, so before this fix any time
+  // another user tagged Jay in a story, his next /profile visit would
+  // celebrate the tagged-in story as if he'd authored it. Same id-based
+  // persistence pattern as claims fixes both cases.
   const prevStoriesCountRef = useRef<number | null>(null)
   useEffect(() => {
+    if (!isAuthUser(activePersonId)) return
+
+    const existingSeen = readSeenIds(activePersonId, "story")
     const count = stories.length
-    const prev  = prevStoriesCountRef.current
-    if (prev === null) { prevStoriesCountRef.current = count; return }
-    if (count > prev) {
+
+    if (existingSeen === null) {
+      writeSeenIds(activePersonId, "story", new Set(stories.map((s) => s.id)))
+      prevStoriesCountRef.current = count
+      return
+    }
+
+    const unseen = stories.filter((s) => !existingSeen.has(s.id))
+    if (unseen.length > 0) {
+      const next = new Set(existingSeen)
+      for (const s of unseen) next.add(s.id)
+      writeSeenIds(activePersonId, "story", next)
+
       if (!triggerPrefs.ftue_shared_story) {
         setTriggerPrefs({ ftue_shared_story: true })
       }
-      const latestStory = stories[0]
+      // stories[] is sorted desc by story_date, so unseen[0] is the newest.
+      const latestStory = unseen[0]
       queueCelebration({
         tier: 2,
         icon: "📖",
@@ -439,8 +492,9 @@ export default function ProfilePage() {
         contentType: "story",
       })
     }
+
     prevStoriesCountRef.current = count
-  }, [stories.length]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [stories.length, activePersonId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const homeResort = person?.home_resort_id
     ? PLACES.find((p) => p.id === (person as { home_resort_id?: string }).home_resort_id)
