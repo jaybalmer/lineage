@@ -3,7 +3,8 @@
 import { useState, useEffect, useMemo } from "react"
 import { Nav } from "@/components/ui/nav"
 import { CLAIMS, PEOPLE, getPlaceById, getEventById } from "@/lib/mock-data"
-import { useLineageStore, getAllClaims } from "@/store/lineage-store"
+import { useLineageStore, getAllClaims, isAuthUser } from "@/store/lineage-store"
+import { supabase } from "@/lib/supabase"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
@@ -126,9 +127,11 @@ function ConnectionCard({
 export default function ConnectionsPage() {
   const {
     activePersonId,
+    authReady,
     membership,
     sessionClaims,
     dbClaims,
+    setDbClaims,
     deletedClaimIds,
     claimOverrides,
     catalog,
@@ -150,12 +153,40 @@ export default function ConnectionsPage() {
     }
   }
 
+  // Load this user's own claims into the store. The connection lists derive from
+  // getAllClaims(), which reads dbClaims; previously only the profile page loaded
+  // dbClaims, so landing here first showed an empty page until a later visit.
+  const [claimsLoaded, setClaimsLoaded] = useState(false)
+
+  useEffect(() => {
+    if (!authReady) return
+    if (!isAuthUser(activePersonId)) {
+      setClaimsLoaded(true)
+      return
+    }
+    let cancelled = false
+    supabase
+      .from("claims_public")
+      .select("*")
+      .eq("subject_id", activePersonId)
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (!error && data) setDbClaims(data as Claim[])
+        setClaimsLoaded(true)
+      })
+    return () => { cancelled = true }
+  }, [authReady, activePersonId, setDbClaims])
+
   const isMember = membership.tier !== "free"
 
-  // Real claims for the logged-in user (DB + session, with deletions/overrides applied)
+  // Real claims for the logged-in user (DB + session, with deletions/overrides applied).
+  // Held empty until authReady so a signed-in user never briefly sees the mock graph
+  // that getAllClaims() returns while activePersonId is still resolving.
   const myClaims = useMemo(
-    () => getAllClaims(sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId),
-    [sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId]
+    () => authReady
+      ? getAllClaims(sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId)
+      : [],
+    [authReady, sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId]
   )
 
   // Direct rode_with connections
@@ -276,13 +307,21 @@ export default function ConnectionsPage() {
           </div>
         )}
 
-        {/* Empty state */}
-        {totalConnections === 0 && (
+        {/* Loading state: own claims still resolving, nothing to show yet */}
+        {totalConnections === 0 && !claimsLoaded && (
+          <div className="text-center py-16 text-muted">
+            <div className="mb-4 flex justify-center"><BrandMark size={36} /></div>
+            <p className="text-sm text-muted">Loading your connections...</p>
+          </div>
+        )}
+
+        {/* Empty state: claims loaded, genuinely no overlaps yet */}
+        {totalConnections === 0 && claimsLoaded && (
           <div className="text-center py-16 text-muted">
             <div className="mb-4 flex justify-center"><BrandMark size={36} /></div>
             <p className="text-sm font-medium text-foreground mb-1">No connections yet</p>
             <p className="text-xs text-muted max-w-sm mx-auto">
-              Add places you&apos;ve ridden, events you&apos;ve competed at, or riders you&apos;ve ridden with — and anyone who shares those moments will appear here.
+              Add places you&apos;ve ridden, events you&apos;ve competed at, or riders you&apos;ve ridden with, and anyone who shares those moments will appear here.
             </p>
           </div>
         )}
