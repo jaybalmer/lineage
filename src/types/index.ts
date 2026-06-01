@@ -133,6 +133,10 @@ export type PersonRedirectMap = Record<string, PersonRedirectEntry>
 
 // ─── Community ──────────────────────────────────────────────────────────────
 
+export type CommunityType = "interest" | "place"
+export type SchemaNoun = "people" | "places" | "events" | "boards" | "brands" | "stories"
+export type NounMap = Partial<Record<SchemaNoun, string>>
+
 export interface Community {
   id: string
   slug: string
@@ -141,6 +145,8 @@ export interface Community {
   status: CommunityLaunchStatus
   sort_order: number
   created_at?: string
+  noun_map: NounMap
+  type: CommunityType
 }
 export type PlaceType = "resort" | "shop" | "zone" | "city" | "venue"
 export type OrgType = "brand" | "shop" | "team" | "magazine" | "event-series"
