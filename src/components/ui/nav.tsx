@@ -1,327 +1,78 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useRef } from "react"
 import Link from "next/link"
-import { usePathname, useRouter } from "next/navigation"
-import { cn } from "@/lib/utils"
+import { usePathname } from "next/navigation"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { getPersonById } from "@/lib/mock-data"
-import { ThemeToggle } from "@/components/ui/theme-toggle"
-import { getInitials } from "@/components/ui/rider-avatar"
-import { supabase } from "@/lib/supabase"
+import { getCommunityBySlug } from "@/lib/community"
+import type { Community } from "@/types"
+import { LensRow } from "@/components/ui/nav/lens-row"
+import { CategoryRow } from "@/components/ui/nav/category-row"
+import { CommunityAvatarPill } from "@/components/ui/nav/community-avatar-pill"
+import { CommunitySwitcher } from "@/components/ui/nav/community-switcher"
+import { AvatarDropdown, type AvatarDropdownProps } from "@/components/ui/nav/avatar-dropdown"
 
-const TIER_BADGE: Record<string, { label: string; color: string; symbol: string }> = {
-  annual:   { label: "MEMBER",      color: "#f59e0b", symbol: "◈" },
-  lifetime: { label: "LIFETIME",    color: "#8b5cf6", symbol: "◆" },
-  founding: { label: "FOUNDING ✦",  color: "#f59e0b", symbol: "✦" },
-}
-
-/** Base paths for community-scoped nav links (prefixed at render time) */
-const PRIMARY_NAV_PATHS = [
-  { path: "/profile",     label: "Timeline" },
-  { path: "/feed",        label: "Feed" },
-  { path: "/connections", label: "Connections" },
-  { path: "/collective",  label: "Collective" },
-]
-
-const SECONDARY_NAV_PATHS: { path: string; label: string; community: boolean }[] = [
-  { path: "/people",  label: "Riders",  community: false },
-  { path: "/events",  label: "Events",  community: true  },
-  { path: "/boards",  label: "Boards",  community: true  },
-  { path: "/brands",  label: "Brands",  community: true  },
-  { path: "/places",  label: "Places",  community: true  },
-  { path: "/stories", label: "Stories", community: true  },
-]
-
-/** Check if pathname matches a nav link (accounting for community prefix) */
-function isActive(navHref: string, pathname: string) {
-  if (navHref.endsWith("/profile")) {
-    return pathname === navHref || pathname.startsWith(navHref + "/")
-  }
-  return pathname.startsWith(navHref)
-}
-
-// ─── Avatar dropdown — isolated component so each desktop/mobile instance
-//     has its own ref and state (avoids the shared-ref-rendered-twice bug) ────
-
-interface AvatarDropdownProps {
-  initial:           string
-  displayName:       string
-  tier:              string
-  totalTokens:       number
-  pendingTagCount:   number
-}
-
-function AvatarDropdown({ initial, displayName, tier, totalTokens, pendingTagCount }: AvatarDropdownProps) {
-  const path     = usePathname()
-  const router   = useRouter()
-  const [open, setOpen] = useState(false)
-  const ref      = useRef<HTMLDivElement>(null)
-  const tierBadge = TIER_BADGE[tier] ?? null
-
-  async function handleSignOut() {
-    setOpen(false)
-    const { setActivePersonId, setProfileOverride } = useLineageStore.getState()
-    await supabase.auth.signOut()
-    setActivePersonId("")
-    setProfileOverride({})
-    router.push("/")
-  }
-
-  // Close when the route changes (navigation completed)
-  useEffect(() => { setOpen(false) }, [path])
-
-  // Close on outside mousedown
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
-  }, [])
-
-  return (
-    <div ref={ref} className="relative flex-shrink-0">
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="flex items-center gap-1.5 rounded-full focus:outline-none relative"
-        aria-label="User menu"
-      >
-        <div className="w-7 h-7 rounded-full bg-foreground flex items-center justify-center text-xs font-semibold text-background hover:bg-foreground/80 transition-colors">
-          {getInitials(displayName || "?")}
-        </div>
-        {pendingTagCount > 0 && (
-          <span
-            className="absolute -top-1 -right-1 inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full bg-blue-600 text-white"
-            style={{ fontSize: 9, fontWeight: 700, lineHeight: 1 }}
-            aria-label={`${pendingTagCount} pending tags`}
-          >
-            {pendingTagCount > 99 ? "99+" : pendingTagCount}
-          </span>
-        )}
-        {tierBadge && (
-          <span className="hidden sm:inline px-1.5 py-0.5 rounded-full"
-            style={{ background: `${tierBadge.color}20`, color: tierBadge.color, fontSize: 8, letterSpacing: 0.5, fontWeight: 700 }}>
-            {tierBadge.label}
-          </span>
-        )}
-      </button>
-
-      {open && (
-        <div
-          className="absolute right-0 top-full mt-2 w-52 bg-surface border border-border-default rounded-xl shadow-lg overflow-hidden z-50"
-          style={{ fontFamily: "var(--font-body)" }}
-        >
-          {/* Name row */}
-          <div className="px-4 py-3 border-b border-border-default">
-            <div className="text-foreground font-semibold" style={{ fontSize: 12 }}>
-              {displayName || "Your Profile"}
-            </div>
-            {tierBadge ? (
-              <div style={{ fontSize: 9, color: tierBadge.color, marginTop: 2 }}>
-                {tierBadge.symbol} {tierBadge.label}
-              </div>
-            ) : (
-              <div className="text-muted" style={{ fontSize: 9, marginTop: 2 }}>Free rider</div>
-            )}
-          </div>
-
-          {/* Links */}
-          <Link href={`/${useLineageStore.getState().activeCommunitySlug}/profile`}
-            className="flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
-            style={{ fontSize: 11 }}>
-            My Timeline
-          </Link>
-          <Link href="/me/tags"
-            className="flex items-center justify-between px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
-            style={{ fontSize: 11 }}>
-            <span>Tags</span>
-            {pendingTagCount > 0 && (
-              <span
-                className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-blue-600 text-white"
-                style={{ fontSize: 9, fontWeight: 700 }}
-              >
-                {pendingTagCount > 99 ? "99+" : pendingTagCount}
-              </span>
-            )}
-          </Link>
-          <Link href="/account/membership"
-            className="flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
-            style={{ fontSize: 11 }}>
-            Membership
-          </Link>
-
-          <div className="border-t border-border-default" />
-
-          {tier === "free" ? (
-            <Link href="/membership"
-              className="flex items-center justify-between px-4 py-2.5 hover:bg-surface-hover transition-colors"
-              style={{ fontSize: 10, color: "#f59e0b" }}>
-              <span>Become a member</span>
-              <span>→</span>
-            </Link>
-          ) : (
-            <Link href="/account/membership"
-              className="flex items-center justify-between px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
-              style={{ fontSize: 10 }}>
-              <span>{totalTokens} tokens</span>
-              <span className="text-green-500" style={{ fontSize: 9 }}>● Revenue share active</span>
-            </Link>
-          )}
-
-          <div className="border-t border-border-default" />
-
-          <button
-            onClick={handleSignOut}
-            className="w-full flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
-            style={{ fontSize: 11 }}
-          >
-            Sign out
-          </button>
-        </div>
-      )}
-    </div>
-  )
-}
-
-/** Primary nav paths for Row 2 (includes compare which is global) */
-const ROW2_NAV_PATHS = [
-  { path: "/profile",     label: "Timeline",    community: true },
-  { path: "/compare",     label: "Compare",     community: false },
-  { path: "/connections", label: "Connects",    community: true },
-  { path: "/feed",        label: "Feed",        community: true },
-  { path: "/collective",  label: "Collective",  community: true },
-]
-
-/** Community dot colors — gold for active, muted for coming soon */
-const COMMUNITY_DOT_COLOR: Record<string, string> = {
-  snowboarding: "#3b82f6",
-  surf: "#78716C",
-  skate: "#78716C",
-  ski: "#78716C",
-  mtb: "#78716C",
-}
-
-function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug, communities }: {
+function AppNav({ path, isAuth, dropdownProps, communitySlug, communities }: {
   path: string
   isAuth: boolean
-  isEditor: boolean
   dropdownProps: AvatarDropdownProps
   communitySlug: string
-  communities: { slug: string; name: string; emoji?: string; status: string }[]
+  communities: Community[]
 }) {
-  /** Prefix a path with the community slug */
-  const c = (basePath: string) => `/${communitySlug}${basePath}`
+  /** Inside a community route (e.g. /snowboarding or /snowboarding/feed). The
+   *  proxy redirects bare top-level routes to the community form before render,
+   *  so by here the URL is already community-prefixed when in scope. */
+  const inCommunity = path.startsWith(`/${communitySlug}/`) || path === `/${communitySlug}`
 
-  /** Are we inside a community route? (e.g. /snowboarding/feed) */
-  const inCommunity = path.startsWith(`/${communitySlug}/`)
-  /** Are we on the root landing page? */
-  const isLanding = path === "/"
+  // At global scope activeCommunity is undefined so category labels fall back to
+  // the global defaults (People, not Riders).
+  const activeCommunity = inCommunity ? getCommunityBySlug(communitySlug, communities) : undefined
 
   return (
     <div>
-      {/* Row 1: logo + avatar */}
-      <div className="flex items-center h-12 px-4 gap-3">
+      {/* Row 1: title */}
+      <div className="flex items-center h-12 px-4 gap-2">
         <Link href="/" className="font-black text-xl text-foreground tracking-tight flex-shrink-0">
           Linestry<span className="inline-block rounded-full bg-accent" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em" }} />
         </Link>
         {inCommunity && (
-          <Link href={`/${communitySlug}`} className="flex items-center gap-1.5 flex-shrink-0">
-            <span className="text-foreground/40 font-black text-xl" style={{ letterSpacing: "-0.03em" }}>/</span>
-            <span className="font-black text-xl text-foreground tracking-tight">{communitySlug}</span>
-          </Link>
+          <>
+            <span className="text-foreground/40 font-black text-xl flex-shrink-0" style={{ letterSpacing: "-0.03em" }}>/</span>
+            <Link href={`/${communitySlug}`} className="flex items-center gap-1.5 min-w-0 flex-shrink">
+              <CommunityAvatarPill community={activeCommunity} slug={communitySlug} size="sm" />
+              <span className="font-black text-xl text-foreground tracking-tight truncate">
+                {activeCommunity?.name ?? communitySlug}
+              </span>
+            </Link>
+          </>
         )}
+        <CommunitySwitcher activeCommunitySlug={communitySlug} communities={communities} />
         <div className="flex-1" />
-        <div className="flex items-center gap-4 flex-shrink-0">
-          <ThemeToggle />
-          {isAuth ? (
-            <AvatarDropdown {...dropdownProps} />
-          ) : (
-            <Link href="/auth/signin"
-              className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent-strong transition-colors">
-              Sign in
-            </Link>
-          )}
-        </div>
-      </div>
-
-      {/* Row 2: primary nav — scrollable */}
-      <div className="flex items-center px-4 gap-1 overflow-x-auto border-t border-border-default py-1.5 scrollbar-none">
-        {ROW2_NAV_PATHS.map(({ path: navPath, label, community }) => {
-          const href = community ? c(navPath) : navPath
-          return (
-            <Link key={navPath} href={href} className={cn(
-              "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
-              isActive(href, path)
-                ? "bg-accent-strong text-white"
-                : "text-muted hover:text-foreground hover:bg-surface-hover"
-            )}>
-              {label}
-            </Link>
-          )
-        })}
-        {isEditor && (
-          <Link href="/admin" className={cn(
-            "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
-            isActive("/admin", path)
-              ? "bg-accent-strong text-white"
-              : "text-muted hover:text-foreground hover:bg-surface-hover"
-          )}>
-            Editor
+        {isAuth ? (
+          <AvatarDropdown {...dropdownProps} />
+        ) : (
+          <Link href="/auth/signin"
+            className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent-strong transition-colors flex-shrink-0">
+            Sign in
           </Link>
         )}
       </div>
 
-      {/* Row 3: context-dependent — community nodes OR community list */}
-      <div className="flex items-center px-4 gap-1 overflow-x-auto border-t border-border-default py-1.5 scrollbar-none">
-        {(inCommunity || path === `/${communitySlug}` || path.startsWith("/people")) ? (
-          /* Inside a community: show entity nav (Riders, Events, ...) */
-          SECONDARY_NAV_PATHS.map(({ path: navPath, label, community }) => {
-            const href = community ? c(navPath) : navPath
-            return (
-              <Link key={navPath} href={href} className={cn(
-                "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap",
-                isActive(href, path)
-                  ? "bg-surface-active text-foreground"
-                  : "text-muted hover:text-foreground hover:bg-surface-hover"
-              )}>
-                {label}
-              </Link>
-            )
-          })
-        ) : (
-          /* Landing page or global route: show communities list */
-          communities.map((comm) => {
-            const dotColor = COMMUNITY_DOT_COLOR[comm.slug] ?? "#78716C"
-            const href = `/${comm.slug}`
-            const isComingSoon = comm.status === "coming_soon"
-            return (
-              <Link
-                key={comm.slug}
-                href={isComingSoon ? "#" : href}
-                onClick={isComingSoon ? (e: React.MouseEvent) => e.preventDefault() : undefined}
-                className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs transition-colors whitespace-nowrap flex items-center gap-1.5",
-                  isComingSoon
-                    ? "text-foreground/30 cursor-default"
-                    : isActive(href, path)
-                      ? "bg-surface-active text-foreground"
-                      : "text-muted hover:text-foreground hover:bg-surface-hover"
-                )}
-              >
-                <div
-                  className="w-2 h-2 rounded-full flex-shrink-0"
-                  style={{ background: isComingSoon ? `${dotColor}40` : dotColor }}
-                />
-                <span>{comm.name}</span>
-                {isComingSoon && (
-                  <span className="text-[9px] uppercase tracking-wider text-foreground/30 ml-0.5">soon</span>
-                )}
-              </Link>
-            )
-          })
-        )}
-      </div>
+      {/* Community signal: 3px accent strip in-community, standard divider at global */}
+      {inCommunity ? (
+        <div className="h-[3px] bg-accent" />
+      ) : (
+        <div className="border-t border-border-default" />
+      )}
+
+      {/* Row 2: lens */}
+      <LensRow communitySlug={communitySlug} pathname={path} isAuth={isAuth} />
+
+      <div className="border-t border-border-default" />
+
+      {/* Row 3: categories */}
+      <CategoryRow communitySlug={communitySlug} pathname={path} activeCommunity={activeCommunity} />
     </div>
   )
 }
@@ -331,8 +82,8 @@ function AppNav({ path, isAuth, isEditor, dropdownProps, communitySlug, communit
 export function Nav() {
   const path = usePathname()
   const { activePersonId, profileOverride, loadDbEntities, membership, activeCommunitySlug, communities, pendingTagCount } = useLineageStore()
-  const basePerson    = getPersonById(activePersonId)
-  const loadedForId   = useRef<string | null>(null)
+  const basePerson  = getPersonById(activePersonId)
+  const loadedForId = useRef<string | null>(null)
 
   // Load shared entity catalog + riding days once per auth session
   useEffect(() => {
@@ -343,20 +94,23 @@ export function Nav() {
   }, [activePersonId, loadDbEntities])
 
   const isAuth      = isAuthUser(activePersonId)
-  const isEditor    = membership.is_editor
   const displayName = profileOverride.display_name ?? basePerson?.display_name ?? ""
-  const initial     = displayName[0]?.toUpperCase() ?? "?"
   const tier        = membership.tier
   const totalTokens = membership.token_balance.founder * 2 + membership.token_balance.member + membership.token_balance.contribution
 
-  const dropdownProps = { initial, displayName, tier, totalTokens, pendingTagCount }
+  const dropdownProps: AvatarDropdownProps = {
+    displayName,
+    tier,
+    totalTokens,
+    pendingTagCount,
+    isEditor: membership.is_editor,
+  }
 
   return (
     <nav className="border-b border-border-default bg-bg-nav sticky top-0 z-50">
       <AppNav
         path={path}
         isAuth={isAuth}
-        isEditor={isEditor}
         dropdownProps={dropdownProps}
         communitySlug={activeCommunitySlug}
         communities={communities}
