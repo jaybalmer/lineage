@@ -280,6 +280,15 @@ export default function ProfilePage() {
   const [timelineOrder,  setTimelineOrder]     = useState<"asc" | "desc">("desc")
   const [stories,        setStories]           = useState<Story[]>([])
 
+  // Loaded flags for the async profile fetches. The celebration effects gate
+  // on these so the first-visit seen-id high-water seed captures the full
+  // dbClaims/stories set — without them, the seed runs while both arrays are
+  // still empty and the next render fires a celebration for every entry that
+  // just arrived. Set true on both success and error so a failed fetch can't
+  // keep the celebration logic permanently disabled.
+  const [claimsLoaded,  setClaimsLoaded]  = useState(false)
+  const [storiesLoaded, setStoriesLoaded] = useState(false)
+
   // Track previous claim count to detect new additions
   const prevClaimCountRef = useRef<number | null>(null)
   const welcomeFiredRef   = useRef(false)
@@ -336,29 +345,40 @@ export default function ProfilePage() {
     // PB-009 Phase 1: own-profile read through claims_public. In Phase 2,
     // pending tags addressed to this user will instead surface in /me/tags;
     // for Phase 1 every row is 'approved' so behaviour is unchanged.
+    //
+    // claimsLoaded flips true once this query settles (success or error) so
+    // the celebration effect below can wait for dbClaims to arrive before
+    // seeding its first-visit high-water mark.
     supabase
       .from("claims_public")
       .select("*")
       .eq("subject_id", activePersonId)
       .then(({ data, error }) => {
         if (!error && data) setDbClaims(data as Claim[])
+        setClaimsLoaded(true)
       })
 
     // PB-009 Phase 2: own profile shows stories authored by + tagged-in.
     // Tagged-in reads through story_riders_public, so pending tags stay hidden
     // until approved via /me/tags.
+    //
+    // Same loaded-flag pattern as claims — storiesLoaded gates the story
+    // celebration so the seed sees the full authored+tagged-in set on first
+    // visit instead of an empty array.
     Promise.all([
       fetch(`/api/stories?author_id=${activePersonId}&limit=100`).then((r) => r.json()).catch(() => []),
       fetch(`/api/stories?rider_id=${activePersonId}&limit=100`).then((r) => r.json()).catch(() => []),
-    ]).then(([authored, taggedIn]) => {
-      const byId = new Map<string, Story>()
-      for (const s of (Array.isArray(authored)  ? authored  : []) as Story[]) byId.set(s.id, s)
-      for (const s of (Array.isArray(taggedIn)  ? taggedIn  : []) as Story[]) byId.set(s.id, s)
-      const merged = Array.from(byId.values()).sort((a, b) =>
-        (b.story_date ?? "").localeCompare(a.story_date ?? "")
-      )
-      setStories(merged)
-    })
+    ])
+      .then(([authored, taggedIn]) => {
+        const byId = new Map<string, Story>()
+        for (const s of (Array.isArray(authored)  ? authored  : []) as Story[]) byId.set(s.id, s)
+        for (const s of (Array.isArray(taggedIn)  ? taggedIn  : []) as Story[]) byId.set(s.id, s)
+        const merged = Array.from(byId.values()).sort((a, b) =>
+          (b.story_date ?? "").localeCompare(a.story_date ?? "")
+        )
+        setStories(merged)
+      })
+      .finally(() => setStoriesLoaded(true))
   }, [activePersonId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const allClaims    = getAllClaims(sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId)
@@ -370,14 +390,19 @@ export default function ProfilePage() {
   // baseline. The baseline was seeded on the first effect tick, BEFORE the
   // async supabase fetch for dbClaims resolved, so every page load went
   // (small initial count) -> (full count) and re-fired the most-recent
-  // claim's celebration. The fix is two layers:
+  // claim's celebration. The fix is three layers:
   //  1. Persist a per-user set of "seen" claim IDs in localStorage so we
   //     can tell async-arrival from a fresh add.
   //  2. Wait for catalogLoaded before doing any work, so entity names
-  //     resolve and the high-water seeding sees the full claim set.
+  //     resolve when we build the celebration payload.
+  //  3. Wait for claimsLoaded before seeding the high-water mark on a
+  //     first-ever visit. Without (3), the seed captures the (empty)
+  //     pre-fetch personClaims, then the post-fetch render treats every
+  //     loaded claim as unseen and mis-fires one celebration on visit 1.
   useEffect(() => {
     if (!isAuthUser(activePersonId)) return
     if (!catalogLoaded) return
+    if (!claimsLoaded) return
 
     const existingSeen = readSeenIds(activePersonId, "claim")
     const count        = personClaims.length
@@ -448,7 +473,7 @@ export default function ProfilePage() {
     }
 
     prevClaimCountRef.current = count
-  }, [personClaims.length, activePersonId, catalogLoaded]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [personClaims.length, activePersonId, catalogLoaded, claimsLoaded]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // Detect new story additions and fire celebration + step tracking.
   //
@@ -458,10 +483,12 @@ export default function ProfilePage() {
   // BOTH authored-by-me and tagged-in-me, so before this fix any time
   // another user tagged Jay in a story, his next /profile visit would
   // celebrate the tagged-in story as if he'd authored it. Same id-based
-  // persistence pattern as claims fixes both cases.
+  // persistence pattern as claims fixes both cases — and the same
+  // storiesLoaded gate keeps the first-visit seed honest.
   const prevStoriesCountRef = useRef<number | null>(null)
   useEffect(() => {
     if (!isAuthUser(activePersonId)) return
+    if (!storiesLoaded) return
 
     const existingSeen = readSeenIds(activePersonId, "story")
     const count = stories.length
@@ -494,7 +521,7 @@ export default function ProfilePage() {
     }
 
     prevStoriesCountRef.current = count
-  }, [stories.length, activePersonId]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [stories.length, activePersonId, storiesLoaded]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const homeResort = person?.home_resort_id
     ? PLACES.find((p) => p.id === (person as { home_resort_id?: string }).home_resort_id)
