@@ -15,7 +15,7 @@ import { BulkInvitePrompt } from "@/components/ui/bulk-invite-prompt"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { readSeenIds, writeSeenIds } from "@/lib/seen-celebrations"
-import type { Claim, PrivacyLevel, Story, TriggerPrefs } from "@/types"
+import type { Claim, CelebrationPayload, PrivacyLevel, Story } from "@/types"
 
 // ─── FTUE helpers ─────────────────────────────────────────────────────────────
 
@@ -146,118 +146,55 @@ function getMilestoneCelebration(count: number) {
   return null
 }
 
-// ─── FTUE first-session step guide ───────────────────────────────────────────
+// ─── Board-add milestone celebration ─────────────────────────────────────────
+// A rider's first and second board land a Tier-4 modal that frames their whole
+// timeline; the third board onward falls back to the Tier-2 quiver toast in
+// getCelebrationForNewClaim. The overlap stat needs the stats route, so this is
+// async and queues once the fetch settles (the celebration queue tolerates the
+// short delay).
 
-const FTUE_STEPS = [
-  { key: "ftue_added_board",     label: "Add your first board",     hint: "What did you ride first?" },
-  { key: "ftue_added_event",     label: "Tag an event or contest",  hint: "Were you at anything?" },
-  { key: "ftue_connected_person", label: "Connect with a rider",    hint: "Who did you ride with?" },
-  { key: "ftue_shared_story",    label: "Share a story",            hint: "What's your favorite memory?" },
-] as const
+async function queueBoardMilestoneCelebration(
+  claim: Claim,
+  userId: string,
+  boards: { id: string; brand: string; model: string; model_year: number }[],
+  ridingSince: number | undefined,
+  queue: (payload: CelebrationPayload) => void,
+) {
+  const board = boards.find((b) => b.id === claim.object_id)
+  const boardLabel = board ? `${board.brand} ${board.model}` : "this board"
+  const currentYear = new Date().getFullYear()
+  const yearsRiding = ridingSince ? currentYear - ridingSince : null
 
-type FtueStepKey = typeof FTUE_STEPS[number]["key"]
+  let overlapCount = 0
+  try {
+    const res = await fetch(`/api/stats/user?userId=${userId}&boardId=${claim.object_id}`)
+    if (res.ok) {
+      const stats = await res.json()
+      overlapCount = typeof stats?.board_overlap_count === "number" ? stats.board_overlap_count : 0
+    }
+  } catch {
+    // The overlap line is a bonus; a failed stats fetch just drops it.
+  }
 
-function FtueGuide({ triggerPrefs, onAddClaim, onAddStory }: {
-  triggerPrefs: TriggerPrefs
-  onAddClaim: () => void
-  onAddStory: () => void
-}) {
-  const { setTriggerPrefs } = useLineageStore()
+  const body = ridingSince && yearsRiding && yearsRiding > 0
+    ? `You just connected ${ridingSince} to ${currentYear}. That's a ${yearsRiding}-year timeline.`
+    : "Every board you've ridden is part of your story."
 
-  if (triggerPrefs.ftue_complete) return null
+  const stat = overlapCount > 0
+    ? overlapCount === 1
+      ? `1 other member also rides the ${boardLabel}.`
+      : `${overlapCount} other members also ride the ${boardLabel}.`
+    : undefined
 
-  const completedKeys = FTUE_STEPS.filter((s) => triggerPrefs[s.key]).map((s) => s.key)
-  const completedCount = completedKeys.length
-  const totalCount = FTUE_STEPS.length
-
-  if (completedCount === totalCount) return null
-
-  const progressPct = Math.round((completedCount / totalCount) * 100)
-
-  return (
-    <div style={{
-      marginBottom: 20,
-      padding:      "16px 18px",
-      borderRadius: 12,
-      background:   "#3b82f60A",
-      border:       "1px solid #3b82f628",
-    }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-        <p style={{ margin: 0, fontSize: 12, fontWeight: 700, color: "#1C1917", letterSpacing: "0.06em", textTransform: "uppercase", fontFamily: "var(--font-body)" }}>
-          First steps
-        </p>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <p style={{ margin: 0, fontSize: 11, color: "#78716C", fontFamily: "var(--font-body)" }}>
-            {completedCount} of {totalCount}
-          </p>
-          <button
-            onClick={() => setTriggerPrefs({ ftue_complete: true })}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "#78716C", fontSize: 14, lineHeight: 1, padding: "0 2px" }}
-          >
-            ×
-          </button>
-        </div>
-      </div>
-
-      {/* Progress bar */}
-      <div style={{ height: 3, background: "#3b82f620", borderRadius: 2, marginBottom: 14, overflow: "hidden" }}>
-        <div style={{ height: "100%", width: `${progressPct}%`, background: "#3b82f6", borderRadius: 2, transition: "width 0.4s ease" }} />
-      </div>
-
-      {/* Steps */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {FTUE_STEPS.map((step) => {
-          const done = Boolean(triggerPrefs[step.key as FtueStepKey])
-          const isStory = step.key === "ftue_shared_story"
-          return (
-            <div key={step.key} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{
-                width: 18, height: 18, borderRadius: "50%", flexShrink: 0,
-                background:  done ? "#3b82f6" : "transparent",
-                border:      done ? "none" : "1.5px solid #3b82f644",
-                display:     "flex", alignItems: "center", justifyContent: "center",
-                transition:  "background 0.3s ease",
-              }}>
-                {done && <span style={{ fontSize: 10, color: "#FFFFFF", fontWeight: 700 }}>✓</span>}
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ fontSize: 12, color: done ? "#78716C" : "#1C1917", textDecoration: done ? "line-through" : "none", transition: "color 0.2s" }}>
-                  {step.label}
-                </span>
-                {!done && (
-                  <span style={{ fontSize: 11, color: "#78716C", marginLeft: 6 }}>
-                    — {step.hint}
-                  </span>
-                )}
-              </div>
-              {!done && (
-                <button
-                  onClick={isStory ? onAddStory : onAddClaim}
-                  style={{
-                    padding:      "3px 10px",
-                    borderRadius: 6,
-                    fontSize:     11,
-                    fontWeight:   500,
-                    cursor:       "pointer",
-                    border:       "1px solid #3b82f644",
-                    background:   "transparent",
-                    color:        "#2563EB",
-                    flexShrink:   0,
-                    transition:   "background 0.15s",
-                  }}
-                  onMouseEnter={(e) => { (e.target as HTMLElement).style.background = "#3b82f618" }}
-                  onMouseLeave={(e) => { (e.target as HTMLElement).style.background = "transparent" }}
-                >
-                  Add
-                </button>
-              )}
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
+  queue({
+    tier: 4,
+    icon: "🏂",
+    title: `Nice. The ${boardLabel}, solid choice.`,
+    body,
+    stat,
+    accentColor: "#3b82f6",
+    contentType: "board",
+  })
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -279,6 +216,15 @@ export default function ProfilePage() {
   const [playingTimeline, setPlayingTimeline]  = useState(false)
   const [timelineOrder,  setTimelineOrder]     = useState<"asc" | "desc">("desc")
   const [stories,        setStories]           = useState<Story[]>([])
+  const [claimDefaultFilter, setClaimDefaultFilter] = useState<string>("all")
+
+  // First-visit timeline entrance (Task 4). Latched once for the page session:
+  // it turns on after the welcome explosion has been seen and the entrance has
+  // not played yet, then we persist timeline_animated so it never replays.
+  // FeedView owns the bake-off that ends the reveal, so we keep passing the
+  // latched value rather than flipping the prop back off.
+  const entranceLatchedRef = useRef(false)
+  const [animateEntrance, setAnimateEntrance] = useState(false)
 
   // Loaded flags for the async profile fetches. The celebration effects gate
   // on these so the first-visit seen-id high-water seed captures the full
@@ -311,6 +257,20 @@ export default function ProfilePage() {
       return () => clearTimeout(t)
     }
   }, [authReady, activePersonId, triggerPrefs.welcome_pending, triggerPrefs.welcome_celebration_shown, setShowWelcomeCelebration])
+
+  // Latch the first-visit timeline entrance once the welcome explosion has been
+  // shown. We persist timeline_animated immediately so an interrupted session
+  // can't replay it; the latched animateEntrance keeps FeedView animating to
+  // completion regardless of the prefs flip.
+  useEffect(() => {
+    if (entranceLatchedRef.current) return
+    if (!isAuthUser(activePersonId)) return
+    if (triggerPrefs.welcome_celebration_shown && !triggerPrefs.timeline_animated) {
+      entranceLatchedRef.current = true
+      setAnimateEntrance(true)
+      setTriggerPrefs({ timeline_animated: true })
+    }
+  }, [activePersonId, triggerPrefs.welcome_celebration_shown, triggerPrefs.timeline_animated, setTriggerPrefs])
 
   const basePerson = getPersonById(activePersonId)
   const person = basePerson
@@ -384,6 +344,11 @@ export default function ProfilePage() {
   const allClaims    = getAllClaims(sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId)
   const personClaims = allClaims.filter((c) => c.subject_id === activePersonId)
 
+  // The glowing current-year prompt only shows until the rider has logged a
+  // small quiver, so it nudges the first board or two and then steps aside.
+  const boardClaimCount    = personClaims.filter((c) => c.predicate === "owned_board").length
+  const showTimelinePrompt = isAuthUser(activePersonId) && boardClaimCount < 2
+
   // Detect new claim additions and fire contextual celebration + milestone checks.
   //
   // Bug history: this used to compare personClaims.length against a useRef
@@ -430,8 +395,15 @@ export default function ProfilePage() {
       // offline session), the rest are still marked seen above so they won't
       // replay later — we just don't spam a stack of toasts.
       const newClaim = unseen[unseen.length - 1]
-      const celebration = getCelebrationForNewClaim(newClaim, count, catalog)
-      queueCelebration(celebration)
+      const boardCount = personClaims.filter((c) => c.predicate === "owned_board").length
+      if (newClaim.predicate === "owned_board" && boardCount <= 2) {
+        // First or second board lands the Tier-4 timeline-framing modal. It is
+        // async (the overlap stat comes from the stats route), so fire and
+        // forget; the celebration queue tolerates the short delay.
+        void queueBoardMilestoneCelebration(newClaim, activePersonId, catalog.boards, person?.riding_since, queueCelebration)
+      } else {
+        queueCelebration(getCelebrationForNewClaim(newClaim, count, catalog))
+      }
 
       // FTUE step tracking — driven by the newest claim's predicate.
       const { predicate } = newClaim
@@ -527,24 +499,6 @@ export default function ProfilePage() {
     ? PLACES.find((p) => p.id === (person as { home_resort_id?: string }).home_resort_id)
     : null
 
-  // Check all FTUE steps complete
-  useEffect(() => {
-    if (triggerPrefs.ftue_complete) return
-    const allDone = FTUE_STEPS.every((s) => Boolean(triggerPrefs[s.key as FtueStepKey]))
-    if (allDone) {
-      setTriggerPrefs({ ftue_complete: true })
-      queueCelebration({
-        tier: 3,
-        icon: "🎉",
-        title: "First session complete",
-        body: "You've added a board, tagged an event, connected with a rider, and shared a story. Your timeline is alive.",
-        nextThread: "Keep building — the more you add, the richer the collective history gets.",
-        accentColor: "#3b82f6",
-        contentType: "milestone",
-      })
-    }
-  }, [triggerPrefs.ftue_added_board, triggerPrefs.ftue_added_event, triggerPrefs.ftue_connected_person, triggerPrefs.ftue_shared_story]) // eslint-disable-line react-hooks/exhaustive-deps
-
   return (
     <div className="min-h-screen bg-background">
       <Nav />
@@ -556,7 +510,10 @@ export default function ProfilePage() {
         />
       )}
       {addingClaim && (
-        <AddClaimModal onClose={() => setAddingClaim(false)} />
+        <AddClaimModal
+          defaultFilter={claimDefaultFilter}
+          onClose={() => { setAddingClaim(false); setClaimDefaultFilter("all") }}
+        />
       )}
       {addingStory && (
         <AddStoryModal
@@ -644,15 +601,6 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* FTUE first-session guide — shown until all steps complete */}
-        {isAuthUser(activePersonId) && (
-          <FtueGuide
-            triggerPrefs={triggerPrefs}
-            onAddClaim={() => setAddingClaim(true)}
-            onAddStory={() => setAddingStory(true)}
-          />
-        )}
-
         {/* Invite-discovery prompt — surfaces unclaimed riders the viewer has tagged */}
         {isAuthUser(activePersonId) && catalogLoaded && (
           <BulkInvitePrompt
@@ -702,6 +650,9 @@ export default function ProfilePage() {
           onStoryAdded={(s) => setStories((prev) => [s, ...prev])}
           onStoryDeleted={(id) => setStories((prev) => prev.filter((s) => s.id !== id))}
           order={timelineOrder}
+          animateEntrance={animateEntrance}
+          showCurrentYearPrompt={showTimelinePrompt}
+          onCurrentYearPromptClick={() => { setClaimDefaultFilter("gear"); setAddingClaim(true) }}
         />
       </div>
     </div>

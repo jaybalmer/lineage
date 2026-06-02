@@ -417,7 +417,10 @@ export interface TriggerPrefs {
   // FTUE celebration system
   welcome_pending?:                  boolean  // set by auth/complete, consumed by profile
   welcome_celebration_shown?:        boolean
-  // First-session step tracking
+  timeline_animated?:                boolean  // first-visit timeline entrance animation has played (gated on welcome_celebration_shown)
+  // First-session step tracking.
+  // Retained for the post-launch floating FTUE bar (P0 plan Task 6); the inline
+  // FtueGuide that set these was removed at launch. Do not delete as dead.
   ftue_added_board?:                 boolean
   ftue_added_event?:                 boolean
   ftue_connected_person?:            boolean
