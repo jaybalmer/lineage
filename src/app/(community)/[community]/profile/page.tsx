@@ -33,7 +33,7 @@ function getCelebrationForNewClaim(claim: Claim, claimCount: number, catalog: {
     const boardName = board ? `${board.brand} ${board.model} '${String(board.model_year).slice(-2)}` : "Your board"
     const isVintage = board && board.model_year < 2005
     const body = isVintage
-      ? `This board is from ${board!.model_year} — you're preserving a piece of snowboard history.`
+      ? `This board is from ${board!.model_year}. You're preserving a piece of snowboard history.`
       : "Every board you've ridden is part of your story."
     return {
       tier: 2 as const,
@@ -119,7 +119,7 @@ function getMilestoneCelebration(count: number) {
   if (count === 1) return {
     tier: 3 as const,
     icon: "🌱",
-    title: "Your first entry — timeline started",
+    title: "Your first entry: timeline started",
     body: "Every epic timeline starts with a single entry. Yours is now on the record.",
     nextThread: "Add 4 more to unlock your founding rider badge.",
     accentColor: "#22c55e",
@@ -128,18 +128,18 @@ function getMilestoneCelebration(count: number) {
   if (count === 5) return {
     tier: 3 as const,
     icon: "⚡",
-    title: "5 entries — your timeline is coming to life",
+    title: "5 entries: your timeline is coming to life",
     body: "You're building something real. 5 entries means the shape of your riding career is starting to show.",
-    nextThread: "Keep going — 10 entries and you're in the top 10% of contributors.",
+    nextThread: "Keep going. 10 entries and you're in the top 10% of contributors.",
     accentColor: "#3b82f6",
     contentType: "milestone" as const,
   }
   if (count === 10) return {
     tier: 3 as const,
     icon: "🔥",
-    title: "10 entries — double digits",
+    title: "10 entries: double digits",
     body: "You're not just a member, you're a contributor. Your timeline is one of the most complete in the community.",
-    nextThread: "Share your profile link — your linestry is worth showing off.",
+    nextThread: "Share your profile link. Your linestry is worth showing off.",
     accentColor: "#f59e0b",
     contentType: "milestone" as const,
   }
@@ -228,7 +228,7 @@ export default function ProfilePage() {
 
   // Loaded flags for the async profile fetches. The celebration effects gate
   // on these so the first-visit seen-id high-water seed captures the full
-  // dbClaims/stories set — without them, the seed runs while both arrays are
+  // dbClaims/stories set. Without them, the seed runs while both arrays are
   // still empty and the next render fires a celebration for every entry that
   // just arrived. Set true on both success and error so a failed fetch can't
   // keep the celebration logic permanently disabled.
@@ -322,7 +322,7 @@ export default function ProfilePage() {
     // Tagged-in reads through story_riders_public, so pending tags stay hidden
     // until approved via /me/tags.
     //
-    // Same loaded-flag pattern as claims — storiesLoaded gates the story
+    // Same loaded-flag pattern as claims: storiesLoaded gates the story
     // celebration so the seed sees the full authored+tagged-in set on first
     // visit instead of an empty array.
     Promise.all([
@@ -393,7 +393,7 @@ export default function ProfilePage() {
       // Fire the contextual celebration only for the latest unseen claim.
       // If multiple landed at once (bulk import, async catch-up after a long
       // offline session), the rest are still marked seen above so they won't
-      // replay later — we just don't spam a stack of toasts.
+      // replay later. We just don't spam a stack of toasts.
       const newClaim = unseen[unseen.length - 1]
       const boardCount = personClaims.filter((c) => c.predicate === "owned_board").length
       if (newClaim.predicate === "owned_board" && boardCount <= 2) {
@@ -405,7 +405,7 @@ export default function ProfilePage() {
         queueCelebration(getCelebrationForNewClaim(newClaim, count, catalog))
       }
 
-      // FTUE step tracking — driven by the newest claim's predicate.
+      // FTUE step tracking, driven by the newest claim's predicate.
       const { predicate } = newClaim
       if (predicate === "owned_board" && !triggerPrefs.ftue_added_board) {
         setTriggerPrefs({ ftue_added_board: true })
@@ -418,7 +418,7 @@ export default function ProfilePage() {
       }
     }
 
-    // Milestone celebrations — gated by both the persistent triggerPrefs flag
+    // Milestone celebrations, gated by both the persistent triggerPrefs flag
     // AND a real in-session count increase, so async-arrival of pre-existing
     // claims doesn't accidentally trip them on first load.
     if (prev !== null && count > prev) {
@@ -455,7 +455,7 @@ export default function ProfilePage() {
   // BOTH authored-by-me and tagged-in-me, so before this fix any time
   // another user tagged Jay in a story, his next /profile visit would
   // celebrate the tagged-in story as if he'd authored it. Same id-based
-  // persistence pattern as claims fixes both cases — and the same
+  // persistence pattern as claims fixes both cases, and the same
   // storiesLoaded gate keeps the first-visit seed honest.
   const prevStoriesCountRef = useRef<number | null>(null)
   useEffect(() => {
@@ -531,7 +531,7 @@ export default function ProfilePage() {
 
       <div className="max-w-3xl mx-auto px-4 py-10">
 
-        {/* PB-009 Phase 2: pending-tag pill — owner-only by virtue of this
+        {/* PB-009 Phase 2: pending-tag pill, owner-only by virtue of this
             page being the active user's own profile (no [id] segment). */}
         {pendingTagCount > 0 && (
           <Link
@@ -560,7 +560,7 @@ export default function ProfilePage() {
           />
         )}
 
-        {/* Token stats — members only */}
+        {/* Token stats: members only */}
         {membership.tier !== "free" && (
           <div className="flex items-center gap-4 mb-4 flex-wrap">
             <Link href="/account/membership"
@@ -601,7 +601,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Invite-discovery prompt — surfaces unclaimed riders the viewer has tagged */}
+        {/* Invite-discovery prompt: surfaces unclaimed riders the viewer has tagged */}
         {isAuthUser(activePersonId) && catalogLoaded && (
           <BulkInvitePrompt
             activePersonId={activePersonId}
@@ -620,7 +620,7 @@ export default function ProfilePage() {
               <div>
                 <p className="text-foreground" style={{ fontSize: 11, lineHeight: 1.7 }}>
                   <strong>You&apos;ve added {personClaims.length} entries to the collective history.</strong><br />
-                  Members earn tokens for every verified entry — including these.
+                  Members earn tokens for every verified entry, including these.
                 </p>
                 <Link href="/membership"
                   className="inline-block mt-2 text-blue-400 hover:text-blue-300 transition-colors"

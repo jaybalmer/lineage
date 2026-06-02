@@ -46,10 +46,11 @@ function BoardPicker({ allBoards, onSelect }: BoardPickerProps) {
     m.toLowerCase().includes(query.toLowerCase())
   )
 
-  const yearsForPair = allBoards
-    .filter((b) => b.brand === brand && b.model === model)
-    .map((b) => b.model_year)
-    .sort((a, z) => z - a)
+  const yearsForPair = [...new Set(
+    allBoards
+      .filter((b) => b.brand === brand && b.model === model)
+      .map((b) => b.model_year)
+  )].sort((a, z) => z - a)
 
   function pickBrand(b: string) {
     setBrand(b); setModel(""); setQuery(""); setStep("model")
@@ -178,7 +179,7 @@ function BoardPicker({ allBoards, onSelect }: BoardPickerProps) {
         )}
         {modelsForBrand.length === 0 && !query.trim() && (
           <div className="px-3 py-2.5 text-xs text-muted">
-            No models yet — type to add the first one
+            No models yet. Type to add the first one
           </div>
         )}
       </div>
@@ -333,7 +334,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
   const [entityId, setEntityId] = useState<string | null>(null)
   const [entityQuery, setEntityQuery] = useState("")
 
-  // Date state — year range (always) + optional specific trip dates
+  // Date state: year range (always) + optional specific trip dates
   const [startYear, setStartYear] = useState("")
   const [endYear, setEndYear] = useState("")
   const [showSpecificDates, setShowSpecificDates] = useState(false)
@@ -370,13 +371,13 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
     setResult("")
   }, [predicate])
 
-  // All people excluding current user — catalog first, then mock fallback
+  // All people excluding current user, catalog first, then mock fallback
   const getAllPeople = (): Person[] => {
     const people = catalog.people.length ? catalog.people : PEOPLE
     return people.filter((p) => p.id !== activePersonId)
   }
 
-  // Get the entity list based on type — use catalog (Supabase) first so IDs
+  // Get the entity list based on type, use catalog (Supabase) first so IDs
   // match what's used during display; fall back to mock-data only if catalog
   // hasn't loaded yet (empty array guard).
   const getEntityList = () => {
@@ -441,7 +442,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
 
   const isEventClaim = predicate === "competed_at" || predicate === "spectated_at" || predicate === "organized_at"
 
-  // For event claims the date comes from the event itself — no year entry needed
+  // For event claims the date comes from the event itself, no year entry needed
   const dateIsReady = isEventClaim
     ? !!entityId
     : showSpecificDates
@@ -505,13 +506,13 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
     // Silent-failures brief Finding #3: when the predicate is rode_at and the
     // user tagged companions, write rode_with edges from the asserter to each
     // companion. Previously this loop wrote parallel claims with the companion
-    // as the subject — those silently dropped under the claims RLS (asserter
+    // as the subject, those silently dropped under the claims RLS (asserter
     // can only insert claims where they’re the subject). Keeping the asserter
     // as the subject and using rode_with as the predicate fixes that path and
     // produces semantically correct edges for the ghost-tagging count.
     //
     // For other COMPANION_PREDICATES (worked_at, competed_at, spectated_at,
-    // organized_at) we keep the existing parallel-claim shape — those are
+    // organized_at) we keep the existing parallel-claim shape, those are
     // outside the brief and have different semantics ("we both worked there",
     // "we both competed") that don’t collapse to rode_with.
     const unverifiedCompanions: Person[] = []
@@ -769,7 +770,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
               </div>
             )}
 
-            {/* Section 3: When — skipped for event claims (date comes from the event) */}
+            {/* Section 3: When, skipped for event claims (date comes from the event) */}
             {predicate && entityId && !isEventClaim && (
               <div>
                 <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">When?</div>
@@ -807,7 +808,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                   </div>
                 )}
 
-                {/* Trip dates toggle — places & orgs */}
+                {/* Trip dates toggle: places & orgs */}
                 {supportsSpecificDates && (
                   <div className="mt-2.5">
                     <button
@@ -857,7 +858,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
               </div>
             )}
 
-            {/* Section 3b: Competition details — competed_at only */}
+            {/* Section 3b: Competition details, competed_at only */}
             {predicate === "competed_at" && entityId && (
               <div>
                 <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Competition details</div>
@@ -891,7 +892,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
               <div>
                 <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-1">Who was there?</div>
                 <p className="text-[11px] text-muted mb-3">
-                  Tag riders who joined you — it adds this to their timeline too.
+                  Tag riders who joined you. It adds this to their timeline too.
                 </p>
 
                 {/* Selected companion chips */}
@@ -940,7 +941,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                       </button>
                     ))}
                     {filteredCompanions.length === 0 && companionQuery.length > 0 && (
-                      <div className="px-3 py-2 text-xs text-muted">No riders found — add them via People first</div>
+                      <div className="px-3 py-2 text-xs text-muted">No riders found. Add them via People first</div>
                     )}
                   </div>
                 )}
