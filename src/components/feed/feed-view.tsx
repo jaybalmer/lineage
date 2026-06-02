@@ -1,6 +1,6 @@
 "use client"
 
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import type { Claim, Person, RidingDay, Story } from "@/types"
 import { PostCard } from "@/components/feed/post-card"
 import { DayPostCard } from "@/components/feed/day-post-card"
@@ -8,8 +8,28 @@ import { StoryCard } from "@/components/feed/story-card"
 import { StartCard } from "@/components/feed/start-card"
 import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
+import { TimelinePrompt } from "@/components/timeline/timeline-prompt"
 import { cn } from "@/lib/utils"
 import { groupRodeAtCompanions } from "@/lib/companion-grouping"
+
+// Staggered entrance for the first post-signup timeline reveal (Task 4).
+// Runtime-injected to match the celebration keyframe pattern; reduced-motion
+// shows everything immediately.
+const ENTRANCE_KEYFRAMES = `
+@keyframes feedItemIn { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .feed-item-animate { animation: none !important; opacity: 1 !important; transform: none !important; }
+}
+`
+
+let entranceStyleInjected = false
+function injectEntranceStyles() {
+  if (entranceStyleInjected || typeof document === "undefined") return
+  entranceStyleInjected = true
+  const el = document.createElement("style")
+  el.textContent = ENTRANCE_KEYFRAMES
+  document.head.appendChild(el)
+}
 
 type FilterType = "all" | "places" | "gear" | "people" | "orgs" | "events" | "stories"
 
@@ -96,6 +116,9 @@ export function FeedView({
   onStoryAdded,
   onStoryDeleted,
   order = "desc",
+  animateEntrance = false,
+  showCurrentYearPrompt = false,
+  onCurrentYearPromptClick,
 }: {
   claims: Claim[]
   days?: RidingDay[]
@@ -110,10 +133,23 @@ export function FeedView({
   onStoryAdded?: (s: Story) => void
   onStoryDeleted?: (id: string) => void
   order?: "asc" | "desc"
+  animateEntrance?: boolean
+  showCurrentYearPrompt?: boolean
+  onCurrentYearPromptClick?: () => void
 }) {
   const [filter, setFilter] = useState<FilterType>("all")
   const [addingClaim, setAddingClaim] = useState(false)
   const [addingStory, setAddingStory] = useState(false)
+  const [entranceDone, setEntranceDone] = useState(false)
+
+  // Bake the staggered entrance into its final state once the stagger window
+  // elapses, so later re-renders (a queued celebration, a freshly added claim)
+  // do not replay the whole reveal.
+  useEffect(() => {
+    if (!animateEntrance || entranceDone) return
+    const t = setTimeout(() => setEntranceDone(true), 2600)
+    return () => clearTimeout(t)
+  }, [animateEntrance, entranceDone])
 
   // Fold companion `rode_with` rows into their matching `rode_at` row so the
   // timeline renders one card per place visit. See companion-grouping.ts.
@@ -169,6 +205,25 @@ export function FeedView({
   const decades = Object.keys(grouped).sort((a, b) =>
     order === "asc" ? a.localeCompare(b) : b.localeCompare(a)
   )
+
+  const hasPrompt = showCurrentYearPrompt && !!onCurrentYearPromptClick
+  const emitEntrance = animateEntrance && !entranceDone
+  if (emitEntrance) injectEntranceStyles()
+
+  // Running stagger index for the first-visit reveal. Mutated during this
+  // single synchronous render pass; the current-year prompt takes slot 0 so it
+  // leads, then each timeline item follows 150ms behind the last (capped 2.4s).
+  let entranceIdx = 0
+  const entranceClass = () => (emitEntrance ? "feed-item-animate" : undefined)
+  const entranceStyle = () =>
+    emitEntrance ? { animation: `feedItemIn 0.45s ease ${Math.min(entranceIdx++ * 150, 2400)}ms both` } : undefined
+
+  const promptRow = hasPrompt ? (
+    <div className={cn("relative pl-9 mb-4", entranceClass())} style={entranceStyle()}>
+      <div className="absolute left-[7px] top-[20px] w-[22px] h-[22px] rounded-full border-[3px] border-background z-10 bg-[#3b82f6]" />
+      <TimelinePrompt onClick={onCurrentYearPromptClick!} />
+    </div>
+  ) : null
 
   // Count per filter tab — uses the grouped claim set so the counts match
   // what the user sees after the rode_with fold.
@@ -256,7 +311,7 @@ export function FeedView({
       )}
 
       {/* Feed grouped by decade */}
-      {decades.length === 0 && (
+      {decades.length === 0 && !hasPrompt && (
         <div className="text-center text-muted py-16">
           <div className="text-3xl mb-3">🏂</div>
           <div className="text-sm">
@@ -269,10 +324,13 @@ export function FeedView({
         </div>
       )}
 
-      {decades.length > 0 && (
+      {(decades.length > 0 || hasPrompt) && (
         <div className="relative">
           {/* Continuous vertical timeline line */}
           <div className="absolute left-[12px] top-6 bottom-6 w-2 bg-border-default rounded-full" />
+
+          {/* Current-year "add your board" slot, leading the timeline in desc order */}
+          {order !== "asc" && promptRow}
 
           {decades.map((decade) => (
             <div key={decade} className="mb-8">
@@ -291,7 +349,7 @@ export function FeedView({
                     : item.kind === "story" ? `story-${item.story.id}`
                     : `riding-start-${item.year}`
                   return (
-                    <div key={key} className="relative pl-9">
+                    <div key={key} className={cn("relative pl-9", entranceClass())} style={entranceStyle()}>
                       {/* Node — amber star for riding_start, coloured circle for everything else */}
                       {item.kind === "riding_start" ? (
                         <div className="absolute left-[7px] top-[18px] w-[22px] h-[22px] rounded-full bg-background border-[3px] border-amber-500 flex items-center justify-center z-10 text-amber-400 text-[11px] leading-none">
@@ -323,6 +381,9 @@ export function FeedView({
               </div>
             </div>
           ))}
+
+          {/* Current-year "add your board" slot, trailing the timeline in asc order */}
+          {order === "asc" && promptRow}
         </div>
       )}
     </div>
