@@ -1,19 +1,33 @@
 import { NextResponse } from "next/server"
+import { captureServerEvent } from "@/lib/analytics-server"
 
-// PostHog stub for the `node_redirect` event fired by the redirect middleware.
-// PostHog is not yet wired into this project; the middleware still POSTs to
-// this endpoint so the call site exists and is easy to fill in once the SDK
-// is added.
+// PostHog sink for the node_redirect event fired by the redirect proxy
+// (src/proxy.ts). The proxy POSTs here fire-and-forget; this adapter forwards
+// to the capture layer (PostHog + an analytics_events row) under category
+// 'redirect'.
 //
-// Expected payload (sent fire-and-forget by the middleware):
+// Expected payload (sent fire-and-forget by the proxy):
 //   {
-//     from_slug: string,           // the segment the user requested
-//     to_slug: string,             // the canonical segment we redirected to
+//     from_slug: string,   // the segment the user requested
+//     to_slug: string,     // the canonical segment we redirected to
 //     reason: 'merged' | 'reslugged' | 'manual' | 'route-migration',
 //   }
-//
-// When PostHog lands, replace the body of this handler with a real
-// captureServerEvent('node_redirect', payload) call.
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
+  try {
+    const body = await req.json().catch(() => null)
+    if (body && typeof body.from_slug === "string" && typeof body.to_slug === "string") {
+      await captureServerEvent({
+        category: "redirect",
+        event: "node_redirect",
+        props: {
+          from_slug: body.from_slug,
+          to_slug: body.to_slug,
+          reason: typeof body.reason === "string" ? body.reason : "unknown",
+        },
+      })
+    }
+  } catch {
+    // never throw
+  }
   return new NextResponse(null, { status: 204 })
 }

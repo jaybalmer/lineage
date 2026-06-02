@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useLineageStore } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
+import { trackEvent, identifyUser } from "@/lib/analytics"
 import { BrandMark } from "@/components/ui/brand-mark"
 import type { User } from "@supabase/supabase-js"
 
@@ -21,6 +22,10 @@ export default function AuthCompletePage() {
       handled = true
 
       setStatus("Saving your linestry…")
+
+      // Stitch the anonymous FTUE funnel to this user before any identified
+      // events fire, so signup_succeeded / ftue_completed attribute correctly.
+      identifyUser(user.id)
 
       // Read state directly from the persisted store, not the render-time
       // closure. The closured `store` snapshot can hold an initial empty
@@ -49,6 +54,7 @@ export default function AuthCompletePage() {
           home_resort_id: onboarding.first_place_id ?? null,
         })
         if (profileError) console.error("Profile save failed:", profileError)
+        else trackEvent("auth", "signup_succeeded", {}, { actorId: user.id })
       }
 
       // ── 2. Migrate session claims ─────────────────────────────────────────
@@ -78,6 +84,7 @@ export default function AuthCompletePage() {
       })
       store.setActivePersonId(user.id)
       store.completeOnboarding()
+      trackEvent("ftue", "ftue_completed", {}, { actorId: user.id })
 
       // ── 4. Invite claim merge ─────────────────────────────────────────────
       try {

@@ -1,22 +1,32 @@
 import { NextResponse } from "next/server"
+import { captureServerError } from "@/lib/analytics-server"
 
-// Sentry stub for invite error events. Not wired yet; the API routes
-// POST here so the instrumentation site exists and can be filled in once
-// the Sentry SDK is added.
+// Sentry sink for invite error events. /api/invite, the invite UI, and
+// maybeFireThresholdNotification POST here fire-and-forget; this adapter
+// forwards to the capture layer (Sentry + an analytics_events row with
+// category='error', domain='invite').
 //
-// Expected payload (sent fire-and-forget by /api/invite, the invite UI, and
-// the maybeFireThresholdNotification helper):
+// Expected payload:
 //   {
 //     tag:
-//       | "invite_resend_failed"
-//       | "invite_db_insert_failed"
-//       | "invite_target_not_claimable"
-//       | "invite_post_fetch_failed"
-//       | "threshold_notification_dedup_violation"   // Session 4 Item 1
-//       | "threshold_notification_send_failed"       // Session 4 Item 1
-//       | "threshold_count_query_failed",            // Session 4 Item 1
+//       | "invite_resend_failed" | "invite_db_insert_failed"
+//       | "invite_target_not_claimable" | "invite_post_fetch_failed"
+//       | "threshold_notification_dedup_violation"
+//       | "threshold_notification_send_failed" | "threshold_count_query_failed",
 //     payload: Record<string, unknown>
 //   }
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
+  try {
+    const body = await req.json().catch(() => null)
+    if (body && typeof body.tag === "string") {
+      await captureServerError({
+        category: "invite",
+        tag: body.tag,
+        payload: body.payload && typeof body.payload === "object" ? body.payload : {},
+      })
+    }
+  } catch {
+    // never throw
+  }
   return new NextResponse(null, { status: 204 })
 }

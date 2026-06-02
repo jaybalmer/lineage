@@ -1799,6 +1799,15 @@ export default function AdminPage() {
                   )}
                 </Link>
               )}
+              {membership.is_editor && (
+                <Link
+                  href="/admin/activity"
+                  className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-border-default text-xs text-foreground hover:bg-surface-hover transition-colors"
+                >
+                  <span>📊</span>
+                  Activity
+                </Link>
+              )}
               <Link
                 href="/admin/results-scanner"
                 className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-border-default text-xs text-foreground hover:bg-surface-hover transition-colors"

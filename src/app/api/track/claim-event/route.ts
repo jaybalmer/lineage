@@ -1,17 +1,30 @@
 import { NextResponse } from "next/server"
+import { captureServerEvent } from "@/lib/analytics-server"
 
-// PostHog stub mirroring /api/track/node-redirect. PostHog is not wired into
-// this project yet; the API routes still POST here so the call site exists
-// and is easy to fill in once the SDK is added.
+// PostHog sink for claim-request events. The claim-request handlers
+// (src/app/api/claim-requests/*) POST here fire-and-forget; this adapter
+// forwards to the capture layer (PostHog + an analytics_events row) under
+// category 'moderation'.
 //
-// Expected payload (sent fire-and-forget by the claim-request handlers):
+// Expected payload:
 //   {
 //     event: "claim_requested" | "vouch_added" | "claim_status_changed",
-//     props: Record<string, unknown>
+//     props: Record<string, unknown>   // surface, person_id, predicate, actor_id, ...
 //   }
-//
-// When PostHog lands, replace the body of this handler with a real
-// captureServerEvent(event, props) call.
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
+  try {
+    const body = await req.json().catch(() => null)
+    if (body && typeof body.event === "string") {
+      const props = body.props && typeof body.props === "object" ? body.props : {}
+      await captureServerEvent({
+        category: "moderation",
+        event: body.event,
+        props,
+        actorId: typeof props.actor_id === "string" ? props.actor_id : null,
+      })
+    }
+  } catch {
+    // never throw
+  }
   return new NextResponse(null, { status: 204 })
 }

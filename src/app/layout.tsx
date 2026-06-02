@@ -4,6 +4,7 @@ import "./globals.css"
 import { CatalogLoader } from "@/components/catalog-loader"
 import { ClientOverlays } from "@/components/ClientOverlays"
 import { PendingTagPoller } from "@/components/pending-tag-poller"
+import { PostHogProvider } from "@/components/posthog-provider"
 import { Analytics } from "@vercel/analytics/next"
 import { Toasts } from "@/components/ui/toast"
 
@@ -30,12 +31,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${geologicaDisplay.variable} ${geologicaBody.variable}`} suppressHydrationWarning>
       <body className="bg-background text-foreground antialiased min-h-screen">
-        <CatalogLoader />
-        <PendingTagPoller />
-        <ClientOverlays />
-        {children}
-        <Toasts />
-        <Analytics />
+        <PostHogProvider>
+          <CatalogLoader />
+          <PendingTagPoller />
+          <ClientOverlays />
+          {children}
+          <Toasts />
+          <Analytics />
+        </PostHogProvider>
       </body>
     </html>
   )
