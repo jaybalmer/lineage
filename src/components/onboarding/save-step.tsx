@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { supabase } from "@/lib/supabase"
+import { trackEvent } from "@/lib/analytics"
 import { cn } from "@/lib/utils"
 
 const inputCls =
@@ -29,6 +30,7 @@ export function SaveStep() {
 
   const continueWithGoogle = async () => {
     setError(null)
+    trackEvent("auth", "signup_started", { method: "google" })
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -44,6 +46,7 @@ export function SaveStep() {
     }
     setSending(true)
     setError(null)
+    trackEvent("auth", "signup_started", { method: "magic_link" })
     try {
       const res = await fetch("/api/auth/magic-link", {
         method: "POST",

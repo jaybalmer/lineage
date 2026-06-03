@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { requireAuth } from "@/lib/auth"
+import { captureServerEvent } from "@/lib/analytics-server"
 import { fireTagEvents } from "@/lib/invite-tracking-server"
 import { pairStoryRiderTagEvents, isAsserterGloballyBlocked } from "@/lib/tag-events"
 import { logTagActions } from "@/lib/tag-action-log"
@@ -207,6 +208,21 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    await captureServerEvent({
+      category: "content",
+      event: "story_created",
+      actorId: user.id,
+      props: {
+        story_id: storyId,
+        visibility,
+        photo_count: (photos as unknown[]).length,
+        rider_count: (rider_ids as unknown[]).length,
+        board_count: (board_ids as unknown[]).length,
+        has_youtube: !!youtube_url,
+        has_link: !!(linked_place_id || linked_event_id || linked_org_id),
+      },
+    })
+
     return NextResponse.json({ id: storyId }, { status: 201 })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : (err as { message?: string })?.message ?? String(err)
@@ -383,6 +399,18 @@ export async function PATCH(req: NextRequest) {
       .eq("story_id", id)
       .order("sort_order")
 
+    await captureServerEvent({
+      category: "content",
+      event: "story_edited",
+      actorId: user.id,
+      props: {
+        story_id: id,
+        visibility,
+        rider_count: uniqueRiderIds.length,
+        board_count: (board_ids as unknown[]).length,
+      },
+    })
+
     return NextResponse.json({ ok: true, photos: photos ?? [] })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : (err as { message?: string })?.message ?? String(err)
@@ -474,5 +502,13 @@ export async function DELETE(req: NextRequest) {
 
   const { error } = await supabase.from("stories").delete().eq("id", id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  await captureServerEvent({
+    category: "content",
+    event: "story_deleted",
+    actorId: user.id,
+    props: { story_id: id },
+  })
+
   return NextResponse.json({ ok: true })
 }

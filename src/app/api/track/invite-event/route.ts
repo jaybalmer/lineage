@@ -1,31 +1,40 @@
 import { NextResponse } from "next/server"
+import { captureServerEvent } from "@/lib/analytics-server"
 
-// PostHog stub mirroring /api/track/claim-event. PostHog is not wired into
-// this project yet; the API routes still POST here so the call site exists
-// and is easy to fill in once the SDK is added.
+// PostHog sink for invite/share events. The invite UI, /api/invite,
+// /api/tag-event, and maybeFireThresholdNotification POST here fire-and-forget
+// (see src/lib/invite-tracking.ts); this adapter forwards to the capture layer
+// (PostHog + an analytics_events row) under category 'invite'.
 //
-// Expected payload (sent fire-and-forget by invite UI, /api/invite,
-// /api/tag-event, and maybeFireThresholdNotification):
+// Expected payload:
 //   {
 //     event:
-//       | "invite_modal_opened"
-//       | "invite_modal_dismissed"
-//       | "invite_link_created"
-//       | "invite_email_sent"
-//       | "invite_link_copied"
-//       | "invite_prompt_shown"
-//       | "invite_prompt_clicked"
-//       | "invite_prompt_dismissed"
-//       | "share_link_copied"                  // Session 4 Item 2 (Help connect card)
-//       | "invite_email_added"                 // Session 4 Item 2 (Help connect card)
-//       | "tag_threshold_notification_sent",   // Session 4 Item 1 (threshold notif)
-//     props: Record<string, unknown>
+//       | "invite_modal_opened" | "invite_modal_dismissed" | "invite_link_created"
+//       | "invite_email_sent" | "invite_link_copied" | "invite_prompt_shown"
+//       | "invite_prompt_clicked" | "invite_prompt_dismissed" | "share_link_copied"
+//       | "invite_email_added" | "tag_threshold_notification_sent",
+//     props: Record<string, unknown>   // surface, person_id, predicate, inviter_id, ...
 //   }
-//
-// `props` typically carries: surface, person_id, predicate, inviter_id,
-// has_email, count (for bulk prompts), distinct_tagger_count (threshold).
-// When PostHog lands, replace the body of this handler with a real
-// captureServerEvent(event, props) call.
-export async function POST(_req: Request) {
+export async function POST(req: Request) {
+  try {
+    const body = await req.json().catch(() => null)
+    if (body && typeof body.event === "string") {
+      const props = body.props && typeof body.props === "object" ? body.props : {}
+      const actorId =
+        typeof props.inviter_id === "string"
+          ? props.inviter_id
+          : typeof props.actor_id === "string"
+            ? props.actor_id
+            : null
+      await captureServerEvent({
+        category: "invite",
+        event: body.event,
+        props,
+        actorId,
+      })
+    }
+  } catch {
+    // never throw
+  }
   return new NextResponse(null, { status: 204 })
 }

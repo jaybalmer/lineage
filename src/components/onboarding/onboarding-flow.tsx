@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useLineageStore } from "@/store/lineage-store"
+import { trackEvent } from "@/lib/analytics"
 import { cn } from "@/lib/utils"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { TimelineAhaStep } from "@/components/onboarding/timeline-aha"
@@ -238,6 +239,9 @@ export function OnboardingFlow() {
 
   const step = onboarding.step
   const [claimContext, setClaimContext] = useState<{ inviterName?: string } | null>(null)
+  // Tracks which FTUE step-shown funnel events have already fired this session,
+  // so back-navigation does not double-count them.
+  const shownFiredRef = useRef<Set<string>>(new Set())
 
   // Pre-fill from invite claim link (sessionStorage set by /claim/[token] page).
   // Invited users fall through the organic flow until the dedicated aha-card arc ships;
@@ -272,6 +276,22 @@ export function OnboardingFlow() {
 
   const currentStepId: StepId = steps[step] ?? "save"
   const totalSteps = steps.length
+
+  // FTUE funnel: fire each step-shown event once per session (brief D5).
+  useEffect(() => {
+    const shownEvent =
+      currentStepId === "land"
+        ? "ftue_landed"
+        : currentStepId === "timeline_aha"
+          ? "ftue_aha_shown"
+          : currentStepId === "save"
+            ? "ftue_save_shown"
+            : null
+    if (shownEvent && !shownFiredRef.current.has(shownEvent)) {
+      shownFiredRef.current.add(shownEvent)
+      trackEvent("ftue", shownEvent)
+    }
+  }, [currentStepId])
 
   const brandItems = useMemo(
     () => (catalog.orgs as Org[]).filter((o) => o.org_type === "brand"),
@@ -351,6 +371,7 @@ export function OnboardingFlow() {
       updateClaim(c.id, { subject_id: devId, asserted_by: devId })
     )
     completeOnboarding()
+    trackEvent("ftue", "ftue_completed", { via: "dev_bypass" })
     router.replace(`/${activeCommunitySlug}/timeline`)
   }
 
@@ -364,6 +385,7 @@ export function OnboardingFlow() {
 
   const next = () => {
     if (currentStepId === "save") return
+    trackEvent("ftue", "ftue_step_completed", { step_id: currentStepId })
     if (step < totalSteps - 1) setOnboardingStep(step + 1)
   }
 

@@ -576,3 +576,28 @@ export interface OnboardingState {
   was_sponsored?: boolean
   did_compete?: boolean
 }
+
+// ── Diagnostics Phase 1: analytics_events ───────────────────────────────────
+// Row shape for the durable in-app event log. The canonical category list is
+// shared with the capture layer (src/lib/analytics.ts).
+
+export type AnalyticsCategory =
+  | "auth"
+  | "ftue"
+  | "content"
+  | "invite"
+  | "redirect"
+  | "moderation"
+  | "error"
+
+export type AnalyticsSeverity = "warning" | "error"
+
+export interface AnalyticsEvent {
+  id: string
+  created_at: string
+  category: AnalyticsCategory
+  event: string
+  actor_id: string | null
+  severity: AnalyticsSeverity | null
+  props: Record<string, unknown>
+}

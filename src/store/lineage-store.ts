@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware"
 import type { Claim, OnboardingState, Place, Board, Org, Event, EventSeries, Person, RidingDay, MembershipState, TriggerPrefs, Community, CelebrationPayload } from "@/types"
 import { PLACES, ORGS, BOARDS, EVENTS, EVENT_SERIES, PEOPLE, CLAIMS } from "@/lib/mock-data"
 import { supabase } from "@/lib/supabase"
+import { trackEvent } from "@/lib/analytics"
 
 type Catalog = {
   places: Place[]
@@ -377,6 +378,13 @@ export const useLineageStore = create<LineageStore>()(
                 dbClaims: [...s.dbClaims, claim],
               }))
 
+              trackEvent("content", "claim_created", {
+                predicate: claim.predicate,
+                subject_type: claim.subject_type,
+                object_type: claim.object_type,
+                visibility: claim.visibility,
+              }, { actorId: activePersonId })
+
               // Ambient-growth fan-out (Finding #1) + PB-009 tag_event
               // pairing. Every person id named in this claim (other than the
               // asserter themselves — distinct_tagger_summary excludes self-
@@ -687,7 +695,14 @@ export const useLineageStore = create<LineageStore>()(
             if (error) {
               set((s) => ({ ridingDays: s.ridingDays.filter((d) => d.id !== day.id) }))
               get().addToast("Failed to save riding day. Please try again.")
+              return
             }
+            trackEvent("content", "riding_day_created", {
+              place_id: day.place_id ?? null,
+              rider_count: day.rider_ids?.length ?? 0,
+              has_note: !!day.note,
+              visibility: day.visibility,
+            }, { actorId: get().activePersonId })
           })
         }
       },
