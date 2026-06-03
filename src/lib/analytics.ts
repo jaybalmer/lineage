@@ -26,6 +26,12 @@ export function trackEvent(
   props: Record<string, unknown> = {},
   opts: { actorId?: string | null } = {}
 ): void {
+  // Stamp the event at call time on the client. captureServerEvent forwards
+  // this to PostHog as the event timestamp so funnels order events by when they
+  // actually fired. Without it, two fire-and-forget POSTs (e.g. signup_succeeded
+  // then ftue_completed) get the server's capture time and can invert, which
+  // zeroes out the final step of a strict-order funnel.
+  const occurredAt = new Date().toISOString()
   void fetch("/api/track/event", {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -35,6 +41,7 @@ export function trackEvent(
       props,
       actor_id: opts.actorId ?? null,
       distinct_id: distinctId(),
+      occurred_at: occurredAt,
     }),
     keepalive: true,
   }).catch(() => {})

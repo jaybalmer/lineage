@@ -53,6 +53,11 @@ interface ServerEventArgs {
   /** PostHog distinct_id passed up from the client so anon events stitch into
    *  the same person/funnel. Falls back to actorId, then "anonymous". */
   distinctId?: string | null
+  /** Client-side event time (ISO 8601) so PostHog orders events by when they
+   *  actually fired, not when the server happened to capture them. Two
+   *  fire-and-forget POSTs can otherwise be captured out of order, which breaks
+   *  strict-order funnels (e.g. signup_succeeded before ftue_completed). */
+  occurredAt?: string | null
 }
 
 export async function captureServerEvent(args: ServerEventArgs): Promise<void> {
@@ -62,10 +67,17 @@ export async function captureServerEvent(args: ServerEventArgs): Promise<void> {
     const props = args.props ?? {}
     const actorId = args.actorId ?? null
     const distinctId = args.distinctId || actorId || "anonymous"
+    const occurred = args.occurredAt ? new Date(args.occurredAt) : null
+    const timestamp = occurred && !isNaN(occurred.getTime()) ? occurred : undefined
 
     const ph = getPostHogServer()
     if (ph) {
-      ph.capture({ distinctId, event, properties: { category, ...props } })
+      ph.capture({
+        distinctId,
+        event,
+        properties: { category, ...props },
+        ...(timestamp ? { timestamp } : {}),
+      })
       try {
         await ph.flush()
       } catch {

@@ -1,30 +1,17 @@
 "use client"
 
-import { useEffect } from "react"
+import type { ReactNode } from "react"
 import posthog from "posthog-js"
 import { PostHogProvider as PHProvider } from "posthog-js/react"
 
-// Guarded PostHog provider. With NEXT_PUBLIC_POSTHOG_KEY absent we render
-// children untouched and never init the client, so a missing key degrades to
-// no-capture rather than a crash. Diagnostics Phase 1, brief D9.
-export function PostHogProvider({ children }: { children: React.ReactNode }) {
+// PostHog is initialized in src/instrumentation-client.ts, which Next.js runs
+// before hydration and before any component effect, so early FTUE events (e.g.
+// ftue_landed, fired from onboarding-flow's mount effect) get a real distinct id
+// that stitches on identify. This provider only wires the already-initialized
+// singleton into the posthog-js/react context. With the key absent the singleton
+// was never initialized, so we render children untouched. Diagnostics Phase 1.
+export function PostHogProvider({ children }: { children: ReactNode }) {
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY
-
-  useEffect(() => {
-    if (!key) return
-    if (posthog.__loaded) return
-    posthog.init(key, {
-      api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
-      capture_pageview: true,
-      capture_pageleave: true,
-      // Mask all input values in session replay so we never record emails,
-      // names, story bodies, or claim notes. PII discipline, brief D-LOCKED-3.
-      session_recording: { maskAllInputs: true },
-      // Only create PostHog person profiles for identified (signed-in) users.
-      person_profiles: "identified_only",
-    })
-  }, [key])
-
   if (!key) return <>{children}</>
   return <PHProvider client={posthog}>{children}</PHProvider>
 }
