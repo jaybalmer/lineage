@@ -13,23 +13,49 @@ export default function ForgotPasswordPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!email.trim()) return
+    const addr = email.trim().toLowerCase()
+    if (!addr) return
     setLoading(true)
     setError(null)
 
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(
-      email.trim().toLowerCase(),
-      { redirectTo: `${window.location.origin}/auth/reset-password` },
-    )
+    try {
+      const res = await fetch("/api/auth/reset-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: addr }),
+      })
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean
+        fallback?: boolean
+        error?: string
+      }
 
-    if (resetError) {
-      setError(resetError.message)
+      if (data.error) {
+        setError(data.error)
+        return
+      }
+
+      // The server route falls back to Supabase's built-in reset email when
+      // Resend or the service-role key are unavailable (e.g. local dev without
+      // those secrets). resetPasswordForEmail is non-enumerating, so an unknown
+      // address still silently no-ops rather than leaking account existence.
+      if (data.fallback) {
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+          addr,
+          { redirectTo: `${window.location.origin}/auth/reset-password` },
+        )
+        if (resetError) {
+          setError(resetError.message)
+          return
+        }
+      }
+
+      setSent(true)
+    } catch {
+      setError("Something went wrong. Please try again.")
+    } finally {
       setLoading(false)
-      return
     }
-
-    setSent(true)
-    setLoading(false)
   }
 
   return (

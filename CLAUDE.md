@@ -129,10 +129,15 @@ Pagination uses `.range(offset, offset + limit - 1)` — not `.limit()`.
 
 ## Auth
 
-- **Passwordless magic link** via Supabase Auth → `POST /api/auth/magic-link`
-- Callback: `/auth/callback` → `/auth/complete` (profile creation)
+Auth is **not passwordless-only**. Three sign-in methods are surfaced at `/auth/signin`:
+- **Google OAuth** via `supabase.auth.signInWithOAuth({ provider: "google" })`, redirecting to `/auth/callback`.
+- **Magic link** via `POST /api/auth/magic-link`, which takes an `intent: "signin" | "signup"` body field. The server path uses `admin.generateLink` (implicit flow) + Resend, with a client `signInWithOtp` fallback when Resend or the service-role key are absent. Because `admin.generateLink` creates the user when absent, `intent: "signin"` first scans `admin.listUsers` and returns `{ error }` (no account created, status 200) for unknown emails. The OTP fallback enforces the same returning-only rule with `shouldCreateUser: false` for sign-in vs `true` for onboarding signup.
+- **Email + password** via `supabase.auth.signInWithPassword`, with reset at `/auth/forgot-password` and `/auth/reset-password`.
+
+Onboarding (`save-step.tsx`) offers Google + magic link only, so signup stays passwordless; password is a sign-in path for members who set one through the reset flow.
+- Callback: `/auth/callback` → `/auth/complete` (session establish; profile upsert and `welcome_pending` for new users only; session-claim migration).
 - Session refresh on every request via `src/proxy.ts` (Next 16's `proxy` file convention; replaces the old `middleware.ts`. Lives next to `src/app/`, NOT at the project root. The exported function is `proxy`, not `middleware`.)
-- **Only `/timeline/*` is protected** — all browse pages stay public
+- **Only `/timeline/*` is protected**. All browse pages stay public
 
 ### Distinguish auth users from mock/demo users
 ```typescript

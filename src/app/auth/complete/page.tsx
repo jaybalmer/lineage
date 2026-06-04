@@ -84,7 +84,14 @@ export default function AuthCompletePage() {
       })
       store.setActivePersonId(user.id)
       store.completeOnboarding()
-      trackEvent("ftue", "ftue_completed", {}, { actorId: user.id })
+      // Only a brand-new account completes the FTUE funnel here. A returning
+      // user landing on /auth/complete (magic-link or Google sign-in) already
+      // finished onboarding, so firing ftue_completed for them would inflate
+      // the funnel's final step. signup_succeeded above is already gated the
+      // same way.
+      if (!existingProfile) {
+        trackEvent("ftue", "ftue_completed", {}, { actorId: user.id })
+      }
 
       // ── 4. Invite claim merge ─────────────────────────────────────────────
       try {
