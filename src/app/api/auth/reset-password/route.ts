@@ -11,7 +11,7 @@ function getSupabaseAdmin() {
 }
 
 // ─── Email HTML ───────────────────────────────────────────────────────────────
-function magicLinkEmailHtml(link: string): string {
+function resetPasswordEmailHtml(link: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -22,17 +22,17 @@ function magicLinkEmailHtml(link: string): string {
 
     <!-- Headline -->
     <h1 style="margin:0 0 10px;font-size:22px;font-weight:700;color:#e5e5e5;line-height:1.3;text-align:center;">
-      Your sign-in link
+      Reset your password
     </h1>
     <p style="margin:0 0 28px;font-size:14px;color:#71717a;line-height:1.6;text-align:center;">
-      Click below to sign in to Linestry. This link expires in <strong style="color:#a1a1aa;">1 hour</strong>.
+      Click below to choose a new password for your Linestry account. This link expires in <strong style="color:#a1a1aa;">1 hour</strong>.
     </p>
 
     <!-- CTA -->
     <div style="text-align:center;margin-bottom:28px;">
       <a href="${link}"
         style="display:inline-block;padding:15px 36px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:600;letter-spacing:0.01em;">
-        Sign in to Linestry →
+        Reset my password →
       </a>
     </div>
 
@@ -49,7 +49,7 @@ function magicLinkEmailHtml(link: string): string {
 
     <!-- Fine print -->
     <p style="margin:0;font-size:11px;color:#3f3f46;text-align:center;line-height:1.5;">
-      If you didn&rsquo;t request this, you can safely ignore it. Your account is secure.
+      If you didn&rsquo;t request this, you can safely ignore it. Your password will stay the same.
     </p>
     </div>
     ${emailFooterHtml()}
@@ -58,10 +58,10 @@ function magicLinkEmailHtml(link: string): string {
 </html>`
 }
 
-// ─── POST /api/auth/magic-link ────────────────────────────────────────────────
+// ─── POST /api/auth/reset-password ────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    const { email, intent } = await req.json() as { email?: string; intent?: "signin" | "signup" }
+    const { email } = await req.json() as { email?: string }
 
     if (!email || !email.includes("@")) {
       return NextResponse.json({ error: "Valid email required" }, { status: 400 })
@@ -70,72 +70,47 @@ export async function POST(req: NextRequest) {
     const supabaseAdmin = getSupabaseAdmin()
     const resendKey = process.env.RESEND_API_KEY
 
-    // If either key is missing, tell the client to fall back to signInWithOtp.
-    // The signin surface passes shouldCreateUser:false there, so returning-only
-    // is still enforced on the fallback path without this route's help.
+    // If either key is missing, tell the client to fall back to the built-in
+    // resetPasswordForEmail. That path is non-enumerating (silent no-op for
+    // unknown addresses), so returning-only behaviour is preserved without
+    // this route's help.
     if (!supabaseAdmin || !resendKey) {
       return NextResponse.json({ fallback: true }, { status: 200 })
     }
 
     const normalizedEmail = email.trim().toLowerCase()
 
-    // Sign-in surface: only send a link to an address that already has an
-    // account. admin.generateLink below CREATES the user when absent, so absent
-    // this guard a typo on a returning-user path would silently provision a new
-    // account. Signup keeps create-on-send by omitting intent (or "signup").
-    if (intent === "signin") {
-      let exists = false
-      for (let page = 1; page <= 50; page++) {
-        const { data: list, error: listErr } =
-          await supabaseAdmin.auth.admin.listUsers({ page, perPage: 1000 })
-        if (listErr) {
-          // Can't confirm existence, so fall back to client OTP, which enforces
-          // shouldCreateUser:false itself rather than risk creating an account.
-          console.error("listUsers error:", listErr)
-          return NextResponse.json({ fallback: true }, { status: 200 })
-        }
-        if (list.users.some((u) => u.email?.toLowerCase() === normalizedEmail)) {
-          exists = true
-          break
-        }
-        if (list.users.length < 1000) break
-      }
-      if (!exists) {
-        return NextResponse.json(
-          { error: "We could not find an account with that email." },
-          { status: 200 }
-        )
-      }
-    }
-
-    // Generate the magic link via Supabase admin API
-    // redirectTo must point to /auth/complete so the session hash is handled correctly
+    // Generate the recovery link via Supabase admin API. redirectTo points to
+    // /auth/reset-password, which handles the implicit-flow session hash and
+    // then calls updateUser({ password }).
     const ALLOWED_ORIGINS = ["https://linestry.com", "https://lineage.wtf", "https://lineage.community", "http://localhost:3000"]
     const reqOrigin = req.headers.get("origin")
     const origin = reqOrigin && ALLOWED_ORIGINS.includes(reqOrigin) ? reqOrigin : "https://linestry.com"
     const { data, error: genError } = await supabaseAdmin.auth.admin.generateLink({
-      type: "magiclink",
+      type: "recovery",
       email: normalizedEmail,
       options: {
-        redirectTo: `${origin}/auth/complete`,
+        redirectTo: `${origin}/auth/reset-password`,
       },
     })
 
+    // generateLink type:recovery errors for an address with no account (it does
+    // not create one, unlike type:magiclink). Treat any failure as a silent
+    // fallback so we never leak whether an email is registered.
     if (genError || !data?.properties?.action_link) {
-      console.error("generateLink error:", genError)
       return NextResponse.json({ fallback: true }, { status: 200 })
     }
 
-    const magicLink = data.properties.action_link
+    const recoveryLink = data.properties.action_link
 
     // Send via Resend
     const { Resend } = await import("resend")
     const resend = new Resend(resendKey)
     const { error: sendError } = await resend.emails.send({
       from: "Linestry <noreply@linestry.com>",
-      to: email.trim().toLowerCase(),
-      subject: "Your Linestry sign-in link",
-      html: magicLinkEmailHtml(magicLink),
+      to: normalizedEmail,
+      subject: "Reset your Linestry password",
+      html: resetPasswordEmailHtml(recoveryLink),
     })
 
     if (sendError) {
@@ -145,7 +120,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true })
   } catch (err) {
-    console.error("Magic link route error:", err)
+    console.error("Reset password route error:", err)
     return NextResponse.json({ fallback: true }, { status: 200 })
   }
 }
