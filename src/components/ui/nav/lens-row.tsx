@@ -19,23 +19,31 @@ export function LensRow({ communitySlug, pathname, isAuth }: LensRowProps) {
   const inCommunity =
     pathname === `/${communitySlug}` || pathname.startsWith(`/${communitySlug}/`)
 
-  // TODO Phase 3: when /me/timeline exists, route Timeline at global scope to /me/timeline
-  // instead of the active community's profile.
-  const timelineHref = isAuth ? `/${communitySlug}/profile` : "/auth/signin"
-  const timelineActive =
-    pathname === `/${communitySlug}/profile` ||
-    pathname.startsWith(`/${communitySlug}/profile/`)
+  // Timeline lens: in-community it points at the community-scoped profile; at global scope it
+  // points at the cross-community /me/timeline. (The avatar "My Timeline" item stays
+  // community-scoped per PB-011 Phase 3A decision Q2.)
+  const timelineHref = !isAuth
+    ? "/auth/signin"
+    : inCommunity
+      ? `/${communitySlug}/profile`
+      : "/me/timeline"
+  const timelineActive = inCommunity
+    ? (pathname === `/${communitySlug}/profile` ||
+       pathname.startsWith(`/${communitySlug}/profile/`))
+    : pathname === "/me/timeline"
 
-  // TODO Phase 3: when a global Feed surface exists (weighted "From your communities / Across
-  // Lineage"), route Feed at global scope to /feed (with the surface rendering global) instead
-  // of relying on the proxy to redirect into the default community.
+  // TODO PB-013 (Member Landing & Default Scope): when a weighted global Feed surface exists
+  // (the "From your communities / Across Lineage" split), route Feed at global scope to /feed
+  // (with the surface rendering global) instead of relying on the proxy to redirect into the
+  // default community.
   const feedHref = `/${communitySlug}/feed`
   const feedActive =
     pathname === `/${communitySlug}/feed` ||
     pathname.startsWith(`/${communitySlug}/feed/`)
 
-  // TODO Phase 3: when a global Lineage summary surface exists (curated directory of all
-  // communities), route Community at global scope there instead of the root marketing page.
+  // TODO PB-012 (Community Home Page): when a global Lineage summary surface exists (curated
+  // directory of all communities), route Community at global scope there instead of the root
+  // marketing page.
   const communityHref = inCommunity ? `/${communitySlug}` : "/"
   const communityActive = inCommunity ? pathname === `/${communitySlug}` : pathname === "/"
 

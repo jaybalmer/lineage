@@ -15,9 +15,9 @@ interface CommunityAvatarPillProps {
  * Circular community avatar with initials, in the brand blue. Interest-community
  * style only at launch.
  */
-// TODO Phase 3 or post-launch: when a place-type community exists, render the geotag-marker
-// avatar treatment for type === "place" communities. Currently renders interest-style only
-// (circle with initials) because no place community exists to test against.
+// TODO post-launch (first place community): when a place-type community exists, render the
+// geotag-marker avatar treatment for type === "place" communities. Currently renders
+// interest-style only (circle with initials) because no place community exists to test against.
 export function CommunityAvatarPill({ community, slug, size = "sm" }: CommunityAvatarPillProps) {
   const override = COMMUNITY_INITIALS[community?.slug ?? slug ?? ""]
   const initials = override ?? getInitials(community?.name ?? slug ?? "?")
