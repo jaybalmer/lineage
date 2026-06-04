@@ -108,8 +108,9 @@ export function CommunitySwitcher({ activeCommunitySlug, communities }: Communit
                 <div className="px-4 pt-3 pb-1 text-[9px] uppercase tracking-wider text-muted">
                   Coming soon
                 </div>
-                {/* TODO Phase 3 or post-launch: coming-soon community rows should be clickable,
-                    opening a waitlist signup flow. Currently render-only. */}
+                {/* TODO post-launch: coming-soon community rows should become clickable, opening a
+                    waitlist signup flow (gated on a real second community nearing launch).
+                    Currently render-only. */}
                 {comingSoon.map((c) => (
                   <div
                     key={c.slug}

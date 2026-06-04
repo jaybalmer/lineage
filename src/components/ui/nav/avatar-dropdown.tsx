@@ -132,14 +132,12 @@ export function AvatarDropdown({ displayName, tier, totalTokens, pendingTagCount
             Compare
           </Link>
 
-          {/* Connections (community-scoped) */}
-          {/* TODO Phase 3: when /me/connections exists, route Connections to /me/connections
-              instead of /{slug}/connections. */}
-          <CommunityLink href="/connections"
+          {/* Connections (global, cross-community) */}
+          <Link href="/me/connections"
             className="flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
             style={{ fontSize: 11 }}>
             Connections
-          </CommunityLink>
+          </Link>
 
           <div className="border-t border-border-default" />
 
