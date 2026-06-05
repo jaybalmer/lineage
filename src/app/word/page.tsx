@@ -15,6 +15,8 @@ export const metadata: Metadata = {
     siteName: "Linestry",
     title: "linestry (n.)",
     description: META_DESCRIPTION,
+    authors: ["Lineage Community Technologies Ltd."],
+    publishedTime: "2026-06-05",
   },
   twitter: {
     card: "summary_large_image",

@@ -1,11 +1,16 @@
 import { ImageResponse } from "next/og"
 import { brandMarkSvgString } from "@/components/ui/brand-mark"
 
-export const size        = { width: 1200, height: 630 }
+// Author the card at 2x so downstream platforms downscale from more pixels
+// (crisper thumbnails) and LinkedIn reliably picks the large-image layout.
+// Every px value is multiplied by S, so the composition is single-sourced.
+const S = 2
+
+export const size        = { width: 1200 * S, height: 630 * S }
 export const contentType = "image/png"
 export const alt         = "linestry, noun. The cultural lineage of a community, the people, places, stories, and artifacts woven together into a shared fabric."
 
-// Light dictionary-card palette — the locked identity on a near-white surface.
+// Light dictionary-card palette. The locked identity on a near-white surface.
 const FRAME      = "#F6F6F5"  // light surface (page ground)
 const CARD       = "#FFFFFF"  // card fill
 const BORDER     = "#E7E5E4"  // hairline
@@ -54,13 +59,13 @@ export default async function OpengraphImage() {
     (
       <div
         style={{
-          width: 1200,
-          height: 630,
+          width: 1200 * S,
+          height: 630 * S,
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
           background: FRAME,
-          padding: 40,
+          padding: 40 * S,
           fontFamily: "Geologica",
         }}
       >
@@ -70,35 +75,35 @@ export default async function OpengraphImage() {
             flexDirection: "column",
             width: "100%",
             background: CARD,
-            border: `1px solid ${BORDER}`,
-            borderRadius: 28,
-            padding: 56,
-            boxShadow: "0 2px 24px rgba(0,0,0,0.05)",
+            border: `${1 * S}px solid ${BORDER}`,
+            borderRadius: 28 * S,
+            padding: 56 * S,
+            boxShadow: `0 ${2 * S}px ${24 * S}px rgba(0,0,0,0.05)`,
           }}
         >
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <span style={{ fontSize: 22, fontWeight: 500, color: MUTED, letterSpacing: "0.16em", textTransform: "uppercase" }}>
+            <span style={{ fontSize: 22 * S, fontWeight: 500, color: MUTED, letterSpacing: "0.16em", textTransform: "uppercase" }}>
               {LABEL}
             </span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img width={62} height={62} src={mark} alt="" />
+            <img width={62 * S} height={62 * S} src={mark} alt="" />
           </div>
 
-          <span style={{ marginTop: 14, fontSize: 96, fontWeight: 800, color: INK, letterSpacing: "-0.03em", lineHeight: 1 }}>
+          <span style={{ marginTop: 14 * S, fontSize: 96 * S, fontWeight: 800, color: INK, letterSpacing: "-0.03em", lineHeight: 1 }}>
             {HEADWORD}
           </span>
 
-          <span style={{ marginTop: 16, fontSize: 28, fontWeight: 500, color: MUTED }}>
+          <span style={{ marginTop: 16 * S, fontSize: 28 * S, fontWeight: 500, color: MUTED }}>
             {PRON}
           </span>
 
-          <div style={{ height: 1, background: BORDER, marginTop: 26, marginBottom: 26 }} />
+          <div style={{ height: 1 * S, background: BORDER, marginTop: 26 * S, marginBottom: 26 * S }} />
 
-          <span style={{ fontSize: 31, fontWeight: 500, color: INK, lineHeight: 1.32 }}>
+          <span style={{ fontSize: 31 * S, fontWeight: 500, color: INK, lineHeight: 1.32 }}>
             {DEFINITION}
           </span>
 
-          <span style={{ marginTop: 20, fontSize: 26, fontWeight: 500, fontStyle: "italic", color: MUTED }}>
+          <span style={{ marginTop: 20 * S, fontSize: 26 * S, fontWeight: 500, fontStyle: "italic", color: MUTED }}>
             {ETYMOLOGY}
           </span>
         </div>
