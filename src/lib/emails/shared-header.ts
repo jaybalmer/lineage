@@ -12,6 +12,6 @@ export function emailHeaderHtml(): string {
 export function emailFooterHtml(): string {
   return `
   <div style="padding:20px 28px;background:#ffffff;border-top:1px solid #e7e5e4;font-family:'Geologica',Arial,sans-serif;font-weight:300;font-size:12px;color:#78716c;">
-    Linestry &middot; Lineage Community Technologies Ltd. &middot; <a href="https://linestry.com" style="color:#2563eb;text-decoration:none;">linestry.com</a>
+    Linestry &middot; Lineage Community Technologies Inc. &middot; <a href="https://linestry.com" style="color:#2563eb;text-decoration:none;">linestry.com</a>
   </div>`;
 }

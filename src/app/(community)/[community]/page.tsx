@@ -338,7 +338,7 @@ export default function CommunityHome() {
       {/* Footer */}
       <div className="text-center py-8">
         <p className="text-muted text-xs">
-          Lineage Community Technologies Ltd.
+          Lineage Community Technologies Inc.
         </p>
       </div>
     </div>

@@ -227,7 +227,7 @@ export default function Home() {
       {/* Footer */}
       <div className="text-center py-10">
         <p className="text-muted text-xs">
-          Lineage Community Technologies Ltd.
+          Lineage Community Technologies Inc.
         </p>
       </div>
     </div>
