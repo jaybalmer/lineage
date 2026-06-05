@@ -23,6 +23,7 @@ const geologicaBody = Geologica({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://linestry.com"),
   title: "Linestry",
   description: "A living, community-authored snowboarding history graph",
 }
