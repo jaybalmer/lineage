@@ -1,6 +1,6 @@
 # Linestry
 
-A living, community-authored snowboarding history graph. People log their timelines (where they rode, who they rode with, what boards they used, what contests they entered) and the app builds a collective graph of the sport's history. Operated by Lineage Community Technologies Ltd.
+A living, community-authored snowboarding history graph. People log their timelines (where they rode, who they rode with, what boards they used, what contests they entered) and the app builds a collective graph of the sport's history. Operated by Lineage Community Technologies Inc.
 
 ---
 
@@ -132,7 +132,7 @@ Pagination uses `.range(offset, offset + limit - 1)` — not `.limit()`.
 Auth is **not passwordless-only**. Three sign-in methods are surfaced at `/auth/signin`:
 - **Google OAuth** via `supabase.auth.signInWithOAuth({ provider: "google" })`, redirecting to `/auth/callback`.
 - **Magic link** via `POST /api/auth/magic-link`, which takes an `intent: "signin" | "signup"` body field. The server path uses `admin.generateLink` (implicit flow) + Resend, with a client `signInWithOtp` fallback when Resend or the service-role key are absent. Because `admin.generateLink` creates the user when absent, `intent: "signin"` first scans `admin.listUsers` and returns `{ error }` (no account created, status 200) for unknown emails. The OTP fallback enforces the same returning-only rule with `shouldCreateUser: false` for sign-in vs `true` for onboarding signup.
-- **Email + password** via `supabase.auth.signInWithPassword`, with reset at `/auth/forgot-password` and `/auth/reset-password`.
+- **Email + password** via `supabase.auth.signInWithPassword`. Password reset runs through `POST /api/auth/reset-password`, which sends a branded recovery email via Resend (matching every other transactional email), with the recovery link generated on `auth.linestry.com`. The reset UI is at `/auth/forgot-password` (request) and `/auth/reset-password` (set new password); the Supabase redirect allowlist already covers the recovery target.
 
 Onboarding (`save-step.tsx`) offers Google + magic link only, so signup stays passwordless; password is a sign-in path for members who set one through the reset flow.
 - Callback: `/auth/callback` → `/auth/complete` (session establish; profile upsert and `welcome_pending` for new users only; session-claim migration).
