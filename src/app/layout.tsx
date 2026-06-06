@@ -26,6 +26,21 @@ export const metadata: Metadata = {
   metadataBase: new URL("https://linestry.com"),
   title: "Linestry",
   description: "A living, community-authored snowboarding history graph",
+  openGraph: {
+    type: "website",
+    url: "/",
+    siteName: "Linestry",
+    title: "Linestry",
+    description: "A living, community-authored snowboarding history graph",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Linestry",
+    description: "A living, community-authored snowboarding history graph",
+  },
+  other: {
+    "fb:app_id": "854341147260543",
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
