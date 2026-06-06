@@ -6,6 +6,7 @@ import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore, getAllClaims } from "@/store/lineage-store"
+import { usePersonHref } from "@/lib/use-person-href"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { PEOPLE, CLAIMS, getEntityName, getPlaceById } from "@/lib/mock-data"
 import { supabase } from "@/lib/supabase"
@@ -205,6 +206,7 @@ function SideBySideTimeline({
   resolveName?: (id: string, type: string) => string
   resolveEventDate?: (id: string) => { start_date: string; end_date?: string } | null
 }) {
+  const personLink = usePersonHref()
   function getDecade(c: Claim) {
     const y = parseInt((c.start_date ?? "").slice(0, 4))
     return isNaN(y) ? 2020 : Math.floor(y / 10) * 10
@@ -249,7 +251,7 @@ function SideBySideTimeline({
               {initials(p.display_name)}
             </div>
             <CommunityLink
-              href={`/people/${p.id}`}
+              href={personLink(p)}
               className="text-sm font-semibold text-foreground hover:text-blue-300 transition-colors truncate"
             >
               {p.display_name}

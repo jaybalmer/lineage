@@ -9,6 +9,8 @@ import { getLinkIcon } from "@/components/ui/edit-profile-modal"
 import { RiderAvatar, getRiderTier } from "@/components/ui/rider-avatar"
 import { TimelinePlayer } from "@/components/ui/timeline-player"
 import { nameToSlug } from "@/lib/utils"
+import { personHref } from "@/lib/entity-links"
+import { useCanonicalPath } from "@/lib/use-canonical-path"
 import { supabase } from "@/lib/supabase"
 import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
@@ -71,6 +73,10 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
 
   // The canonical UUID (or short mock ID) used for DB queries and store checks
   const resolvedId = resolvedPerson?.id ?? id
+
+  // Rewrite the address bar to the name-based slug (/people/jay_balmer) when
+  // reached via a UUID or stale slug. Falls back to the id for colliding names.
+  useCanonicalPath(resolvedPerson ? personHref(resolvedPerson, allPeople) : null)
 
   // Fetch Supabase claims for this rider — fires once resolved ID is known
   useEffect(() => {

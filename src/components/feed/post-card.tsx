@@ -17,6 +17,7 @@ import {
   orgSlug,
   eventSlug,
 } from "@/lib/mock-data"
+import { personHref } from "@/lib/entity-links"
 import { useLineageStore } from "@/store/lineage-store"
 import { EditClaimModal } from "@/components/ui/edit-claim-modal"
 import { EditEventModal } from "@/components/ui/edit-event-modal"
@@ -349,7 +350,7 @@ function EntityBlock({ claim, entityName, isOwn, readOnly }: EntityBlockProps) {
     : board  ? `/boards/${boardSlug(board)}`
     : org    ? `/brands/${orgSlug(org)}`
     : event  ? `/events/${eventSlug(event)}`
-    : person ? `/people/${id}`
+    : person ? personHref(person, catalog.people)
     : "#"
 
   // Auto-fetch board image via search API (hook always called; returns null for non-boards)
@@ -566,7 +567,7 @@ function CompanionAvatars({ claim, explicitCompanionIds }: { claim: Claim; expli
           const initials = (person?.display_name ?? "?")[0].toUpperCase()
           const name = person?.display_name ?? "Rider"
           return (
-            <CommunityLink key={pid} href={`/people/${pid}`} title={name}>
+            <CommunityLink key={pid} href={person ? personHref(person, catalog.people) : `/people/${pid}`} title={name}>
               <div className="w-6 h-6 rounded-full bg-violet-700 border border-violet-600 flex items-center justify-center text-[9px] font-bold text-white hover:bg-violet-500 transition-colors">
                 {initials}
               </div>

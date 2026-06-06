@@ -2,8 +2,9 @@
 
 import { useState } from "react"
 import { CommunityLink } from "@/components/ui/community-link"
-import { cn, nameToSlug, parseYouTubeId } from "@/lib/utils"
-import { orgSlug } from "@/lib/mock-data"
+import { cn, parseYouTubeId } from "@/lib/utils"
+import { orgSlug, placeSlug, eventSlug, boardSlug } from "@/lib/mock-data"
+import { personHref } from "@/lib/entity-links"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { ReportTagModal } from "@/components/ui/report-tag-modal"
@@ -259,7 +260,7 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
         <div className="flex flex-wrap gap-1.5 mt-2">
           {linkedPlace && (
             <CommunityLink
-              href={`/places/${linkedPlace.id}`}
+              href={`/places/${placeSlug(linkedPlace)}`}
               className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 hover:bg-[#292524]/20 transition-colors"
             >
               <div className="w-2 h-2 rounded-full bg-teal-600 flex-shrink-0" /> {linkedPlace.name}
@@ -267,7 +268,7 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
           )}
           {linkedEvent && (
             <CommunityLink
-              href={`/events/${linkedEvent.id}`}
+              href={`/events/${eventSlug(linkedEvent)}`}
               className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-colors"
             >
               <div className="w-2 h-2 rounded-full bg-amber-600 flex-shrink-0" /> {linkedEvent.name}
@@ -284,7 +285,7 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
           {linkedBoards.map((board) => board && (
             <CommunityLink
               key={board.id}
-              href={`/boards/${board.id}`}
+              href={`/boards/${boardSlug(board)}`}
               className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
             >
               🏂 {board.brand} {board.model} &apos;{String(board.model_year).slice(2)}
@@ -299,7 +300,7 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
             return (
               <span key={rider.id} className="inline-flex items-center">
                 <CommunityLink
-                  href={`/people/${nameToSlug(rider.display_name)}`}
+                  href={personHref(rider, catalog.people)}
                   className={cn(
                     "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full transition-colors",
                     canReport ? "rounded-r-none" : "",

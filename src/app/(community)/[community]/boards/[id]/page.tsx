@@ -7,6 +7,8 @@ import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
+import { usePersonHref } from "@/lib/use-person-href"
+import { useCanonicalPath } from "@/lib/use-canonical-path"
 import { boardSlug, orgSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
@@ -53,6 +55,7 @@ function StoryCard({ story, authorName, isOwn, onDelete }: {
   onDelete: (id: string) => void
 }) {
   const [deleting, setDeleting] = useState(false)
+  const personLink = usePersonHref()
 
   async function handleDelete() {
     setDeleting(true)
@@ -65,7 +68,7 @@ function StoryCard({ story, authorName, isOwn, onDelete }: {
       <p className="text-sm text-foreground leading-relaxed">{story.story_text}</p>
       <div className="flex items-center justify-between mt-3">
         <div className="flex items-center gap-2 text-xs text-muted">
-          <CommunityLink href={`/people/${story.user_id}`} className="hover:text-foreground transition-colors font-medium">
+          <CommunityLink href={personLink(story.user_id)} className="hover:text-foreground transition-colors font-medium">
             {authorName}
           </CommunityLink>
           {story.year_ridden && <span>· {story.year_ridden}</span>}
@@ -143,13 +146,15 @@ function LinkCard({ link, isOwn, onDelete }: {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export default function BoardPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function BoardPage({ params }: { params: Promise<{ community: string; id: string }> }) {
+  const { community, id } = use(params)
   const { catalog, activePersonId } = useLineageStore()
+  const personLink = usePersonHref()
   const isAuth = isAuthUser(activePersonId)
 
   const allBoards = catalog.boards
   const board = allBoards.find((b) => b.id === id) ?? allBoards.find((b) => boardSlug(b) === id)
+  useCanonicalPath(board ? `/${community}/boards/${boardSlug(board)}` : null)
   if (!board) notFound()
   // Capture id/brand/model so TypeScript narrows correctly inside async closures
   const boardId    = board!.id
@@ -620,7 +625,7 @@ export default function BoardPage({ params }: { params: Promise<{ id: string }> 
                     if (!person) return null
                     const claim = ownedClaims.find((c) => c.subject_id === rid)
                     return (
-                      <CommunityLink key={rid} href={`/people/${rid}`}>
+                      <CommunityLink key={rid} href={personLink(rid)}>
                         <div className="flex items-center gap-3 px-4 py-3 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all group">
                           <div className="w-9 h-9 rounded-full bg-[#1C1917] flex items-center justify-center text-sm font-bold text-foreground shrink-0">
                             {initials(person.display_name)}

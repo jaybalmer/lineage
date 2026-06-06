@@ -4,10 +4,12 @@ import { useState, useEffect, useRef, use, useMemo } from "react"
 import { CommunityLink } from "@/components/ui/community-link"
 import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
-import { boardSlug, orgSlug } from "@/lib/mock-data"
+import { boardSlug, orgSlug, eventSlug, seriesSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 import { cn } from "@/lib/utils"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
+import { usePersonHref } from "@/lib/use-person-href"
+import { useCanonicalPath } from "@/lib/use-canonical-path"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { StoryCard } from "@/components/feed/story-card"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
@@ -362,13 +364,15 @@ const EVENT_TYPE_COLOR: Record<string, string> = {
 
 type FeedTab = "all" | "people" | "boards" | "events" | "places" | "stories"
 
-export default function BrandPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = use(params)
+export default function BrandPage({ params }: { params: Promise<{ community: string; slug: string }> }) {
+  const { community, slug } = use(params)
   const { catalog, sessionClaims, dbClaims, userEntities, activePersonId } = useLineageStore()
+  const personLink = usePersonHref()
   const isAuth = isAuthUser(activePersonId)
   const allOrgs = [...catalog.orgs, ...userEntities.orgs]
   const allPeople = [...catalog.people, ...(userEntities.people ?? [])]
   const org = allOrgs.find((o) => o.id === slug || orgSlug(o) === slug)
+  useCanonicalPath(org ? `/${community}/brands/${orgSlug(org)}` : null)
   if (!org) notFound()
 
   const storeClaims = [...sessionClaims, ...dbClaims]
@@ -677,12 +681,12 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                           const confColor = CONFIDENCE_COLORS[item.claim.confidence] ?? "text-muted"
                           return (
                             <div key={item.claim.id} className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all">
-                              <CommunityLink href={`/people/${person.id}`} className="shrink-0">
+                              <CommunityLink href={personLink(person)} className="shrink-0">
                                 <RiderAvatar person={person} size="md" ring={!!(person.membership_tier && person.membership_tier !== "free")} />
                               </CommunityLink>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-baseline gap-2 flex-wrap">
-                                  <CommunityLink href={`/people/${person.id}`} className="text-sm font-medium text-foreground hover:text-blue-300 transition-colors">
+                                  <CommunityLink href={personLink(person)} className="text-sm font-medium text-foreground hover:text-blue-300 transition-colors">
                                     {person.display_name}
                                   </CommunityLink>
                                   <span className="text-xs text-muted">{relLabel}</span>
@@ -722,7 +726,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                         if (item.kind === "event") {
                           const accentColor = EVENT_TYPE_COLOR[item.event.event_type] ?? "border-l-zinc-600"
                           return (
-                            <CommunityLink key={item.claim?.id ?? item.event.id} href={`/events/${item.event.id}`}>
+                            <CommunityLink key={item.claim?.id ?? item.event.id} href={`/events/${eventSlug(item.event)}`}>
                               <div className={cn(
                                 "flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 rounded-xl hover:border-border-default transition-all group",
                                 accentColor
@@ -746,7 +750,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
 
                         if (item.kind === "series") {
                           return (
-                            <CommunityLink key={item.series.id} href={`/events/${item.series.id}`}>
+                            <CommunityLink key={item.series.id} href={`/events/${seriesSlug(item.series)}`}>
                               <div className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 border-l-amber-700 rounded-xl hover:border-border-default transition-all group">
                                 <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">📅</div>
                                 <div className="flex-1 min-w-0">
@@ -814,12 +818,12 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                   const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-muted"
                   return (
                     <div key={claim.id} className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all">
-                      <CommunityLink href={`/people/${person.id}`} className="shrink-0">
+                      <CommunityLink href={personLink(person)} className="shrink-0">
                         <RiderAvatar person={person} size="md" ring={!!(person.membership_tier && person.membership_tier !== "free")} />
                       </CommunityLink>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2 flex-wrap">
-                          <CommunityLink href={`/people/${person.id}`} className="text-sm font-medium text-foreground hover:text-blue-300 transition-colors">
+                          <CommunityLink href={personLink(person)} className="text-sm font-medium text-foreground hover:text-blue-300 transition-colors">
                             {person.display_name}
                           </CommunityLink>
                           <span className="text-xs text-muted">{relLabel}</span>
@@ -897,7 +901,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                       const accentColor = EVENT_TYPE_COLOR[event.event_type] ?? "border-l-zinc-600"
                       const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-muted"
                       return (
-                        <CommunityLink key={claim.id} href={`/events/${event.id}`}>
+                        <CommunityLink key={claim.id} href={`/events/${eventSlug(event)}`}>
                           <div className={cn(
                             "flex items-start gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 rounded-xl hover:border-border-default transition-all group",
                             accentColor
@@ -923,7 +927,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                     {extraBrandEvents.map((event) => {
                       const accentColor = EVENT_TYPE_COLOR[event.event_type] ?? "border-l-zinc-600"
                       return (
-                        <CommunityLink key={event.id} href={`/events/${event.id}`}>
+                        <CommunityLink key={event.id} href={`/events/${eventSlug(event)}`}>
                           <div className={cn(
                             "flex items-start gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 rounded-xl hover:border-border-default transition-all group",
                             accentColor
@@ -943,7 +947,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                       )
                     })}
                     {brandSeries.map((series) => (
-                      <CommunityLink key={series.id} href={`/events/${series.id}`}>
+                      <CommunityLink key={series.id} href={`/events/${seriesSlug(series)}`}>
                         <div className="flex items-start gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 border-l-amber-700 rounded-xl hover:border-border-default transition-all group">
                           <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">📅</div>
                           <div className="flex-1 min-w-0">
@@ -1092,7 +1096,7 @@ export default function BrandPage({ params }: { params: Promise<{ slug: string }
                     const person = catalog.people.find((p) => p.id === rid)
                     if (!person) return null
                     return (
-                      <CommunityLink key={rid} href={`/people/${rid}`}>
+                      <CommunityLink key={rid} href={personLink(rid)}>
                         <div className="flex items-center gap-1 px-2 py-1 bg-background border border-border-default rounded-full text-xs text-muted hover:text-foreground hover:border-border-default transition-all">
                           <RiderAvatar person={person} size="xs" />
                           {person.display_name.split(" ")[0]}

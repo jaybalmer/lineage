@@ -344,6 +344,13 @@ Strength: **strong** ≥20, **medium** ≥8, **light** >0, **none** = 0
 
     A user opts into consent-first gating by toggling `profiles.require_tag_approval = true` from `/me/settings/tag-privacy` (`/api/me/tag-privacy` PATCH). When on, pending tags against that subject stay hidden until approved at `/me/tags`. `declined` and `disabled` rows are hidden in both modes. Owners can decline any tag at any time regardless of the gate. The flag is read at query time, so flipping it gates existing pending tags retroactively.
 
+11. **Entity URLs are name-based slugs — generate links through the helpers, never `/{type}/${id}` directly.** Every detail page resolves *both* slug and id, so id URLs still work; the goal is that links and the address bar show the slug.
+    - **Person links:** `personHref(person, people)` / `personHrefById(id, people)` from `src/lib/entity-links.ts`, or the `usePersonHref()` hook (`src/lib/use-person-href.ts`) in components (reads `catalog.people`, precomputes a slug→count map). Person slugs derive from `display_name` via `nameToSlug()` — there is no stored slug column.
+    - **Collision rule:** a name slug is emitted only when it maps to exactly one person; colliding names fall back to the stable id so two "John Smith"s never resolve onto each other. The same guard governs link generation and canonicalization.
+    - **Other entities:** `entityHref(id, type, catalog)` (also in `entity-links.ts`) resolves the live catalog object and uses `placeSlug`/`boardSlug`/`orgSlug`/`eventSlug`/`seriesSlug`. It returns community-scoped paths *unprefixed* — wrap in `<CommunityLink>`. Used by `entity-chip.tsx` and `claim-card.tsx`. (The old mock-only `getEntityHref` was removed.)
+    - **Address-bar canonicalization:** detail pages call `useCanonicalPath(canonical)` (`src/lib/use-canonical-path.ts`) which `history.replaceState`s a UUID/stale-slug URL to the canonical slug (no reload/refetch). The hook must sit above any `notFound()` early return. Community pages read `community` from `params` to build the prefix. There is no server-side UUID→slug 301; the proxy still only redirects merged/aliased records.
+    - Admin pages intentionally keep id-based person links.
+
 ---
 
 ## Membership System

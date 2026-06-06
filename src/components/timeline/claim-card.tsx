@@ -5,6 +5,7 @@ import type { Claim } from "@/types"
 import { ConfidenceBadge, UnverifiedBadge } from "@/components/ui/badge"
 import { PREDICATE_ICONS, PREDICATE_LABELS, formatDateRange } from "@/lib/utils"
 import { getEntityName } from "@/lib/mock-data"
+import { entityHref } from "@/lib/entity-links"
 import { useLineageStore } from "@/store/lineage-store"
 import { EditClaimModal } from "@/components/ui/edit-claim-modal"
 import { EditEventModal } from "@/components/ui/edit-event-modal"
@@ -22,17 +23,8 @@ const ENTITY_DOT_COLOR: Record<string, string> = {
   org: "#0891B2",
 }
 
-function entityHref(id: string, type: string) {
-  if (type === "place") return `/places/${id}`
-  if (type === "person") return `/people/${id}`
-  if (type === "org") return `/orgs/${id}`
-  if (type === "board") return `/boards/${id}`
-  if (type === "event") return `/events/${id}`
-  return "#"
-}
-
 export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
-  const { userEntities, removeClaim } = useLineageStore()
+  const { userEntities, removeClaim, catalog } = useLineageStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editingEvent, setEditingEvent] = useState(false)
@@ -41,7 +33,7 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
   const icon = PREDICATE_ICONS[claim.predicate] ?? "•"
   const label = PREDICATE_LABELS[claim.predicate] ?? claim.predicate
   const dateRange = formatDateRange(claim.start_date, claim.end_date)
-  const href = entityHref(claim.object_id, claim.object_type)
+  const href = entityHref(claim.object_id, claim.object_type, catalog)
 
   const isLinked = true // all entity types now have detail pages
 

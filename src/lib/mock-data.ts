@@ -1,4 +1,4 @@
-import type { Person, Place, Org, Board, Event, Claim, Source, EventSeries, EntityType } from "@/types"
+import type { Person, Place, Org, Board, Event, Claim, Source, EventSeries } from "@/types"
 
 // ─── Places ──────────────────────────────────────────────────────────────────
 
@@ -587,24 +587,5 @@ export function getSeriesBySlug(slug: string): EventSeries | undefined {
   return EVENT_SERIES.find((s) => seriesSlug(s) === slug)
 }
 
-/** Returns the canonical slug-based URL for any entity. Falls back to id-based URL for user-created entities. */
-export function getEntityHref(id: string, type: EntityType): string {
-  if (type === "place") {
-    const place = getPlaceById(id)
-    return place ? `/places/${placeSlug(place)}` : `/places/${id}`
-  }
-  if (type === "board") {
-    const board = getBoardById(id)
-    return board ? `/boards/${boardSlug(board)}` : `/boards/${id}`
-  }
-  if (type === "org") {
-    const org = getOrgById(id)
-    return org ? `/brands/${orgSlug(org)}` : `/brands/${id}`
-  }
-  if (type === "event") {
-    const event = getEventById(id)
-    return event ? `/events/${eventSlug(event)}` : `/events/${id}`
-  }
-  if (type === "person") return `/people/${id}`
-  return "#"
-}
+// Per-entity slug-based hrefs now live in src/lib/entity-links.ts (entityHref),
+// which resolves against the live catalog instead of mock data only.

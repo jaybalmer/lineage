@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { getPlaceById, getPersonById } from "@/lib/mock-data"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
+import { usePersonHref } from "@/lib/use-person-href"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
@@ -60,10 +61,11 @@ function RiderRow({ person, isMe, onInvite, claims, activeCommunitySlug }: {
   claims: import("@/types").Claim[]
   activeCommunitySlug: string
 }) {
+  const personLink = usePersonHref()
   const claimCount = claims.filter((c) => c.subject_id === person.id).length
   const placeCount = claims.filter((c) => c.subject_id === person.id && c.predicate === "rode_at").length
   const homeResort = person.home_resort_id ? getPlaceById(person.home_resort_id) : null
-  const href = isMe ? `/${activeCommunitySlug}/profile` : `/people/${person.id}`
+  const href = isMe ? `/${activeCommunitySlug}/profile` : personLink(person)
   const addedByPerson = person.added_by ? getPersonById(person.added_by) : null
   const kind = getRiderKind(person)
   const meta = KIND_META[kind]
