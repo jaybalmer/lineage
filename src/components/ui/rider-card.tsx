@@ -7,6 +7,7 @@ import { getLinkIcon } from "@/components/ui/edit-profile-modal"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { supabase } from "@/lib/supabase"
 import { useLineageStore } from "@/store/lineage-store"
+import { usePersonHref } from "@/lib/use-person-href"
 
 // ── Card themes ───────────────────────────────────────────────────────────────
 
@@ -133,6 +134,7 @@ export function RiderCard({
   onMemberCard,
 }: RiderCardProps) {
   const { setProfileOverride } = useLineageStore()
+  const personLink = usePersonHref()
 
   // Stats derived from claims
   const boardCount  = claims.filter((c) => c.predicate === "owned_board").length
@@ -234,7 +236,7 @@ export function RiderCard({
   const name     = person.display_name ?? "Rider"
   const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
   const shareUrl = typeof window !== "undefined"
-    ? (userId ? `${window.location.origin}/people/${userId}` : window.location.href)
+    ? (userId ? `${window.location.origin}${personLink(userId)}` : window.location.href)
     : ""
 
   const grad = `linear-gradient(170deg, ${t.grad[0]} 0%, ${t.grad[1]} 55%, ${t.grad[2]} 100%)`

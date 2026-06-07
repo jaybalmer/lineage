@@ -92,7 +92,7 @@ function EventCard({ event }: { event: Event }) {
 
   return (
     <div className="flex items-center gap-2">
-      <CommunityLink href={`/events/${event.id}`} className="flex-1 min-w-0 block">
+      <CommunityLink href={`/events/${eventSlug(event)}`} className="flex-1 min-w-0 block">
         <div className={cn(
           "bg-surface border-2 rounded-xl p-4 hover:opacity-90 transition-all",
           accent

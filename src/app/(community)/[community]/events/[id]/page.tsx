@@ -6,6 +6,8 @@ import { notFound } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
+import { personHref } from "@/lib/entity-links"
+import { useCanonicalPath } from "@/lib/use-canonical-path"
 import { supabase } from "@/lib/supabase"
 import { EVENTS, EVENT_SERIES, eventSlug, seriesSlug, placeSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
@@ -82,7 +84,7 @@ function AttendeeList({ eventId }: { eventId: string }) {
           role="link"
           onClick={(e) => {
             if (isConfirming) return
-            e.preventDefault(); e.stopPropagation(); window.location.href = `/people/${claim.subject_id}`
+            e.preventDefault(); e.stopPropagation(); window.location.href = personHref(person, catalog.people)
           }}
           className="flex items-center gap-2 px-3 py-2 bg-surface border border-border-default rounded-xl hover:border-blue-500/40 transition-all group cursor-pointer"
         >
@@ -629,8 +631,8 @@ function AddRiderToEvent({
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
 
-export default function EventPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function EventPage({ params }: { params: Promise<{ community: string; id: string }> }) {
+  const { community, id } = use(params)
   const { catalog, userEntities, activePersonId } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
   const [showAddEdition, setShowAddEdition] = useState(false)
@@ -678,6 +680,15 @@ export default function EventPage({ params }: { params: Promise<{ id: string }> 
     ? undefined
     : allEvents.find((e) => e.id === id) ??
       allEvents.find((e) => eventSlug(e) === id)
+
+  // Rewrite the address bar to the name-based slug when reached via a UUID.
+  useCanonicalPath(
+    instance
+      ? `/${community}/events/${eventSlug(instance)}`
+      : series
+        ? `/${community}/events/${seriesSlug(series)}`
+        : null
+  )
 
   if (!series && !instance) notFound()
 

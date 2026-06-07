@@ -5,6 +5,7 @@ import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
 import { Nav } from "@/components/ui/nav"
 import { RiderAvatar, getInitials } from "@/components/ui/rider-avatar"
+import { usePersonHref } from "@/lib/use-person-href"
 
 const FOUNDING_TOTAL = 500
 
@@ -30,6 +31,7 @@ export default function FoundingPage() {
       .catch(() => setLoading(false))
   }, [])
 
+  const personLink = usePersonHref()
   const filled = members.length
   const remaining = FOUNDING_TOTAL - filled
   const pct = (filled / FOUNDING_TOTAL) * 100
@@ -109,7 +111,7 @@ export default function FoundingPage() {
           ) : filled > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-8">
               {members.map((m) => (
-                <CommunityLink key={m.id} href={`/people/${m.id}`}
+                <CommunityLink key={m.id} href={personLink(m.id)}
                   className="block bg-surface border border-border-default rounded-xl p-4 hover:border-amber-800/60 transition-all"
                   style={{ borderTop: "2px solid #f59e0b" }}>
                   {/* Avatar */}

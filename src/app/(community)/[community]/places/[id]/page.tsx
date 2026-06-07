@@ -9,6 +9,8 @@ import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
 import { notFound } from "next/navigation"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
+import { usePersonHref } from "@/lib/use-person-href"
+import { useCanonicalPath } from "@/lib/use-canonical-path"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { supabase } from "@/lib/supabase"
@@ -34,9 +36,10 @@ const EVENT_TYPE_COLOR: Record<string, string> = {
   gathering: "border-l-cyan-700",
 }
 
-export default function PlacePage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params)
+export default function PlacePage({ params }: { params: Promise<{ community: string; id: string }> }) {
+  const { community, id } = use(params)
   const { catalog, userEntities, activePersonId } = useLineageStore()
+  const personLink = usePersonHref()
   const isAuth = isAuthUser(activePersonId)
   // Catalog-first: Supabase catalog > user-created > mock-data fallback (deduped by id)
   const seen = new Set<string>()
@@ -46,6 +49,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
     return true
   })
   const place = allPlaces.find((p) => p.id === id || placeSlug(p) === id)
+  useCanonicalPath(place ? `/${community}/places/${placeSlug(place)}` : null)
   if (!place) notFound()
 
   const [tab, setTab] = useState<PlaceTab>("all")
@@ -512,7 +516,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                           const rider = catalog.people.find((p) => p.id === item.riderId)
                           if (!rider) return null
                           return (
-                            <CommunityLink key={`rider-${item.riderId}-${i}`} href={`/people/${item.riderId}`}>
+                            <CommunityLink key={`rider-${item.riderId}-${i}`} href={personLink(item.riderId)}>
                               <div className="flex items-center gap-3 px-4 py-3 bg-surface border border-border-default rounded-xl hover:border-border-default transition-all">
                                 <RiderAvatar person={rider} size="md" ring={!!(rider.membership_tier && rider.membership_tier !== "free")} />
                                 <div className="flex-1 min-w-0">
@@ -578,7 +582,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                         if (!rider) return null
                         const claim = rideClaims.find((c) => c.subject_id === riderId)
                         return (
-                          <CommunityLink key={riderId} href={`/people/${riderId}`}>
+                          <CommunityLink key={riderId} href={personLink(riderId)}>
                             <div className="flex items-center gap-2 p-2.5 bg-surface border border-border-default rounded-lg hover:border-border-default transition-all">
                               <RiderAvatar person={rider} size="sm" />
                               <div className="min-w-0">
@@ -726,7 +730,7 @@ export default function PlacePage({ params }: { params: Promise<{ id: string }> 
                   if (!person) return null
                   const claim = workClaims.find((c) => c.subject_id === sid)
                   return (
-                    <CommunityLink key={sid} href={`/people/${sid}`}>
+                    <CommunityLink key={sid} href={personLink(sid)}>
                       <div className="flex items-center gap-2 py-2 hover:text-blue-300 transition-colors">
                         <RiderAvatar person={person} size="sm" />
                         <div>

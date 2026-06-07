@@ -4,9 +4,11 @@ import { Nav } from "@/components/ui/nav"
 import { PEOPLE, PLACES, ORGS, BOARDS, EVENTS, EVENT_SERIES, CLAIMS, placeSlug, orgSlug, boardSlug, seriesSlug } from "@/lib/mock-data"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { CommunityLink } from "@/components/ui/community-link"
+import { usePersonHref } from "@/lib/use-person-href"
 import { useState } from "react"
 
 export default function ExplorePage() {
+  const personLink = usePersonHref()
   const [query, setQuery] = useState("")
   const [tab, setTab] = useState<"all" | "riders" | "places" | "brands" | "boards" | "events">("all")
 
@@ -78,7 +80,7 @@ export default function ExplorePage() {
               </CommunityLink>
             )}
             {mostDocumented && (
-              <CommunityLink href={`/people/${mostDocumented.person.id}`}>
+              <CommunityLink href={personLink(mostDocumented.person)}>
                 <div className="bg-surface border border-border-default rounded-xl p-4 hover:border-border-default transition-all">
                   <div className="text-xs text-muted mb-1">Most documented</div>
                   <div className="font-semibold text-foreground">{mostDocumented.person.display_name}</div>
@@ -97,7 +99,7 @@ export default function ExplorePage() {
                 <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Riders</div>
                 <div className="grid grid-cols-2 gap-2">
                   {filteredPeople.map((p) => (
-                    <CommunityLink key={p.id} href={`/people/${p.id}`}>
+                    <CommunityLink key={p.id} href={personLink(p)}>
                       <div className="flex items-center gap-3 p-3 bg-surface border border-border-default rounded-lg hover:border-border-default transition-all">
                         <RiderAvatar person={p} size="md" />
                         <div>
@@ -206,7 +208,7 @@ export default function ExplorePage() {
                 {PEOPLE.map((p) => {
                   const claimCount = CLAIMS.filter((c) => c.subject_id === p.id).length
                   return (
-                    <CommunityLink key={p.id} href={`/people/${p.id}`}>
+                    <CommunityLink key={p.id} href={personLink(p)}>
                       <div className="flex items-center gap-3 p-3 bg-surface border border-border-default rounded-lg hover:border-border-default transition-all">
                         <RiderAvatar person={p} size="md" />
                         <div className="min-w-0">
@@ -249,7 +251,7 @@ export default function ExplorePage() {
                   const instanceCount = EVENTS.filter((e) => e.series_id === s.id).length
                   const attendeeCount = new Set(CLAIMS.filter((c) => c.predicate === "competed_at" && EVENTS.filter(e => e.series_id === s.id).some(e => e.id === c.object_id)).map(c => c.subject_id)).size
                   return (
-                    <CommunityLink key={s.id} href={`/events/${s.id}`}>
+                    <CommunityLink key={s.id} href={`/events/${seriesSlug(s)}`}>
                       <div className="flex items-center gap-3 p-3 bg-surface border border-border-default rounded-lg hover:border-border-default transition-all">
                         <span className="text-lg flex-shrink-0">🏆</span>
                         <div className="min-w-0">

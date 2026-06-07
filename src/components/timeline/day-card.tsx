@@ -4,6 +4,7 @@ import { useState } from "react"
 import type { RidingDay } from "@/types"
 import { useLineageStore } from "@/store/lineage-store"
 import { PLACES, PEOPLE, placeSlug } from "@/lib/mock-data"
+import { personHref } from "@/lib/entity-links"
 import { CommunityLink } from "@/components/ui/community-link"
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
@@ -18,7 +19,7 @@ function formatDayDate(dateStr: string): { weekday: string; display: string } {
 }
 
 export function DayCard({ day, isOwn }: { day: RidingDay; isOwn?: boolean }) {
-  const { userEntities, removeRidingDay } = useLineageStore()
+  const { userEntities, removeRidingDay, catalog } = useLineageStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
@@ -64,7 +65,7 @@ export function DayCard({ day, isOwn }: { day: RidingDay; isOwn?: boolean }) {
                 {riders.map((r, i) => (
                   <span key={r.id}>
                     <CommunityLink
-                      href={`/people/${r.id}`}
+                      href={personHref(r, catalog.people)}
                       className="text-[11px] text-muted hover:text-foreground transition-colors"
                     >
                       {r.display_name}

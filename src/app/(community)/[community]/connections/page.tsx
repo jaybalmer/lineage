@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { Nav } from "@/components/ui/nav"
 import { CLAIMS, PEOPLE, getPlaceById, getEventById } from "@/lib/mock-data"
 import { useLineageStore, getAllClaims, isAuthUser } from "@/store/lineage-store"
+import { personHref } from "@/lib/entity-links"
 import { supabase } from "@/lib/supabase"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import Link from "next/link"
@@ -66,7 +67,7 @@ function ConnectionCard({
   return (
     <div className="bg-surface border border-border-default rounded-xl p-4 hover:border-border-default transition-all">
       <div className="flex items-start gap-3">
-        <CommunityLink href={`/people/${personId}`} className="flex-shrink-0">
+        <CommunityLink href={personHref(person, catalog.people)} className="flex-shrink-0">
           <RiderAvatar
             person={person}
             size="lg"
@@ -74,7 +75,7 @@ function ConnectionCard({
           />
         </CommunityLink>
         <div className="min-w-0 flex-1">
-          <CommunityLink href={`/people/${personId}`}>
+          <CommunityLink href={personHref(person, catalog.people)}>
             <div className="font-semibold text-foreground text-sm hover:text-blue-300 transition-colors">
               {person.display_name}
             </div>
