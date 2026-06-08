@@ -17,21 +17,35 @@ const COMMUNITY_SEGMENTS = new Set([
 ])
 
 /**
- * Drop-in replacement for next/link that auto-prefixes community-scoped routes.
+ * Resolve a community-scoped path to its active-community-prefixed form.
  *
- * <CommunityLink href="/feed">                →  /snowboarding/feed
- * <CommunityLink href="/people/brad-holmes">  →  /people/brad-holmes  (unchanged, top-level)
- * <CommunityLink href="/auth/signin">         →  /auth/signin         (unchanged, global)
- * <CommunityLink href="/">                    →  /                    (unchanged, root)
+ *   communityHref("/feed", "snowboarding")               → "/snowboarding/feed"
+ *   communityHref("/people/brad-holmes", "snowboarding") → "/people/brad-holmes" (top-level)
+ *   communityHref("/auth/signin", "snowboarding")        → "/auth/signin"        (global)
+ *   communityHref("/", "snowboarding")                   → "/"                   (root)
+ *
+ * Exported so non-Link consumers that render a raw <a> (e.g. ImageLightbox,
+ * which opens in a new tab) can build the same URL CommunityLink would, instead
+ * of pointing at a bare community-scoped path that 404s (BUG-001).
+ */
+export function communityHref(href: string, slug: string): string {
+  if (href.startsWith("/")) {
+    const firstSeg = href.split("/")[1] // "" for "/", "feed" for "/feed"
+    if (firstSeg && COMMUNITY_SEGMENTS.has(firstSeg)) {
+      return `/${slug}${href}`
+    }
+  }
+  return href
+}
+
+/**
+ * Drop-in replacement for next/link that auto-prefixes community-scoped routes.
  */
 export function CommunityLink({ href, ...props }: React.ComponentProps<typeof Link>) {
   const slug = useLineageStore((s) => s.activeCommunitySlug)
 
-  if (typeof href === "string" && href.startsWith("/")) {
-    const firstSeg = href.split("/")[1] // "" for "/", "feed" for "/feed"
-    if (firstSeg && COMMUNITY_SEGMENTS.has(firstSeg)) {
-      return <Link {...props} href={`/${slug}${href}`} />
-    }
+  if (typeof href === "string") {
+    return <Link {...props} href={communityHref(href, slug)} />
   }
 
   return <Link {...props} href={href} />
