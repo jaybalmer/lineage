@@ -3,6 +3,7 @@
 import { use, useState, useEffect, useRef, useMemo } from "react"
 import { CommunityLink } from "@/components/ui/community-link"
 import { notFound } from "next/navigation"
+import { CatalogGate } from "@/components/ui/catalog-gate"
 import { Nav } from "@/components/ui/nav"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
@@ -631,7 +632,17 @@ function AddRiderToEvent({
 
 // ─── Main page ─────────────────────────────────────────────────────────────────
 
-export default function EventPage({ params }: { params: Promise<{ community: string; id: string }> }) {
+export default function EventPage(props: { params: Promise<{ community: string; id: string }> }) {
+  // Gate on catalogLoaded so a fresh load (e.g. an event card opened in a new tab)
+  // renders a loader (HTTP 200) instead of 404ing before the catalog hydrates (BUG-001).
+  return (
+    <CatalogGate>
+      <EventPageInner {...props} />
+    </CatalogGate>
+  )
+}
+
+function EventPageInner({ params }: { params: Promise<{ community: string; id: string }> }) {
   const { community, id } = use(params)
   const { catalog, userEntities, activePersonId } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)

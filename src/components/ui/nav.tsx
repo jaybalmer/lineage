@@ -25,6 +25,12 @@ function AppNav({ path, isAuth, dropdownProps, communitySlug, communities }: {
    *  so by here the URL is already community-prefixed when in scope. */
   const inCommunity = path.startsWith(`/${communitySlug}/`) || path === `/${communitySlug}`
 
+  // Person nodes live top-level (cross-community) but are reached from the
+  // community category row, so they carry the same brand-blue rule rather than
+  // the global grey divider (BUG-007).
+  const onPeopleRoute = path === "/people" || path.startsWith("/people/")
+  const showCommunityRule = inCommunity || onPeopleRoute
+
   // At global scope activeCommunity is undefined so category labels fall back to
   // the global defaults (People, not Riders).
   const activeCommunity = inCommunity ? getCommunityBySlug(communitySlug, communities) : undefined
@@ -59,8 +65,9 @@ function AppNav({ path, isAuth, dropdownProps, communitySlug, communities }: {
         )}
       </div>
 
-      {/* Community signal: 3px accent strip in-community, standard divider at global */}
-      {inCommunity ? (
+      {/* Community signal: 3px accent strip in-community (and on top-level people
+          pages), standard divider at true global scope */}
+      {showCommunityRule ? (
         <div className="h-[3px] bg-accent" />
       ) : (
         <div className="border-t border-border-default" />

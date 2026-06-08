@@ -573,8 +573,9 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* Quick-action row */}
-        <div className="flex items-center justify-between gap-2 mb-6">
+        {/* Quick-action row — wraps on narrow screens so the action buttons never
+            push the row past the viewport and shrink the whole page (BUG-008). */}
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
           <div className="flex items-center gap-2">
             <h2 className="text-2xl font-black tracking-widest uppercase text-foreground">Timeline</h2>
             <button

@@ -127,15 +127,23 @@ function PlacesPageInner() {
           </button>
         </div>
 
-        {/* Search + type filter + mine toggle */}
-        <div className="flex gap-3 mb-6 flex-wrap">
+        {/* Search — standard list-page control (matches Riders/Boards/Events/Brands), BUG-006 */}
+        <div className="relative mb-4">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm pointer-events-none">🔍</span>
           <input
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search places..."
-            className="flex-1 min-w-0 bg-surface border border-border-default rounded-lg px-4 py-2 text-sm text-foreground placeholder:text-muted focus:outline-none focus:border-accent"
+            placeholder="Search places…"
+            className="w-full bg-surface border border-border-default rounded-xl pl-9 pr-4 py-2.5 text-sm text-foreground placeholder-muted focus:outline-none focus:border-blue-500 transition-colors"
           />
+          {query && (
+            <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground text-lg leading-none">×</button>
+          )}
+        </div>
+
+        {/* Type filter + mine toggle */}
+        <div className="flex gap-3 mb-6 flex-wrap">
           <div className="flex gap-2 items-center flex-wrap">
             {["all", "resort", "shop", "zone"].map((t) => (
               <button
