@@ -1,5 +1,6 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
+import { redirect } from "next/navigation"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 
 export function getServiceClient(): SupabaseClient {
@@ -111,4 +112,33 @@ export async function requireModerator(): Promise<
   }
 
   return { user, profile, response: null }
+}
+
+/**
+ * Server-component gate for the /admin/* page tree (see src/app/admin/layout.tsx).
+ *
+ * Mirrors requireEditor()'s authority check (is_editor OR founding) but
+ * redirect()s instead of returning a JSON response, so it can be awaited from a
+ * layout/page Server Component. Non-editors never receive any admin HTML/JS.
+ * Anonymous visitors are sent to sign-in; signed-in non-editors are sent home.
+ *
+ * This is the page-visibility boundary only. The per-route API handlers keep
+ * their own finer-grained checks (requireEditor for the dataset/membership
+ * editor, requireModerator for tag-queue / activity / asserters), so authority
+ * to mutate is still enforced server-side at the data layer.
+ */
+export async function requireEditorPage(): Promise<void> {
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect("/auth/signin")
+
+  const db = getServiceClient()
+  const { data: profile } = await db
+    .from("profiles")
+    .select("is_editor, membership_tier")
+    .eq("id", user.id)
+    .single()
+
+  const isEditor = profile?.is_editor || profile?.membership_tier === "founding"
+  if (!isEditor) redirect("/")
 }

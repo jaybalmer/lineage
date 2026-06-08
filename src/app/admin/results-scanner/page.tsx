@@ -30,8 +30,6 @@ interface DoneResult {
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
-const EDITOR_PASSWORD = "outland"
-
 const MATCH_BADGE: Record<string, { label: string; cls: string }> = {
   exact: { label: "Matched", cls: "bg-green-900/40 text-green-400 border border-green-700/40" },
   fuzzy: { label: "Suggested", cls: "bg-amber-900/40 text-amber-400 border border-amber-700/40" },
@@ -76,24 +74,10 @@ export default function ResultsScannerPage() {
   const router = useRouter()
   const { catalog, membership, authReady, activePersonId, activeCommunitySlug } = useLineageStore()
 
-  // Auth gate
-  const [pwInput, setPwInput] = useState("")
-  const [pwError, setPwError] = useState(false)
-  const [sessionUnlocked, setSessionUnlocked] = useState(false)
-
-  const isEditor = membership.is_editor || sessionUnlocked
-  const showGate = authReady && !isEditor
-
-  function handlePasswordSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    if (pwInput === EDITOR_PASSWORD) {
-      setSessionUnlocked(true)
-      setPwError(false)
-    } else {
-      setPwError(true)
-      setPwInput("")
-    }
-  }
+  // Auth gate. The server layout (src/app/admin/layout.tsx) is the authoritative
+  // gate; this is a fail-closed client fallback. is_editor OR founding mirrors
+  // requireEditorPage(). No password path — access is by membership, not a secret.
+  const isEditor = membership.is_editor || membership.tier === "founding"
 
   // ── Step state ────────────────────────────────────────────────────────────
   const [step, setStep] = useState<Step>("input")
@@ -261,35 +245,27 @@ export default function ResultsScannerPage() {
     }
   }
 
-  // ── Password gate ─────────────────────────────────────────────────────────
-  if (showGate) {
+  // ── Access fallback (server layout is the authoritative gate) ──────────────
+  if (!authReady) {
     return (
       <div className="min-h-screen bg-background text-foreground">
         <Nav />
         <div className="flex items-center justify-center min-h-[calc(100vh-6rem)]">
-          <div className="w-full max-w-sm mx-auto px-6">
-            <div className="text-center mb-6">
-              <div className="text-2xl mb-2">🔒</div>
-              <h1 className="text-sm font-semibold text-foreground">Editor access required</h1>
-              <p className="text-xs text-muted mt-1">Enter the editor password to continue</p>
-            </div>
-            <form onSubmit={handlePasswordSubmit} className="space-y-3">
-              <input
-                type="password"
-                value={pwInput}
-                onChange={(e) => { setPwInput(e.target.value); setPwError(false) }}
-                placeholder="Password"
-                autoFocus
-                className="w-full bg-surface border border-border-default rounded-lg px-3 py-2.5 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
-              />
-              {pwError && <p className="text-xs text-red-400">Incorrect password</p>}
-              <button
-                type="submit"
-                className="w-full px-4 py-2.5 rounded-lg bg-[#1C1917] text-white text-sm font-medium hover:bg-[#292524] transition-colors"
-              >
-                Unlock
-              </button>
-            </form>
+          <p className="text-sm text-muted">Checking access…</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isEditor) {
+    return (
+      <div className="min-h-screen bg-background text-foreground">
+        <Nav />
+        <div className="flex items-center justify-center min-h-[calc(100vh-6rem)]">
+          <div className="w-full max-w-sm mx-auto px-6 text-center">
+            <div className="text-2xl mb-2">🔒</div>
+            <h1 className="text-sm font-semibold text-foreground">Editor access required</h1>
+            <p className="text-xs text-muted mt-1">Your account doesn&apos;t have editor access.</p>
           </div>
         </div>
       </div>
