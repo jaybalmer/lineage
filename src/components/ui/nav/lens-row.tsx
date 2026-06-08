@@ -42,10 +42,14 @@ export function LensRow({ communitySlug, pathname, isAuth }: LensRowProps) {
     pathname.startsWith(`/${communitySlug}/feed/`)
 
   // TODO PB-012 (Community Home Page): when a global Lineage summary surface exists (curated
-  // directory of all communities), route Community at global scope there instead of the root
-  // marketing page.
-  const communityHref = inCommunity ? `/${communitySlug}` : "/"
-  const communityActive = inCommunity ? pathname === `/${communitySlug}` : pathname === "/"
+  // directory of all communities), route Community at global scope there instead of the
+  // community home.
+  // The Community lens always points at the community home and is active only there. The root
+  // marketing page ("/") is reached via the wordmark, not a lens, so no lens lights up on it
+  // (BUG-003: Community used to stay highlighted on the landing page, and tapping it reloaded
+  // "/" instead of returning to the community).
+  const communityHref = `/${communitySlug}`
+  const communityActive = pathname === `/${communitySlug}`
 
   const lenses = [
     { id: "timeline",  label: "Timeline",  href: timelineHref,  active: timelineActive },

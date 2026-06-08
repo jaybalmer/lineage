@@ -133,7 +133,7 @@ export function CommunitySwitcher({ activeCommunitySlug, communities }: Communit
                 className="flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
                 style={{ fontSize: 11 }}
               >
-                Back to Lineage (global)
+                Back to Linestry (global)
               </Link>
             </>
           )}

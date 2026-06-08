@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { CommunityLink } from "@/components/ui/community-link"
+import { CommunityLink, communityHref } from "@/components/ui/community-link"
 import type { Claim, EntityType, Event, Board, Place, Org, Person } from "@/types"
 import { ConfidenceBadge, UnverifiedBadge } from "@/components/ui/badge"
 import { PREDICATE_LABELS, formatDateRange } from "@/lib/utils"
@@ -328,7 +328,7 @@ function EntityBlock({ claim, entityName, isOwn, readOnly }: EntityBlockProps) {
   const id = claim.object_id
 
   // Resolve entity details — check full Supabase catalog first, then mock-data fallbacks
-  const { catalog, userEntities } = useLineageStore()
+  const { catalog, userEntities, activeCommunitySlug } = useLineageStore()
   const board  = type === "board"
     ? (catalog.boards.find((b) => b.id === id) ?? userEntities.boards.find((b) => b.id === id) ?? getBoardById(id) ?? null)
     : null
@@ -436,7 +436,10 @@ function EntityBlock({ claim, entityName, isOwn, readOnly }: EntityBlockProps) {
         <ImageLightbox
           src={imageUrl}
           alt={displayName}
-          href={href !== "#" ? href : undefined}
+          // Community-scoped paths (boards/places/events/brands) must carry the
+          // active community prefix or the lightbox's new-tab <a> 404s (BUG-001a).
+          // personHref is already top-level, so communityHref passes it through.
+          href={href !== "#" ? communityHref(href, activeCommunitySlug) : undefined}
           hrefLabel={type === "board" ? "View board" : type === "place" ? "View resort" : "View page"}
           onClose={() => setLightboxOpen(false)}
         />

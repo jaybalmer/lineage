@@ -54,6 +54,19 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Prevent iOS from auto-zooming when a form control is focused. Safari zooms
+   whenever the focused field's font-size is below 16px and never zooms back
+   out, which leaves fixed/bottom CTAs clipped off-screen (BUG-004). Scoped to
+   coarse pointers so desktop sizing is untouched; !important to beat the
+   Tailwind text-sm/text-xs utilities the inputs carry. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 /* Postcards and player cards always render on a white surface with light-theme
    tokens, even in dark mode. Override both raw tokens and the Tailwind
    @theme-layer --color-* aliases. */

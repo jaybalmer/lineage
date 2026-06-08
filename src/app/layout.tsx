@@ -46,6 +46,17 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${geologicaDisplay.variable} ${geologicaBody.variable}`} suppressHydrationWarning>
+      <head>
+        {/* Apply the saved theme before first paint so the server-rendered light
+            default does not flash before useTheme() mounts, and so signing in
+            never visibly flips the theme (BUG-002). Light is the default; dark
+            is opt-in and stored under "lineage-theme". */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `try{if(localStorage.getItem('lineage-theme')==='dark'){document.documentElement.classList.add('dark')}}catch(e){}`,
+          }}
+        />
+      </head>
       <body className="bg-background text-foreground antialiased min-h-screen">
         <PostHogProvider>
           <CatalogLoader />
