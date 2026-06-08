@@ -137,7 +137,8 @@ Auth is **not passwordless-only**. Three sign-in methods are surfaced at `/auth/
 Onboarding (`save-step.tsx`) offers Google + magic link only, so signup stays passwordless; password is a sign-in path for members who set one through the reset flow.
 - Callback: `/auth/callback` → `/auth/complete` (session establish; profile upsert and `welcome_pending` for new users only; session-claim migration).
 - Session refresh on every request via `src/proxy.ts` (Next 16's `proxy` file convention; replaces the old `middleware.ts`. Lives next to `src/app/`, NOT at the project root. The exported function is `proxy`, not `middleware`.)
-- **Only `/timeline/*` is protected**. All browse pages stay public
+- **Proxy-gated routes** (`src/proxy.ts`): `/[community]/timeline/*` and `/me/*` redirect to `/onboarding` when signed out. All browse pages stay public.
+- **`/admin/*` is gated separately, server-side**, by `src/app/admin/layout.tsx` calling `requireEditorPage()` (in `src/lib/auth.ts`): anonymous visitors redirect to `/auth/signin`, signed-in non-editors to `/`. "Editor" = `is_editor` OR founding tier, mirroring `requireEditor()`. One layout covers the whole `/admin/*` tree (dataset editor, results-scanner, tag-queue, activity, claims, asserters). There is **no** client-side password gate — the old shared password (`"outland"`) was removed; the per-page client checks are now fail-closed fallbacks only. Mutating `/api/admin/*` routes still enforce `requireEditor`/`requireModerator` independently.
 
 ### Distinguish auth users from mock/demo users
 ```typescript
@@ -265,7 +266,7 @@ import { StoryCard as RichStoryCard } from "@/components/feed/story-card"
 | `/stories` | Stories index page |
 | `/compare` | Side-by-side rider comparison |
 | `/connections/[id]` | ConnectionSummary display |
-| `/admin` | Catalog editor — requires `is_editor: true` in membership |
+| `/admin` | Catalog editor — gated server-side by `src/app/admin/layout.tsx` (`requireEditorPage()`); needs `is_editor: true` or founding tier |
 | `/account/membership` | Stripe-powered membership management |
 | `/founding` | Founding membership sale page |
 
