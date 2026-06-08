@@ -601,3 +601,25 @@ export interface AnalyticsEvent {
   severity: AnalyticsSeverity | null
   props: Record<string, unknown>
 }
+
+// ── In-app bug report widget ────────────────────────────────────────────────
+// Row shape for the bug_reports table. Written server-side by /api/bug-report
+// after requireAuth(); reporter identity comes from the session, never the
+// client payload. status drives a lightweight triage lifecycle (no DB CHECK, so
+// the values below are advisory).
+
+export type BugReportStatus = "new" | "triaged" | "resolved" | "wontfix"
+
+export interface BugReport {
+  id: string
+  created_at: string
+  reporter_id: string | null
+  reporter_email: string | null
+  note: string
+  expected: string | null
+  url: string | null
+  viewport: string | null
+  user_agent: string | null
+  posthog_session_url: string | null
+  status: BugReportStatus
+}

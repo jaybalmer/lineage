@@ -8,6 +8,7 @@ import { getInitials } from "@/components/ui/rider-avatar"
 import { useLineageStore } from "@/store/lineage-store"
 import { useTheme } from "@/lib/theme"
 import { supabase } from "@/lib/supabase"
+import { ReportBugModal } from "@/components/ui/report-bug-modal"
 
 const TIER_BADGE: Record<string, { label: string; color: string; symbol: string }> = {
   annual:   { label: "MEMBER",      color: "#f59e0b", symbol: "◈" },
@@ -33,6 +34,7 @@ export function AvatarDropdown({ displayName, tier, totalTokens, pendingTagCount
   const router = useRouter()
   const { theme, toggle } = useTheme()
   const [open, setOpen] = useState(false)
+  const [bugOpen, setBugOpen] = useState(false)
   const ref       = useRef<HTMLDivElement>(null)
   const tierBadge = TIER_BADGE[tier] ?? null
 
@@ -188,6 +190,16 @@ export function AvatarDropdown({ displayName, tier, totalTokens, pendingTagCount
             </Link>
           )}
 
+          {/* Report a bug */}
+          <button
+            type="button"
+            onClick={() => { setOpen(false); setBugOpen(true) }}
+            className="w-full flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
+            style={{ fontSize: 11 }}
+          >
+            Report a bug
+          </button>
+
           <div className="border-t border-border-default" />
 
           <button
@@ -199,6 +211,8 @@ export function AvatarDropdown({ displayName, tier, totalTokens, pendingTagCount
           </button>
         </div>
       )}
+
+      <ReportBugModal open={bugOpen} onClose={() => setBugOpen(false)} includeAccount />
     </div>
   )
 }
