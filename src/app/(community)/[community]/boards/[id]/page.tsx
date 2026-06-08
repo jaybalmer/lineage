@@ -4,6 +4,7 @@ import { use, useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
 import { notFound } from "next/navigation"
+import { CatalogGate } from "@/components/ui/catalog-gate"
 import { Nav } from "@/components/ui/nav"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
@@ -112,7 +113,7 @@ function LinkCard({ link, isOwn, onDelete }: {
       className="group block bg-surface border border-border-default rounded-xl overflow-hidden hover:border-blue-700/50 transition-colors"
     >
       <div className="flex gap-3 p-3">
-        {link.og_image && (
+        {link.og_image ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={link.og_image}
@@ -120,6 +121,14 @@ function LinkCard({ link, isOwn, onDelete }: {
             className="w-16 h-16 object-cover rounded-lg shrink-0 bg-surface-hover"
             onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}
           />
+        ) : (
+          // Links without an OG image (e.g. a plain retrosnow.com reference) still
+          // get a consistent web-link affordance instead of reading as raw text (BUG-009).
+          <div className="w-16 h-16 rounded-lg shrink-0 bg-surface-hover border border-border-default flex items-center justify-center text-muted">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M9 17H7A5 5 0 0 1 7 7h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
         )}
         <div className="min-w-0 flex-1">
           <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors truncate">
@@ -146,7 +155,17 @@ function LinkCard({ link, isOwn, onDelete }: {
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 
-export default function BoardPage({ params }: { params: Promise<{ community: string; id: string }> }) {
+export default function BoardPage(props: { params: Promise<{ community: string; id: string }> }) {
+  // Gate on catalogLoaded so a fresh load (e.g. "View board" in a new tab) renders a
+  // loader (HTTP 200) instead of 404ing before the client catalog hydrates (BUG-001).
+  return (
+    <CatalogGate>
+      <BoardPageInner {...props} />
+    </CatalogGate>
+  )
+}
+
+function BoardPageInner({ params }: { params: Promise<{ community: string; id: string }> }) {
   const { community, id } = use(params)
   const { catalog, activePersonId } = useLineageStore()
   const personLink = usePersonHref()

@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils"
 import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
 import { notFound } from "next/navigation"
+import { CatalogGate } from "@/components/ui/catalog-gate"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { usePersonHref } from "@/lib/use-person-href"
 import { useCanonicalPath } from "@/lib/use-canonical-path"
@@ -36,7 +37,17 @@ const EVENT_TYPE_COLOR: Record<string, string> = {
   gathering: "border-l-cyan-700",
 }
 
-export default function PlacePage({ params }: { params: Promise<{ community: string; id: string }> }) {
+export default function PlacePage(props: { params: Promise<{ community: string; id: string }> }) {
+  // Gate on catalogLoaded so a fresh server load renders a loader (HTTP 200)
+  // instead of 404ing before the client-only catalog hydrates (BUG-001 detail-page fix).
+  return (
+    <CatalogGate>
+      <PlacePageInner {...props} />
+    </CatalogGate>
+  )
+}
+
+function PlacePageInner({ params }: { params: Promise<{ community: string; id: string }> }) {
   const { community, id } = use(params)
   const { catalog, userEntities, activePersonId } = useLineageStore()
   const personLink = usePersonHref()

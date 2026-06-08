@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, use, useMemo } from "react"
 import { CommunityLink } from "@/components/ui/community-link"
 import { notFound } from "next/navigation"
+import { CatalogGate } from "@/components/ui/catalog-gate"
 import { Nav } from "@/components/ui/nav"
 import { boardSlug, orgSlug, eventSlug, seriesSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
@@ -364,7 +365,17 @@ const EVENT_TYPE_COLOR: Record<string, string> = {
 
 type FeedTab = "all" | "people" | "boards" | "events" | "places" | "stories"
 
-export default function BrandPage({ params }: { params: Promise<{ community: string; slug: string }> }) {
+export default function BrandPage(props: { params: Promise<{ community: string; slug: string }> }) {
+  // Gate on catalogLoaded so a fresh load renders a loader (HTTP 200) instead of
+  // 404ing before the client catalog hydrates (BUG-001 detail-page fix).
+  return (
+    <CatalogGate>
+      <BrandPageInner {...props} />
+    </CatalogGate>
+  )
+}
+
+function BrandPageInner({ params }: { params: Promise<{ community: string; slug: string }> }) {
   const { community, slug } = use(params)
   const { catalog, sessionClaims, dbClaims, userEntities, activePersonId } = useLineageStore()
   const personLink = usePersonHref()

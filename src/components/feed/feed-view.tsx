@@ -86,6 +86,20 @@ function predicateRank(item: FeedItem): number {
   return 6
 }
 
+// Normalize a YYYY, YYYY-MM, or YYYY-MM-DD date string to a comparable
+// YYYYMMDD number. Year-only values are a valid stored format, but
+// parseInt("2022") yields 2022, and itemDecade's `sortDate / 10000` then
+// collapses the year to 0, surfacing a bogus "0s" decade header (BUG-010).
+// Padding partial dates to Jan 1 keeps both the decade bucket and the sort order
+// correct.
+function dateToSortNum(dateStr?: string): number {
+  if (!dateStr) return 0
+  const [y, m = "01", d = "01"] = dateStr.split("-")
+  const year = parseInt(y)
+  if (isNaN(year)) return 0
+  return year * 10000 + (parseInt(m) || 1) * 100 + (parseInt(d) || 1)
+}
+
 function itemDecade(sortDate: number): string {
   if (!sortDate) return "Unknown"
   const year = Math.floor(sortDate / 10000)
@@ -168,7 +182,7 @@ export function FeedView({
       return filtered.map((claim) => ({
         kind: "claim" as const,
         claim,
-        sortDate: claim.start_date ? parseInt(claim.start_date.replace(/-/g, "")) : 0,
+        sortDate: dateToSortNum(claim.start_date),
       }))
     })()
 
@@ -176,7 +190,7 @@ export function FeedView({
       ? days.map((day) => ({
           kind: "day" as const,
           day,
-          sortDate: parseInt(day.date.replace(/-/g, "")),
+          sortDate: dateToSortNum(day.date),
         }))
       : []
 
@@ -184,7 +198,7 @@ export function FeedView({
       ? stories.map((story) => ({
           kind: "story" as const,
           story,
-          sortDate: parseInt(story.story_date.replace(/-/g, "")),
+          sortDate: dateToSortNum(story.story_date),
         }))
       : []
 
@@ -254,7 +268,7 @@ export function FeedView({
 
       {/* Header — only shown when action buttons are present (non-profile contexts) */}
       {!hideActionButtons && (
-        <div className="mb-6 flex items-center justify-between gap-3">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
           <p className="text-sm text-muted">
             {claims.length} claims · {stories.length} stor{stories.length !== 1 ? "ies" : "y"}
           </p>
