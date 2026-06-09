@@ -10,23 +10,30 @@ interface LensRowProps {
 }
 
 /**
- * Lens row: Timeline / Feed / Community. Same three slots in every scope.
+ * Lens row: Community / Feed / My Timeline. Same three slots in every scope.
  * Destinations resolve through the active community slug, which falls back to
  * the default community at global scope (D1 in the Phase 2 brief), so the row
  * is functionally identical in both scopes at launch.
+ *
+ * Signed-out: the timeline slot reads "Start My Timeline" and points at the
+ * /onboarding aha-before-auth flow rather than dumping the visitor at the bare
+ * sign-in screen, since the most prominent lens should invite, not gate.
  */
 export function LensRow({ communitySlug, pathname, isAuth }: LensRowProps) {
   const inCommunity =
     pathname === `/${communitySlug}` || pathname.startsWith(`/${communitySlug}/`)
 
-  // Timeline lens: in-community it points at the community-scoped profile; at global scope it
-  // points at the cross-community /me/timeline. (The avatar "My Timeline" item stays
-  // community-scoped per PB-011 Phase 3A decision Q2.)
+  // Timeline lens: signed out it invites into the /onboarding flow as "Start My
+  // Timeline"; signed in it reads "My Timeline" and points in-community at the
+  // community-scoped profile, at global scope at the cross-community /me/timeline.
+  // (The avatar "My Timeline" item stays community-scoped per PB-011 Phase 3A
+  // decision Q2.)
   const timelineHref = !isAuth
-    ? "/auth/signin"
+    ? "/onboarding"
     : inCommunity
       ? `/${communitySlug}/profile`
       : "/me/timeline"
+  const timelineLabel = isAuth ? "My Timeline" : "Start My Timeline"
   const timelineActive = inCommunity
     ? (pathname === `/${communitySlug}/profile` ||
        pathname.startsWith(`/${communitySlug}/profile/`))
@@ -52,9 +59,9 @@ export function LensRow({ communitySlug, pathname, isAuth }: LensRowProps) {
   const communityActive = pathname === `/${communitySlug}`
 
   const lenses = [
-    { id: "timeline",  label: "Timeline",  href: timelineHref,  active: timelineActive },
-    { id: "feed",      label: "Feed",      href: feedHref,      active: feedActive },
-    { id: "community", label: "Community", href: communityHref, active: communityActive },
+    { id: "community", label: "Community",   href: communityHref, active: communityActive },
+    { id: "feed",      label: "Feed",        href: feedHref,      active: feedActive },
+    { id: "timeline",  label: timelineLabel, href: timelineHref,  active: timelineActive },
   ]
 
   return (
