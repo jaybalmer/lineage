@@ -3,32 +3,34 @@ import { getServiceClient, ensureProfile } from "@/lib/auth"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { emailHeaderHtml, emailFooterHtml } from "@/lib/emails/shared-header"
 
-// POST /api/bug-report
+// POST /api/bug-report  (multipart/form-data)
 //
-// In-app bug widget intake. Two things happen on submit:
+// In-app bug widget intake. On submit:
 //   1. Persist a bug_reports row (durable record, future de-dup).
-//   2. Send a structured [Linestry Bug] email to the triage inbox so the existing
-//      Gmail-to-Drive bridge and daily triage pick it up with no changes.
+//   2. Send a structured [Linestry Bug] email to the triage inbox. An optional
+//      screenshot rides along as an email attachment, so the existing
+//      Gmail-to-Drive bridge files it into the "Linestry Bug Attachments" Drive
+//      folder that daily triage already reviews. No new storage to maintain.
 //
 // Auth is OPTIONAL: signed-in reporters are identified from their session (never
 // the payload, so it cannot be spoofed), and logged-out visitors can still report
 // browsing bugs (reporter_id null). Because this is a public, unauthenticated,
-// email-sending endpoint, every text field is length-capped server-side. Add real
-// rate limiting before relying on it at launch scale.
+// email-sending endpoint, every text field is length-capped and the image is
+// type/size-checked server-side. Add real rate limiting before launch scale.
 //
 // The subject MUST keep the exact "[Linestry Bug]" prefix: the whole downstream
-// pipeline keys on it.
+// pipeline (bridge + triage) keys on it.
 
-interface BugReportPayload {
-  note?: unknown
-  expected?: unknown
-  url?: unknown
-  viewport?: unknown
-  userAgent?: unknown
-  posthogSessionUrl?: unknown
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024 // 8 MB ceiling (client compresses well below)
+const IMAGE_MIME_EXT: Record<string, string> = {
+  "image/png":  "png",
+  "image/jpeg": "jpg",
+  "image/jpg":  "jpg",
+  "image/webp": "webp",
+  "image/gif":  "gif",
 }
 
-function asString(v: unknown): string {
+function asString(v: FormDataEntryValue | null): string {
   return typeof v === "string" ? v : ""
 }
 
@@ -61,6 +63,7 @@ function bugReportEmailHtml(p: {
   viewport: string
   userAgent: string
   posthogSessionUrl: string | null
+  hasImage: boolean
 }): string {
   const noteHtml = esc(p.note).replace(/\n/g, "<br>")
   const expectedBlock = p.expected
@@ -74,6 +77,9 @@ function bugReportEmailHtml(p: {
   const replayRow = p.posthogSessionUrl
     ? metaRow("Session replay", `<a href="${esc(p.posthogSessionUrl)}" style="color:#60a5fa;text-decoration:none;word-break:break-all;">Open session replay</a>`)
     : metaRow("Session replay", `<span style="color:#52525b;">Not available</span>`)
+  const screenshotRow = metaRow("Screenshot", p.hasImage
+    ? `<span style="color:#e5e5e5;">Attached to this email</span>`
+    : `<span style="color:#52525b;">Not provided</span>`)
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -90,7 +96,7 @@ function bugReportEmailHtml(p: {
       ${expectedBlock}
 
       <div style="border-top:1px solid #2a2a2a;margin:24px 0 8px;"></div>
-      <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">${pageRow}${metaRow("Reported by", esc(p.reportedBy))}${metaRow("Timestamp", esc(p.timestamp))}${metaRow("Viewport", esc(p.viewport || "unknown"))}${metaRow("Browser", esc(p.userAgent || "unknown"))}${replayRow}
+      <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">${pageRow}${metaRow("Reported by", esc(p.reportedBy))}${metaRow("Timestamp", esc(p.timestamp))}${metaRow("Viewport", esc(p.viewport || "unknown"))}${metaRow("Browser", esc(p.userAgent || "unknown"))}${replayRow}${screenshotRow}
       </table>
     </div>
     ${emailFooterHtml()}
@@ -105,28 +111,51 @@ export async function POST(req: NextRequest) {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()
 
-  let body: BugReportPayload
+  let form: FormData
   try {
-    body = (await req.json()) as BugReportPayload
+    form = await req.formData()
   } catch {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
   }
 
-  // Length-cap every field: this endpoint is reachable unauthenticated.
-  const note = cap(asString(body.note).trim(), 10000)
+  // Length-cap every text field: this endpoint is reachable unauthenticated.
+  const note = cap(asString(form.get("note")).trim(), 10000)
   if (!note) {
     return NextResponse.json({ error: "A description is required" }, { status: 400 })
   }
 
-  const expected = cap(asString(body.expected).trim(), 5000)
-  const url = cap(asString(body.url).trim(), 2000)
-  const viewport = cap(asString(body.viewport).trim(), 32)
-  const userAgent = cap(asString(body.userAgent).trim(), 1024)
-  const posthogSessionUrl = cap(asString(body.posthogSessionUrl).trim(), 2000) || null
+  const expected = cap(asString(form.get("expected")).trim(), 5000)
+  const url = cap(asString(form.get("url")).trim(), 2000)
+  const viewport = cap(asString(form.get("viewport")).trim(), 32)
+  const userAgent = cap(asString(form.get("userAgent")).trim(), 1024)
+  const posthogSessionUrl = cap(asString(form.get("posthogSessionUrl")).trim(), 2000) || null
   const reporterId = user?.id ?? null
   const reporterEmail = user?.email ?? null
   const reportedBy = user ? (reporterEmail ?? `signed-in user ${user.id}`) : "Anonymous (logged out)"
   const timestamp = new Date().toISOString()
+
+  // Optional screenshot: validate type + size, then attach it to the triage email
+  // (the Gmail-to-Drive bridge files attachments into the bug folder). A rejected
+  // or unreadable image is skipped, never fatal: the text report still goes out.
+  let attachment: { filename: string; content: Buffer; contentType: string } | null = null
+  const imageField = form.get("image")
+  if (imageField && typeof imageField !== "string") {
+    const mime = (imageField.type || "").toLowerCase()
+    const ext = IMAGE_MIME_EXT[mime]
+    if (ext && imageField.size > 0 && imageField.size <= MAX_IMAGE_BYTES) {
+      try {
+        attachment = {
+          filename: `bug-screenshot.${ext}`,
+          content: Buffer.from(await imageField.arrayBuffer()),
+          contentType: mime,
+        }
+      } catch (err) {
+        console.error("bug-report: failed to read image", err)
+      }
+    } else {
+      console.warn("bug-report: image skipped (type/size)", { type: mime, size: imageField.size })
+    }
+  }
 
   // A signed-in reporter needs a profiles row (reporter_id FK target). Anonymous
   // reports leave reporter_id null.
@@ -177,7 +206,9 @@ export async function POST(req: NextRequest) {
         viewport,
         userAgent,
         posthogSessionUrl,
+        hasImage: attachment !== null,
       }),
+      attachments: attachment ? [attachment] : undefined,
     })
     if (sendError) {
       console.error("bug-report Resend error:", sendError)
