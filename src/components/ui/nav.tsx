@@ -12,6 +12,7 @@ import { CategoryRow } from "@/components/ui/nav/category-row"
 import { CommunityAvatarPill } from "@/components/ui/nav/community-avatar-pill"
 import { CommunitySwitcher } from "@/components/ui/nav/community-switcher"
 import { AvatarDropdown, type AvatarDropdownProps } from "@/components/ui/nav/avatar-dropdown"
+import { GuestMenu } from "@/components/ui/nav/guest-menu"
 
 function AppNav({ path, isAuth, dropdownProps, communitySlug, communities }: {
   path: string
@@ -58,10 +59,7 @@ function AppNav({ path, isAuth, dropdownProps, communitySlug, communities }: {
         {isAuth ? (
           <AvatarDropdown {...dropdownProps} />
         ) : (
-          <Link href="/auth/signin"
-            className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent-strong transition-colors flex-shrink-0">
-            Sign in
-          </Link>
+          <GuestMenu />
         )}
       </div>
 
