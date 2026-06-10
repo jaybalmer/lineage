@@ -74,9 +74,33 @@ export async function GET(req: NextRequest) {
     }
 
     if (authorId)  query = query.eq("author_id", authorId)
-    if (placeId)   query = query.eq("linked_place_id", placeId)
-    if (eventId)   query = query.eq("linked_event_id", eventId)
     if (orgId)     query = query.eq("linked_org_id", orgId)
+
+    // Story Connections: place and event filters are a union of the author's
+    // primary linked_* column and the community junction, so a community-
+    // connected story surfaces on the place/event pages. Junction errors
+    // (e.g. migration not yet applied) and ids unsafe to embed in a
+    // PostgREST or() filter both degrade to the original plain eq.
+    if (placeId) {
+      const { data: cpRows, error: cpErr } = await supabase
+        .from("story_places")
+        .select("story_id")
+        .eq("place_id", placeId)
+      const cpIds = cpErr ? [] : ((cpRows ?? []) as { story_id: string }[]).map((r) => r.story_id)
+      query = cpIds.length > 0 && !/[,()'"]/.test(placeId)
+        ? query.or(`linked_place_id.eq.${placeId},id.in.(${cpIds.join(",")})`)
+        : query.eq("linked_place_id", placeId)
+    }
+    if (eventId) {
+      const { data: ceRows, error: ceErr } = await supabase
+        .from("story_events")
+        .select("story_id")
+        .eq("event_id", eventId)
+      const ceIds = ceErr ? [] : ((ceRows ?? []) as { story_id: string }[]).map((r) => r.story_id)
+      query = ceIds.length > 0 && !/[,()'"]/.test(eventId)
+        ? query.or(`linked_event_id.eq.${eventId},id.in.(${ceIds.join(",")})`)
+        : query.eq("linked_event_id", eventId)
+    }
 
     // board_id and rider_id require a join filter — fetch IDs then filter
     if (boardId) {
@@ -125,8 +149,13 @@ export async function GET(req: NextRequest) {
     const reactionsByStory = new Map<string, Partial<Record<StoryReactionType, number>>>()
     const viewerReactionByStory = new Map<string, StoryReactionType>()
     const commentCountByStory = new Map<string, number>()
+    // Story Connections: community-added place/event links per story. Both
+    // junctions read the base table directly — they carry no tag_events, so
+    // PB-009 view discipline does not apply to them.
+    const communityPlacesByStory = new Map<string, { place_id: string; added_by: string | null }[]>()
+    const communityEventsByStory = new Map<string, { event_id: string; added_by: string | null }[]>()
     if (storyIds.length > 0) {
-      const [reactionRes, commentRes] = await Promise.all([
+      const [reactionRes, commentRes, cPlaceRes, cEventRes] = await Promise.all([
         supabase
           .from("story_reactions")
           .select("story_id, reactor_id, reaction_type")
@@ -134,6 +163,14 @@ export async function GET(req: NextRequest) {
         supabase
           .from("story_comments")
           .select("story_id")
+          .in("story_id", storyIds),
+        supabase
+          .from("story_places")
+          .select("story_id, place_id, added_by")
+          .in("story_id", storyIds),
+        supabase
+          .from("story_events")
+          .select("story_id, event_id, added_by")
           .in("story_id", storyIds),
       ])
       if (reactionRes.error) {
@@ -153,6 +190,22 @@ export async function GET(req: NextRequest) {
       for (const c of (commentRes.data ?? []) as { story_id: string }[]) {
         commentCountByStory.set(c.story_id, (commentCountByStory.get(c.story_id) ?? 0) + 1)
       }
+      if (cPlaceRes.error) {
+        console.error("[stories GET] story_places fetch failed:", cPlaceRes.error.message)
+      }
+      for (const r of (cPlaceRes.data ?? []) as { story_id: string; place_id: string; added_by: string | null }[]) {
+        const arr = communityPlacesByStory.get(r.story_id) ?? []
+        arr.push({ place_id: r.place_id, added_by: r.added_by })
+        communityPlacesByStory.set(r.story_id, arr)
+      }
+      if (cEventRes.error) {
+        console.error("[stories GET] story_events fetch failed:", cEventRes.error.message)
+      }
+      for (const r of (cEventRes.data ?? []) as { story_id: string; event_id: string; added_by: string | null }[]) {
+        const arr = communityEventsByStory.get(r.story_id) ?? []
+        arr.push({ event_id: r.event_id, added_by: r.added_by })
+        communityEventsByStory.set(r.story_id, arr)
+      }
     }
 
     // Normalise joined arrays to flat ID arrays
@@ -160,6 +213,8 @@ export async function GET(req: NextRequest) {
       ...s,
       board_ids: ((s.boards as { board_id: string }[]) ?? []).map((b) => b.board_id),
       rider_ids: ridersByStory.get(s.id as string) ?? [],
+      community_places: communityPlacesByStory.get(s.id as string) ?? [],
+      community_events: communityEventsByStory.get(s.id as string) ?? [],
       boards: undefined,
       reaction_summary: reactionsByStory.get(s.id as string) ?? {},
       viewer_reaction: viewerReactionByStory.get(s.id as string) ?? null,
@@ -407,8 +462,39 @@ export async function PATCH(req: NextRequest) {
         .map((r) => [r.rider_id, r.tag_event_id])
     )
     const newRiderSet = new Set(uniqueRiderIds)
-    const removedRiderIds = [...oldByRider.keys()].filter((rid) => !newRiderSet.has(rid))
+    let removedRiderIds = [...oldByRider.keys()].filter((rid) => !newRiderSet.has(rid))
     const addedRiderIds   = uniqueRiderIds.filter((rid) => !oldByRider.has(rid))
+
+    // Story Connections guard: the author's edit modal is populated from
+    // story_riders_public, but this diff reads the underlying table. A
+    // community-added tag that is pending AND hidden by the subject's
+    // require_tag_approval gate is invisible to the author, so any unrelated
+    // edit would diff it as removed and silently disable it. Exclude pending
+    // tags asserted by someone other than the author from the removal set;
+    // those are removed via the chip's x (DELETE /connections), which
+    // handles any status. See Operations/story-connections-brief.md §6.3.
+    if (removedRiderIds.length > 0) {
+      const candidateTagIds = removedRiderIds
+        .map((rid) => oldByRider.get(rid) ?? null)
+        .filter((tid): tid is string => !!tid)
+      if (candidateTagIds.length > 0) {
+        const { data: candidateEvents } = await supabase
+          .from("tag_events")
+          .select("id, status, asserter_id")
+          .in("id", candidateTagIds)
+        const protectedTagIds = new Set(
+          ((candidateEvents ?? []) as { id: string; status: string; asserter_id: string | null }[])
+            .filter((e) => e.status === "pending" && e.asserter_id !== user.id)
+            .map((e) => e.id),
+        )
+        if (protectedTagIds.size > 0) {
+          removedRiderIds = removedRiderIds.filter((rid) => {
+            const tid = oldByRider.get(rid)
+            return !(tid && protectedTagIds.has(tid))
+          })
+        }
+      }
+    }
 
     if (removedRiderIds.length > 0) {
       const tagIdsToDisable = removedRiderIds

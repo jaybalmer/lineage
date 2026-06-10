@@ -487,6 +487,11 @@ export interface Story {
   photos?: StoryPhoto[]
   board_ids?: string[]
   rider_ids?: string[]
+  // Community-added connections (populated by GET /api/stories).
+  // The author's own linked_place_id / linked_event_id stay separate;
+  // chips render the union.
+  community_places?: { place_id: string; added_by: string | null }[]
+  community_events?: { event_id: string; added_by: string | null }[]
   // Denormalised author info (joined from profiles)
   author?: { display_name: string; avatar_url?: string }
   youtube_url?: string | null

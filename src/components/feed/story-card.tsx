@@ -9,6 +9,7 @@ import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { ReportTagModal } from "@/components/ui/report-tag-modal"
 import { StoryInteractions } from "@/components/feed/story-interactions"
+import { AddConnectionsPopover, type StoryConnectionType } from "@/components/feed/add-connections-popover"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { getRiderTier } from "@/components/ui/rider-avatar"
 import type { Story, TagEventDeclineCategory } from "@/types"
@@ -27,13 +28,17 @@ function formatStoryDate(dateStr: string): string {
 }
 
 export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardProps) {
-  const { catalog, activePersonId, addToast } = useLineageStore()
+  const { catalog, activePersonId, addToast, membership } = useLineageStore()
   const [displayStory, setDisplayStory] = useState(story)
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
   const [menuOpen, setMenuOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [editing, setEditing] = useState(false)
+
+  // Story Connections: + Connect popover + community chip removal state.
+  const [connectOpen, setConnectOpen] = useState(false)
+  const [removingKey, setRemovingKey] = useState<string | null>(null)
 
   // PB-009 Phase 3 — per-rider abuse-report flow. Any signed-in member (other
   // than the rider themselves) can report a tag they see on the card. The
@@ -107,7 +112,98 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
     .map((id) => catalog.people.find((p) => p.id === id))
     .filter(Boolean)
 
-  const hasLinks = linkedPlace || linkedEvent || linkedOrg || linkedBoards.length > 0 || taggedRiders.length > 0
+  // Story Connections: community-added chips render the union with the
+  // author's own links, deduped by id, identical styling. Attribution lives
+  // in a title tooltip; the adder resolves through the catalog (no tooltip
+  // when unresolved, e.g. a deleted profile).
+  const communityPlaceChips = (displayStory.community_places ?? [])
+    .filter((cp) => cp.place_id !== displayStory.linked_place_id)
+    .flatMap((cp) => {
+      const place = catalog.places.find((p) => p.id === cp.place_id)
+      return place ? [{ conn: cp, place }] : []
+    })
+  const communityEventChips = (displayStory.community_events ?? [])
+    .filter((ce) => ce.event_id !== displayStory.linked_event_id)
+    .flatMap((ce) => {
+      const event = catalog.events.find((e) => e.id === ce.event_id)
+      return event ? [{ conn: ce, event }] : []
+    })
+
+  // Removal rights. Rider chips deliberately skip the adder lookup (the GET
+  // payload carries no asserter info in v1): author, editor, and the viewer's
+  // own chip get the x; an adder removing their own pick on someone else
+  // folds into /me/tags and editor surfaces. The whole affordance sits behind
+  // the same came-from-the-API gate as the interaction row.
+  const interactive = displayStory.comment_count !== undefined
+  const viewerIsEditor = !!membership?.is_editor || membership?.tier === "founding"
+  const isAuthorViewer = viewerSignedIn && displayStory.author_id === activePersonId
+  const canRemoveCommunityLink = (addedBy: string | null) =>
+    interactive && viewerSignedIn && (addedBy === activePersonId || isAuthorViewer || viewerIsEditor)
+  const canRemoveRiderChip = (riderId: string) =>
+    interactive && viewerSignedIn && (isAuthorViewer || viewerIsEditor || riderId === activePersonId)
+
+  const adderName = (addedBy: string | null) =>
+    addedBy ? catalog.people.find((p) => p.id === addedBy)?.display_name : undefined
+
+  function handleConnectionAdded(type: StoryConnectionType, entityId: string) {
+    setDisplayStory((prev) => {
+      if (type === "rider") {
+        if ((prev.rider_ids ?? []).includes(entityId)) return prev
+        return { ...prev, rider_ids: [...(prev.rider_ids ?? []), entityId] }
+      }
+      if (type === "place") {
+        if (entityId === prev.linked_place_id) return prev
+        if ((prev.community_places ?? []).some((p) => p.place_id === entityId)) return prev
+        return {
+          ...prev,
+          community_places: [...(prev.community_places ?? []), { place_id: entityId, added_by: activePersonId }],
+        }
+      }
+      if (entityId === prev.linked_event_id) return prev
+      if ((prev.community_events ?? []).some((e) => e.event_id === entityId)) return prev
+      return {
+        ...prev,
+        community_events: [...(prev.community_events ?? []), { event_id: entityId, added_by: activePersonId }],
+      }
+    })
+  }
+
+  async function removeConnection(type: StoryConnectionType, entityId: string) {
+    if (removingKey) return
+    setRemovingKey(`${type}:${entityId}`)
+    const prev = displayStory
+    setDisplayStory((p) =>
+      type === "rider"
+        ? { ...p, rider_ids: (p.rider_ids ?? []).filter((r) => r !== entityId) }
+        : type === "place"
+          ? { ...p, community_places: (p.community_places ?? []).filter((c) => c.place_id !== entityId) }
+          : { ...p, community_events: (p.community_events ?? []).filter((c) => c.event_id !== entityId) })
+    try {
+      const r = await fetch(
+        `/api/stories/${displayStory.id}/connections?type=${type}&entity_id=${encodeURIComponent(entityId)}`,
+        { method: "DELETE" },
+      )
+      if (!r.ok) {
+        setDisplayStory(prev)
+        if (r.status === 403 && type === "rider" && entityId === activePersonId) {
+          // The viewer is the tagged subject but not the adder: undoing is a
+          // decline, which lives in the tag inbox rather than this route.
+          addToast("This tag was added by someone else. You can decline it from your tag inbox at /me/tags.", "info")
+        } else {
+          const { error } = await r.json().catch(() => ({ error: null }))
+          addToast(error ?? "Could not remove the connection.", "error")
+        }
+      }
+    } catch {
+      setDisplayStory(prev)
+      addToast("Could not remove the connection.", "error")
+    } finally {
+      setRemovingKey(null)
+    }
+  }
+
+  const hasLinks = linkedPlace || linkedEvent || linkedOrg || linkedBoards.length > 0
+    || taggedRiders.length > 0 || communityPlaceChips.length > 0 || communityEventChips.length > 0
 
   async function handleDelete() {
     setDeleting(true)
@@ -280,6 +376,37 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
               <div className="w-2 h-2 rounded-full bg-teal-600 flex-shrink-0" /> {linkedPlace.name}
             </CommunityLink>
           )}
+          {communityPlaceChips.map(({ conn, place }) => {
+            const canRemove = canRemoveCommunityLink(conn.added_by)
+            const busy = removingKey === `place:${place.id}`
+            const connectedBy = adderName(conn.added_by)
+            return (
+              <span key={`cp-${place.id}`} className="inline-flex items-center">
+                <CommunityLink
+                  href={`/places/${placeSlug(place)}`}
+                  title={connectedBy ? `Connected by ${connectedBy}` : undefined}
+                  className={cn(
+                    "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 hover:bg-[#292524]/20 transition-colors",
+                    canRemove && "rounded-r-none",
+                  )}
+                >
+                  <div className="w-2 h-2 rounded-full bg-teal-600 flex-shrink-0" /> {place.name}
+                </CommunityLink>
+                {canRemove && (
+                  <button
+                    type="button"
+                    onClick={() => removeConnection("place", place.id)}
+                    disabled={busy}
+                    className="inline-flex items-center text-[11px] px-1.5 py-0.5 rounded-full rounded-l-none border-l-0 bg-teal-500/10 border border-teal-500/20 text-teal-400 hover:bg-teal-500/20 transition-colors"
+                    title={`Remove ${place.name} from this story`}
+                    aria-label={`Remove ${place.name} from this story`}
+                  >
+                    {busy ? "…" : "×"}
+                  </button>
+                )}
+              </span>
+            )
+          })}
           {linkedEvent && (
             <CommunityLink
               href={`/events/${eventSlug(linkedEvent)}`}
@@ -288,6 +415,37 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
               <div className="w-2 h-2 rounded-full bg-amber-600 flex-shrink-0" /> {linkedEvent.name}
             </CommunityLink>
           )}
+          {communityEventChips.map(({ conn, event }) => {
+            const canRemove = canRemoveCommunityLink(conn.added_by)
+            const busy = removingKey === `event:${event.id}`
+            const connectedBy = adderName(conn.added_by)
+            return (
+              <span key={`ce-${event.id}`} className="inline-flex items-center">
+                <CommunityLink
+                  href={`/events/${eventSlug(event)}`}
+                  title={connectedBy ? `Connected by ${connectedBy}` : undefined}
+                  className={cn(
+                    "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-colors",
+                    canRemove && "rounded-r-none",
+                  )}
+                >
+                  <div className="w-2 h-2 rounded-full bg-amber-600 flex-shrink-0" /> {event.name}
+                </CommunityLink>
+                {canRemove && (
+                  <button
+                    type="button"
+                    onClick={() => removeConnection("event", event.id)}
+                    disabled={busy}
+                    className="inline-flex items-center text-[11px] px-1.5 py-0.5 rounded-full rounded-l-none border-l-0 bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-colors"
+                    title={`Remove ${event.name} from this story`}
+                    aria-label={`Remove ${event.name} from this story`}
+                  >
+                    {busy ? "…" : "×"}
+                  </button>
+                )}
+              </span>
+            )
+          })}
           {linkedOrg && (
             <CommunityLink
               href={`/brands/${orgSlug(linkedOrg)}`}
@@ -310,14 +468,19 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
             const riderTier = getRiderTier(rider)
             const isUnclaimed = riderTier === "unclaimed" || riderTier === "catalog"
             const canReport = viewerSignedIn && activePersonId !== rider.id
+            const canRemove = canRemoveRiderChip(rider.id)
             const isLoading = reportOpening === rider.id
+            const removeBusy = removingKey === `rider:${rider.id}`
+            const appendageCls = isUnclaimed
+              ? "bg-blue-500/5 border border-dashed border-blue-500/30 text-blue-400/70 hover:bg-blue-500/10"
+              : "bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20"
             return (
               <span key={rider.id} className="inline-flex items-center">
                 <CommunityLink
                   href={personHref(rider, catalog.people)}
                   className={cn(
                     "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full transition-colors",
-                    canReport ? "rounded-r-none" : "",
+                    (canReport || canRemove) ? "rounded-r-none" : "",
                     isUnclaimed
                       ? "bg-blue-500/5 border border-dashed border-blue-500/30 text-blue-400/70 hover:bg-blue-500/10"
                       : "bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20"
@@ -333,14 +496,28 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
                     disabled={isLoading}
                     className={cn(
                       "inline-flex items-center text-[11px] px-1.5 py-0.5 rounded-full rounded-l-none border-l-0 transition-colors",
-                      isUnclaimed
-                        ? "bg-blue-500/5 border border-dashed border-blue-500/30 text-blue-400/70 hover:bg-blue-500/10"
-                        : "bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20"
+                      canRemove && "rounded-r-none",
+                      appendageCls
                     )}
                     title={`Report tag of ${rider.display_name}`}
                     aria-label={`Report tag of ${rider.display_name}`}
                   >
                     {isLoading ? "…" : "⚑"}
+                  </button>
+                )}
+                {canRemove && (
+                  <button
+                    type="button"
+                    onClick={() => removeConnection("rider", rider.id)}
+                    disabled={removeBusy}
+                    className={cn(
+                      "inline-flex items-center text-[11px] px-1.5 py-0.5 rounded-full rounded-l-none border-l-0 transition-colors",
+                      appendageCls
+                    )}
+                    title={`Remove tag of ${rider.display_name}`}
+                    aria-label={`Remove tag of ${rider.display_name}`}
+                  >
+                    {removeBusy ? "…" : "×"}
                   </button>
                 )}
               </span>
@@ -349,9 +526,23 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
         </div>
       )}
 
-      {/* ── Reactions + comments ── */}
+      {/* ── Reactions + comments + connect ── */}
       {displayStory.comment_count !== undefined && (
-        <StoryInteractions story={displayStory} defaultExpanded={expandComments} />
+        <div className="relative">
+          <StoryInteractions
+            story={displayStory}
+            defaultExpanded={expandComments}
+            showConnect={viewerSignedIn}
+            onConnect={() => setConnectOpen((o) => !o)}
+          />
+          {connectOpen && (
+            <AddConnectionsPopover
+              story={displayStory}
+              onClose={() => setConnectOpen(false)}
+              onAdded={handleConnectionAdded}
+            />
+          )}
+        </div>
       )}
 
       {/* ── Delete confirm ── */}
