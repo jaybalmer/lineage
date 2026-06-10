@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { requireAuth } from "@/lib/auth"
+import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { captureServerEvent } from "@/lib/analytics-server"
 import { fireTagEvents } from "@/lib/invite-tracking-server"
 import { pairStoryRiderTagEvents, isAsserterGloballyBlocked } from "@/lib/tag-events"
 import { logTagActions } from "@/lib/tag-action-log"
+import type { StoryReactionType } from "@/types"
 
 function getServiceClient() {
   return createClient(
@@ -14,9 +16,10 @@ function getServiceClient() {
 }
 
 // ── GET /api/stories ─────────────────────────────────────────────────────────
-// Query params: author_id | place_id | event_id | org_id | board_id | rider_id | limit
+// Query params: id | author_id | place_id | event_id | org_id | board_id | rider_id | limit
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
+  const storyId   = searchParams.get("id")        // single-story fetch (focus pin)
   const authorId  = searchParams.get("author_id")
   const placeId   = searchParams.get("place_id")
   const eventId   = searchParams.get("event_id")
@@ -28,6 +31,19 @@ export async function GET(req: NextRequest) {
 
   try {
     const supabase = getServiceClient()
+
+    // Optional viewer identity, used for viewer_reaction and for letting an
+    // author fetch their own non-public story via ?id=. requireAuth() is
+    // deliberately not used here: this route must stay public, so a missing
+    // session simply resolves to a null viewer.
+    let viewerId: string | null = null
+    try {
+      const session = await createServerSupabaseClient()
+      const { data: { user } } = await session.auth.getUser()
+      viewerId = user?.id ?? null
+    } catch {
+      viewerId = null
+    }
 
     // PB-009 Phase 1: rider_ids are fetched separately from story_riders_public
     // so the read goes through the approved-only view. Boards and photos stay
@@ -43,9 +59,19 @@ export async function GET(req: NextRequest) {
         boards:story_boards(board_id),
         author:profiles!author_id(display_name, avatar_url)
       `)
-      .eq("visibility", "public")
       .order("story_date", { ascending: false })
       .range(offset, offset + limit - 1)
+
+    // Single-story fetch mirrors the stories RLS rule: public, or the viewer
+    // is the author. The list fetch stays public-only.
+    if (storyId) {
+      query = query.eq("id", storyId)
+      query = viewerId
+        ? query.or(`visibility.eq.public,author_id.eq.${viewerId}`)
+        : query.eq("visibility", "public")
+    } else {
+      query = query.eq("visibility", "public")
+    }
 
     if (authorId)  query = query.eq("author_id", authorId)
     if (placeId)   query = query.eq("linked_place_id", placeId)
@@ -91,12 +117,53 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // Reactions + comment counts, grouped per story in JS. At launch volume
+    // fetching the raw rows is fine; if these tables grow, swap both fetches
+    // for a grouped-count RPC without changing the response shape. Errors
+    // degrade to empty counts so a story list never fails on this block
+    // (also keeps the route deploy-order safe relative to the migration).
+    const reactionsByStory = new Map<string, Partial<Record<StoryReactionType, number>>>()
+    const viewerReactionByStory = new Map<string, StoryReactionType>()
+    const commentCountByStory = new Map<string, number>()
+    if (storyIds.length > 0) {
+      const [reactionRes, commentRes] = await Promise.all([
+        supabase
+          .from("story_reactions")
+          .select("story_id, reactor_id, reaction_type")
+          .in("story_id", storyIds),
+        supabase
+          .from("story_comments")
+          .select("story_id")
+          .in("story_id", storyIds),
+      ])
+      if (reactionRes.error) {
+        console.error("[stories GET] reactions fetch failed:", reactionRes.error.message)
+      }
+      for (const r of (reactionRes.data ?? []) as { story_id: string; reactor_id: string; reaction_type: StoryReactionType }[]) {
+        const summary = reactionsByStory.get(r.story_id) ?? {}
+        summary[r.reaction_type] = (summary[r.reaction_type] ?? 0) + 1
+        reactionsByStory.set(r.story_id, summary)
+        if (viewerId && r.reactor_id === viewerId) {
+          viewerReactionByStory.set(r.story_id, r.reaction_type)
+        }
+      }
+      if (commentRes.error) {
+        console.error("[stories GET] comment counts fetch failed:", commentRes.error.message)
+      }
+      for (const c of (commentRes.data ?? []) as { story_id: string }[]) {
+        commentCountByStory.set(c.story_id, (commentCountByStory.get(c.story_id) ?? 0) + 1)
+      }
+    }
+
     // Normalise joined arrays to flat ID arrays
     const stories = (data ?? []).map((s: Record<string, unknown>) => ({
       ...s,
       board_ids: ((s.boards as { board_id: string }[]) ?? []).map((b) => b.board_id),
       rider_ids: ridersByStory.get(s.id as string) ?? [],
       boards: undefined,
+      reaction_summary: reactionsByStory.get(s.id as string) ?? {},
+      viewer_reaction: viewerReactionByStory.get(s.id as string) ?? null,
+      comment_count: commentCountByStory.get(s.id as string) ?? 0,
     }))
 
     return NextResponse.json(stories)
