@@ -15,7 +15,7 @@ import type { Event, EventType, EventSeries } from "@/types"
 const EVENT_PREDICATES = ["competed_at", "spectated_at", "organized_at"] as const
 type EventPredicate = (typeof EVENT_PREDICATES)[number]
 
-type MainTab = "all" | "series"
+type MainTab = "all" | "series" | "entries"
 
 const ACCENT: Record<EventType, string> = {
   contest: "border-amber-600",
@@ -264,6 +264,29 @@ function EventsPageInner() {
     [visibleEvents]
   )
 
+  // ── Most entries tab: unique riders per event (competed/spectated/organized) ──
+  const eventRiderCounts = useMemo(() => {
+    const sets = new Map<string, Set<string>>()
+    for (const c of catalog.claims) {
+      if (!EVENT_PREDICATES.includes(c.predicate as EventPredicate)) continue
+      if (!sets.has(c.object_id)) sets.set(c.object_id, new Set())
+      sets.get(c.object_id)!.add(c.subject_id)
+    }
+    const counts = new Map<string, number>()
+    for (const [id, s] of sets) counts.set(id, s.size)
+    return counts
+  }, [catalog.claims])
+
+  const entriesSorted = useMemo(
+    () =>
+      [...visibleEvents].sort(
+        (a, b) =>
+          (eventRiderCounts.get(b.id) ?? 0) - (eventRiderCounts.get(a.id) ?? 0) ||
+          (b.year ?? 0) - (a.year ?? 0)
+      ),
+    [visibleEvents, eventRiderCounts]
+  )
+
   const isEmpty = visibleEvents.length === 0
 
   return (
@@ -308,6 +331,7 @@ function EventsPageInner() {
               {([
                 { key: "all" as MainTab, label: "All" },
                 { key: "series" as MainTab, label: "Series" },
+                { key: "entries" as MainTab, label: "Most entries" },
               ]).map(({ key, label }) => (
                 <button
                   key={key}
@@ -377,6 +401,22 @@ function EventsPageInner() {
                     ))}
                   </div>
                 </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* ── Most entries tab: flat list by rider count ── */}
+        {mainTab === "entries" && (
+          <div className="space-y-2">
+            {isEmpty ? (
+              <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
+                No events found.{" "}
+                <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
+              </div>
+            ) : (
+              entriesSorted.map((event) => (
+                <EventCard key={event.id} event={event} />
               ))
             )}
           </div>

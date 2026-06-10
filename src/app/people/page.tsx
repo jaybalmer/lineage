@@ -15,13 +15,14 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import type { Person } from "@/types"
 
-type SortTab = "all" | "origin" | "riders" | "resort"
+type SortTab = "all" | "entries" | "origin" | "riders" | "resort"
 
 const SORT_TABS: { id: SortTab; label: string; title: string }[] = [
-  { id: "all",    label: "All",    title: "Sort by most claims" },
-  { id: "origin", label: "Origin", title: "Group by decade started" },
-  { id: "riders", label: "Riders", title: "Sort alphabetically" },
-  { id: "resort", label: "Resort", title: "Group by home resort" },
+  { id: "all",     label: "All",     title: "Group by tier, most claims first" },
+  { id: "entries", label: "Entries", title: "Sort by most entries & connections" },
+  { id: "origin",  label: "Origin",  title: "Group by decade started" },
+  { id: "riders",  label: "Riders",  title: "Sort alphabetically" },
+  { id: "resort",  label: "Resort",  title: "Group by home resort" },
 ]
 
 // ── Rider type classification (delegates to shared getRiderTier) ─────────────
@@ -237,6 +238,16 @@ function RidersPageInner() {
       return { type: "kind-grouped" as const, groups }
     }
 
+    if (sort === "entries") {
+      // Flat ranking by total claims (timeline entries + connections), most first
+      copy.sort(
+        (a, b) =>
+          (claimCounts.get(b.id) ?? 0) - (claimCounts.get(a.id) ?? 0) ||
+          a.display_name.localeCompare(b.display_name)
+      )
+      return { type: "flat" as const, items: copy }
+    }
+
     if (sort === "riders") {
       copy.sort((a, b) => a.display_name.localeCompare(b.display_name))
       return { type: "flat" as const, items: copy }
@@ -329,7 +340,7 @@ function RidersPageInner() {
 
         {/* Sort tabs + Mine filter */}
         <div className="flex items-center justify-between gap-3 mb-6">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 flex-wrap">
             {SORT_TABS.map((tab) => (
               <button
                 key={tab.id}

@@ -12,6 +12,13 @@ import { cn } from "@/lib/utils"
 import { CommunityLink } from "@/components/ui/community-link"
 import type { Place } from "@/types"
 
+type PlaceSort = "az" | "entries"
+
+const SORT_OPTIONS: { key: PlaceSort; label: string; title: string }[] = [
+  { key: "az",      label: "A-Z",          title: "Sort alphabetically" },
+  { key: "entries", label: "Most entries", title: "Sort by most riders" },
+]
+
 const PLACE_TYPE_COLORS: Record<string, string> = {
   resort: "#0D9488",
   shop: "#0891B2",
@@ -85,10 +92,24 @@ function PlacesPageInner() {
   const yearParam = searchParams.get("year")
   const [query, setQuery] = useState(yearParam ?? "")
   const [typeFilter, setTypeFilter] = useState<string>("all")
+  const [sort, setSort] = useState<PlaceSort>("az")
   const [myOnly, setMyOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const { catalog, activePersonId } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
+
+  // Unique riders per place (rode_at) — the "entries" count shown on each card.
+  const placeRiderCounts = useMemo(() => {
+    const sets = new Map<string, Set<string>>()
+    for (const c of catalog.claims) {
+      if (c.predicate !== "rode_at") continue
+      if (!sets.has(c.object_id)) sets.set(c.object_id, new Set())
+      sets.get(c.object_id)!.add(c.subject_id)
+    }
+    const counts = new Map<string, number>()
+    for (const [id, s] of sets) counts.set(id, s.size)
+    return counts
+  }, [catalog.claims])
 
   // IDs of places the active user rode at
   const myPlaceIds = useMemo(() => {
@@ -109,6 +130,20 @@ function PlacesPageInner() {
       return true
     })
   }, [catalog.places, myOnly, myPlaceIds, typeFilter, query])
+
+  const sorted = useMemo(() => {
+    const copy = [...filtered]
+    if (sort === "entries") {
+      copy.sort(
+        (a, b) =>
+          (placeRiderCounts.get(b.id) ?? 0) - (placeRiderCounts.get(a.id) ?? 0) ||
+          a.name.localeCompare(b.name)
+      )
+    } else {
+      copy.sort((a, b) => a.name.localeCompare(b.name))
+    }
+    return copy
+  }, [filtered, sort, placeRiderCounts])
 
   return (
     <div className="min-h-screen bg-background">
@@ -142,8 +177,8 @@ function PlacesPageInner() {
           )}
         </div>
 
-        {/* Type filter + mine toggle */}
-        <div className="flex gap-3 mb-6 flex-wrap">
+        {/* Type filter + mine toggle + sort */}
+        <div className="flex gap-3 mb-6 flex-wrap items-center justify-between">
           <div className="flex gap-2 items-center flex-wrap">
             {["all", "resort", "shop", "zone"].map((t) => (
               <button
@@ -173,13 +208,32 @@ function PlacesPageInner() {
               </button>
             )}
           </div>
+
+          {/* Sort control */}
+          <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1">
+            {SORT_OPTIONS.map(({ key, label, title }) => (
+              <button
+                key={key}
+                onClick={() => setSort(key)}
+                title={title}
+                className={cn(
+                  "px-3 py-1.5 rounded-md text-xs font-medium transition-all",
+                  sort === key
+                    ? "bg-surface-active text-foreground"
+                    : "text-muted hover:text-foreground"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="space-y-2">
-          {filtered.map((place) => (
+          {sorted.map((place) => (
             <PlaceCard key={place.id} place={place} />
           ))}
-          {filtered.length === 0 && (
+          {sorted.length === 0 && (
             <div className="col-span-full text-center text-muted py-12 text-sm">
               No places found.{" "}
               <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
