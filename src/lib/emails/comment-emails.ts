@@ -107,6 +107,17 @@ export async function fireCommentNotification(
         commentBody: args.commentBody,
         storyUrl,
       }),
+      // Explicit text part. The auto-generated alternative reintroduces a raw
+      // "=" into the focus URL, which the quoted-printable layer corrupts
+      // (uuid starts with hex digits), so the text fallback links to the
+      // stories page without the focus param instead.
+      text: commentNotificationText({
+        authorName,
+        commenterName,
+        storyTitle: (story.title as string | null) ?? null,
+        commentBody: args.commentBody,
+        storiesUrl: `https://linestry.com/${communitySlug}/stories`,
+      }),
     })
     if (sendErr) {
       console.error("[comment-emails] Resend send rejected:", sendErr)
@@ -134,6 +145,12 @@ function commentNotificationHtml(args: {
     : `${commenter} commented on your story:`
   const truncated = args.commentBody.length > SNIPPET_MAX
   const snippet = escapeHtml(args.commentBody.slice(0, SNIPPET_MAX)) + (truncated ? "..." : "")
+  // The raw "=" byte followed by two hex digits is a valid quoted-printable
+  // escape, and a uuid always starts with hex, so "?focus=<uuid>" arrives
+  // corrupted in Gmail (observed June 9 2026: "=74" decoded into "t").
+  // Serialising the equals sign as an HTML entity keeps the wire format free
+  // of raw "=" while every mail client parses the href back to a normal "=".
+  const safeHref = args.storyUrl.replace(/=/g, "&#61;")
 
   return `
     <div style="margin:0;padding:0;">
@@ -143,13 +160,30 @@ function commentNotificationHtml(args: {
         <p>${intro}</p>
         <blockquote style="margin: 0 0 16px; padding: 10px 14px; border-left: 3px solid #3b82f6; background: #f6f6f5; color: #44403c; border-radius: 4px;">${snippet}</blockquote>
         <p style="margin: 24px 0;">
-          <a href="${args.storyUrl}" style="background: #3b82f6; color: #ffffff; text-decoration: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; display: inline-block;">View the conversation</a>
+          <a href="${safeHref}" style="background: #3b82f6; color: #ffffff; text-decoration: none; padding: 10px 18px; border-radius: 8px; font-weight: 600; display: inline-block;">View the conversation</a>
         </p>
         <p style="color: #666; font-size: 13px;">the Linestry team</p>
       </div>
       ${emailFooterHtml()}
     </div>
   `
+}
+
+function commentNotificationText(args: {
+  authorName: string | null
+  commenterName: string
+  storyTitle: string | null
+  commentBody: string
+  storiesUrl: string
+}): string {
+  const firstName = args.authorName?.trim().split(/\s+/)[0]
+  const hello = firstName ? `Hi ${firstName},` : "Hi,"
+  const intro = args.storyTitle
+    ? `${args.commenterName} commented on your story "${args.storyTitle}":`
+    : `${args.commenterName} commented on your story:`
+  const truncated = args.commentBody.length > SNIPPET_MAX
+  const snippet = args.commentBody.slice(0, SNIPPET_MAX) + (truncated ? "..." : "")
+  return `${hello}\n\n${intro}\n\n"${snippet}"\n\nView the conversation: ${args.storiesUrl}\n\nthe Linestry team\n`
 }
 
 function escapeHtml(s: string): string {
