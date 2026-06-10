@@ -88,13 +88,13 @@ export default function MemberCardPage({ params }: { params: Promise<{ username:
 
       {/* Tagline */}
       <p className="text-muted mt-6 text-xs text-center max-w-xs leading-relaxed">
-        {person.display_name} is a verified member of the Linestry community —
+        {person.display_name} is a verified member of the Linestry community,
         part of the collective history of snowboarding.
       </p>
 
       {/* CTA */}
       <Link
-        href="/membership"
+        href="/onboarding"
         className="mt-8 px-6 py-2.5 rounded-full text-xs font-medium transition-all"
         style={{
           background:   "#1a1f4e",
