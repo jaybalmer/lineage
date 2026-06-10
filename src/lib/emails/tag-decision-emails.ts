@@ -25,13 +25,34 @@ interface FireEditorDeclineNotificationArgs {
 
 /**
  * Idempotent: a duplicate insert on (tag_event_id, notification_type) makes
- * the email step a no-op. Resend send is fire-and-forget; failures are
- * logged but never thrown. Caller may safely await without a try/catch.
+ * the email step a no-op. Everything that can make sending impossible (no
+ * Resend key, no resolvable owner email) is checked BEFORE the dedup row is
+ * claimed, so a transient failure never permanently suppresses the
+ * notification. Resend send is fire-and-forget; failures are logged but
+ * never thrown. Caller may safely await without a try/catch.
  */
 export async function fireEditorDeclineNotification(
   supabase: SupabaseClient,
   args: FireEditorDeclineNotificationArgs,
 ): Promise<{ sent: boolean; reason?: string }> {
+  const key = process.env.RESEND_API_KEY
+  if (!key) return { sent: false, reason: "no_resend_key" }
+
+  // Owner email + display name. profiles has NO email column; the address
+  // lives in auth.users and is resolved through the admin API, the same way
+  // comment-emails and invite-tracking-server do it. Unclaimed subjects have
+  // no auth user, so no email on file is a silent no-op.
+  const [ownerUserRes, ownerProfileRes] = await Promise.all([
+    supabase.auth.admin.getUserById(args.ownerId),
+    supabase.from("profiles").select("display_name").eq("id", args.ownerId).maybeSingle(),
+  ])
+  const ownerEmail = ownerUserRes.data?.user?.email
+  if (!ownerEmail) {
+    return { sent: false, reason: "no_owner_email" }
+  }
+  const ownerName =
+    (ownerProfileRes.data as { display_name?: string } | null)?.display_name ?? null
+
   // Dedup record insert. If UNIQUE conflicts → already fired, return no-op.
   const { error: insErr } = await supabase
     .from("tag_decision_notifications")
@@ -50,33 +71,25 @@ export async function fireEditorDeclineNotification(
     return { sent: false, reason: "insert_failed" }
   }
 
-  // Look up owner email
-  const { data: ownerProfile } = await supabase
-    .from("profiles")
-    .select("display_name, email")
-    .eq("id", args.ownerId)
-    .maybeSingle()
-  const ownerEmail = (ownerProfile as { email?: string } | null)?.email
-  if (!ownerEmail) {
-    return { sent: false, reason: "no_owner_email" }
-  }
-
-  const key = process.env.RESEND_API_KEY
-  if (!key) return { sent: false, reason: "no_resend_key" }
-
   try {
     const { Resend } = await import("resend")
     const resend = new Resend(key)
     const categoryLabel = labelForDeclineCategory(args.reasonCategory)
-    await resend.emails.send({
+    // The Resend SDK reports API-level rejections in the result object and
+    // only throws on transport errors, so both paths are checked here.
+    const { error: sendErr } = await resend.emails.send({
       from: "Linestry <noreply@linestry.com>",
       to: ownerEmail,
       subject: "A tag against your timeline was declined",
       html: editorDeclineHtml({
-        ownerName: (ownerProfile as { display_name?: string } | null)?.display_name ?? null,
+        ownerName,
         categoryLabel,
       }),
     })
+    if (sendErr) {
+      console.error("[tag-decision-emails] Resend send rejected:", sendErr)
+      return { sent: false, reason: "send_failed" }
+    }
     return { sent: true }
   } catch (err) {
     console.error("[tag-decision-emails] Resend send failed:", err)
