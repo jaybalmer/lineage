@@ -10,7 +10,7 @@ import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { personHref } from "@/lib/entity-links"
 import { useCanonicalPath } from "@/lib/use-canonical-path"
 import { supabase } from "@/lib/supabase"
-import { EVENTS, EVENT_SERIES, eventSlug, seriesSlug, placeSlug } from "@/lib/mock-data"
+import { EVENTS, EVENT_SERIES, eventSlug, eventMatchesSlug, seriesSlug, placeSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import type { Event, Story, Claim } from "@/types"
@@ -663,11 +663,11 @@ function EventPageInner({ params }: { params: Promise<{ community: string; id: s
 
   // Fetch stories for event instances (not series)
   const instanceId = (() => {
-    const allSeries = [...EVENT_SERIES, ...catalog.eventSeries]
+    const allSeries = [...catalog.eventSeries, ...EVENT_SERIES.filter((m) => !catalog.eventSeries.some((s) => s.id === m.id))]
     const isSeries = allSeries.some((s) => s.id === id || seriesSlug(s) === id)
     if (isSeries) return null
-    const allEvts = [...EVENTS, ...catalog.events.filter((e) => !EVENTS.some((m) => m.id === e.id)), ...userEntities.events]
-    const inst = allEvts.find((e) => e.id === id) ?? allEvts.find((e) => eventSlug(e) === id)
+    const allEvts = [...catalog.events, ...EVENTS.filter((m) => !catalog.events.some((e) => e.id === m.id)), ...userEntities.events]
+    const inst = allEvts.find((e) => e.id === id) ?? allEvts.find((e) => eventMatchesSlug(e, id))
     return inst?.id ?? null
   })()
 
@@ -678,14 +678,19 @@ function EventPageInner({ params }: { params: Promise<{ community: string; id: s
       .then((data) => { if (Array.isArray(data)) setEventStories(data as Story[]) })
   }, [instanceId])
 
-  // Look up from all sources: mock-data, catalog (Supabase), and user-added entities
+  // Look up from all sources: catalog (Supabase) first, then mock seed, then
+  // user-added entities. Catalog must win id collisions: the seeded prod rows
+  // share ids with mock-data but the names have drifted (mock "Baker Banked
+  // Slalom '15" vs prod "Baker Banked Slalom 2019" under the same id), and
+  // links generate from catalog names, so a mock-first merge 404s every
+  // shared full-year link whose id is shadowed (BUG-013).
   const allSeries = [
-    ...EVENT_SERIES,
-    ...catalog.eventSeries.filter((s) => !EVENT_SERIES.some((m) => m.id === s.id)),
+    ...catalog.eventSeries,
+    ...EVENT_SERIES.filter((m) => !catalog.eventSeries.some((s) => s.id === m.id)),
   ]
   const allEvents = [
-    ...EVENTS,
-    ...catalog.events.filter((e) => !EVENTS.some((m) => m.id === e.id)),
+    ...catalog.events,
+    ...EVENTS.filter((m) => !catalog.events.some((e) => e.id === m.id)),
     ...userEntities.events.filter((e) => !EVENTS.some((m) => m.id === e.id) && !catalog.events.some((m) => m.id === e.id)),
   ]
 
@@ -696,7 +701,7 @@ function EventPageInner({ params }: { params: Promise<{ community: string; id: s
   const instance = series
     ? undefined
     : allEvents.find((e) => e.id === id) ??
-      allEvents.find((e) => eventSlug(e) === id)
+      allEvents.find((e) => eventMatchesSlug(e, id))
 
   // Rewrite the address bar to the name-based slug when reached via a UUID.
   useCanonicalPath(
