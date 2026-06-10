@@ -14,6 +14,10 @@ interface StoryInteractionsProps {
   story: Story
   /** Auto-expand the comment section on mount (focus pin on the stories page). */
   defaultExpanded?: boolean
+  /** Story Connections: render the + Connect button (signed-in viewers only). */
+  showConnect?: boolean
+  /** Opens the Add Connections popover, which the parent StoryCard owns. */
+  onConnect?: () => void
 }
 
 function formatCommentDate(iso: string): string {
@@ -21,7 +25,7 @@ function formatCommentDate(iso: string): string {
   return d.toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" })
 }
 
-export function StoryInteractions({ story, defaultExpanded = false }: StoryInteractionsProps) {
+export function StoryInteractions({ story, defaultExpanded = false, showConnect = false, onConnect }: StoryInteractionsProps) {
   const { activePersonId, membership, addToast } = useLineageStore()
   const signedIn = isAuthUser(activePersonId)
   // Mirrors requireEditor(): is_editor OR founding tier. Server-side checks
@@ -186,6 +190,16 @@ export function StoryInteractions({ story, defaultExpanded = false }: StoryInter
               </button>
             )
           })}
+          {showConnect && onConnect && (
+            <button
+              type="button"
+              onClick={onConnect}
+              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border border-border-default text-muted hover:text-foreground hover:border-blue-500/30 transition-colors"
+              aria-label="Add connections to this story"
+            >
+              + Connect
+            </button>
+          )}
         </div>
 
         {commentCount > 0 || signedIn ? (
