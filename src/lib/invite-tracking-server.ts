@@ -107,12 +107,17 @@ async function sendThresholdEmail(args: { to: string; personName: string; count:
   try {
     const { Resend } = await import("resend")
     const resend = new Resend(key)
-    await resend.emails.send({
+    // The Resend SDK reports API-level rejections in the result object and
+    // only throws on transport errors, so both paths are checked here.
+    const { error: sendErr } = await resend.emails.send({
       from: "Linestry <noreply@linestry.com>",
       to: args.to,
       subject: `${args.personName} is showing up more on Linestry`,
       html: thresholdEmailHtml(args.personName, args.count),
     })
+    if (sendErr) {
+      console.error("[invite-tracking] Resend send rejected:", sendErr)
+    }
   } catch (err) {
     console.error("[invite-tracking] Resend send failed:", err)
   }

@@ -95,12 +95,17 @@ export async function sendClaimEmail(args: SendArgs): Promise<void> {
   try {
     const { Resend } = await import("resend")
     const resend = new Resend(key)
-    await resend.emails.send({
+    // The Resend SDK reports API-level rejections in the result object and
+    // only throws on transport errors, so both paths are checked here.
+    const { error: sendErr } = await resend.emails.send({
       from: "Linestry <noreply@linestry.com>",
       to: args.to,
       subject: args.subject,
       html: args.html,
     })
+    if (sendErr) {
+      console.error("[claim-emails] Resend send rejected:", sendErr)
+    }
   } catch (err) {
     console.error("[claim-emails] Resend send failed:", err)
   }

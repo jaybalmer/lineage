@@ -113,12 +113,15 @@ export async function POST(req: NextRequest) {
       try {
         const { Resend } = await import("resend")
         const resend = new Resend(resendKey)
-        await resend.emails.send({
+        const { error: sendError } = await resend.emails.send({
           from: "Linestry <noreply@linestry.com>",
           to: email,
           subject: `${safeInviterName} added you to their snowboard linestry`,
           html: inviteEmailHtml(safeInviterName, safePersonName, link),
         })
+        if (sendError) {
+          console.error("Resend send rejected:", sendError)
+        }
       } catch (emailErr) {
         console.error("Resend error:", emailErr)
         // Don't fail the request if email sending fails
