@@ -54,12 +54,27 @@ function metaRow(label: string, value: string): string {
         </tr>`
 }
 
+// The replay session id and t offset as plain text. Email encoding has
+// garbled the ?t= anchor inside the href before (June 10 triage run), so the
+// values must also exist OUTSIDE any link. The text deliberately contains no
+// "=" character: quoted-printable transit eats "=" followed by hex-looking
+// digits (observed live: "t=1607s" arrived as "t\x1607s"), which is the exact
+// failure this row exists to survive. Returns null when the URL has no
+// recognizable /replay/<id> segment; the caller falls back to the raw URL.
+function parseReplayAnchor(url: string): string | null {
+  const session = url.match(/\/replay\/([^/?#]+)/)
+  if (!session) return null
+  const t = url.match(/[?&]t=(\d+)/)
+  return t ? `session ${session[1]}, offset ${t[1]} seconds` : `session ${session[1]}`
+}
+
 function bugReportEmailHtml(p: {
   note: string
   expected: string
   url: string
   reportedBy: string
   timestamp: string
+  reportStartedAt: string | null
   viewport: string
   userAgent: string
   posthogSessionUrl: string | null
@@ -77,6 +92,14 @@ function bugReportEmailHtml(p: {
   const replayRow = p.posthogSessionUrl
     ? metaRow("Session replay", `<a href="${esc(p.posthogSessionUrl)}" style="color:#60a5fa;text-decoration:none;word-break:break-all;">Open session replay</a>`)
     : metaRow("Session replay", `<span style="color:#52525b;">Not available</span>`)
+  // Plain-text twins of the replay link: these survive encoding damage that
+  // has previously made the href's ?t= anchor unreadable in triage.
+  const startedRow = metaRow("Report started", p.reportStartedAt
+    ? esc(p.reportStartedAt)
+    : `<span style="color:#52525b;">Not available</span>`)
+  const anchorRow = metaRow("Replay anchor", p.posthogSessionUrl
+    ? esc(parseReplayAnchor(p.posthogSessionUrl) ?? p.posthogSessionUrl)
+    : `<span style="color:#52525b;">Not available</span>`)
   const screenshotRow = metaRow("Screenshot", p.hasImage
     ? `<span style="color:#e5e5e5;">Attached to this email</span>`
     : `<span style="color:#52525b;">Not provided</span>`)
@@ -96,7 +119,7 @@ function bugReportEmailHtml(p: {
       ${expectedBlock}
 
       <div style="border-top:1px solid #2a2a2a;margin:24px 0 8px;"></div>
-      <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">${pageRow}${metaRow("Reported by", esc(p.reportedBy))}${metaRow("Timestamp", esc(p.timestamp))}${metaRow("Viewport", esc(p.viewport || "unknown"))}${metaRow("Browser", esc(p.userAgent || "unknown"))}${replayRow}${screenshotRow}
+      <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">${pageRow}${metaRow("Reported by", esc(p.reportedBy))}${metaRow("Timestamp", esc(p.timestamp))}${startedRow}${metaRow("Viewport", esc(p.viewport || "unknown"))}${metaRow("Browser", esc(p.userAgent || "unknown"))}${replayRow}${anchorRow}${screenshotRow}
       </table>
     </div>
     ${emailFooterHtml()}
@@ -129,6 +152,13 @@ export async function POST(req: NextRequest) {
   const viewport = cap(asString(form.get("viewport")).trim(), 32)
   const userAgent = cap(asString(form.get("userAgent")).trim(), 1024)
   const posthogSessionUrl = cap(asString(form.get("posthogSessionUrl")).trim(), 2000) || null
+  // Widget-open time, reporter-supplied. Telemetry only, never trusted for
+  // anything security-relevant; absent or unparseable becomes null.
+  const rawReportStartedAt = cap(asString(form.get("reportStartedAt")).trim(), 64)
+  const reportStartedAt =
+    rawReportStartedAt && Number.isFinite(Date.parse(rawReportStartedAt))
+      ? rawReportStartedAt
+      : null
   const reporterId = user?.id ?? null
   const reporterEmail = user?.email ?? null
   const reportedBy = user ? (reporterEmail ?? `signed-in user ${user.id}`) : "Anonymous (logged out)"
@@ -165,7 +195,7 @@ export async function POST(req: NextRequest) {
 
   // 2) Persist the durable row (service role, bypasses RLS like other mutations).
   const db = getServiceClient()
-  const { error: insertError } = await db.from("bug_reports").insert({
+  const baseRow = {
     reporter_id: reporterId,
     reporter_email: reporterEmail,
     note,
@@ -174,7 +204,20 @@ export async function POST(req: NextRequest) {
     viewport: viewport || null,
     user_agent: userAgent || null,
     posthog_session_url: posthogSessionUrl,
+  }
+  let { error: insertError } = await db.from("bug_reports").insert({
+    ...baseRow,
+    report_started_at: reportStartedAt,
   })
+  // Deploy-order guard: if migration-011 hasn't run yet, the column doesn't
+  // exist. PostgREST reports that as PGRST204 (schema cache miss) before
+  // Postgres would return 42703; cover both. The bug intake must never break
+  // over a telemetry field, so retry without it rather than 500ing every
+  // report until the migration runs.
+  if (insertError?.code === "PGRST204" || insertError?.code === "42703") {
+    console.warn("bug-report: report_started_at column missing, run migration-011")
+    ;({ error: insertError } = await db.from("bug_reports").insert(baseRow))
+  }
   if (insertError) {
     console.error("bug-report insert failed:", insertError)
     return NextResponse.json({ error: "Could not save report" }, { status: 500 })
@@ -203,6 +246,7 @@ export async function POST(req: NextRequest) {
         url,
         reportedBy,
         timestamp,
+        reportStartedAt,
         viewport,
         userAgent,
         posthogSessionUrl,

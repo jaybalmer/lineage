@@ -563,6 +563,26 @@ export function eventSlug(event: Event): string {
   return slugify(event.name)
 }
 
+/**
+ * Slug match with year-shorthand tolerance. Event names drifted between
+ * shorthand and full years ("Baker Banked Slalom '19" vs "... 2019"), so a
+ * shared or generated link may carry either form. When the literal slugs
+ * differ, expand a trailing 2-digit year segment to the event's own full
+ * year on both sides and compare again (BUG-013).
+ */
+export function eventMatchesSlug(event: Event, slug: string): boolean {
+  const literal = eventSlug(event)
+  if (literal === slug) return true
+  if (!event.year) return false
+  const yy = String(event.year % 100).padStart(2, "0")
+  const full = String(event.year)
+  const expand = (s: string) =>
+    s.endsWith(`_${yy}`) && !s.endsWith(`_${full}`)
+      ? `${s.slice(0, s.length - yy.length)}${full}`
+      : s
+  return expand(literal) === expand(slug)
+}
+
 export function seriesSlug(series: EventSeries): string {
   return slugify(series.name)
 }

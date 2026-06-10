@@ -643,5 +643,7 @@ export interface BugReport {
   viewport: string | null
   user_agent: string | null
   posthog_session_url: string | null
+  /** Widget-open time (reporter-supplied, see migration-011); created_at minus this is roughly the time spent typing. */
+  report_started_at: string | null
   status: BugReportStatus
 }

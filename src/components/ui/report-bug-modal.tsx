@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, type ChangeEvent } from "react"
+import { useEffect, useRef, useState, type ChangeEvent } from "react"
 import posthog from "posthog-js"
 import { cn } from "@/lib/utils"
 import { useLineageStore } from "@/store/lineage-store"
@@ -68,6 +68,24 @@ export function ReportBugModal({ open, onClose, includeAccount = false }: Report
   const [submitting, setSubmitting] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Captured when the widget OPENS, not when Send is hit: the bug predates
+  // the typing, so triage wants the replay anchored just before the reporter
+  // reached for the widget (10 second lookback). Reset on every open
+  // transition so a closed-and-reopened widget gets fresh values. Declared
+  // above the early return below (rules of hooks).
+  const reportStartedAtRef = useRef<string | null>(null)
+  const replayUrlAtOpenRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!open) return
+    reportStartedAtRef.current = new Date().toISOString()
+    try {
+      replayUrlAtOpenRef.current =
+        posthog.get_session_replay_url?.({ withTimestamp: true, timestampLookBack: 10 }) || null
+    } catch {
+      replayUrlAtOpenRef.current = null
+    }
+  }, [open])
+
   if (!open) return null
 
   const canSend = note.trim().length > 0 && !submitting
@@ -106,14 +124,18 @@ export function ReportBugModal({ open, onClose, includeAccount = false }: Report
     if (note.trim().length === 0 || submitting) return
     setSubmitting(true)
 
-    // PostHog session replay link. The method name has drifted across versions,
-    // so guard it and accept null rather than assuming it exists, or that PostHog
-    // is even initialized (there is no key in some environments).
-    let posthogSessionUrl: string | null = null
-    try {
-      posthogSessionUrl = posthog.get_session_replay_url?.({ withTimestamp: true }) || null
-    } catch {
-      posthogSessionUrl = null
+    // PostHog session replay link, captured at widget open (see the effect
+    // above). Send-time capture is only the fallback for when PostHog wasn't
+    // ready at open. The method name has drifted across versions, so guard it
+    // and accept null rather than assuming it exists, or that PostHog is even
+    // initialized (there is no key in some environments).
+    let posthogSessionUrl: string | null = replayUrlAtOpenRef.current
+    if (!posthogSessionUrl) {
+      try {
+        posthogSessionUrl = posthog.get_session_replay_url?.({ withTimestamp: true }) || null
+      } catch {
+        posthogSessionUrl = null
+      }
     }
 
     try {
@@ -124,6 +146,7 @@ export function ReportBugModal({ open, onClose, includeAccount = false }: Report
       form.append("viewport", `${window.innerWidth}x${window.innerHeight}`)
       form.append("userAgent", navigator.userAgent)
       if (posthogSessionUrl) form.append("posthogSessionUrl", posthogSessionUrl)
+      if (reportStartedAtRef.current) form.append("reportStartedAt", reportStartedAtRef.current)
       if (image) form.append("image", image, image.name)
 
       // No Content-Type header: the browser sets the multipart boundary itself.

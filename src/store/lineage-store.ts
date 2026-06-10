@@ -62,7 +62,7 @@ interface LineageStore {
   addUserOrg: (org: Org) => void
   addUserEvent: (event: Event) => void
   addUserSeries: (series: EventSeries) => void
-  addUserPerson: (person: Person) => void
+  addUserPerson: (person: Person) => Promise<boolean>
   updateUserEvent: (id: string, updates: Partial<Event>) => void
   verifyEntity: (entityType: "place" | "board" | "org" | "event" | "person", id: string) => void
   loadDbEntities: () => void
@@ -364,55 +364,47 @@ export const useLineageStore = create<LineageStore>()(
             }
           }
 
-          supabase
-            .from("claims")
-            .insert({ ...claim, asserted_by: activePersonId })
-            .then(({ error }) => {
-              if (error) {
-                set((s) => ({ sessionClaims: s.sessionClaims.filter((c) => c.id !== claim.id) }))
-                get().addToast("Failed to save claim. Please try again.")
-                return
-              }
-              set((s) => ({
-                sessionClaims: s.sessionClaims.filter((c) => c.id !== claim.id),
-                dbClaims: [...s.dbClaims, claim],
-              }))
-
-              trackEvent("content", "claim_created", {
-                predicate: claim.predicate,
-                subject_type: claim.subject_type,
-                object_type: claim.object_type,
-                visibility: claim.visibility,
-              }, { actorId: activePersonId })
-
-              // Ambient-growth fan-out (Finding #1) + PB-009 tag_event
-              // pairing. Every person id named in this claim (other than the
-              // asserter themselves — distinct_tagger_summary excludes self-
-              // tags anyway, so calling for the asserter is wasted work) gets
-              // a paired tag_event server-side. The route now takes claim_id
-              // + predicate so it can FK tag_event_id back onto the claim
-              // row. Fire-and-forget; the response is for telemetry only.
-              const personIds: string[] = []
-              if (claim.subject_type === "person" && claim.subject_id && claim.subject_id !== activePersonId) {
-                personIds.push(claim.subject_id)
-              }
-              if (claim.object_type === "person" && claim.object_id && claim.object_id !== activePersonId) {
-                personIds.push(claim.object_id)
-              }
-              if (personIds.length > 0) {
-                fetch("/api/tag-event", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    person_ids: personIds,
-                    claim_id: claim.id,
-                    predicate: claim.predicate,
-                  }),
-                }).catch((e) => {
-                  console.error("[addClaim] tag-event call failed:", e)
-                })
-              }
+          // BUG-022: claims are written through POST /api/claims (server-
+          // validated, service role) instead of a client-side claims.insert.
+          // The claims INSERT policy only admits subject=self rows, so every
+          // member claim ABOUT someone else (event Add People, brand pages,
+          // the PB-009 tagging flow) was rejected with 42501, and the error
+          // object was discarded, so the failure was invisible. The route
+          // also runs the PB-008 threshold fan-out and PB-009 tag_event
+          // pairing server-side, replacing the old /api/tag-event call.
+          try {
+            const res = await fetch("/api/claims", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ ...claim, asserted_by: activePersonId }),
             })
+            const result = await res.json().catch(() => null) as { error?: string; reason?: string } | null
+            if (!res.ok) {
+              console.error("[addClaim] insert failed:", res.status, result?.error ?? result)
+              set((s) => ({ sessionClaims: s.sessionClaims.filter((c) => c.id !== claim.id) }))
+              get().addToast(
+                result?.reason === "globally_blocked"
+                  ? "You don't have permission to create tags right now."
+                  : "Failed to save claim. Please try again."
+              )
+              return
+            }
+            set((s) => ({
+              sessionClaims: s.sessionClaims.filter((c) => c.id !== claim.id),
+              dbClaims: [...s.dbClaims, claim],
+            }))
+
+            trackEvent("content", "claim_created", {
+              predicate: claim.predicate,
+              subject_type: claim.subject_type,
+              object_type: claim.object_type,
+              visibility: claim.visibility,
+            }, { actorId: activePersonId })
+          } catch (e) {
+            console.error("[addClaim] request failed:", e)
+            set((s) => ({ sessionClaims: s.sessionClaims.filter((c) => c.id !== claim.id) }))
+            get().addToast("Failed to save claim. Please try again.")
+          }
         })
       },
       removeClaim: (id) => {
@@ -608,22 +600,38 @@ export const useLineageStore = create<LineageStore>()(
           }).catch(() => get().addToast("Failed to save event. Please try again."))
         }
       },
-      addUserPerson: (person) => {
-        const entity = { ...person, community_status: "unverified" as const }
+      addUserPerson: async (person) => {
+        // PB-008: a member-created rider with a name and no account is
+        // 'unclaimed'. Without an explicit value the DB default ('catalog')
+        // wins and the ghost is misfiled; the optimistic entity needs it too
+        // so getRiderTier classifies it before the round-trip (BUG-022).
+        const entity = {
+          ...person,
+          community_status: "unverified" as const,
+          node_status: "unclaimed" as const,
+        }
         set((s) => ({
           userEntities: { ...s.userEntities, people: [...s.userEntities.people, entity] },
           catalog: { ...s.catalog, people: [...s.catalog.people, entity] },
         }))
-        if (isAuthUser(get().activePersonId)) {
-          supabase.from("people").insert({
-            id: person.id, display_name: person.display_name,
-            riding_since: person.riding_since ?? null,
-            bio: person.bio ?? null,
-            community_status: "unverified", added_by: get().activePersonId,
-          }).then(({ error }) => {
-            if (error) get().addToast("Failed to save rider. Please try again.")
-          })
+        if (!isAuthUser(get().activePersonId)) return true
+        const { error } = await supabase.from("people").insert({
+          id: person.id, display_name: person.display_name,
+          riding_since: person.riding_since ?? null,
+          bio: person.bio ?? null,
+          community_status: "unverified", node_status: "unclaimed",
+          added_by: get().activePersonId,
+        })
+        if (error) {
+          console.error("[addUserPerson] insert failed:", error)
+          set((s) => ({
+            userEntities: { ...s.userEntities, people: s.userEntities.people.filter((p) => p.id !== person.id) },
+            catalog: { ...s.catalog, people: s.catalog.people.filter((p) => p.id !== person.id) },
+          }))
+          get().addToast("Failed to save rider. Please try again.")
+          return false
         }
+        return true
       },
       updateUserEvent: (id, updates) => {
         set((s) => ({
