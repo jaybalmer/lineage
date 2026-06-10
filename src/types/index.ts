@@ -495,6 +495,23 @@ export interface Story {
   community_id?: string
   /** PB-009 Phase 1: per-moment override for visitor-tag display (Phase 6 renders). */
   visitor_display_override?: VisitorDisplaySetting | null
+  // Reactions + comments (populated by GET /api/stories only; a story object
+  // without comment_count did not come from the API and renders no
+  // interaction row)
+  reaction_summary?: Partial<Record<StoryReactionType, number>>
+  viewer_reaction?: StoryReactionType | null
+  comment_count?: number
+}
+
+export type StoryReactionType = "stoke" | "fire" | "laugh" | "respect" | "classic"
+
+export interface StoryComment {
+  id: string
+  story_id: string
+  author_id: string
+  body: string
+  created_at: string
+  author?: { display_name: string; avatar_url?: string }
 }
 
 // ─── Claim Requests ─────────────────────────────────────────────────────────

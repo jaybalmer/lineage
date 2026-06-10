@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, Suspense } from "react"
+import { useSearchParams } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { StoryCard } from "@/components/feed/story-card"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
@@ -12,9 +13,47 @@ type StoryFilter = "all" | "mine"
 
 const PAGE_SIZE = 20
 
+// useSearchParams() needs a Suspense boundary at build time; wrap the body,
+// not the whole route.
 export default function StoriesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-background" />}>
+      <StoriesPageBody />
+    </Suspense>
+  )
+}
+
+function StoriesPageBody() {
   const { activePersonId } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
+
+  // ?focus=<storyId> is the v1 story permalink (comment emails link here).
+  // The focused story pins above the list with a highlight ring and its
+  // comments auto-expanded. It may appear again in the list below; that
+  // duplication is accepted for v1.
+  const searchParams = useSearchParams()
+  const focusId = searchParams.get("focus")
+  const [focusStory, setFocusStory] = useState<Story | null>(null)
+  const [focusMissing, setFocusMissing] = useState(false)
+
+  useEffect(() => {
+    if (!focusId) {
+      setFocusStory(null)
+      setFocusMissing(false)
+      return
+    }
+    let cancelled = false
+    fetch(`/api/stories?id=${encodeURIComponent(focusId)}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return
+        const rows: Story[] = Array.isArray(data) ? data : []
+        if (rows.length > 0) setFocusStory(rows[0])
+        else setFocusMissing(true)
+      })
+      .catch(() => { if (!cancelled) setFocusMissing(true) })
+    return () => { cancelled = true }
+  }, [focusId])
 
   const [filter, setFilter]     = useState<StoryFilter>("all")
   const [search, setSearch]     = useState("")
@@ -119,6 +158,26 @@ export default function StoriesPage() {
             </button>
           ))}
         </div>
+
+        {/* Focused story (email link target) */}
+        {focusId && focusStory && (
+          <div className="mb-6 rounded-2xl ring-2 ring-blue-500/40 p-1 [&_.postcard]:mb-0">
+            <StoryCard
+              story={focusStory}
+              isOwn={focusStory.author_id === activePersonId}
+              expandComments
+              onDelete={(id) => {
+                setFocusStory(null)
+                setStories((prev) => prev.filter((s) => s.id !== id))
+              }}
+            />
+          </div>
+        )}
+        {focusId && focusMissing && (
+          <div className="mb-6 py-3 text-center text-sm text-muted border border-dashed border-border-default rounded-xl">
+            That story is no longer available.
+          </div>
+        )}
 
         {/* Story list */}
         {loading ? (

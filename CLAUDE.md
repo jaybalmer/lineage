@@ -103,6 +103,9 @@ Simple daily log: date, place, riders[], note. Lighter than a full claim.
 | `riding_days` | Daily log entries |
 | `boards`, `places`, `events`, `orgs`, `event_series` | Catalog entities |
 | `memberships` | Stripe-backed membership records |
+| `story_reactions` | One emoji reaction per member per story (composite PK story_id, reactor_id; upsert to change) |
+| `story_comments` | Flat story comments, hard-deleted, no threading |
+| `story_comment_notifications` | Per-story batch window (6h) for comment emails; see `supabase/migrations/20260609000001_story_reactions_comments.sql` |
 
 ### Adding a column
 Run SQL directly in Supabase dashboard — there are no local migration files to maintain. After adding a column:
@@ -237,8 +240,11 @@ Two-tab modal: **Details** (date, title, body, photos, YouTube URL, visibility) 
 In edit mode, pass `editStory={story}` — modal switches to PATCH flow.
 
 ### `StoryCard` (`src/components/feed/story-card.tsx`)
-Renders: author header → title → body → YouTube embed (if `youtube_url`) → photo grid → entity chips.
+Renders: author header → title → body → YouTube embed (if `youtube_url`) → photo grid → entity chips → reactions/comments row.
 Owners get a `⋯` menu (edit / delete) — appears on hover.
+
+### `StoryInteractions` (`src/components/feed/story-interactions.tsx`)
+Reaction bar (5 emoji, one per member per story) + flat comment section. Rendered by `StoryCard` only when `story.comment_count !== undefined` (i.e. the story came from `GET /api/stories`). Routes: `PUT/DELETE /api/stories/[id]/reactions`, `GET/POST /api/stories/[id]/comments`, `DELETE .../comments/[commentId]`. Comment emails batch per story (6h window) via `src/lib/emails/comment-emails.ts`; the email links to `/[community]/stories?focus=<storyId>`, the v1 story permalink.
 
 ### `FeedView` (`src/components/feed/feed-view.tsx`)
 Accepts `claims`, `days`, `stories` arrays. Groups by decade. Filter chips. `order="asc"|"desc"` prop controls sort direction.

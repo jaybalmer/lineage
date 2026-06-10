@@ -8,6 +8,7 @@ import { personHref } from "@/lib/entity-links"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { ReportTagModal } from "@/components/ui/report-tag-modal"
+import { StoryInteractions } from "@/components/feed/story-interactions"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { getRiderTier } from "@/components/ui/rider-avatar"
 import type { Story, TagEventDeclineCategory } from "@/types"
@@ -16,6 +17,8 @@ interface StoryCardProps {
   story: Story
   isOwn?: boolean
   onDelete?: (id: string) => void
+  /** Auto-expand the comment section (focus pin on the stories page). */
+  expandComments?: boolean
 }
 
 function formatStoryDate(dateStr: string): string {
@@ -23,7 +26,7 @@ function formatStoryDate(dateStr: string): string {
   return d.toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" })
 }
 
-export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
+export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardProps) {
   const { catalog, activePersonId, addToast } = useLineageStore()
   const [displayStory, setDisplayStory] = useState(story)
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null)
@@ -120,7 +123,18 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
       <AddStoryModal
         editStory={displayStory}
         onClose={() => setEditing(false)}
-        onSaved={(updated) => { setDisplayStory(updated); setEditing(false) }}
+        onSaved={(updated) => {
+          // The PATCH response carries no reaction/comment joins; keep the
+          // counts from the pre-edit story so the interaction row survives
+          // an edit (the rows themselves are untouched by edits).
+          setDisplayStory((prev) => ({
+            ...updated,
+            reaction_summary: updated.reaction_summary ?? prev.reaction_summary,
+            viewer_reaction: updated.viewer_reaction ?? prev.viewer_reaction,
+            comment_count: updated.comment_count ?? prev.comment_count,
+          }))
+          setEditing(false)
+        }}
       />
     )}
 
@@ -333,6 +347,11 @@ export function StoryCard({ story, isOwn, onDelete }: StoryCardProps) {
             )
           })}
         </div>
+      )}
+
+      {/* ── Reactions + comments ── */}
+      {displayStory.comment_count !== undefined && (
+        <StoryInteractions story={displayStory} defaultExpanded={expandComments} />
       )}
 
       {/* ── Delete confirm ── */}
