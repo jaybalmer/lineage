@@ -61,12 +61,16 @@ export async function fireCommentNotification(
     return { sent: false, reason: "window_upsert_failed" }
   }
 
-  // (4) Author email + commenter name. No email on file is a silent no-op.
-  const [authorRes, commenterRes] = await Promise.all([
-    supabase.from("profiles").select("display_name, email").eq("id", story.author_id).maybeSingle(),
+  // (4) Author email + display names. profiles has NO email column; the
+  // address lives in auth.users and is resolved through the admin API, the
+  // same way invite-tracking-server and the claim-request emails do it.
+  // No email on file is a silent no-op.
+  const [authorUserRes, authorRes, commenterRes] = await Promise.all([
+    supabase.auth.admin.getUserById(story.author_id),
+    supabase.from("profiles").select("display_name").eq("id", story.author_id).maybeSingle(),
     supabase.from("profiles").select("display_name").eq("id", args.commenterId).maybeSingle(),
   ])
-  const authorEmail = (authorRes.data as { email?: string } | null)?.email
+  const authorEmail = authorUserRes.data?.user?.email
   if (!authorEmail) return { sent: false, reason: "no_author_email" }
   const authorName = (authorRes.data as { display_name?: string } | null)?.display_name ?? null
   const commenterName = (commenterRes.data as { display_name?: string } | null)?.display_name ?? "A member"
@@ -90,7 +94,9 @@ export async function fireCommentNotification(
   try {
     const { Resend } = await import("resend")
     const resend = new Resend(key)
-    await resend.emails.send({
+    // The Resend SDK reports API-level rejections in the result object and
+    // only throws on transport errors, so both paths are checked here.
+    const { error: sendErr } = await resend.emails.send({
       from: "Linestry <noreply@linestry.com>",
       to: authorEmail,
       subject: `${commenterName} commented on your story`,
@@ -102,6 +108,10 @@ export async function fireCommentNotification(
         storyUrl,
       }),
     })
+    if (sendErr) {
+      console.error("[comment-emails] Resend send rejected:", sendErr)
+      return { sent: false, reason: "send_failed" }
+    }
     return { sent: true }
   } catch (err) {
     console.error("[comment-emails] Resend send failed:", err)
