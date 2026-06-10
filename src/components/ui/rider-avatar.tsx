@@ -35,14 +35,18 @@ export function getRiderTier(
   if (status === "unclaimed") return "unclaimed"
   if (status === "catalog") return "catalog"
 
-  // Fallback: infer from isAuthUser (backward compat before backfill)
+  // Fallback for rows without node_status (pre-backfill data and optimistic
+  // client rows that haven't round-tripped yet). community_status must win
+  // over the UUID check: ghost riders get crypto.randomUUID() ids since the
+  // May 15 PB-008 backfill, so a UUID no longer implies an auth account.
+  // The old order filed every new ghost under Riders as a member (BUG-022).
+  if (person.community_status === "unverified") return "unclaimed"
   if (isAuthUser(person.id)) {
     const tier = person.membership_tier ?? "free"
     if (tier === "founding") return "founding"
     if (tier === "annual" || tier === "lifetime") return "paid"
     return "free-account"
   }
-  if (person.community_status === "unverified") return "unclaimed"
   return "catalog"
 }
 

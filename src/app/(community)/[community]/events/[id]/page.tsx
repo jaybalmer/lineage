@@ -518,14 +518,20 @@ function AddRiderToEvent({
     setRiderQuery("")
   }
 
-  function handleCreateRider() {
+  async function handleCreateRider() {
     if (!newRiderName.trim()) return
     const personId = crypto.randomUUID()
-    addUserPerson({
+    // Await the person insert before firing the claim: the paired tag_event
+    // reads the ghost's node_status for its subject tier, and a failed person
+    // save should not leave a claim pointing at a rider that never landed.
+    // On failure the form stays open so the name can be retried (BUG-022).
+    const ok = await addUserPerson({
       id: personId,
       display_name: newRiderName.trim(),
       privacy_level: "public",
+      added_by: activePersonId ?? undefined,
     } as import("@/types").Person)
+    if (!ok) return
     addRiderClaim(personId)
     setNewRiderName("")
     setShowNewRider(false)
