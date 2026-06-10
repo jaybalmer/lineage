@@ -174,8 +174,8 @@ export const useLineageStore = create<LineageStore>()(
           supabase.from("event_series").select("*"),
           supabase.from("people").select("*"),
           // PB-009 Phase 1: read through claims_public to filter to approved
-          // (or grandfathered NULL tag_event_id) rows. Writes still go to
-          // claims directly via addClaim/updateClaim/removeClaim below.
+          // (or grandfathered NULL tag_event_id) rows. Writes go through the
+          // /api/claims route family via addClaim/updateClaim/removeClaim.
           supabase.from("claims_public").select("*"),
           // Registered users live in profiles, not people — fetch both and merge
           supabase.from("profiles").select(
@@ -421,25 +421,37 @@ export const useLineageStore = create<LineageStore>()(
           return { deletedClaimIds: [...s.deletedClaimIds, id] }
         })
         if (isAuthUser(activePersonId)) {
-          fetch("/api/admin", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ operation: "delete", table: "claims", id }),
-          }).then((r) => {
-            if (!r.ok && removedClaim) {
-              set((s) => ({ dbClaims: [...s.dbClaims, removedClaim] }))
-              get().addToast("Failed to delete claim. It has been restored.")
-            }
-          }).catch(() => {
-            if (removedClaim) {
-              set((s) => ({ dbClaims: [...s.dbClaims, removedClaim] }))
-              get().addToast("Failed to delete claim. It has been restored.")
-            }
-          })
+          // Route fix (June 10 session): this posted to /api/admin, which is
+          // requireEditor-gated, so plain members got a 403 deleting claims
+          // they asserted and the claim bounced back with the failure toast.
+          // DELETE /api/claims/[id] admits the asserter (editors may still
+          // delete any claim) and runs the same PB-009 disable cascade.
+          const rollback = () => {
+            set((s) => removedClaim
+              ? { dbClaims: [...s.dbClaims, removedClaim] }
+              : { deletedClaimIds: s.deletedClaimIds.filter((d) => d !== id) })
+            get().addToast("Failed to delete claim. It has been restored.")
+          }
+          fetch(`/api/claims/${encodeURIComponent(id)}`, { method: "DELETE" })
+            .then(async (r) => {
+              if (!r.ok) {
+                const result = await r.json().catch(() => null) as { error?: string } | null
+                console.error("[removeClaim] delete failed:", r.status, result?.error ?? result)
+                rollback()
+              }
+            })
+            .catch((e) => {
+              console.error("[removeClaim] request failed:", e)
+              rollback()
+            })
         }
       },
       updateClaim: (id, updates) => {
         const { activePersonId } = get()
+        // Capture prior state for rollback before the optimistic update
+        const prevSession = get().sessionClaims.find((c) => c.id === id)
+        const prevDb = get().dbClaims.find((c) => c.id === id)
+        const prevOverride = get().claimOverrides[id]
         set((s) => {
           const isSession = s.sessionClaims.some((c) => c.id === id)
           const isDb = s.dbClaims.some((c) => c.id === id)
@@ -464,9 +476,50 @@ export const useLineageStore = create<LineageStore>()(
             },
           }
         })
-        if (isAuthUser(activePersonId)) {
-          supabase.from("claims").update(updates).eq("id", id)
+        if (!isAuthUser(activePersonId)) return
+
+        // Silent-write fix (June 10 session): this used to build
+        // supabase.from("claims").update() without await/.then, so the lazy
+        // PostgrestBuilder never fired and edits never reached the DB. The
+        // write now goes through PATCH /api/claims/[id] (service role after
+        // an asserted_by ownership check), because the claims RLS only
+        // admits subject=self rows and would also block client-side updates
+        // of claims about others.
+        const rollback = () => {
+          set((s) => {
+            if (prevSession) {
+              return { sessionClaims: s.sessionClaims.map((c) => (c.id === id ? prevSession : c)) }
+            }
+            if (prevDb) {
+              return { dbClaims: s.dbClaims.map((c) => (c.id === id ? prevDb : c)) }
+            }
+            const overrides = { ...s.claimOverrides }
+            if (prevOverride) overrides[id] = prevOverride
+            else delete overrides[id]
+            return { claimOverrides: overrides }
+          })
+          get().addToast("Failed to update claim. Your changes were not saved.")
         }
+        // undefined means "clear this field" at the call sites (the edit
+        // modal drops end_date this way), but JSON.stringify omits undefined
+        // keys, so convert them to explicit nulls for the PATCH body.
+        const body = Object.fromEntries(
+          Object.entries(updates).map(([k, v]) => [k, v === undefined ? null : v])
+        )
+        fetch(`/api/claims/${encodeURIComponent(id)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        }).then(async (res) => {
+          if (!res.ok) {
+            const result = await res.json().catch(() => null) as { error?: string } | null
+            console.error("[updateClaim] update failed:", res.status, result?.error ?? result)
+            rollback()
+          }
+        }).catch((e) => {
+          console.error("[updateClaim] request failed:", e)
+          rollback()
+        })
       },
 
       dbClaims: [],
@@ -714,16 +767,42 @@ export const useLineageStore = create<LineageStore>()(
           })
         }
       },
+      // Silent-write fix (June 10 session): both riding-day mutations below
+      // used to build the PostgrestBuilder without await/.then, so the HTTP
+      // request never fired and the change never reached the DB. They now
+      // subscribe like addRidingDay does. The .select("id") makes a silent
+      // zero-row outcome detectable: under RLS, an update/delete the policy
+      // does not admit succeeds with no rows and no error.
       removeRidingDay: (id) => {
+        const removedDay = get().ridingDays.find((d) => d.id === id)
         set((s) => ({ ridingDays: s.ridingDays.filter((d) => d.id !== id) }))
         if (isAuthUser(get().activePersonId)) {
-          supabase.from("riding_days").delete().eq("id", id)
+          supabase.from("riding_days").delete().eq("id", id).select("id")
+            .then(({ data, error }) => {
+              if (error || !data || data.length === 0) {
+                console.error("[removeRidingDay] delete failed:", error ?? "no rows deleted")
+                if (removedDay) {
+                  set((s) => ({ ridingDays: [...s.ridingDays, removedDay] }))
+                }
+                get().addToast("Failed to delete riding day. It has been restored.")
+              }
+            })
         }
       },
       updateRidingDay: (id, updates) => {
+        const prevDay = get().ridingDays.find((d) => d.id === id)
         set((s) => ({ ridingDays: s.ridingDays.map((d) => d.id === id ? { ...d, ...updates } : d) }))
         if (isAuthUser(get().activePersonId)) {
-          supabase.from("riding_days").update(updates).eq("id", id)
+          supabase.from("riding_days").update(updates).eq("id", id).select("id")
+            .then(({ data, error }) => {
+              if (error || !data || data.length === 0) {
+                console.error("[updateRidingDay] update failed:", error ?? "no rows updated")
+                if (prevDay) {
+                  set((s) => ({ ridingDays: s.ridingDays.map((d) => (d.id === id ? prevDay : d)) }))
+                }
+                get().addToast("Failed to update riding day. Your changes were not saved.")
+              }
+            })
         }
       },
 
