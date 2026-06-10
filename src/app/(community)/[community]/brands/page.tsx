@@ -23,25 +23,30 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const CATEGORY_ORDER = ["board_brand", "outerwear", "media", "other"]
 
-function OrgCard({ org }: { org: Org }) {
-  const { catalog } = useLineageStore()
+type BrandSort = "entries" | "category" | "az"
 
-  const riders = new Set(
-    catalog.claims.filter(
-      (c) => c.object_id === org.id &&
-        (c.predicate === "sponsored_by" || c.predicate === "worked_at" || c.predicate === "part_of_team")
-    ).map((c) => c.subject_id)
-  ).size
+const SORT_OPTIONS: { key: BrandSort; label: string; title: string }[] = [
+  { key: "entries",  label: "Most connections", title: "Sort by riders, events & locations" },
+  { key: "category", label: "Category",         title: "Group by category" },
+  { key: "az",       label: "A-Z",              title: "Sort alphabetically" },
+]
 
-  const firstName = org.name.split(" ")[0]
-  const boards = catalog.boards.filter(
-    (b) => b.brand.toLowerCase() === org.name.toLowerCase() ||
-      b.brand.toLowerCase() === firstName.toLowerCase()
-  ).length
+// Connection counts per org. `total` includes boards (shown on the card per request);
+// `rel` = relationship connections (people + events + places) drives the default ranking,
+// so brands with large board catalogs don't dominate over brands with real connections.
+type ConnCounts = { people: number; boards: number; events: number; places: number; total: number; rel: number }
+const EMPTY_CONN: ConnCounts = { people: 0, boards: 0, events: 0, places: 0, total: 0, rel: 0 }
 
+function OrgCard({ org, conn }: { org: Org; conn: ConnCounts }) {
   const initial = org.name[0].toUpperCase()
   const isUnverified = org.community_status === "unverified"
-  const addedByPerson = org.added_by ? catalog.people.find((p) => p.id === org.added_by) : null
+
+  // Breakdown of the connection total (only non-zero parts), e.g. "1 rider · 9 events"
+  const parts: string[] = []
+  if (conn.people > 0) parts.push(`${conn.people} rider${conn.people !== 1 ? "s" : ""}`)
+  if (conn.boards > 0) parts.push(`${conn.boards} board${conn.boards !== 1 ? "s" : ""}`)
+  if (conn.events > 0) parts.push(`${conn.events} event${conn.events !== 1 ? "s" : ""}`)
+  if (conn.places > 0) parts.push(`${conn.places} location${conn.places !== 1 ? "s" : ""}`)
 
   return (
     <div className="flex items-center gap-2">
@@ -69,10 +74,15 @@ function OrgCard({ org }: { org: Org }) {
                 )}
               </div>
             </div>
-            <div className="shrink-0 text-right">
-              {riders > 0 && <div className="text-[11px] text-muted">{riders} rider{riders !== 1 ? "s" : ""}</div>}
-              {boards > 0 && <div className="text-[11px] text-muted">{boards} board{boards !== 1 ? "s" : ""}</div>}
-            </div>
+            {conn.total > 0 && (
+              <div className="shrink-0 text-right">
+                <div className="text-sm font-semibold text-foreground">{conn.total}</div>
+                <div className="text-[10px] text-muted">connection{conn.total !== 1 ? "s" : ""}</div>
+                {parts.length > 0 && (
+                  <div className="text-[10px] text-muted mt-0.5">{parts.join(" · ")}</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </CommunityLink>
@@ -93,8 +103,56 @@ function BrandsPageInner() {
   const [addOpen, setAddOpen] = useState(false)
   const [myOnly, setMyOnly] = useState(false)
   const [search, setSearch] = useState(yearParam ?? "")
+  const [sort, setSort] = useState<BrandSort>("entries")
   const { catalog, activePersonId } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
+
+  // Connection counts per org, mirroring the brand detail page:
+  //  people  = unique subjects of sponsored_by / worked_at / part_of_team claims (org is object)
+  //  boards  = board models whose brand name matches the org
+  //  events  = organized claims + events/series linked via brand_ids (deduped)
+  //  places  = located_at claims (org is subject)
+  const connCounts = useMemo(() => {
+    const m = new Map<string, ConnCounts>()
+    for (const org of catalog.orgs) {
+      const people = new Set(
+        catalog.claims
+          .filter(
+            (c) =>
+              c.object_id === org.id &&
+              c.object_type === "org" &&
+              (c.predicate === "sponsored_by" || c.predicate === "worked_at" || c.predicate === "part_of_team")
+          )
+          .map((c) => c.subject_id)
+      ).size
+
+      const full = org.name.toLowerCase()
+      const first = org.name.split(" ")[0].toLowerCase()
+      const boards = catalog.boards.filter((b) => {
+        const bn = b.brand.toLowerCase()
+        return bn === full || bn === first
+      }).length
+
+      const organizedIds = new Set(
+        catalog.claims.filter((c) => c.subject_id === org.id && c.predicate === "organized").map((c) => c.object_id)
+      )
+      const extraEvents = catalog.events.filter((e) => e.brand_ids?.includes(org.id) && !organizedIds.has(e.id)).length
+      const series = catalog.eventSeries.filter((s) => s.brand_ids?.includes(org.id)).length
+      const events = organizedIds.size + extraEvents + series
+
+      const places = catalog.claims.filter((c) => c.subject_id === org.id && c.predicate === "located_at").length
+
+      m.set(org.id, {
+        people,
+        boards,
+        events,
+        places,
+        total: people + boards + events + places,
+        rel: people + events + places,
+      })
+    }
+    return m
+  }, [catalog.claims, catalog.boards, catalog.events, catalog.eventSeries, catalog.orgs])
 
   // IDs of orgs the active user is connected to
   const myOrgIds = useMemo(() => {
@@ -127,6 +185,16 @@ function BrandsPageInner() {
   }, {})
   const uncategorized = brandOrgs.filter((o) => !o.brand_category || !CATEGORY_ORDER.includes(o.brand_category))
   if (uncategorized.length > 0) grouped["other"] = [...(grouped["other"] ?? []), ...uncategorized]
+
+  // Flat-list comparator. "Most connections" ranks by relationship connections
+  // (people + events + places) so big board catalogs don't dominate; ties break on name.
+  const conn = (id: string) => connCounts.get(id) ?? EMPTY_CONN
+  const cmp = (a: Org, b: Org) =>
+    sort === "entries"
+      ? conn(b.id).rel - conn(a.id).rel || a.name.localeCompare(b.name)
+      : a.name.localeCompare(b.name)
+  const sortedBrands = [...brandOrgs].sort(cmp)
+  const sortedTeams = [...teams].sort(cmp)
 
   const totalBrands = allOrgs.length
 
@@ -181,28 +249,57 @@ function BrandsPageInner() {
           )}
         </div>
 
-        <div className="space-y-10">
-          {Object.entries(grouped).map(([cat, orgs]) => (
-            <section key={cat}>
-              <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-4">
-                {CATEGORY_LABELS[cat] ?? cat}
-              </h2>
-              <div className="space-y-2">
-                {orgs.map((org) => (
-                  <OrgCard key={org.id} org={org} />
-                ))}
-              </div>
-            </section>
-          ))}
+        {/* Sort control */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1">
+            {SORT_OPTIONS.map(({ key, label, title }) => (
+              <button
+                key={key}
+                onClick={() => setSort(key)}
+                title={title}
+                className={cn(
+                  "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                  sort === key
+                    ? "bg-surface-active text-foreground"
+                    : "text-muted hover:text-foreground"
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
 
-          {teams.length > 0 && (
+        <div className="space-y-10">
+          {sort === "category" ? (
+            Object.entries(grouped).map(([cat, orgs]) => (
+              <section key={cat}>
+                <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-4">
+                  {CATEGORY_LABELS[cat] ?? cat}
+                </h2>
+                <div className="space-y-2">
+                  {orgs.map((org) => (
+                    <OrgCard key={org.id} org={org} conn={conn(org.id)} />
+                  ))}
+                </div>
+              </section>
+            ))
+          ) : (
+            <div className="space-y-2">
+              {sortedBrands.map((org) => (
+                <OrgCard key={org.id} org={org} conn={conn(org.id)} />
+              ))}
+            </div>
+          )}
+
+          {sortedTeams.length > 0 && (
             <section>
               <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-4">
                 Teams & Collectives
               </h2>
               <div className="space-y-2">
-                {teams.map((org) => (
-                  <OrgCard key={org.id} org={org} />
+                {sortedTeams.map((org) => (
+                  <OrgCard key={org.id} org={org} conn={conn(org.id)} />
                 ))}
               </div>
             </section>

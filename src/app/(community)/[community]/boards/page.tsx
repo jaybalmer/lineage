@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 import { CommunityLink } from "@/components/ui/community-link"
 import type { Board } from "@/types"
 
-type MainTab = "all" | "brands" | "models"
+type MainTab = "all" | "brands" | "models" | "entries"
 
 function AvatarStack({ riderIds }: { riderIds: string[] }) {
   const { catalog } = useLineageStore()
@@ -206,6 +206,29 @@ function BoardsPageInner() {
       }))
   }, [allBoards])
 
+  // ── Most entries tab: unique owners per board (owned_board) ───────────────
+  const boardRiderCounts = useMemo(() => {
+    const sets = new Map<string, Set<string>>()
+    for (const c of catalog.claims) {
+      if (c.predicate !== "owned_board") continue
+      if (!sets.has(c.object_id)) sets.set(c.object_id, new Set())
+      sets.get(c.object_id)!.add(c.subject_id)
+    }
+    const counts = new Map<string, number>()
+    for (const [id, s] of sets) counts.set(id, s.size)
+    return counts
+  }, [catalog.claims])
+
+  const entriesSorted = useMemo(
+    () =>
+      [...allBoards].sort(
+        (a, b) =>
+          (boardRiderCounts.get(b.id) ?? 0) - (boardRiderCounts.get(a.id) ?? 0) ||
+          b.model_year - a.model_year
+      ),
+    [allBoards, boardRiderCounts]
+  )
+
   const isEmpty = allBoards.length === 0
 
   return (
@@ -249,6 +272,7 @@ function BoardsPageInner() {
               { key: "all" as MainTab, label: "All" },
               { key: "brands" as MainTab, label: "Brands" },
               { key: "models" as MainTab, label: "Models" },
+              { key: "entries" as MainTab, label: "Most entries" },
             ]).map(({ key, label }) => (
               <button
                 key={key}
@@ -286,6 +310,15 @@ function BoardsPageInner() {
           </div>
         ) : (
           <>
+            {/* ── Most entries tab: flat list by owner count ── */}
+            {mainTab === "entries" && (
+              <div className="space-y-2">
+                {entriesSorted.map((board) => (
+                  <BoardCard key={board.id} board={board} />
+                ))}
+              </div>
+            )}
+
             {/* ── All tab: by decade ── */}
             {mainTab === "all" && (
               <div className="space-y-8">
