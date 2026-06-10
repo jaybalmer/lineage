@@ -13,7 +13,9 @@
 // 'pending' and add the /me/tags inbox; the rest of this module stays put.
 
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { logTagActions } from "@/lib/tag-action-log"
 import type {
+  TagActionActorRole,
   TagEventSource,
   TagEventStatus,
   TagEventSubjectTier,
@@ -361,4 +363,69 @@ export async function pairClaimTagEvents(
     paired += 1
   }
   return { paired, failed, refused: 0, firstTagEventId }
+}
+
+// ── Claim-deletion lifecycle cascade (PB-009 Phase 3, Q10) ──────────────────
+// When a claim row is destroyed, its paired tag_events must not survive as
+// pending/approved: flip them to disabled, auto-close any open tag_reports as
+// resolved_moment_destroyed, and write one lifecycle_disable log row each.
+// Shared by the /api/admin claims-delete path (system-attributed) and
+// DELETE /api/claims/[id] (asserter- or editor-attributed).
+//
+// Two shapes converge here: the FK on claims.tag_event_id points at the FIRST
+// paired tag_event (per pairClaimTagEvents above); the rest of the per-person
+// rows for multi-person claims live keyed by moment_ref->>claim_id. Union both.
+
+export async function disableClaimTagEventsForDeletion(
+  supabase: SupabaseClient,
+  claimId: string,
+  actor: { actorId: string | null; actorRole: TagActionActorRole },
+): Promise<void> {
+  const { data: claimRow } = await supabase
+    .from("claims")
+    .select("id, tag_event_id")
+    .eq("id", claimId)
+    .maybeSingle()
+  const firstTagEventId = (claimRow as { tag_event_id?: string | null } | null)?.tag_event_id ?? null
+
+  const { data: paired } = await supabase
+    .from("tag_events")
+    .select("id, asserter_id, status")
+    .or(
+      firstTagEventId
+        ? `id.eq.${firstTagEventId},moment_ref->>claim_id.eq.${claimId}`
+        : `moment_ref->>claim_id.eq.${claimId}`,
+    )
+
+  const toDisable = ((paired ?? []) as { id: string; asserter_id: string | null; status: string }[])
+    .filter((t) => t.status === "pending" || t.status === "approved")
+  if (toDisable.length === 0) return
+
+  const tagIds = toDisable.map((t) => t.id)
+  await supabase
+    .from("tag_events")
+    .update({
+      status:                   "disabled",
+      decision_at:              new Date().toISOString(),
+      decision_reason_category: "lifecycle_destroyed",
+    })
+    .in("id", tagIds)
+
+  // Auto-close open tag_reports as resolved_moment_destroyed
+  await supabase
+    .from("tag_reports")
+    .update({ status: "resolved_moment_destroyed", reviewed_at: new Date().toISOString() })
+    .in("tag_event_id", tagIds)
+    .eq("status", "open")
+
+  await logTagActions(supabase, toDisable.map((t) => ({
+    tagEventId:     t.id,
+    asserterId:     t.asserter_id,
+    actorId:        actor.actorId,
+    actorRole:      actor.actorRole,
+    action:         "lifecycle_disable" as const,
+    priorStatus:    t.status as "pending" | "approved",
+    newStatus:      "disabled" as const,
+    reasonCategory: "lifecycle_destroyed" as const,
+  })))
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireEditor, getServiceClient } from "@/lib/auth"
-import { logTagActions } from "@/lib/tag-action-log"
+import { disableClaimTagEventsForDeletion } from "@/lib/tag-events"
 
 const ALLOWED_TABLES = new Set(["events", "boards", "places", "orgs", "event_series", "event_brands", "event_series_brands", "claims", "people"])
 
@@ -53,60 +53,11 @@ export async function POST(req: NextRequest) {
     // PB-009 Phase 3 (Q10): when deleting a claim, mirror the story-DELETE
     // lifecycle from PR #9. Find paired tag_events, flip to disabled,
     // auto-close open reports as resolved_moment_destroyed, log each.
-    //
-    // Two paths converge here: the FK on claims.tag_event_id points at the
-    // FIRST paired tag_event (per pairClaimTagEvents); the rest of the
-    // per-person paired rows for multi-person claims live keyed by
-    // moment_ref->>claim_id. Union both shapes.
+    // The cascade lives in disableClaimTagEventsForDeletion (tag-events.ts),
+    // shared with the member-facing DELETE /api/claims/[id] route. The
+    // dataset-editor path keeps its historical system attribution.
     if (resolvedTable === "claims") {
-      const { data: claimRow } = await client
-        .from("claims")
-        .select("id, tag_event_id")
-        .eq("id", id)
-        .maybeSingle()
-      const firstTagEventId = (claimRow as { tag_event_id?: string | null } | null)?.tag_event_id ?? null
-
-      const { data: paired } = await client
-        .from("tag_events")
-        .select("id, asserter_id, status")
-        .or(
-          firstTagEventId
-            ? `id.eq.${firstTagEventId},moment_ref->>claim_id.eq.${id}`
-            : `moment_ref->>claim_id.eq.${id}`,
-        )
-
-      const toDisable = ((paired ?? []) as { id: string; asserter_id: string | null; status: string }[])
-        .filter((t) => t.status === "pending" || t.status === "approved")
-
-      if (toDisable.length > 0) {
-        const tagIds = toDisable.map((t) => t.id)
-        await client
-          .from("tag_events")
-          .update({
-            status:                   "disabled",
-            decision_at:              new Date().toISOString(),
-            decision_reason_category: "lifecycle_destroyed",
-          })
-          .in("id", tagIds)
-
-        // Auto-close open tag_reports → resolved_moment_destroyed
-        await client
-          .from("tag_reports")
-          .update({ status: "resolved_moment_destroyed", reviewed_at: new Date().toISOString() })
-          .in("tag_event_id", tagIds)
-          .eq("status", "open")
-
-        await logTagActions(client, toDisable.map((t) => ({
-          tagEventId:     t.id,
-          asserterId:     t.asserter_id,
-          actorId:        null,
-          actorRole:      "system" as const,
-          action:         "lifecycle_disable" as const,
-          priorStatus:    t.status as "pending" | "approved",
-          newStatus:      "disabled" as const,
-          reasonCategory: "lifecycle_destroyed" as const,
-        })))
-      }
+      await disableClaimTagEventsForDeletion(client, id, { actorId: null, actorRole: "system" })
     }
 
     const { error } = await client.from(resolvedTable).delete().eq("id", id)
