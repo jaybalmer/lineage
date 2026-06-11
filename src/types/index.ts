@@ -354,7 +354,7 @@ export interface Claim {
 
 // ─── Connection Summary ───────────────────────────────────────────────────────
 
-export type OverlapType = "rode_with" | "resort" | "event" | "sponsor" | "board" | "team"
+export type OverlapType = "rode_with" | "resort" | "event" | "sponsor" | "board" | "team" | "story"
 
 export interface OverlapFact {
   type: OverlapType

@@ -6,11 +6,18 @@ import { CLAIMS, PEOPLE, getPlaceById, getEventById } from "@/lib/mock-data"
 import { useLineageStore, getAllClaims, isAuthUser } from "@/store/lineage-store"
 import { personHref } from "@/lib/entity-links"
 import { supabase } from "@/lib/supabase"
-import { RiderAvatar } from "@/components/ui/rider-avatar"
+import { RiderAvatar, getRiderTier } from "@/components/ui/rider-avatar"
+import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
+import { isInvitableNodeStatus } from "@/lib/invite-tracking"
+import { deriveStoryConnectionCandidates } from "@/lib/connection-derived"
 import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
 import { BrandMark } from "@/components/ui/brand-mark"
 import type { Claim, Person, Place, Event } from "@/types"
+
+// Shared event attendance counts the same whether competed / spectated /
+// organized (BUG-014 §3).
+const EVENT_PREDICATES = new Set(["competed_at", "spectated_at", "organized_at"])
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 
@@ -32,13 +39,21 @@ function personFromCatalog(id: string, catalogPeople: Person[]): Person | null {
 function ConnectionCard({
   personId,
   myClaims,
+  onInvite,
 }: {
   personId: string
   myClaims: Claim[]
+  onInvite?: (p: Person) => void
 }) {
   const { catalog } = useLineageStore()
   const person = personFromCatalog(personId, catalog.people)
   if (!person) return null
+
+  const tier = getRiderTier(person)
+  // Ghost (unclaimed/catalog) riders get an Invite CTA; unclaimed also gets the
+  // blue dashed ring treatment (BUG-014 §4).
+  const invitable = isInvitableNodeStatus(person.node_status)
+  const showRing = tier === "unclaimed" || !!(person.membership_tier && person.membership_tier !== "free")
 
   const otherClaims = claimsFor(personId, catalog.claims)
 
@@ -53,11 +68,11 @@ function ConnectionCard({
     .map((id) => catalog.places.find((p) => p.id === id) ?? getPlaceById(id))
     .filter((p): p is Place => p != null)
 
-  // Shared events (competed_at)
-  const myEventIds = new Set(myClaims.filter((c) => c.predicate === "competed_at").map((c) => c.object_id))
+  // Shared events (competed / spectated / organized)
+  const myEventIds = new Set(myClaims.filter((c) => EVENT_PREDICATES.has(c.predicate)).map((c) => c.object_id))
   const sharedEventIds = [...new Set(
     otherClaims
-      .filter((c) => c.predicate === "competed_at" && myEventIds.has(c.object_id))
+      .filter((c) => EVENT_PREDICATES.has(c.predicate) && myEventIds.has(c.object_id))
       .map((c) => c.object_id)
   )]
   const sharedEvents: Event[] = sharedEventIds
@@ -68,11 +83,7 @@ function ConnectionCard({
     <div className="bg-surface border border-border-default rounded-xl p-4 hover:border-border-default transition-all">
       <div className="flex items-start gap-3">
         <CommunityLink href={personHref(person, catalog.people)} className="flex-shrink-0">
-          <RiderAvatar
-            person={person}
-            size="lg"
-            ring={!!(person.membership_tier && person.membership_tier !== "free")}
-          />
+          <RiderAvatar person={person} size="lg" ring={showRing} />
         </CommunityLink>
         <div className="min-w-0 flex-1">
           <CommunityLink href={personHref(person, catalog.people)}>
@@ -84,17 +95,27 @@ function ConnectionCard({
             <div className="text-xs text-muted">Riding since {person.riding_since}</div>
           )}
         </div>
-        <div className="flex gap-1.5 flex-shrink-0">
+        <div className="flex flex-wrap gap-1.5 flex-shrink-0 justify-end">
           <Link href={`/compare?b=${personId}`}>
             <button className="px-2.5 py-1 bg-surface-hover border border-border-default rounded-lg text-[11px] text-muted hover:text-foreground transition-all whitespace-nowrap inline-flex items-center gap-1">
               Compare <BrandMark size={12} />
             </button>
           </Link>
-          <CommunityLink href={`/connections/${personId}`}>
-            <button className="px-2.5 py-1 bg-surface-hover border border-border-default rounded-lg text-[11px] text-muted hover:text-blue-300 hover:bg-blue-950/30 transition-all whitespace-nowrap">
-              View connection →
+          {invitable && onInvite ? (
+            <button
+              onClick={() => onInvite(person)}
+              className="px-2.5 py-1 bg-surface-hover border border-border-default rounded-lg text-[11px] text-muted hover:text-foreground transition-all whitespace-nowrap"
+              title="Invite this rider to claim their profile"
+            >
+              Invite
             </button>
-          </CommunityLink>
+          ) : (
+            <CommunityLink href={`/connections/${personId}`}>
+              <button className="px-2.5 py-1 bg-surface-hover border border-border-default rounded-lg text-[11px] text-muted hover:text-blue-300 hover:bg-blue-950/30 transition-all whitespace-nowrap">
+                View connection →
+              </button>
+            </CommunityLink>
+          )}
         </div>
       </div>
 
@@ -139,6 +160,13 @@ export default function ConnectionsPage() {
   } = useLineageStore()
 
   const [connectionCtaDismissed, setConnectionCtaDismissed] = useState(false)
+  const [invitePerson, setInvitePerson] = useState<Person | null>(null)
+
+  // BUG-014 symmetric/derived inputs: claims where I am the OBJECT (incoming
+  // rode_with), and people co-tagged with me through stories. Kept out of
+  // dbClaims so the rest of the app's reads stay subject-only.
+  const [incomingClaims, setIncomingClaims] = useState<Claim[]>([])
+  const [storyCandidates, setStoryCandidates] = useState<string[]>([])
 
   useEffect(() => {
     if (typeof window === "undefined") return
@@ -163,6 +191,8 @@ export default function ConnectionsPage() {
     if (!authReady) return
     if (!isAuthUser(activePersonId)) {
       setClaimsLoaded(true)
+      setIncomingClaims([])
+      setStoryCandidates([])
       return
     }
     let cancelled = false
@@ -175,6 +205,20 @@ export default function ConnectionsPage() {
         if (!error && data) setDbClaims(data as Claim[])
         setClaimsLoaded(true)
       })
+    // Symmetric read (BUG-014 §3): claims where I am the OBJECT. Kept separate
+    // from dbClaims (subject-only, app-wide) so another rider's claim never
+    // leaks onto my timeline. Only the connection derivation reads it.
+    supabase
+      .from("claims_public")
+      .select("*")
+      .eq("object_id", activePersonId)
+      .then(({ data, error }) => {
+        if (!cancelled && !error && data) setIncomingClaims(data as Claim[])
+      })
+    // Story-co-tagged candidates (BUG-014 §4).
+    deriveStoryConnectionCandidates(activePersonId!)
+      .then((ids) => { if (!cancelled) setStoryCandidates(ids) })
+      .catch(() => { if (!cancelled) setStoryCandidates([]) })
     return () => { cancelled = true }
   }, [authReady, activePersonId, setDbClaims])
 
@@ -190,15 +234,15 @@ export default function ConnectionsPage() {
     [authReady, sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId]
   )
 
-  // Direct rode_with connections
+  // Direct rode_with connections, symmetric: people I tagged (I'm subject) plus
+  // people who tagged me (I'm object). Fixes Cory's approved member-to-member
+  // tag showing nothing (BUG-014 §3).
   const directConnections = useMemo(
-    () => [...new Set(
-      myClaims
-        .filter((c) => c.predicate === "rode_with")
-        .map((c) => c.object_id)
-        .filter((id) => id !== activePersonId)
-    )],
-    [myClaims, activePersonId]
+    () => [...new Set([
+      ...myClaims.filter((c) => c.predicate === "rode_with").map((c) => c.object_id),
+      ...incomingClaims.filter((c) => c.predicate === "rode_with").map((c) => c.subject_id),
+    ].filter((id) => id && id !== activePersonId))],
+    [myClaims, incomingClaims, activePersonId]
   )
 
   // Places I've ridden
@@ -207,9 +251,9 @@ export default function ConnectionsPage() {
     [myClaims]
   )
 
-  // Events I've competed at
+  // Events I've attended (competed / spectated / organized)
   const myEventIds = useMemo(
-    () => new Set(myClaims.filter((c) => c.predicate === "competed_at").map((c) => c.object_id)),
+    () => new Set(myClaims.filter((c) => EVENT_PREDICATES.has(c.predicate)).map((c) => c.object_id)),
     [myClaims]
   )
 
@@ -245,14 +289,26 @@ export default function ConnectionsPage() {
   const sharedEventRiders = useMemo(
     () => [...new Set(
       allOtherClaims
-        .filter((c) => c.predicate === "competed_at" && myEventIds.has(c.object_id))
+        .filter((c) => EVENT_PREDICATES.has(c.predicate) && myEventIds.has(c.object_id))
         .map((c) => c.subject_id)
         .filter((id) => id !== activePersonId && !knownSet.has(id))
     )],
     [allOtherClaims, myEventIds, activePersonId, knownSet]
   )
 
-  const totalConnections = directConnections.length + sharedPlaceRiders.length + sharedEventRiders.length
+  // Story-co-tagged riders not already surfaced through a claim overlap. Ghosts
+  // included. They render with the unclaimed treatment + Invite (BUG-014 §4).
+  const shownSet = useMemo(
+    () => new Set([...directConnections, ...sharedPlaceRiders, ...sharedEventRiders]),
+    [directConnections, sharedPlaceRiders, sharedEventRiders]
+  )
+  const storyConnections = useMemo(
+    () => storyCandidates.filter((id) => id !== activePersonId && !shownSet.has(id)),
+    [storyCandidates, shownSet, activePersonId]
+  )
+
+  const totalConnections =
+    directConnections.length + sharedPlaceRiders.length + sharedEventRiders.length + storyConnections.length
 
   return (
     <div className="min-h-screen bg-background">
@@ -272,7 +328,7 @@ export default function ConnectionsPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {directConnections.map((id) => (
-                <ConnectionCard key={id} personId={id} myClaims={myClaims} />
+                <ConnectionCard key={id} personId={id} myClaims={myClaims} onInvite={setInvitePerson} />
               ))}
             </div>
           </div>
@@ -287,7 +343,7 @@ export default function ConnectionsPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {sharedPlaceRiders.map((id) => (
-                <ConnectionCard key={id} personId={id} myClaims={myClaims} />
+                <ConnectionCard key={id} personId={id} myClaims={myClaims} onInvite={setInvitePerson} />
               ))}
             </div>
           </div>
@@ -302,7 +358,22 @@ export default function ConnectionsPage() {
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {sharedEventRiders.map((id) => (
-                <ConnectionCard key={id} personId={id} myClaims={myClaims} />
+                <ConnectionCard key={id} personId={id} myClaims={myClaims} onInvite={setInvitePerson} />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tagged together in stories (BUG-014) */}
+        {storyConnections.length > 0 && (
+          <div className="mb-8">
+            <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-4 flex items-center gap-3">
+              <span>Tagged together in stories</span>
+              <div className="flex-1 h-px bg-surface-active" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {storyConnections.map((id) => (
+                <ConnectionCard key={id} personId={id} myClaims={myClaims} onInvite={setInvitePerson} />
               ))}
             </div>
           </div>
@@ -366,6 +437,16 @@ export default function ConnectionsPage() {
           </button>
         </div>
       </div>
+
+      {invitePerson && (
+        <InviteRiderModal
+          personId={invitePerson.id}
+          personName={invitePerson.display_name}
+          predicate="rode_with"
+          surface="help_connect_card"
+          onClose={() => setInvitePerson(null)}
+        />
+      )}
     </div>
   )
 }
