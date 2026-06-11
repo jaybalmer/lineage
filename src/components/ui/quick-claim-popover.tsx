@@ -43,11 +43,15 @@ interface QuickClaimPopoverProps {
 }
 
 export function QuickClaimPopover({ entityId, entityType, entityName, entityYear }: QuickClaimPopoverProps) {
-  const { activePersonId, addClaim, catalog, sessionClaims, dbClaims } = useLineageStore()
+  const { activePersonId, addClaim, catalog, sessionClaims, dbClaims, addToast } = useLineageStore()
   const [open, setOpen] = useState(false)
   const [predicate, setPredicate] = useState<Predicate | null>(null)
   const [year, setYear] = useState("")
   const [added, setAdded] = useState(false)
+  // BUG-023: a rode_with tag against another person lands 'pending' (member
+  // source). Tracked separately so the trigger shows a pending clock, not the
+  // success checkmark that reads as "confirmed".
+  const [requested, setRequested] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
 
   const options = ENTITY_PREDICATES[entityType] ?? []
@@ -64,6 +68,12 @@ export function QuickClaimPopover({ entityId, entityType, entityName, entityYear
     (c) => c.subject_id === activePersonId && c.object_id === entityId
   )
   const alreadyClaimed = existingClaims.length > 0
+
+  // Pending treatment shows only while the optimistic claim is still present
+  // (requested && alreadyClaimed). If addClaim rolls back on a server rejection,
+  // alreadyClaimed flips false and the trigger reverts to "+" so the user can
+  // retry, and the store's own failure toast explains why (BUG-023).
+  const pending = requested && alreadyClaimed
 
   // Close on outside click
   useEffect(() => {
@@ -96,11 +106,22 @@ export function QuickClaimPopover({ entityId, entityType, entityName, entityYear
       asserted_by: activePersonId,
       created_at: new Date().toISOString(),
     })
-    setAdded(true)
-    setTimeout(() => {
-      setOpen(false)
-      setAdded(false)
-    }, 1000)
+    // A rode_with tag implicates another person, so it lands as a pending
+    // member tag_event (it shows publicly unless they've gated, and they can
+    // decline). Reflect that with a pending treatment + toast instead of the
+    // success checkmark. Self-only claims (board/place/event/org) commit
+    // immediately and keep the checkmark.
+    if (entityType === "person") {
+      setRequested(true)
+      addToast("Request sent. Pending their approval.", "info")
+      setTimeout(() => setOpen(false), 700)
+    } else {
+      setAdded(true)
+      setTimeout(() => {
+        setOpen(false)
+        setAdded(false)
+      }, 1000)
+    }
   }
 
   const canAdd = predicate !== null
@@ -114,17 +135,25 @@ export function QuickClaimPopover({ entityId, entityType, entityName, entityYear
           e.stopPropagation()
           if (!alreadyClaimed && !added) setOpen(!open)
         }}
-        title={alreadyClaimed ? "Already in your timeline" : `Add ${entityName} to your timeline`}
+        title={
+          pending
+            ? "Request sent, pending their approval"
+            : alreadyClaimed
+              ? "Already in your timeline"
+              : `Add ${entityName} to your timeline`
+        }
         className={cn(
           "w-7 h-7 rounded-full flex items-center justify-center text-sm transition-all border",
-          alreadyClaimed || added
-            ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400 cursor-default"
-            : open
-              ? "bg-[#1C1917]/15 border-[#1C1917]/30 text-foreground"
-              : "bg-surface-hover border-border-default text-muted hover:border-accent hover:text-accent hover:bg-[#1C1917]/10"
+          pending
+            ? "bg-amber-500/20 border-amber-500/40 text-amber-500 cursor-default"
+            : alreadyClaimed || added
+              ? "bg-emerald-500/20 border-emerald-500/40 text-emerald-400 cursor-default"
+              : open
+                ? "bg-[#1C1917]/15 border-[#1C1917]/30 text-foreground"
+                : "bg-surface-hover border-border-default text-muted hover:border-accent hover:text-accent hover:bg-[#1C1917]/10"
         )}
       >
-        {alreadyClaimed || added ? "✓" : "+"}
+        {pending ? "◷" : alreadyClaimed || added ? "✓" : "+"}
       </button>
 
       {/* Popover */}
