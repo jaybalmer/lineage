@@ -1,6 +1,11 @@
 import type { Claim, Person, OverlapFact, ConnectionSummary } from "@/types"
 import { getEntityName } from "./mock-data"
 
+// Shared event attendance scores the same whether you competed, spectated, or
+// organized (BUG-014 §3). The "attended vs competed" distinction is a labels
+// problem, not a scoring one.
+const EVENT_PREDICATES = new Set(["competed_at", "spectated_at", "organized_at"])
+
 // ─── Time window helpers ──────────────────────────────────────────────────────
 
 function getYear(dateStr: string | undefined): number | null {
@@ -37,7 +42,11 @@ export function computeConnectionSummary(
   personB: Person,
   claimsA: Claim[],
   claimsB: Claim[],
-  resolveName?: (id: string, type: string) => string
+  resolveName?: (id: string, type: string) => string,
+  // BUG-014: story-tag-derived overlaps (see connection-derived.ts). Scored and
+  // sorted alongside claim-derived facts; event/resort facts dedup against the
+  // claim ones via the shared seen* sets below.
+  extraFacts: OverlapFact[] = []
 ): ConnectionSummary {
   const getName = resolveName ?? getEntityName
   const raw: OverlapFact[] = []
@@ -89,9 +98,9 @@ export function computeConnectionSummary(
     }
   }
 
-  // 3. Shared event instances (+10)
-  const eventA = claimsA.filter((c) => c.predicate === "competed_at")
-  const eventB = claimsB.filter((c) => c.predicate === "competed_at")
+  // 3. Shared event instances (+10): competed / spectated / organized
+  const eventA = claimsA.filter((c) => EVENT_PREDICATES.has(c.predicate))
+  const eventB = claimsB.filter((c) => EVENT_PREDICATES.has(c.predicate))
   const seenEvents = new Set<string>()
   for (const cA of eventA) {
     if (seenEvents.has(cA.object_id)) continue
@@ -184,6 +193,22 @@ export function computeConnectionSummary(
       })
       seenTeams.add(cA.object_id)
     }
+  }
+
+  // 7. Derived facts (story tags / junctions), BUG-014. Event/resort facts
+  // dedup against the claim-derived ones above (and each other) via the shared
+  // seen* sets, so a story link to a place/event already scored from a claim
+  // doesn't double-count. Co-tag ("story") facts have no claim equivalent and
+  // are always kept.
+  for (const f of extraFacts) {
+    if (f.type === "event") {
+      if (seenEvents.has(f.entityId)) continue
+      seenEvents.add(f.entityId)
+    } else if (f.type === "resort") {
+      if (seenResorts.has(f.entityId)) continue
+      seenResorts.add(f.entityId)
+    }
+    raw.push(f)
   }
 
   // ─── Sort + score ────────────────────────────────────────────────────────

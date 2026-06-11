@@ -11,10 +11,11 @@ import { BrandMark } from "@/components/ui/brand-mark"
 import { PEOPLE, CLAIMS, getEntityName, getPlaceById } from "@/lib/mock-data"
 import { supabase } from "@/lib/supabase"
 import { computeConnectionSummary } from "@/lib/connection-summary"
+import { deriveStoryFactsForPair } from "@/lib/connection-derived"
 import { PREDICATE_ICONS, PREDICATE_LABELS, formatDateRange } from "@/lib/utils"
 import { cn } from "@/lib/utils"
 import { ComparePlayer } from "@/components/ui/compare-player"
-import type { Person, Claim } from "@/types"
+import type { Person, Claim, OverlapFact } from "@/types"
 
 // ─── Person Picker ────────────────────────────────────────────────────────────
 
@@ -487,7 +488,9 @@ function ComparePageInner() {
   const [personB, setPersonB] = useState<Person | null>(initialB)
   const [playingCompare, setPlayingCompare] = useState(false)
 
-  // DB claims for a real Person B
+  // DB claims for a real Person B, symmetric (subject OR object) so a rode_with
+  // where B is the object still feeds the scorer (BUG-014 §3). Display uses the
+  // subject-only slice (claimsB); only scoring reads the full symmetric set.
   const [personBDbClaims, setPersonBDbClaims] = useState<Claim[]>([])
   useEffect(() => {
     if (!personB || mockIds.has(personB.id)) {
@@ -498,11 +501,12 @@ function ComparePageInner() {
     supabase
       .from("claims_public")
       .select("*")
-      .eq("subject_id", personB.id)
+      .or(`subject_id.eq.${personB.id},object_id.eq.${personB.id}`)
       .eq("visibility", "public")
       .then(({ data }) => setPersonBDbClaims((data ?? []) as Claim[]))
   }, [personB?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Display claims: subject-only, drive the side-by-side timeline + player.
   const claimsA = useMemo(
     () => allClaims.filter((c) => c.subject_id === personA.id),
     [allClaims, personA.id]
@@ -511,16 +515,45 @@ function ComparePageInner() {
     if (!personB) return []
     // Mock riders' claims live in the static CLAIMS array, not in the store
     if (mockIds.has(personB.id)) return CLAIMS.filter((c) => c.subject_id === personB.id)
+    return personBDbClaims.filter((c) => c.subject_id === personB.id)
+  }, [personB, personBDbClaims, mockIds])
+
+  // Scoring claims: symmetric (subject OR object). object_id only matches for
+  // person-to-person predicates (place/event/org objects can't equal a person
+  // id), so this adds the reversed rode_with side without touching other rows.
+  const scoringClaimsA = useMemo(
+    () => allClaims.filter((c) => c.subject_id === personA.id || c.object_id === personA.id),
+    [allClaims, personA.id]
+  )
+  const scoringClaimsB = useMemo(() => {
+    if (!personB) return []
+    if (mockIds.has(personB.id)) {
+      return CLAIMS.filter((c) => c.subject_id === personB.id || c.object_id === personB.id)
+    }
     return personBDbClaims
   }, [personB, personBDbClaims, mockIds])
+
+  // Story-tag-derived overlaps (BUG-014 §4), fetched async, fed as extraFacts.
+  const [derivedFacts, setDerivedFacts] = useState<OverlapFact[]>([])
+  useEffect(() => {
+    if (!personB) {
+      setDerivedFacts([])
+      return
+    }
+    let cancelled = false
+    deriveStoryFactsForPair(personA.id, personB.id, resolveName)
+      .then((f) => { if (!cancelled) setDerivedFacts(f) })
+      .catch(() => { if (!cancelled) setDerivedFacts([]) })
+    return () => { cancelled = true }
+  }, [personA.id, personB?.id]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const summary = useMemo(
     () =>
       personB
-        ? computeConnectionSummary(personA, personB, claimsA, claimsB, resolveName)
+        ? computeConnectionSummary(personA, personB, scoringClaimsA, scoringClaimsB, resolveName, derivedFacts)
         : null,
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [personA, personB, claimsA, claimsB]
+    [personA, personB, scoringClaimsA, scoringClaimsB, derivedFacts]
   )
 
   const sharedEntityIds = useMemo(
