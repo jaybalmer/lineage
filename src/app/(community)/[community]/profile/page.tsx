@@ -344,11 +344,6 @@ export default function ProfilePage() {
   const allClaims    = getAllClaims(sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId)
   const personClaims = allClaims.filter((c) => c.subject_id === activePersonId)
 
-  // The glowing current-year prompt only shows until the rider has logged a
-  // small quiver, so it nudges the first board or two and then steps aside.
-  const boardClaimCount    = personClaims.filter((c) => c.predicate === "owned_board").length
-  const showTimelinePrompt = isAuthUser(activePersonId) && boardClaimCount < 2
-
   // Detect new claim additions and fire contextual celebration + milestone checks.
   //
   // Bug history: this used to compare personClaims.length against a useRef
@@ -652,8 +647,6 @@ export default function ProfilePage() {
           onStoryDeleted={(id) => setStories((prev) => prev.filter((s) => s.id !== id))}
           order={timelineOrder}
           animateEntrance={animateEntrance}
-          showCurrentYearPrompt={showTimelinePrompt}
-          onCurrentYearPromptClick={() => { setClaimDefaultFilter("gear"); setAddingClaim(true) }}
         />
       </div>
     </div>

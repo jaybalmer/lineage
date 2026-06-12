@@ -348,9 +348,16 @@ export interface Claim {
   // Competition-specific fields (competed_at claims only)
   division?: string   // e.g. "Open Men", "Masters", "Boardercross"
   result?: string     // e.g. "1st", "3rd", "DNF", "Top 10"
+  // Board claims (owned_board only): whether the rider rode the board, owns it
+  // (in their collection), or both. NULL for non-board claims; grandfathered /
+  // backfilled board claims are 'rode'.
+  board_relationship?: BoardRelationship
   // PB-009 Phase 1: paired tag_event for person-implicating claims (NULL for self-claims and grandfathered rows)
   tag_event_id?: string | null
 }
+
+/** A board claim records whether the rider rode the board, owns it (collection), or both. */
+export type BoardRelationship = "rode" | "own" | "both"
 
 // ─── Connection Summary ───────────────────────────────────────────────────────
 

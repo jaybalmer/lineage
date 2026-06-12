@@ -11,6 +11,8 @@ export const PREDICATES = new Set([
 export const ENTITY_TYPES = new Set(["person", "place", "org", "board", "event"])
 export const CONFIDENCE = new Set(["self-reported", "corroborated", "documented", "partner-verified"])
 export const VISIBILITY = new Set(["private", "shared", "public"])
+// Board claims (owned_board) only. NULL for every other predicate.
+export const BOARD_RELATIONSHIPS = new Set(["rode", "own", "both"])
 
 export function str(v: unknown, max: number): string | null {
   if (typeof v !== "string") return null

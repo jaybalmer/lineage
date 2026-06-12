@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAuth, getServiceClient } from "@/lib/auth"
 import { fireTagEvents } from "@/lib/invite-tracking-server"
 import { pairClaimTagEvents, isAsserterGloballyBlocked } from "@/lib/tag-events"
-import { PREDICATES, ENTITY_TYPES, CONFIDENCE, VISIBILITY, str, optStr } from "./validation"
+import { PREDICATES, ENTITY_TYPES, CONFIDENCE, VISIBILITY, BOARD_RELATIONSHIPS, str, optStr } from "./validation"
 
 // POST /api/claims
 //
@@ -55,6 +55,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unknown confidence or visibility" }, { status: 400 })
   }
 
+  // Board claims carry a relationship (rode | own | both). NULL for other predicates.
+  const boardRelationship = predicate === "owned_board" ? optStr(body.board_relationship, 8) : null
+  if (boardRelationship !== null && !BOARD_RELATIONSHIPS.has(boardRelationship)) {
+    return NextResponse.json({ error: "Unknown board_relationship" }, { status: 400 })
+  }
+
   // Reporter-supplied timestamp is kept when it parses (it matches the
   // optimistic row already in the client store); otherwise stamp now.
   const rawCreatedAt = optStr(body.created_at, 40)
@@ -79,6 +85,37 @@ export async function POST(req: NextRequest) {
     )
   }
 
+  // Board claims are one row per (subject, board). Re-adding a board the rider
+  // already has updates that row's relationship and optional year instead of
+  // inserting a duplicate (brief Decision 1). The client usually catches this
+  // and PATCHes the existing row; this server-side upsert is the backstop that
+  // keeps the table to one row per board even when the client state is stale.
+  if (predicate === "owned_board") {
+    const { data: existingRows } = await db
+      .from("claims")
+      .select("id")
+      .eq("subject_id", subjectId)
+      .eq("object_id", objectId)
+      .eq("predicate", "owned_board")
+      .order("created_at", { ascending: true })
+      .limit(1)
+    const existing = existingRows?.[0]
+    if (existing) {
+      const upd: Record<string, unknown> = {}
+      if (boardRelationship) upd.board_relationship = boardRelationship
+      const startDate = optStr(body.start_date, 32)
+      if (startDate !== null) upd.start_date = startDate
+      if (Object.keys(upd).length > 0) {
+        const { error: updErr } = await db.from("claims").update(upd).eq("id", existing.id)
+        if (updErr) {
+          console.error("[api/claims] board upsert failed:", updErr)
+          return NextResponse.json({ error: updErr.message }, { status: 400 })
+        }
+      }
+      return NextResponse.json({ ok: true, paired: 0, updated: existing.id })
+    }
+  }
+
   const { error: insertError } = await db.from("claims").insert({
     id,
     subject_id: subjectId,
@@ -97,6 +134,7 @@ export async function POST(req: NextRequest) {
     sources: Array.isArray(body.sources) ? body.sources : null,
     division: optStr(body.division, 120),
     result: optStr(body.result, 120),
+    board_relationship: boardRelationship,
     community_id: optStr(body.community_id, 40),
   })
   if (insertError) {

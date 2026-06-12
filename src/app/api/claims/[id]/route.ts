@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { requireAuth, getServiceClient } from "@/lib/auth"
 import { disableClaimTagEventsForDeletion } from "@/lib/tag-events"
-import { ENTITY_TYPES, CONFIDENCE, VISIBILITY, str } from "../validation"
+import { ENTITY_TYPES, CONFIDENCE, VISIBILITY, BOARD_RELATIONSHIPS, str } from "../validation"
 
 // PATCH  /api/claims/[id]  edit a claim you asserted
 // DELETE /api/claims/[id]  delete a claim you asserted
@@ -120,6 +120,18 @@ export async function PATCH(
       return NextResponse.json({ error: "sources must be an array" }, { status: 400 })
     }
     updates.sources = body.sources
+  }
+  // Board claims: relationship (rode | own | both), or null to clear.
+  if ("board_relationship" in body) {
+    if (body.board_relationship === null) {
+      updates.board_relationship = null
+    } else {
+      const rel = str(body.board_relationship, 8)
+      if (!rel || !BOARD_RELATIONSHIPS.has(rel)) {
+        return NextResponse.json({ error: "Unknown board_relationship" }, { status: 400 })
+      }
+      updates.board_relationship = rel
+    }
   }
 
   // Object swap (start-card lets a member repoint their first-board and

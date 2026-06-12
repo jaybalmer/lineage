@@ -1,12 +1,14 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
-import { useLineageStore } from "@/store/lineage-store"
+import { useState, useRef, useEffect, useMemo } from "react"
+import { useLineageStore, getAllClaims } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import { PREDICATE_ICONS, PREDICATE_LABELS, formatEventDateRange } from "@/lib/utils"
 import { PLACES, ORGS, BOARDS, PEOPLE, EVENTS } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
+import { BoardRelationshipToggles } from "@/components/ui/board-relationship-toggles"
+import { toBoardRelationship, boardRelationshipFlags } from "@/lib/board-relationship"
 import { RiderAvatar, getInitials } from "@/components/ui/rider-avatar"
 import { isInvitableNodeStatus } from "@/lib/invite-tracking"
 import type { Predicate, EntityType, ConfidenceLevel, PrivacyLevel, Board, Person } from "@/types"
@@ -320,7 +322,10 @@ interface AddClaimModalProps {
 }
 
 export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalProps) {
-  const { activePersonId, addClaim, userEntities, catalog, loadCatalog } = useLineageStore()
+  const {
+    activePersonId, addClaim, updateClaim, userEntities, catalog, loadCatalog,
+    sessionClaims, dbClaims, deletedClaimIds, claimOverrides,
+  } = useLineageStore()
 
   // Silent-failures brief Finding #4: refresh the public catalog whenever the
   // modal opens, so deleted/merged ghosts disappear from the riders/entities
@@ -344,6 +349,11 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
   // Competition fields (competed_at only)
   const [division, setDivision] = useState("")
   const [result, setResult] = useState("")
+
+  // Board fields (owned_board only): relationship toggles + optional single year
+  const [boardRode, setBoardRode] = useState(true)
+  const [boardOwn, setBoardOwn] = useState(false)
+  const [boardYear, setBoardYear] = useState("")
 
   // Companion riders state
   const [companions, setCompanions] = useState<string[]>([])
@@ -370,6 +380,33 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
     setDivision("")
     setResult("")
   }, [predicate])
+
+  // The viewer's existing board claims, so re-adding a board they already have
+  // updates that one claim (relationship + year) instead of creating a second.
+  const myBoardClaims = useMemo(
+    () =>
+      getAllClaims(sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId)
+        .filter((c) => c.subject_id === activePersonId && c.predicate === "owned_board"),
+    [sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId],
+  )
+
+  // When a board is picked, prefill the relationship toggles + year from an
+  // existing claim for that board (so the user sees and can adjust their current
+  // state), or reset to defaults for a board they have not added yet.
+  useEffect(() => {
+    if (predicate !== "owned_board" || !entityId) return
+    const existing = myBoardClaims.find((c) => c.object_id === entityId)
+    if (existing) {
+      const flags = boardRelationshipFlags(existing.board_relationship)
+      setBoardRode(flags.rode)
+      setBoardOwn(flags.own)
+      setBoardYear(existing.start_date ? existing.start_date.slice(0, 4) : "")
+    } else {
+      setBoardRode(true)
+      setBoardOwn(false)
+      setBoardYear("")
+    }
+  }, [entityId, predicate]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // All people excluding current user, catalog first, then mock fallback
   const getAllPeople = (): Person[] => {
@@ -450,7 +487,12 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
   const supportsCompanions = predicate ? COMPANION_PREDICATES.includes(predicate) : false
   const supportsSpecificDates = predicate === "rode_at" || predicate === "worked_at"
 
-  const canSave = predicate !== null && entityId !== null && dateIsReady
+  // Board claims drop the required date in favour of a relationship (rode / own /
+  // both), at least one of which must be set. Other predicates still require a date.
+  const isBoardClaim = predicate === "owned_board"
+  const boardRelReady = boardRode || boardOwn
+
+  const canSave = predicate !== null && entityId !== null && (isBoardClaim ? boardRelReady : dateIsReady)
 
   // Companion people filtered by query, excluding already-selected
   const allPeople = getAllPeople()
@@ -467,6 +509,41 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
 
   const handleSave = () => {
     if (!predicate || !entityId || !canSave) return
+
+    // Board claims: simplified path — relationship (rode / own / both) + an
+    // optional single year. Re-adding a board you already have updates that
+    // claim instead of duplicating it. Boards never tag other people, so the
+    // companion / invite logic below does not apply.
+    if (predicate === "owned_board") {
+      const rel = toBoardRelationship(boardRode, boardOwn)
+      if (!rel) return
+      const yearDate = boardYear.length === 4 ? `${boardYear}-01-01` : undefined
+      const existing = myBoardClaims.find((c) => c.object_id === entityId)
+      if (existing) {
+        updateClaim(existing.id, {
+          board_relationship: rel,
+          ...(yearDate ? { start_date: yearDate } : {}),
+        })
+      } else {
+        addClaim({
+          id: generateId("claim"),
+          subject_id: activePersonId,
+          subject_type: "person",
+          predicate: "owned_board",
+          object_id: entityId,
+          object_type: "board",
+          start_date: yearDate,
+          confidence,
+          visibility,
+          asserted_by: activePersonId,
+          created_at: new Date().toISOString(),
+          note: note.trim() || undefined,
+          board_relationship: rel,
+        })
+      }
+      onClose()
+      return
+    }
 
     // For event claims, pull date directly from the selected event record
     const resolvedStartDate = isEventClaim && selectedEntity
@@ -765,8 +842,8 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
               </div>
             )}
 
-            {/* Section 3: When, skipped for event claims (date comes from the event) */}
-            {predicate && entityId && !isEventClaim && (
+            {/* Section 3: When, skipped for event claims (date comes from the event) and boards (optional year below) */}
+            {predicate && entityId && !isEventClaim && !isBoardClaim && (
               <div>
                 <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">When?</div>
 
@@ -850,6 +927,31 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                     )}
                   </div>
                 )}
+              </div>
+            )}
+
+            {/* Section 3 (boards): relationship + optional single year */}
+            {predicate && entityId && isBoardClaim && (
+              <div>
+                <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Your relationship</div>
+                <BoardRelationshipToggles
+                  rode={boardRode}
+                  own={boardOwn}
+                  onChange={({ rode, own }) => { setBoardRode(rode); setBoardOwn(own) }}
+                />
+                <p className="text-[11px] text-muted mt-2">Pick at least one. Both is fine.</p>
+                <div className="mt-4">
+                  <label className="block text-xs text-muted mb-1.5">Year <span className="text-muted">(optional)</span></label>
+                  <input
+                    type="number"
+                    value={boardYear}
+                    onChange={(e) => setBoardYear(e.target.value)}
+                    placeholder="e.g. 2003"
+                    min={1965}
+                    max={2030}
+                    className={cn(inputCls, "max-w-[140px]")}
+                  />
+                </div>
               </div>
             )}
 
@@ -944,7 +1046,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
             )}
 
             {/* Section 5: Details (collapsible) */}
-            {predicate && entityId && dateIsReady && (
+            {predicate && entityId && (isBoardClaim ? boardRelReady : dateIsReady) && (
               <div>
                 <button
                   onClick={() => setShowDetails((v) => !v)}
