@@ -770,7 +770,7 @@ function EventPageInner({ params }: { params: Promise<{ community: string; id: s
                 </div>
                 <div className="flex items-start justify-between gap-2">
                   <h1 className="text-2xl font-bold text-foreground">{instance.name}</h1>
-                  {isEditor && (
+                  {(isEditor || (isAuth && instance.added_by === activePersonId)) && (
                     <button
                       onClick={() => setEditingEvent(true)}
                       className="shrink-0 text-xs text-muted hover:text-foreground transition-colors px-2 py-1 border border-border-default rounded-lg hover:border-blue-500/40"

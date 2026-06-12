@@ -697,11 +697,12 @@ export const useLineageStore = create<LineageStore>()(
             events: s.catalog.events.map((e) => e.id === id ? { ...e, ...updates } : e),
           },
         }))
-        // Catalog mutations are editor-only. The authoritative persistence is the
-        // requireEditor-gated POST /api/admin (EditEventModal); this direct browser
-        // write is a redundant fast-path, so gate it on is_editor too (BUG-030) and a
-        // non-editor never attempts an RLS-dependent write to the events catalog.
-        if (isAuthUser(get().activePersonId) && get().membership?.is_editor) {
+        // The events RLS only permits an UPDATE when added_by = auth.uid(), so a
+        // member can edit events they contributed and is denied on any other row
+        // (BUG-030). Editors editing events they did not add persist through the
+        // requireEditor-gated POST /api/admin (service role) in EditEventModal, so
+        // attempt the browser write for any signed-in user and let RLS draw the line.
+        if (isAuthUser(get().activePersonId)) {
           // Strip brand_ids — it's a denormalized field from the event_brands junction table, not a column
           const { brand_ids: _, ...dbUpdates } = updates
           supabase.from("events").update(dbUpdates).eq("id", id)
