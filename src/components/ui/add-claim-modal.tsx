@@ -167,7 +167,7 @@ function BoardPicker({ allBoards, onSelect }: BoardPickerProps) {
           >
             <span>{m}</span>
             <span className="text-xs text-muted/60">
-              {allBoards.filter((b) => b.brand === brand && b.model === m).map((b) => `'${String(b.model_year).slice(2)}`).join(", ")}
+              {[...new Set(allBoards.filter((b) => b.brand === brand && b.model === m).map((b) => b.model_year))].sort((a, z) => z - a).map((y) => `'${String(y).slice(2)}`).join(", ")}
             </span>
           </button>
         ))}
