@@ -17,17 +17,7 @@ import type { Event, Story, Claim } from "@/types"
 import { StoryCard } from "@/components/feed/story-card"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { EditEventModal } from "@/components/ui/edit-event-modal"
-import { parseYouTubeId } from "@/lib/utils"
-
-function formatEventDate(start: string, end?: string): string {
-  const [sy, sm, sd] = start.split("-").map(Number)
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-  const startStr = `${sd} ${months[sm - 1]} ${sy}`
-  if (!end || end === start) return startStr
-  const [ey, em, ed] = end.split("-").map(Number)
-  if (sy === ey && sm === em) return `${sd}–${ed} ${months[sm - 1]} ${sy}`
-  return `${startStr} – ${ed} ${months[em - 1]} ${ey}`
-}
+import { parseYouTubeId, formatEventDateRange } from "@/lib/utils"
 
 const EVENT_PREDICATES = ["competed_at", "spectated_at", "organized_at"] as const
 
@@ -192,7 +182,7 @@ function InstanceRow({ event }: { event: Event }) {
         <div>
           <div className="text-sm font-semibold text-foreground">{event.name}</div>
           <div className="text-xs text-muted mt-0.5">
-            {formatEventDate(event.start_date, event.end_date)}
+            {formatEventDateRange(event.start_date, event.end_date)}
             {place && <span className="text-muted"> · {place.name}</span>}
           </div>
         </div>
@@ -799,7 +789,7 @@ function EventPageInner({ params }: { params: Promise<{ community: string; id: s
                   </CommunityLink>
                 )}
                 <p className="text-muted text-sm mt-0.5">
-                  {formatEventDate(instance.start_date, instance.end_date)}
+                  {formatEventDateRange(instance.start_date, instance.end_date)}
                 </p>
                 {instance.website_url && (
                   <a
@@ -915,7 +905,7 @@ function EventPageInner({ params }: { params: Promise<{ community: string; id: s
                       <div className="flex items-center justify-between px-4 py-2.5 bg-background border border-border-default rounded-lg hover:border-border-default transition-all">
                         <div>
                           <div className="text-sm text-foreground">{e.name}</div>
-                          <div className="text-xs text-muted">{formatEventDate(e.start_date, e.end_date)}</div>
+                          <div className="text-xs text-muted">{formatEventDateRange(e.start_date, e.end_date)}</div>
                         </div>
                         <div className="text-xs text-muted">{count} rider{count !== 1 ? "s" : ""}</div>
                       </div>

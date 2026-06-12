@@ -40,6 +40,47 @@ export function formatDateRange(start?: string, end?: string): string {
   return s === e ? s : `${s} – ${e}`
 }
 
+/** Format a possibly-partial ISO date to a clean label, omitting absent
+ *  components. Accepts "YYYY", "YYYY-MM", or "YYYY-MM-DD":
+ *  - "1986"       → "1986"
+ *  - "1992-03"    → "Mar 1992"
+ *  - "1992-03-15" → "15 Mar 1992"
+ *  Unlike formatSmartDate (which collapses partial dates to year-only), this
+ *  keeps the month when present. Never emits "NaN" or "undefined". */
+export function formatPartialDate(dateStr?: string): string {
+  if (!dateStr) return ""
+  const [year, m, d] = dateStr.split("-")
+  if (!year) return ""
+  const month = m ? parseInt(m) : NaN
+  const monthName = month >= 1 && month <= 12 ? MONTHS_SHORT[month - 1] : ""
+  const day = d ? parseInt(d) : NaN
+  if (monthName && day >= 1) return `${day} ${monthName} ${year}`
+  if (monthName) return `${monthName} ${year}`
+  return year
+}
+
+/** Format an event's start/end dates as a range, compressing shared parts.
+ *  Precision-aware (see formatPartialDate), so it is safe on year-only and
+ *  year-month events. Examples:
+ *  - start only "1992-03-03"               → "3 Mar 1992"
+ *  - same month "1992-03-03" / "1992-03-05" → "3–5 Mar 1992"
+ *  - cross month "1992-03-30" / "1992-04-02" → "30 Mar 1992 – 2 Apr 1992"
+ *  - year-month "2026-05"                   → "May 2026" */
+export function formatEventDateRange(start?: string, end?: string): string {
+  if (!start) return ""
+  const startStr = formatPartialDate(start)
+  if (!end || end === start) return startStr
+  const [sy, sm, sd] = start.split("-")
+  const [ey, em, ed] = end.split("-")
+  // Same year + month with both days present: "3–5 Mar 1992"
+  if (sy === ey && sm === em && sd && ed) {
+    const month = parseInt(sm)
+    const monthName = month >= 1 && month <= 12 ? MONTHS_SHORT[month - 1] : ""
+    if (monthName) return `${parseInt(sd)}–${parseInt(ed)} ${monthName} ${sy}`
+  }
+  return `${startStr} – ${formatPartialDate(end)}`
+}
+
 export const PREDICATE_LABELS: Record<Predicate, string> = {
   rode_at: "Rode at",
   worked_at: "Worked at",

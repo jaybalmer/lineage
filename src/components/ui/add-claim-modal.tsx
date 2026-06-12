@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
-import { PREDICATE_ICONS, PREDICATE_LABELS } from "@/lib/utils"
+import { PREDICATE_ICONS, PREDICATE_LABELS, formatEventDateRange } from "@/lib/utils"
 import { PLACES, ORGS, BOARDS, PEOPLE, EVENTS } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
@@ -407,12 +407,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
     const start = r.start_date as string | undefined
     const end = r.end_date as string | undefined
     if (!start) return null
-    const fmt = (d: string) => {
-      const [y, m, day] = d.split("-")
-      return `${parseInt(day)} ${["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"][parseInt(m)-1]} ${y}`
-    }
-    if (!end || end === start) return fmt(start)
-    return `${fmt(start)} – ${fmt(end)}`
+    return formatEventDateRange(start, end)
   }
 
   const currentGroup = predicate
