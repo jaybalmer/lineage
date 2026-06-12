@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import type { Claim, ConfidenceLevel, PrivacyLevel } from "@/types"
-import { PREDICATE_LABELS, PREDICATE_ICONS } from "@/lib/utils"
+import { PREDICATE_LABELS, PREDICATE_ICONS, formatEventDateRange } from "@/lib/utils"
 
 const EVENT_PREDICATES = new Set(["competed_at", "spectated_at", "organized_at"])
 
@@ -34,18 +34,6 @@ function parseYear(dateStr?: string): string {
 function yearToDate(year: string): string | undefined {
   if (!year || year.length < 4) return undefined
   return `${year}-01-01`
-}
-
-function fmtDate(dateStr: string): string {
-  const [y, m, d] = dateStr.split("-")
-  const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
-  return `${parseInt(d)} ${months[parseInt(m) - 1]} ${y}`
-}
-
-function fmtEventDateRange(start?: string, end?: string): string | null {
-  if (!start) return null
-  if (!end || end === start) return fmtDate(start)
-  return `${fmtDate(start)} – ${fmtDate(end)}`
 }
 
 export function EditClaimModal({ claim, entityName, onClose }: EditClaimModalProps) {
@@ -80,7 +68,7 @@ export function EditClaimModal({ claim, entityName, onClose }: EditClaimModalPro
   const icon  = PREDICATE_ICONS[claim.predicate] ?? "•"
   const label = PREDICATE_LABELS[claim.predicate] ?? claim.predicate
 
-  const eventDateRange = fmtEventDateRange(claim.start_date, claim.end_date)
+  const eventDateRange = formatEventDateRange(claim.start_date, claim.end_date)
 
   return (
     <div
@@ -106,7 +94,7 @@ export function EditClaimModal({ claim, entityName, onClose }: EditClaimModalPro
               <span className="text-base mt-0.5">📅</span>
               <div>
                 <div className="text-xs font-medium text-foreground">
-                  {eventDateRange ?? parseYear(claim.start_date)}
+                  {eventDateRange || parseYear(claim.start_date)}
                 </div>
                 <div className="text-[11px] text-muted mt-0.5">
                   Date set by the event — not editable

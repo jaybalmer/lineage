@@ -176,6 +176,11 @@ function BrandsPageInner() {
 
   const brandOrgs = allOrgs.filter((o) => o.org_type === "brand" || o.org_type === "magazine")
   const teams = allOrgs.filter((o) => o.org_type === "team")
+  const shops = allOrgs.filter((o) => o.org_type === "shop")
+  // event-series orgs are intentionally not surfaced here: they belong to the
+  // Events surface, not the Brands list. Anything in neither bucket (brand /
+  // magazine / team / shop) is excluded by design, and the header count below
+  // counts only what renders so the two never diverge (BUG-027).
 
   // Group brands by category
   const grouped = CATEGORY_ORDER.reduce<Record<string, Org[]>>((acc, cat) => {
@@ -195,8 +200,11 @@ function BrandsPageInner() {
       : a.name.localeCompare(b.name)
   const sortedBrands = [...brandOrgs].sort(cmp)
   const sortedTeams = [...teams].sort(cmp)
+  const sortedShops = [...shops].sort(cmp)
 
-  const totalBrands = allOrgs.length
+  // Count the displayed set (brands + teams + shops), not allOrgs, so the
+  // header number matches the cards on screen (BUG-027 / cf. BUG-019).
+  const totalBrands = brandOrgs.length + teams.length + shops.length
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -299,6 +307,19 @@ function BrandsPageInner() {
               </h2>
               <div className="space-y-2">
                 {sortedTeams.map((org) => (
+                  <OrgCard key={org.id} org={org} conn={conn(org.id)} />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {sortedShops.length > 0 && (
+            <section>
+              <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-4">
+                Shops & Retailers
+              </h2>
+              <div className="space-y-2">
+                {sortedShops.map((org) => (
                   <OrgCard key={org.id} org={org} conn={conn(org.id)} />
                 ))}
               </div>

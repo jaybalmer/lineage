@@ -205,7 +205,11 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      // z-[60] so this create modal stacks ABOVE any z-50 parent modal that
+      // launches it (AddStoryModal Links tab, AddClaimModal). At equal z-index
+      // the parent's backdrop would paint over it and the create UI would be
+      // unreachable behind a black screen (BUG-028).
+      className="fixed inset-0 z-[60] flex items-center justify-center px-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <div className="absolute inset-0 bg-black/60" />
