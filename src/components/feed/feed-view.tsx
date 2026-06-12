@@ -8,7 +8,7 @@ import { StoryCard } from "@/components/feed/story-card"
 import { StartCard } from "@/components/feed/start-card"
 import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
-import { TimelinePrompt } from "@/components/timeline/timeline-prompt"
+import { BoardShelf } from "@/components/feed/board-shelf"
 import { cn } from "@/lib/utils"
 import { groupRodeAtCompanions } from "@/lib/companion-grouping"
 
@@ -131,8 +131,6 @@ export function FeedView({
   onStoryDeleted,
   order = "desc",
   animateEntrance = false,
-  showCurrentYearPrompt = false,
-  onCurrentYearPromptClick,
 }: {
   claims: Claim[]
   days?: RidingDay[]
@@ -148,8 +146,6 @@ export function FeedView({
   onStoryDeleted?: (id: string) => void
   order?: "asc" | "desc"
   animateEntrance?: boolean
-  showCurrentYearPrompt?: boolean
-  onCurrentYearPromptClick?: () => void
 }) {
   const [filter, setFilter] = useState<FilterType>("all")
   const [addingClaim, setAddingClaim] = useState(false)
@@ -174,11 +170,13 @@ export function FeedView({
 
   const items = useMemo((): FeedItem[] => {
     const claimItems: FeedItem[] = (() => {
-      if (filter === "stories") return []
+      // Boards live in their own shelf (the gear branch below), never the timeline.
+      if (filter === "stories" || filter === "gear") return []
       const predicates = filter !== "all" ? FILTER_PREDICATES[filter as Exclude<FilterType, "stories">] : []
+      const base = groupedClaims.filter((c) => c.predicate !== "owned_board")
       const filtered = predicates.length > 0
-        ? groupedClaims.filter((c) => predicates.includes(c.predicate))
-        : groupedClaims
+        ? base.filter((c) => predicates.includes(c.predicate))
+        : base
       return filtered.map((claim) => ({
         kind: "claim" as const,
         claim,
@@ -220,33 +218,28 @@ export function FeedView({
     order === "asc" ? a.localeCompare(b) : b.localeCompare(a)
   )
 
-  const hasPrompt = showCurrentYearPrompt && !!onCurrentYearPromptClick
   const emitEntrance = animateEntrance && !entranceDone
   if (emitEntrance) injectEntranceStyles()
 
-  // Running stagger index for the first-visit reveal. Mutated during this
-  // single synchronous render pass; the current-year prompt takes slot 0 so it
-  // leads, then each timeline item follows 150ms behind the last (capped 2.4s).
+  // Running stagger index for the first-visit reveal. Mutated during this single
+  // synchronous render pass; each timeline item follows 150ms behind the last
+  // (capped 2.4s).
   let entranceIdx = 0
   const entranceClass = () => (emitEntrance ? "feed-item-animate" : undefined)
   const entranceStyle = () =>
     emitEntrance ? { animation: `feedItemIn 0.45s ease ${Math.min(entranceIdx++ * 150, 2400)}ms both` } : undefined
 
-  const promptRow = hasPrompt ? (
-    <div className={cn("relative pl-9 mb-4", entranceClass())} style={entranceStyle()}>
-      <div className="absolute left-[7px] top-[20px] w-[22px] h-[22px] rounded-full border-[3px] border-background z-10 bg-[#3b82f6]" />
-      <TimelinePrompt onClick={onCurrentYearPromptClick!} />
-    </div>
-  ) : null
-
   // Count per filter tab — uses the grouped claim set so the counts match
   // what the user sees after the rode_with fold.
   const filterCounts = useMemo((): Record<FilterType, number> => {
     const countFor = (preds: string[]) => groupedClaims.filter((c) => preds.includes(c.predicate)).length
+    const boardClaims = groupedClaims.filter((c) => c.predicate === "owned_board")
     return {
-      all: groupedClaims.length + days.length + stories.length,
+      // Boards are excluded from the "all" timeline, so they are excluded from its count.
+      all: groupedClaims.length - boardClaims.length + days.length + stories.length,
       places: countFor(FILTER_PREDICATES.places),
-      gear: countFor(FILTER_PREDICATES.gear),
+      // gear = distinct boards (one shelf row per board), matching BoardShelf.
+      gear: new Set(boardClaims.map((c) => c.object_id)).size,
       people: countFor(FILTER_PREDICATES.people),
       orgs: countFor(FILTER_PREDICATES.orgs),
       events: countFor(FILTER_PREDICATES.events),
@@ -324,81 +317,81 @@ export function FeedView({
       </div>
       )}
 
-      {/* Feed grouped by decade */}
-      {decades.length === 0 && !hasPrompt && (
-        <div className="text-center text-muted py-16">
-          <div className="text-3xl mb-3">🏂</div>
-          <div className="text-sm">
-            {filter === "stories"
-                ? isOwn ? "No stories yet. Add one to capture a moment." : `${personName} hasn't added any stories yet.`
-                : isOwn
-                  ? "No claims yet. Start building your linestry."
-                  : `${personName} hasn't added any claims yet.`}
-          </div>
-        </div>
-      )}
-
-      {(decades.length > 0 || hasPrompt) && (
-        <div className="relative">
-          {/* Continuous vertical timeline line */}
-          <div className="absolute left-[12px] top-6 bottom-6 w-2 bg-border-default rounded-full" />
-
-          {/* Current-year "add your board" slot, leading the timeline in desc order */}
-          {order !== "asc" && promptRow}
-
-          {decades.map((decade) => (
-            <div key={decade} className="mb-8">
-              {/* Decade header — shifted right of timeline gutter */}
-              <div className="pl-9 mb-4 flex items-center gap-3">
-                <span className="text-3xl text-foreground" style={{ fontFamily: "var(--font-display)" }}>{decade}</span>
-                <div className="flex-1 h-px bg-surface-active" />
-                <span className="text-xs text-muted">{grouped[decade].length} entries</span>
-              </div>
-
-              {/* Items with timeline nodes */}
-              <div>
-                {grouped[decade].map((item) => {
-                  const key = item.kind === "claim" ? item.claim.id
-                    : item.kind === "day" ? item.day.id
-                    : item.kind === "story" ? `story-${item.story.id}`
-                    : `riding-start-${item.year}`
-                  return (
-                    <div key={key} className={cn("relative pl-9", entranceClass())} style={entranceStyle()}>
-                      {/* Node — amber star for riding_start, coloured circle for everything else */}
-                      {item.kind === "riding_start" ? (
-                        <div className="absolute left-[7px] top-[18px] w-[22px] h-[22px] rounded-full bg-background border-[3px] border-amber-500 flex items-center justify-center z-10 text-amber-400 text-[11px] leading-none">
-                          ★
-                        </div>
-                      ) : (
-                        <div className={cn(
-                          "absolute left-[7px] top-[20px] w-[22px] h-[22px] rounded-full border-[3px] border-background z-10",
-                          nodeColor(item)
-                        )} />
-                      )}
-                      {item.kind === "claim" ? (
-                        <PostCard
-                          claim={item.claim}
-                          isOwn={isOwn}
-                          readOnly={readOnly}
-                          explicitCompanionIds={companionMap.get(item.claim.id)}
-                        />
-                      ) : item.kind === "day" ? (
-                        <DayPostCard day={item.day} isOwn={isOwn} />
-                      ) : item.kind === "story" ? (
-                        <StoryCard story={item.story} isOwn={isOwn} onDelete={onStoryDeleted} />
-                      ) : person ? (
-                        <StartCard person={person} claims={claims} isOwn={isOwn} />
-                      ) : null}
-                    </div>
-                  )
-                })}
+      {/* Boards have their own shelf (Change 3/4); everything else is the decade timeline */}
+      {filter === "gear" ? (
+        <BoardShelf claims={claims} isOwn={isOwn} readOnly={readOnly} personName={personName} />
+      ) : (
+        <>
+          {decades.length === 0 && (
+            <div className="text-center text-muted py-16">
+              <div className="text-3xl mb-3">🏂</div>
+              <div className="text-sm">
+                {filter === "stories"
+                    ? isOwn ? "No stories yet. Add one to capture a moment." : `${personName} hasn't added any stories yet.`
+                    : isOwn
+                      ? "No claims yet. Start building your linestry."
+                      : `${personName} hasn't added any claims yet.`}
               </div>
             </div>
-          ))}
+          )}
 
-          {/* Current-year "add your board" slot, trailing the timeline in asc order */}
-          {order === "asc" && promptRow}
-        </div>
+          {decades.length > 0 && (
+            <div className="relative">
+              {/* Continuous vertical timeline line */}
+              <div className="absolute left-[12px] top-6 bottom-6 w-2 bg-border-default rounded-full" />
+
+              {decades.map((decade) => (
+                <div key={decade} className="mb-8">
+                  {/* Decade header — shifted right of timeline gutter */}
+                  <div className="pl-9 mb-4 flex items-center gap-3">
+                    <span className="text-3xl text-foreground" style={{ fontFamily: "var(--font-display)" }}>{decade}</span>
+                    <div className="flex-1 h-px bg-surface-active" />
+                    <span className="text-xs text-muted">{grouped[decade].length} entries</span>
+                  </div>
+
+                  {/* Items with timeline nodes */}
+                  <div>
+                    {grouped[decade].map((item) => {
+                      const key = item.kind === "claim" ? item.claim.id
+                        : item.kind === "day" ? item.day.id
+                        : item.kind === "story" ? `story-${item.story.id}`
+                        : `riding-start-${item.year}`
+                      return (
+                        <div key={key} className={cn("relative pl-9", entranceClass())} style={entranceStyle()}>
+                          {/* Node — amber star for riding_start, coloured circle for everything else */}
+                          {item.kind === "riding_start" ? (
+                            <div className="absolute left-[7px] top-[18px] w-[22px] h-[22px] rounded-full bg-background border-[3px] border-amber-500 flex items-center justify-center z-10 text-amber-400 text-[11px] leading-none">
+                              ★
+                            </div>
+                          ) : (
+                            <div className={cn(
+                              "absolute left-[7px] top-[20px] w-[22px] h-[22px] rounded-full border-[3px] border-background z-10",
+                              nodeColor(item)
+                            )} />
+                          )}
+                          {item.kind === "claim" ? (
+                            <PostCard
+                              claim={item.claim}
+                              isOwn={isOwn}
+                              readOnly={readOnly}
+                              explicitCompanionIds={companionMap.get(item.claim.id)}
+                            />
+                          ) : item.kind === "day" ? (
+                            <DayPostCard day={item.day} isOwn={isOwn} />
+                          ) : item.kind === "story" ? (
+                            <StoryCard story={item.story} isOwn={isOwn} onDelete={onStoryDeleted} />
+                          ) : person ? (
+                            <StartCard person={person} claims={claims} isOwn={isOwn} />
+                          ) : null}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )
