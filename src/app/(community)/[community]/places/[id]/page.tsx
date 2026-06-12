@@ -419,7 +419,7 @@ function PlacePageInner({ params }: { params: Promise<{ community: string; id: s
                           value={suggestUrl}
                           onChange={(e) => setSuggestUrl(e.target.value)}
                           placeholder="https://…"
-                          className="flex-1 bg-surface-hover border border-border-default rounded-lg px-3 py-1.5 text-xs text-foreground placeholder-zinc-600 outline-none focus:border-blue-600"
+                          className="flex-1 min-w-0 bg-surface-hover border border-border-default rounded-lg px-3 py-1.5 text-xs text-foreground placeholder-zinc-600 outline-none focus:border-blue-600"
                         />
                         <button
                           type="submit"
