@@ -27,7 +27,7 @@ const TIER_CONFIG: Record<Tier, {
     accentLine: "#3B5BA5",
     ringColor:  "#378ADD",
     dotColor:   "#85B7EB",
-    tokens:     (n) => String(n || 10),
+    tokens:     (n) => String(n || 20),
     stat3Label: "Equity pool",
     stat3Val:   "Active",
     message:    () =>
@@ -40,7 +40,7 @@ const TIER_CONFIG: Record<Tier, {
     accentLine: "#185FA5",
     ringColor:  "#185FA5",
     dotColor:   "#378ADD",
-    tokens:     (n) => String(n || 30),
+    tokens:     (n) => String(n || 70),
     stat3Label: "Equity pool",
     stat3Val:   "Lifetime",
     message:    () =>

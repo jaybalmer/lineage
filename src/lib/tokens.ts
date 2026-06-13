@@ -102,12 +102,12 @@ export async function awardContributionTokens(
 
 // ── Founding member-token accrual (brief §5.6, D8) ────────────────────────────
 
-export const FOUNDING_ANNUAL_MEMBER_TOKENS = 10
+export const FOUNDING_ANNUAL_MEMBER_TOKENS = 20
 const YEAR_MS = 365 * 24 * 60 * 60 * 1000
 
 /**
- * Founding tier accrues the annual-equivalent +10 member tokens per
- * membership year on top of its founder tokens. Founding has no Stripe
+ * Founding tier accrues the annual-equivalent member tokens per membership
+ * year on top of its founder tokens (tracks the annual rate, D8). Founding has no Stripe
  * renewal event, so the grant anchors to the most recent
  * 'founding_member_grant' ledger row: none yet means grant now (the backfill
  * normally seeds the first one), otherwise grant when the last one is a year

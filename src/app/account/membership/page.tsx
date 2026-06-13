@@ -32,8 +32,8 @@ const TIER_SYMBOLS: Record<string, string> = {
   free: "●", annual: "◈", lifetime: "◆", founding: "✦",
 }
 const TIER_TOKENS_LABEL: Record<string, string> = {
-  annual:   "10 member tokens",
-  lifetime: "30 member tokens",
+  annual:   "20 member tokens",
+  lifetime: "70 member tokens",
   founding: "100 founder tokens (2× weight in the equity pool)",
 }
 
