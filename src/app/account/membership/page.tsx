@@ -8,6 +8,11 @@ import { BrandMark } from "@/components/ui/brand-mark"
 import { supabase } from "@/lib/supabase"
 import { useEffect, useState, useCallback, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
+import {
+  EQUITY_POOL_SHARES,
+  EQUITY_SNAPSHOT_LABEL,
+  estimateShares,
+} from "@/lib/equity-offer"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -29,30 +34,13 @@ const TIER_SYMBOLS: Record<string, string> = {
 const TIER_TOKENS_LABEL: Record<string, string> = {
   annual:   "10 member tokens",
   lifetime: "30 member tokens",
-  founding: "100 founder tokens (2× revenue weight)",
+  founding: "100 founder tokens (2× weight in the equity pool)",
 }
 
 const FOUNDING_SPOTS = 500
 
 function padMemberNumber(n: number) {
   return String(n).padStart(3, "0")
-}
-
-function estimatePayout(tier: string, tokens: { founder: number; member: number; contribution: number }) {
-  const totalWeighted = tokens.founder * 2 + tokens.member + tokens.contribution
-  if (totalWeighted === 0 || tier === "free") return null
-  const examplePool = 5000
-  const totalCirculation = 2600
-  return ((totalWeighted / totalCirculation) * examplePool).toFixed(2)
-}
-
-function getNextDistributionDate() {
-  const now = new Date()
-  for (const m of [0, 3, 6, 9]) {
-    const d = new Date(now.getFullYear(), m, 1)
-    if (d > now) return d.toLocaleDateString("en-US", { month: "long", year: "numeric" })
-  }
-  return `January ${now.getFullYear() + 1}`
 }
 
 async function openStripePortal() {
@@ -305,8 +293,8 @@ function GiftSection() {
         GIFT A MEMBERSHIP
       </div>
       <p className="text-muted mb-4" style={{ fontSize: 10, lineHeight: 1.7 }}>
-        Give a fellow rider an annual membership — $25, one year of access to Linestry with
-        member tokens and revenue share.
+        Give a fellow rider an annual membership: $25, one year of access to Linestry with
+        member tokens and a share of the equity pool.
       </p>
 
       {giftLink ? (
@@ -352,7 +340,7 @@ function MembershipDashboard() {
   const tierParam = searchParams.get("tier") ?? ""
 
   const { membership, activePersonId, profileOverride, setMembership } = useLineageStore()
-  const { tier, status, founding_badge, founding_member_number, token_balance, pending_credit, stripe_customer_id, membership_expires_at } = membership
+  const { tier, status, founding_badge, founding_member_number, token_balance, stripe_customer_id, membership_expires_at } = membership
 
   const isAuth = isAuthUser(activePersonId)
   const name = profileOverride.display_name ?? "Rider"
@@ -361,6 +349,17 @@ function MembershipDashboard() {
   const [showCelebration, setShowCelebration] = useState(success)
   const [spotsFilled, setSpotsFilled] = useState<number | undefined>()
   const [pollDone, setPollDone] = useState(!success)
+
+  // Platform-wide weighted token total for the equity share estimate (D6).
+  const [poolTotal, setPoolTotal] = useState<number | null>(null)
+  useEffect(() => {
+    fetch("/api/equity/pool")
+      .then((r) => r.json())
+      .then((d) => {
+        if (typeof d.total_weighted_tokens === "number") setPoolTotal(d.total_weighted_tokens)
+      })
+      .catch(() => {})
+  }, [])
 
   const refreshMembership = useCallback(async () => {
     if (!activePersonId || !isAuthUser(activePersonId)) return
@@ -450,8 +449,7 @@ function MembershipDashboard() {
   const symbol = TIER_SYMBOLS[tier]
   const label = TIER_LABELS[tier]
   const totalTokens = token_balance.founder * 2 + token_balance.member + token_balance.contribution
-  const estPayout = estimatePayout(tier, token_balance)
-  const nextDist = getNextDistributionDate()
+  const shareEst = poolTotal !== null ? estimateShares(totalTokens, poolTotal) : null
   const isLapsed = tier !== "free" && status === "expired"
 
   // Celebration tier (might differ from store if poll not done yet)
@@ -573,45 +571,41 @@ function MembershipDashboard() {
             </div>
           </div>
 
-          {/* Revenue share */}
+          {/* Equity launch offer */}
           <div className="bg-surface border border-border-default rounded-2xl p-5">
             <div className="md-heading text-foreground mb-3" style={{ fontSize: 16, fontWeight: 700, letterSpacing: 1 }}>
-              REVENUE SHARE
+              EQUITY LAUNCH OFFER
             </div>
-            {tier === "free" ? (
-              <div>
-                <p className="text-muted mb-3" style={{ fontSize: 10, lineHeight: 1.7 }}>
-                  Your contribution tokens are accumulating. Revenue share distributions require
-                  at least one active member or founder token — you&apos;ll have a head-start the moment
-                  you become a member.
-                </p>
-                <Link href="/revenue" className="text-muted hover:text-foreground transition-colors underline" style={{ fontSize: 10 }}>
-                  How revenue sharing works →
-                </Link>
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-muted" style={{ fontSize: 10 }}>The pool</span>
+                <span className="text-foreground" style={{ fontSize: 10 }}>{EQUITY_POOL_SHARES.toLocaleString()} founding shares</span>
               </div>
-            ) : (
-              <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-muted" style={{ fontSize: 10 }}>Snapshot</span>
+                <span className="text-foreground" style={{ fontSize: 10 }}>{EQUITY_SNAPSHOT_LABEL}</span>
+              </div>
+              {shareEst ? (
                 <div className="flex justify-between">
-                  <span className="text-muted" style={{ fontSize: 10 }}>Next distribution</span>
-                  <span className="text-foreground" style={{ fontSize: 10 }}>{nextDist}</span>
+                  <span className="text-muted" style={{ fontSize: 10 }}>Your estimated share</span>
+                  <span className="font-bold" style={{ fontSize: 12, color: "#f59e0b" }}>
+                    ~{shareEst.shares.toLocaleString()} shares ({shareEst.pct.toFixed(2)}%)
+                  </span>
                 </div>
-                {estPayout && (
-                  <div className="flex justify-between">
-                    <span className="text-muted" style={{ fontSize: 10 }}>Estimated payout (illustrative)</span>
-                    <span className="text-foreground font-bold" style={{ fontSize: 12 }}>${estPayout}</span>
-                  </div>
-                )}
-                {pending_credit > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-muted" style={{ fontSize: 10 }}>Platform credit balance</span>
-                    <span style={{ fontSize: 12, color: "#10b981", fontWeight: 700 }}>${pending_credit.toFixed(2)}</span>
-                  </div>
-                )}
-                <Link href="/revenue/distributions" className="text-muted hover:text-foreground transition-colors underline" style={{ fontSize: 10 }}>
-                  View past distributions →
-                </Link>
-              </div>
-            )}
+              ) : (
+                <p className="text-muted" style={{ fontSize: 10, lineHeight: 1.7 }}>
+                  Every token counts in the pool, even on the free tier. Add entries, post
+                  stories, and show up daily to start building your share.
+                </p>
+              )}
+              <p className="text-muted" style={{ fontSize: 9, lineHeight: 1.6 }}>
+                Estimates move with every token the community earns, until balances are
+                snapshotted on {EQUITY_SNAPSHOT_LABEL}.
+              </p>
+              <Link href="/equity" className="text-muted hover:text-foreground transition-colors underline" style={{ fontSize: 10 }}>
+                How the equity launch offer works →
+              </Link>
+            </div>
           </div>
 
           {/* Share card (for paid members) */}
@@ -649,7 +643,8 @@ function MembershipDashboard() {
                 <span style={{ color: "#10b981", fontWeight: 700 }}>
                   {token_balance.contribution} contribution token{token_balance.contribution !== 1 ? "s" : ""} earned.
                 </span>{" "}
-                These tokens count toward your revenue share when you become a member.
+                These tokens already count in the equity pool, and becoming a member adds
+                weight on top.
               </p>
             </div>
           )}
@@ -658,7 +653,7 @@ function MembershipDashboard() {
           <div className="flex gap-4 pt-2" style={{ fontSize: 10 }}>
             <CommunityLink href="/profile" className="text-muted hover:text-foreground transition-colors">← Profile</CommunityLink>
             <Link href="/membership" className="text-muted hover:text-foreground transition-colors">Membership options →</Link>
-            <Link href="/revenue" className="text-muted hover:text-foreground transition-colors">Revenue sharing →</Link>
+            <Link href="/equity" className="text-muted hover:text-foreground transition-colors">Equity launch offer →</Link>
           </div>
 
         </div>

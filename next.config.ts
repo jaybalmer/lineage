@@ -2,6 +2,14 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    // The revenue-share explainer became the equity launch offer
+    // (token-system brief §5.4). Old links live in emails and posts, so 308.
+    return [
+      { source: "/revenue", destination: "/equity", permanent: true },
+      { source: "/revenue/distributions", destination: "/equity", permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

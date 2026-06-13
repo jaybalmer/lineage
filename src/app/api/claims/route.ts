@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAuth, getServiceClient } from "@/lib/auth"
 import { fireTagEvents } from "@/lib/invite-tracking-server"
 import { pairClaimTagEvents, isAsserterGloballyBlocked } from "@/lib/tag-events"
+import { awardContributionTokens } from "@/lib/tokens"
 import { PREDICATES, ENTITY_TYPES, CONFIDENCE, VISIBILITY, BOARD_RELATIONSHIPS, str, optStr } from "./validation"
 
 // POST /api/claims
@@ -161,6 +162,14 @@ export async function POST(req: NextRequest) {
     if (pairResult.failed > 0) {
       console.error(`[api/claims] claim ${id}: ${paired} paired, ${pairResult.failed} failed`)
     }
+  }
+
+  // Token earning (brief §5.1): a new timeline entry is +1, a claim carrying
+  // an authoritative source link is +2 on top. Board re-adds return earlier
+  // from the upsert path above and never award. Best-effort, never blocks.
+  await awardContributionTokens(db, user.id, 1, "contribution_entry")
+  if (Array.isArray(body.sources) && body.sources.length > 0) {
+    await awardContributionTokens(db, user.id, 2, "contribution_source")
   }
 
   return NextResponse.json({ ok: true, paired })
