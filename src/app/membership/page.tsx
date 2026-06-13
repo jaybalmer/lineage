@@ -46,7 +46,7 @@ const TIERS = [
       "Community governance & voting",
       "Share of the equity launch offer pool",
       "Member badge on public profile",
-      "10 tokens per year",
+      "20 tokens per year",
     ],
   },
   {
@@ -62,8 +62,7 @@ const TIERS = [
     tagline: "Best long-term value. Yours forever.",
     benefits: [
       "Everything in Annual Member",
-      "30 tokens upfront",
-      "+10 tokens every year",
+      "70 tokens upfront",
       "Lifetime member badge",
     ],
   },

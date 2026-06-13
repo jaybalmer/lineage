@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     .update({
       membership_tier:        "annual",
       membership_status:      "gifted",
-      token_member:           10,
+      token_member:           20,
       membership_expires_at:  expiresAt,
     })
     .eq("id", user.id)
@@ -65,7 +65,7 @@ export async function POST(req: NextRequest) {
   await db.from("token_events").insert({
     user_id:    user.id,
     token_type: "member",
-    amount:     10,
+    amount:     20,
     source:     "gift_redemption",
   })
 

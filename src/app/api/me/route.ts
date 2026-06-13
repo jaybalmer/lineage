@@ -14,7 +14,7 @@ import { maybeGrantFoundingMemberTokens, FOUNDING_ANNUAL_MEMBER_TOKENS } from "@
 //      read so today's token is already in this response. Two near-
 //      simultaneous loads cannot double-award: the RPC's guarded UPDATE
 //      serialises on the row lock.
-//   2. Founding member-token accrual (+10/yr, D8): checked only on the load
+//   2. Founding member-token accrual (annual-equivalent /yr, D8): checked only on the load
 //      that won today's daily-visit award, so it runs at most once per day
 //      per user and the read-modify-write inside is single-flight.
 // Both are best-effort; failures log and never block the profile response.

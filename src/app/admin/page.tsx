@@ -1445,7 +1445,7 @@ function MembersTable() {
       memberNumber = existing + 1
     }
     const tokenMap: Record<string, { founder: number; member: number }> = {
-      annual: { founder: 0, member: 10 }, lifetime: { founder: 0, member: 30 }, founding: { founder: 100, member: 0 },
+      annual: { founder: 0, member: 20 }, lifetime: { founder: 0, member: 70 }, founding: { founder: 100, member: 0 },
     }
     const tokens = tokenMap[tier] ?? { founder: 0, member: 0 }
     setSaving(true)
@@ -1665,7 +1665,7 @@ function MembersTable() {
                                   onClick={() => quickGrant(m, "annual")}
                                   disabled={saving}
                                   className="px-2 py-0.5 text-[10px] rounded border border-blue-700/40 text-blue-400 hover:bg-blue-900/20 transition-colors disabled:opacity-40"
-                                  title="Grant Annual membership with 10 member tokens">
+                                  title="Grant Annual membership with 20 member tokens">
                                   ◈ Grant
                                 </button>
                               </>

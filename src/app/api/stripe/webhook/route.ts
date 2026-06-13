@@ -11,8 +11,8 @@ function adminClient() {
 
 // Token grants per tier on purchase
 const INITIAL_TOKENS: Record<string, { founder: number; member: number }> = {
-  annual:   { founder: 0, member: 10 },
-  lifetime: { founder: 0, member: 30 },
+  annual:   { founder: 0, member: 20 },
+  lifetime: { founder: 0, member: 70 },
   founding: { founder: 100, member: 0 },
 }
 
@@ -125,20 +125,20 @@ export async function POST(req: NextRequest) {
       const inv = event.data.object as Stripe.Invoice
       const subscriptionId = (inv as unknown as { subscription?: string }).subscription
       if (!subscriptionId) break
-      // Annual renewal: grant 10 new member tokens
+      // Annual renewal: grant 20 new member tokens
       const { data: profile } = await db.from("profiles")
         .select("id, token_member")
         .eq("stripe_subscription_id", subscriptionId)
         .single()
       if (profile) {
         await db.from("profiles").update({
-          token_member: (profile.token_member ?? 0) + 10,
+          token_member: (profile.token_member ?? 0) + 20,
           membership_expires_at: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
         }).eq("id", profile.id)
         await db.from("token_events").insert({
           user_id:    profile.id,
           token_type: "member",
-          amount:     10,
+          amount:     20,
           source:     "annual_renewal",
         })
       }

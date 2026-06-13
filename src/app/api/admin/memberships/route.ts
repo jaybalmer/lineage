@@ -5,8 +5,8 @@ import { requireEditor, getServiceClient } from "@/lib/auth"
 
 const TIER_TOKENS: Record<string, { founder: number; member: number }> = {
   free:     { founder: 0, member: 0 },
-  annual:   { founder: 0, member: 10 },
-  lifetime: { founder: 0, member: 30 },
+  annual:   { founder: 0, member: 20 },
+  lifetime: { founder: 0, member: 70 },
   founding: { founder: 100, member: 0 },
 }
 

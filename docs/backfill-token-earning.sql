@@ -22,16 +22,17 @@
 -- ── STEP 0: pick the claims-sources expression ────────────────────────────────
 -- Run:  select udt_name from information_schema.columns
 --       where table_name = 'claims' and column_name = 'sources';
---   '_text' (text[])  -> keep SOURCES_NONEMPTY as cardinality(c.sources) > 0
---   'jsonb'           -> swap in jsonb_array_length(c.sources) > 0
--- The script below uses the text[] form.
+--   '_text' (text[])  -> cardinality(c.sources) > 0
+--   'jsonb'           -> jsonb_typeof(c.sources) = 'array' and jsonb_array_length(c.sources) > 0
+-- Confirmed jsonb in prod 2026-06-13; the script below uses the jsonb form,
+-- with the jsonb_typeof guard so a non-array value can't throw.
 
 -- ── STEP 1: preview (run alone, sanity-check the numbers) ─────────────────────
 
 with claim_counts as (
   select p.id as user_id,
          count(*) as n_claims,
-         count(*) filter (where c.sources is not null and cardinality(c.sources) > 0) as n_sourced
+         count(*) filter (where jsonb_typeof(c.sources) = 'array' and jsonb_array_length(c.sources) > 0) as n_sourced
   from public.claims c
   join public.profiles p on p.id::text = c.asserted_by
   group by p.id
@@ -92,7 +93,7 @@ end $$;
 with claim_counts as (
   select p.id as user_id,
          count(*) as n_claims,
-         count(*) filter (where c.sources is not null and cardinality(c.sources) > 0) as n_sourced
+         count(*) filter (where jsonb_typeof(c.sources) = 'array' and jsonb_array_length(c.sources) > 0) as n_sourced
   from public.claims c
   join public.profiles p on p.id::text = c.asserted_by
   group by p.id

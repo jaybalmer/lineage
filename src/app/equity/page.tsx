@@ -17,7 +17,7 @@ import {
 
 const TOKEN_TABLE = [
   { type: "Founder token",      earners: "Founding members",          amount: "100 on purchase",                        weight: "2×" },
-  { type: "Member token",       earners: "Annual, Lifetime, Founding", amount: "10 per year (Lifetime starts at 30)",   weight: "1×" },
+  { type: "Member token",       earners: "Annual, Lifetime, Founding", amount: "20 per year (Lifetime: 70 upfront)", weight: "1×" },
   { type: "Contribution token", earners: "Everyone, including free",   amount: "Earned by activity",                    weight: "1×" },
 ]
 
