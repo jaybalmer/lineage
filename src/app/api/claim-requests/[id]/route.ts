@@ -7,6 +7,7 @@ import {
   claimDeniedHtml,
   sendClaimEmail,
 } from "@/lib/emails/claim-emails"
+import { awardContributionTokens } from "@/lib/tokens"
 import type { ClaimRequest, MergePersonResult } from "@/types"
 
 function trackEvent(origin: string, event: string, props: Record<string, unknown>) {
@@ -148,6 +149,17 @@ export async function PATCH(
   // inside the RPC serialises racing approvers; the loser falls through the
   // idempotency check and returns noop=true.
   if (action.action === "approve") {
+    // Token earning (brief §5.1): an approved claim is the point where an
+    // invite converts to a real member, worth +5 to the inviter. Path B of
+    // merge_person hard-deletes the ghost row, so capture invited_by BEFORE
+    // the RPC runs.
+    const { data: ghostPerson } = await db
+      .from("people")
+      .select("invited_by")
+      .eq("id", current.node_id)
+      .maybeSingle()
+    const inviterId = (ghostPerson?.invited_by as string | null) ?? null
+
     const { data: rpcData, error: rpcError } = await db.rpc("merge_person", {
       p_claim_request_id: id,
       p_admin_id: user.id,
@@ -197,6 +209,13 @@ export async function PATCH(
     // thundering-herd of refreshes when admins double-click approve.
     if (!result.noop) {
       revalidateTag("person-redirects", { expire: 0 })
+    }
+
+    // Onboard award fires once per real merge (noop replays skip it, which
+    // also prevents double-awarding on approve re-clicks). Self-claims where
+    // the inviter is the claimant earn nothing.
+    if (!result.noop && inviterId && inviterId !== current.claimant_id) {
+      await awardContributionTokens(db, inviterId, 5, "contribution_onboard")
     }
 
     trackEvent(origin, "claim_approved", {

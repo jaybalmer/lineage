@@ -163,7 +163,7 @@ export function AvatarDropdown({ displayName, tier, totalTokens, pendingTagCount
               className="flex items-center justify-between px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
               style={{ fontSize: 10 }}>
               <span>{totalTokens} tokens</span>
-              <span className="text-green-500" style={{ fontSize: 9 }}>● Revenue share active</span>
+              <span className="text-green-500" style={{ fontSize: 9 }}>● In the equity pool</span>
             </Link>
           )}
 

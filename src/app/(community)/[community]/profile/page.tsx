@@ -564,7 +564,7 @@ export default function ProfilePage() {
               <span style={{ color: "#f59e0b" }}>◆</span>
               <span>{membership.token_balance.founder * 2 + membership.token_balance.member + membership.token_balance.contribution} tokens</span>
             </Link>
-            <span className="text-muted" style={{ fontSize: 10, fontFamily: "var(--font-body)" }}>· Revenue share active</span>
+            <span className="text-muted" style={{ fontSize: 10, fontFamily: "var(--font-body)" }}>· In the equity pool</span>
           </div>
         )}
 

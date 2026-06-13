@@ -28,7 +28,7 @@ const TIER_CONFIG: Record<Tier, {
     ringColor:  "#378ADD",
     dotColor:   "#85B7EB",
     tokens:     (n) => String(n || 10),
-    stat3Label: "Revenue share",
+    stat3Label: "Equity pool",
     stat3Val:   "Active",
     message:    () =>
       "You're part of something that's never existed before. The collective history of snowboarding — verified, owned, and built by riders.",
@@ -41,7 +41,7 @@ const TIER_CONFIG: Record<Tier, {
     ringColor:  "#185FA5",
     dotColor:   "#378ADD",
     tokens:     (n) => String(n || 30),
-    stat3Label: "Revenue share",
+    stat3Label: "Equity pool",
     stat3Val:   "Lifetime",
     message:    () =>
       "This is permanent. Your name and your history are part of the record — for as long as snowboarding exists.",

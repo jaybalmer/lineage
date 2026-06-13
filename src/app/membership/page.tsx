@@ -44,7 +44,7 @@ const TIERS = [
       "Everything in Rider",
       "Verify timeline entries",
       "Community governance & voting",
-      "Revenue share — quarterly distribution",
+      "Share of the equity launch offer pool",
       "Member badge on public profile",
       "10 tokens per year",
     ],
@@ -81,7 +81,7 @@ const TIERS = [
     benefits: [
       "Everything in Lifetime Member",
       "Permanent founding badge — never goes away",
-      "100 tokens at 2× weight in distributions",
+      "100 tokens at 2× weight in the equity pool",
       "1 annual membership to gift",
       "Priority in governance proposals",
       "First access to new communities",
@@ -97,12 +97,12 @@ const FAQ = [
     a: "Members can confirm timeline entries added by others — saying 'yes, I was there' or 'I can corroborate this.' Three member verifications upgrade an entry's confidence level and earn the original submitter bonus tokens. It's how the collective record becomes trustworthy over time.",
   },
   {
-    q: "How often is revenue distributed?",
-    a: "Quarterly: January, April, July, October. The snapshot of your token balance is taken on the last day of each quarter. Minimum payout is $5 — sub-threshold amounts carry forward to the next quarter and never expire.",
+    q: "How does the equity launch offer work?",
+    a: "A fixed pool of 100,000 common shares is set aside for the launch community. On September 30, 2026 we snapshot every member's token balance and split the pool by weighted tokens: founder tokens count double, member and contribution tokens count once. Your membership page shows a live estimate of your share until then.",
   },
   {
     q: "What happens to my tokens if I cancel an annual membership?",
-    a: "Your tokens are frozen, not lost. Your existing balance stays eligible for quarterly distributions. No new member tokens accrue until you renew. Contribution tokens keep accumulating regardless of membership status.",
+    a: "Your tokens are frozen, not lost. Your existing balance still counts at the equity snapshot. No new member tokens accrue until you renew. Contribution tokens keep accumulating regardless of membership status.",
   },
   {
     q: "What is a Founding Member?",
@@ -331,23 +331,24 @@ export default function MembershipPage() {
             })}
           </div>
 
-          {/* ── Revenue sharing teaser ───────────────────────────────────── */}
-          <div className="mt-10 p-6 rounded-2xl border border-border-default bg-surface">
+          {/* ── Equity launch offer teaser ───────────────────────────────── */}
+          <div className="mt-10 p-6 rounded-2xl border bg-surface" style={{ borderColor: "#f59e0b44" }}>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div>
                 <div className="ms-heading text-foreground mb-1"
                   style={{ fontSize: 20, fontWeight: 700, letterSpacing: 1 }}>
-                  HOW REVENUE SHARING WORKS
+                  <span style={{ color: "#f59e0b" }}>✦</span> THE EQUITY LAUNCH OFFER
                 </div>
                 <p className="text-muted" style={{ fontSize: 11, lineHeight: 1.6, maxWidth: 480 }}>
-                  20% of everything Linestry earns flows back to the community that built it.
-                  Tokens determine your share. Even free riders accumulate tokens toward the day they join.
+                  100,000 founding shares, distributed to the launch community by token balance.
+                  First distribution September 2026. Every entry, story, and daily visit grows
+                  your slice, even on the free tier.
                 </p>
               </div>
-              <Link href="/revenue"
-                className="shrink-0 px-5 py-2 rounded-full border border-border-default text-muted hover:text-foreground hover:border-foreground transition-all"
-                style={{ fontSize: 10, letterSpacing: 1, whiteSpace: "nowrap" }}>
-                How revenue sharing works →
+              <Link href="/equity"
+                className="shrink-0 px-5 py-2 rounded-full border text-muted hover:text-foreground transition-all"
+                style={{ fontSize: 10, letterSpacing: 1, whiteSpace: "nowrap", borderColor: "#f59e0b44" }}>
+                How the equity offer works →
               </Link>
             </div>
           </div>

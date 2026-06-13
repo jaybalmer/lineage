@@ -537,13 +537,16 @@ export const useLineageStore = create<LineageStore>()(
           catalog: { ...s.catalog, places: [...s.catalog.places, entity] },
         }))
         if (isAuthUser(get().activePersonId)) {
-          fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ operation: "insert", table: "places", data: {
+          // Member-allowed create path (token brief §5.5). This used to post
+          // to /api/admin, which is requireEditor-gated, so every non-editor
+          // add 403ed and rolled back. The catalog route whitelists fields,
+          // dedups on name, and awards contribution tokens server-side.
+          fetch("/api/catalog/entity", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "place", data: {
               id: place.id, name: place.name, place_type: place.place_type,
               region: place.region ?? null, country: place.country ?? null,
               website: place.website ?? null, description: place.description ?? null,
               first_snowboard_year: place.first_snowboard_year ?? null,
-              community_status: "unverified", added_by: get().activePersonId,
             }})
           }).then(r => r.json()).then(d => {
             if (!d.ok) {
@@ -551,7 +554,7 @@ export const useLineageStore = create<LineageStore>()(
                 userEntities: { ...s.userEntities, places: s.userEntities.places.filter((p) => p.id !== place.id) },
                 catalog: { ...s.catalog, places: s.catalog.places.filter((p) => p.id !== place.id) },
               }))
-              get().addToast("Failed to save place. Please try again.")
+              get().addToast(d.error ?? "Failed to save place. Please try again.")
             }
           }).catch(() => get().addToast("Failed to save place. Please try again."))
         }
@@ -563,11 +566,10 @@ export const useLineageStore = create<LineageStore>()(
           catalog: { ...s.catalog, boards: [...s.catalog.boards, entity] },
         }))
         if (isAuthUser(get().activePersonId)) {
-          fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ operation: "insert", table: "boards", data: {
+          fetch("/api/catalog/entity", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "board", data: {
               id: board.id, brand: board.brand, model: board.model, model_year: board.model_year,
               shape: board.shape ?? null, external_ref: board.external_ref ?? null,
-              community_status: "unverified", added_by: get().activePersonId,
             }})
           }).then(r => r.json()).then(d => {
             if (!d.ok) {
@@ -575,7 +577,7 @@ export const useLineageStore = create<LineageStore>()(
                 userEntities: { ...s.userEntities, boards: s.userEntities.boards.filter((b) => b.id !== board.id) },
                 catalog: { ...s.catalog, boards: s.catalog.boards.filter((b) => b.id !== board.id) },
               }))
-              get().addToast("Failed to save board. Please try again.")
+              get().addToast(d.error ?? "Failed to save board. Please try again.")
             }
           }).catch(() => get().addToast("Failed to save board. Please try again."))
         }
@@ -612,14 +614,14 @@ export const useLineageStore = create<LineageStore>()(
           catalog: { ...s.catalog, eventSeries: [...s.catalog.eventSeries, series] },
         }))
         if (isAuthUser(get().activePersonId)) {
-          fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ operation: "insert", table: "event_series", data: {
+          fetch("/api/catalog/entity", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "event_series", data: {
               id: series.id, name: series.name, place_id: series.place_id ?? null,
               frequency: series.frequency, start_year: series.start_year ?? null,
               description: series.description ?? null,
             }})
           }).then(r => r.json()).then(d => {
-            if (!d.ok) get().addToast("Failed to save event series. Please try again.")
+            if (!d.ok) get().addToast(d.error ?? "Failed to save event series. Please try again.")
           }).catch(() => get().addToast("Failed to save event series. Please try again."))
         }
       },
@@ -630,17 +632,15 @@ export const useLineageStore = create<LineageStore>()(
           catalog: { ...s.catalog, events: [...s.catalog.events, entity] },
         }))
         if (isAuthUser(get().activePersonId)) {
-          // Normalise start_date: if it's just a year ("2024"), convert to "2024-01-01"
-          const rawDate = event.start_date ?? ""
-          const startDate = /^\d{4}$/.test(rawDate) ? `${rawDate}-01-01` : (rawDate || null)
-          fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ operation: "insert", table: "events", data: {
+          // start_date year-only normalisation now happens server-side in
+          // /api/catalog/entity, mirroring the old payload shape.
+          fetch("/api/catalog/entity", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "event", data: {
               id: event.id, name: event.name, event_type: event.event_type,
               year: event.year ?? null,
-              start_date: startDate, end_date: event.end_date ?? null,
+              start_date: event.start_date ?? null, end_date: event.end_date ?? null,
               series_id: event.series_id ?? null, place_id: event.place_id ?? null,
               description: event.description ?? null,
-              community_status: "unverified", added_by: get().activePersonId,
             }})
           }).then(r => r.json()).then(d => {
             if (!d.ok) {
@@ -648,7 +648,7 @@ export const useLineageStore = create<LineageStore>()(
                 userEntities: { ...s.userEntities, events: s.userEntities.events.filter((e) => e.id !== event.id) },
                 catalog: { ...s.catalog, events: s.catalog.events.filter((e) => e.id !== event.id) },
               }))
-              get().addToast("Failed to save event. Please try again.")
+              get().addToast(d.error ?? "Failed to save event. Please try again.")
             }
           }).catch(() => get().addToast("Failed to save event. Please try again."))
         }

@@ -6,6 +6,7 @@ import { captureServerEvent } from "@/lib/analytics-server"
 import { fireTagEvents } from "@/lib/invite-tracking-server"
 import { pairStoryRiderTagEvents, isAsserterGloballyBlocked } from "@/lib/tag-events"
 import { logTagActions } from "@/lib/tag-action-log"
+import { awardContributionTokens } from "@/lib/tokens"
 import type { StoryReactionType } from "@/types"
 
 function getServiceClient() {
@@ -328,6 +329,17 @@ export async function POST(req: NextRequest) {
       fireTagEvents(rider_ids as string[], user.id).catch((e) => {
         console.error("[stories] tag-event background fan-out failed:", e)
       })
+    }
+
+    // Token earning (brief §5.1): entry +1; media +1 when the story carries
+    // at least one photo (one per story, not per photo); source +2 when it
+    // links out (YouTube or article URL). Best-effort, never blocks the save.
+    await awardContributionTokens(supabase, user.id, 1, "contribution_entry")
+    if ((photos as unknown[]).length > 0) {
+      await awardContributionTokens(supabase, user.id, 1, "contribution_media")
+    }
+    if (youtube_url || url) {
+      await awardContributionTokens(supabase, user.id, 2, "contribution_source")
     }
 
     await captureServerEvent({

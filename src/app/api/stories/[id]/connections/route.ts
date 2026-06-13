@@ -4,6 +4,7 @@ import { requireAuth, getServiceClient } from "@/lib/auth"
 import { captureServerEvent } from "@/lib/analytics-server"
 import { fireTagEvents } from "@/lib/invite-tracking-server"
 import { pairStoryRiderTagEvents, isAsserterGloballyBlocked } from "@/lib/tag-events"
+import { awardContributionTokens } from "@/lib/tokens"
 
 // POST   /api/stories/[id]/connections — any signed-in member connects a
 //        rider, place, or event to a public (or shared) story.
@@ -194,6 +195,11 @@ export async function POST(
         console.error("[story connections] tag-event background fan-out failed:", e)
       })
     }
+
+    // Token earning (brief §5.1): a community connection is +1. Every
+    // already-connected or declined case returned earlier, so reaching here
+    // always means a new connection landed. Best-effort, never blocks.
+    await awardContributionTokens(db, user.id, 1, "contribution_connection")
 
     await captureServerEvent({
       category: "content",
