@@ -12,6 +12,15 @@ const TIER_TOKENS: Record<string, { founder: number; member: number }> = {
 
 const VALID_TIERS = new Set(["free", "annual", "lifetime", "founding"])
 
+// A repeat admin token grant for the same (user, token_type, amount) inside
+// this window is treated as a double-submit and not re-logged. The profile
+// balance write is already idempotent (it overwrites to the tier default), but
+// the token_events insert is append-only, so a double-click logged two
+// identical ledger rows while the balance stayed correct. The observed prod
+// duplicate was ~30s apart, so this window covers a slow double-click without
+// suppressing a genuinely distinct grant.
+const GRANT_DEDUP_WINDOW_MS = 2 * 60 * 1000
+
 // ─── GET /api/admin/memberships ── list all profiles with membership data ─────
 export async function GET() {
   const { response } = await requireEditor()
@@ -109,14 +118,32 @@ export async function POST(req: NextRequest) {
   const { error } = await client.from("profiles").update(updates).eq("id", user_id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  // Log if tokens were granted
+  // Log if tokens were granted. Skip the insert when an identical recent
+  // admin_grant row already exists so a double-submit cannot append a phantom
+  // ledger entry (see GRANT_DEDUP_WINDOW_MS above).
   if (updates.token_founder || updates.token_member) {
-    await client.from("token_events").insert({
-      user_id,
-      token_type: updates.token_founder ? "founder" : "member",
-      amount:     (updates.token_founder as number) || (updates.token_member as number),
-      source:     "admin_grant",
-    }).then(() => {/* best-effort */})
+    const tokenType = updates.token_founder ? "founder" : "member"
+    const amount = (updates.token_founder as number) || (updates.token_member as number)
+
+    const since = new Date(Date.now() - GRANT_DEDUP_WINDOW_MS).toISOString()
+    const { data: recent } = await client
+      .from("token_events")
+      .select("created_at")
+      .eq("user_id", user_id)
+      .eq("token_type", tokenType)
+      .eq("amount", amount)
+      .eq("source", "admin_grant")
+      .gte("created_at", since)
+      .limit(1)
+
+    if (!recent || recent.length === 0) {
+      await client.from("token_events").insert({
+        user_id,
+        token_type: tokenType,
+        amount,
+        source: "admin_grant",
+      }).then(() => {/* best-effort */})
+    }
   }
 
   return NextResponse.json({ ok: true })
