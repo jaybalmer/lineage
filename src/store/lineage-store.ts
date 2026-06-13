@@ -179,7 +179,7 @@ export const useLineageStore = create<LineageStore>()(
           supabase.from("claims_public").select("*"),
           // Registered users live in profiles, not people — fetch both and merge
           supabase.from("profiles").select(
-            "id, display_name, birth_year, riding_since, privacy_level, bio, links, home_resort_id, membership_tier, node_status"
+            "id, display_name, birth_year, riding_since, privacy_level, bio, links, home_resort_id, membership_tier, node_status, avatar_url, card_bg_url"
           ),
           // Junction tables fetched via service-role API route (RLS blocks anon reads)
           fetch("/api/catalog-junctions").then((r) => r.json()).catch(() => ({
@@ -243,6 +243,8 @@ export const useLineageStore = create<LineageStore>()(
               home_resort_id:   row.home_resort_id ?? undefined,
               membership_tier:  (row.membership_tier ?? "free") as Person["membership_tier"],
               node_status:      (row.node_status ?? "claimed") as Person["node_status"],
+              avatar_url:       row.avatar_url   ?? undefined,
+              card_bg_url:      row.card_bg_url  ?? undefined,
               community_status: "verified" as const,
             }))
 

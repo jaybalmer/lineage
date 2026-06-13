@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
-import { FeedView } from "@/components/feed/feed-view"
+import { FeedView, type FilterType } from "@/components/feed/feed-view"
 import { useLineageStore, getAllClaims, isAuthUser } from "@/store/lineage-store"
 import { getPersonById, PLACES } from "@/lib/mock-data"
 import { EditProfileModal } from "@/components/ui/edit-profile-modal"
@@ -217,6 +217,9 @@ export default function ProfilePage() {
   const [timelineOrder,  setTimelineOrder]     = useState<"asc" | "desc">("desc")
   const [stories,        setStories]           = useState<Story[]>([])
   const [claimDefaultFilter, setClaimDefaultFilter] = useState<string>("all")
+  // Lifted so the summary stat tiles can drive the timeline filter (BUG-034).
+  const [timelineFilter, setTimelineFilter]    = useState<FilterType>("all")
+  const timelineRef = useRef<HTMLDivElement>(null)
 
   // First-visit timeline entrance (Task 4). Latched once for the page session:
   // it turns on after the welcome explosion has been seen and the entrance has
@@ -552,6 +555,10 @@ export default function ProfilePage() {
             onEdit={() => setEditingProfile(true)}
             onPlayTimeline={() => setPlayingTimeline(true)}
             onMemberCard={() => setShowMemberCard(true)}
+            onStatClick={(cat) => {
+              setTimelineFilter(cat)
+              timelineRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+            }}
           />
         )}
 
@@ -569,8 +576,9 @@ export default function ProfilePage() {
         )}
 
         {/* Quick-action row — wraps on narrow screens so the action buttons never
-            push the row past the viewport and shrink the whole page (BUG-008). */}
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
+            push the row past the viewport and shrink the whole page (BUG-008).
+            timelineRef anchors the scroll-into-view from a stat tile click (BUG-034). */}
+        <div ref={timelineRef} className="flex flex-wrap items-center justify-between gap-2 mb-6">
           <div className="flex items-center gap-2">
             <h2 className="text-2xl font-black tracking-widest uppercase text-foreground">Timeline</h2>
             <button
@@ -647,6 +655,8 @@ export default function ProfilePage() {
           onStoryDeleted={(id) => setStories((prev) => prev.filter((s) => s.id !== id))}
           order={timelineOrder}
           animateEntrance={animateEntrance}
+          filter={timelineFilter}
+          onFilterChange={setTimelineFilter}
         />
       </div>
     </div>

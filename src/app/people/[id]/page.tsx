@@ -5,8 +5,8 @@ import { Nav } from "@/components/ui/nav"
 import { CLAIMS, getPersonById, getSharedContext } from "@/lib/mock-data"
 import { FeedView } from "@/components/feed/feed-view"
 import { useLineageStore } from "@/store/lineage-store"
-import { getLinkIcon } from "@/components/ui/edit-profile-modal"
-import { RiderAvatar, getRiderTier } from "@/components/ui/rider-avatar"
+import { getRiderTier } from "@/components/ui/rider-avatar"
+import { RiderCard } from "@/components/ui/rider-card"
 import { TimelinePlayer } from "@/components/ui/timeline-player"
 import { nameToSlug } from "@/lib/utils"
 import { personHref } from "@/lib/entity-links"
@@ -23,13 +23,7 @@ import { notFound } from "next/navigation"
 import { ClaimRequestModal } from "@/components/ui/claim-request-modal"
 import { VouchCard, type ClaimRequestWithClaimant } from "@/components/ui/vouch-card"
 import { isClaimRequestOpen, userHasOpenClaim, pluralize } from "@/lib/claim-request-helpers"
-import type { Claim, ClaimRequestStatus, Story } from "@/types"
-
-const TIER_BADGE: Record<string, { symbol: string; label: string; color: string }> = {
-  annual:   { symbol: "◈", label: "MEMBER",    color: "#f97316" },
-  lifetime: { symbol: "◆", label: "LIFETIME",  color: "#f97316" },
-  founding: { symbol: "✦", label: "FOUNDING",  color: "#f59e0b" },
-}
+import type { Claim, ClaimRequestStatus, MembershipState, Story } from "@/types"
 
 export default function RiderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -146,9 +140,23 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
     : getSharedContext(activePersonId, resolvedId)
 
   const tier = getRiderTier(person)
-  const memberBadge = person.membership_tier && TIER_BADGE[person.membership_tier]
-    ? TIER_BADGE[person.membership_tier]
-    : isCurrentUser && membership.tier !== "free" ? TIER_BADGE[membership.tier] : null
+
+  // ── Summary card props (BUG-035) ────────────────────────────────────────────
+  // The public profile now renders the same RiderCard the owner sees. The card's
+  // tier badge reads the VIEWED person's tier (not the viewer's), so build a
+  // minimal membership from person.membership_tier rather than the store viewer.
+  const viewedMembership: MembershipState = {
+    tier: person.membership_tier ?? "free",
+    status: "active",
+    founding_badge: person.membership_tier === "founding",
+    token_balance: { founder: 0, member: 0, contribution: 0 },
+    gift_codes: [],
+    pending_credit: 0,
+    is_editor: false,
+  }
+  const homeResort = person.home_resort_id
+    ? (catalog.places.find((p) => p.id === person.home_resort_id) ?? null)
+    : null
 
   // ── Claim-request gating (PB-008 Phase 2 Session 2) ──────────────────────
   const openClaimRequests = claimRequests.filter(isClaimRequestOpen)
@@ -184,93 +192,20 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
 
         {/* Profile header */}
         <div className="mb-8">
-          <div className="flex items-start gap-5">
-            {/* Avatar — xl with ring for paid tiers */}
-            <RiderAvatar
-              person={person}
-              size="xl"
-              ring={tier !== "catalog"}
-              className="flex-shrink-0"
-            />
-
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-2xl font-bold text-foreground">{person.display_name}</h1>
-                <button
-                  onClick={() => setPlayingTimeline(true)}
-                  title="Play timeline"
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:opacity-80 transition-opacity"
-                >
-                  <span className="text-[10px]">▶</span>
-                  <span>{isCurrentUser ? "My Timeline" : `${person.display_name.split(" ")[0]}'s Timeline`}</span>
-                </button>
-              </div>
-
-              <div className="flex items-center gap-3 mt-1 text-xs text-muted flex-wrap">
-                {person.birth_year && <span>b. {person.birth_year}</span>}
-                {person.riding_since && <span>Riding since {person.riding_since}</span>}
-
-                {/* Membership badge */}
-                {memberBadge && (
-                  isCurrentUser ? (
-                    <Link
-                      href="/account/membership"
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold transition-opacity hover:opacity-80"
-                      style={{ background: `${memberBadge.color}22`, color: memberBadge.color, border: `1px solid ${memberBadge.color}44` }}
-                      title="View membership"
-                    >
-                      <span>{memberBadge.symbol}</span>
-                      <span>{memberBadge.label}</span>
-                      {membership.founding_member_number && (
-                        <span>#{String(membership.founding_member_number).padStart(3, "0")}</span>
-                      )}
-                    </Link>
-                  ) : (
-                    <span
-                      className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold"
-                      style={{ background: `${memberBadge.color}22`, color: memberBadge.color, border: `1px solid ${memberBadge.color}44` }}
-                    >
-                      <span>{memberBadge.symbol}</span>
-                      <span>{memberBadge.label}</span>
-                    </span>
-                  )
-                )}
-
-                {/* Member card trigger — own profile, paid member only */}
-                {isCurrentUser && memberBadge && (
-                  <button
-                    onClick={() => setShowMemberCard(true)}
-                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold transition-opacity hover:opacity-80"
-                    style={{ background: "#f59e0b18", color: "#b45309", border: "1px solid #f59e0b44" }}
-                    title="View your member card"
-                  >
-                    ✦ Member card
-                  </button>
-                )}
-              </div>
-
-              {person.bio && (
-                <p className="text-sm text-muted mt-2 leading-relaxed max-w-lg">{person.bio}</p>
-              )}
-
-              {person.links && person.links.length > 0 && (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {person.links.map((link, i) => (
-                    <a
-                      key={i}
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-surface-hover border border-border-default rounded-lg text-xs text-muted hover:text-foreground transition-all"
-                    >
-                      <span>{getLinkIcon(link.url)}</span>
-                      <span>{link.label}</span>
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+          {/* Public summary card (BUG-035). Same RiderCard the owner sees on their
+              My Timeline; non-owners get background, avatar, tier badge, identity,
+              and stat tiles, with precise location hidden (gated inside RiderCard).
+              Stat tiles stay non-interactive here (no onStatClick) per BUG-034. */}
+          <RiderCard
+            person={person}
+            claims={personClaims}
+            membership={viewedMembership}
+            homeResort={homeResort}
+            isOwn={isCurrentUser}
+            userId={isCurrentUser ? activePersonId : undefined}
+            onPlayTimeline={() => setPlayingTimeline(true)}
+            onMemberCard={isCurrentUser ? () => setShowMemberCard(true) : undefined}
+          />
 
           {/* Action row */}
           {!isCurrentUser && (
