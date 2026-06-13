@@ -1438,12 +1438,9 @@ function MembersTable() {
   }
 
   async function quickGrant(m: MemberRow, tier: string) {
-    // Count existing founding members for number assignment
-    let memberNumber: number | null = null
-    if (tier === "founding") {
-      const existing = members.filter((x) => x.membership_tier === "founding" && x.id !== m.id).length
-      memberNumber = existing + 1
-    }
+    // Founding member numbers (and the badge) are assigned/cleared server-side
+    // by /api/admin/memberships: founding grants get max+1, non-founding grants
+    // clear any stale number. The client no longer computes a number.
     const tokenMap: Record<string, { founder: number; member: number }> = {
       annual: { founder: 0, member: 20 }, lifetime: { founder: 0, member: 70 }, founding: { founder: 100, member: 0 },
     }
@@ -1453,13 +1450,11 @@ function MembersTable() {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        user_id:               m.id,
+        user_id:           m.id,
         tier,
-        token_founder:         tokens.founder,
-        token_member:          tokens.member,
-        founding_member_number: memberNumber,
-        founding_badge:        tier === "founding",
-        membership_status:     "active",
+        token_founder:     tokens.founder,
+        token_member:      tokens.member,
+        membership_status: "active",
       }),
     })
     const data = await res.json()

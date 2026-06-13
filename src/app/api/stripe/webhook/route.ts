@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { createClient } from "@supabase/supabase-js"
+import { nextFoundingMemberNumber } from "@/lib/memberships"
 
 // Supabase admin client (bypasses RLS)
 function adminClient() {
@@ -64,13 +65,13 @@ export async function POST(req: NextRequest) {
         break
       }
 
-      // For founding tier: assign sequential member number
+      // For founding tier: assign sequential member number as max+1, not
+      // count+1 (count-based numbering reused numbers freed when a member left
+      // the tier). A non-founding purchase leaves this null and the update
+      // below clears any prior number + badge.
       let foundingMemberNumber: number | null = null
       if (tier === "founding") {
-        const { count } = await db.from("profiles")
-          .select("*", { count: "exact", head: true })
-          .eq("membership_tier", "founding")
-        foundingMemberNumber = (count ?? 0) + 1
+        foundingMemberNumber = await nextFoundingMemberNumber(db)
       }
 
       // Update membership in profiles table

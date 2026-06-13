@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireEditor, getServiceClient } from "@/lib/auth"
+import { nextFoundingMemberNumber } from "@/lib/memberships"
 
 // ─── Tier constants ───────────────────────────────────────────────────────────
 
@@ -87,8 +88,26 @@ export async function POST(req: NextRequest) {
 
   if (tier) {
     updates.membership_tier = tier
-    updates.founding_badge = tier === "founding" ? true : (rest.founding_badge ?? false)
     updates.membership_status = rest.membership_status ?? "active"
+
+    if (tier === "founding") {
+      updates.founding_badge = true
+      // Respect an explicit number (admin manually setting one); otherwise
+      // assign the next number as max+1, never count+1 (see
+      // nextFoundingMemberNumber for why count-based numbering collided).
+      updates.founding_member_number =
+        rest.founding_member_number != null
+          ? rest.founding_member_number
+          : await nextFoundingMemberNumber(client)
+    } else {
+      // Moving off founding releases the founder identity, so a stale member
+      // number can't linger on the profile and collide with a future grant.
+      // Authoritative here: a stale number echoed back by the edit form (the
+      // observed Cory case) is overridden below by skipping the explicit
+      // founding override whenever a tier change is in play.
+      updates.founding_badge = false
+      updates.founding_member_number = null
+    }
 
     if (apply_tier_tokens) {
       const tokens = TIER_TOKENS[tier] ?? { founder: 0, member: 0 }
@@ -106,10 +125,17 @@ export async function POST(req: NextRequest) {
   // Allow explicit overrides regardless of tier
   if (rest.token_founder !== undefined) updates.token_founder = rest.token_founder
   if (rest.token_member  !== undefined) updates.token_member  = rest.token_member
-  if (rest.founding_member_number !== undefined) updates.founding_member_number = rest.founding_member_number
-  if (rest.founding_badge !== undefined) updates.founding_badge = rest.founding_badge
   if (rest.membership_status !== undefined) updates.membership_status = rest.membership_status
   if (rest.is_editor !== undefined) updates.is_editor = rest.is_editor
+
+  // Founding number / badge are owned by the tier block above during any tier
+  // change (grant assigns max+1, downgrade clears). Only honor explicit values
+  // when no tier is supplied, e.g. an admin correcting the number on an
+  // existing founding member without changing their tier.
+  if (!tier) {
+    if (rest.founding_member_number !== undefined) updates.founding_member_number = rest.founding_member_number
+    if (rest.founding_badge !== undefined) updates.founding_badge = rest.founding_badge
+  }
 
   if (Object.keys(updates).length === 0) {
     return NextResponse.json({ error: "No updates specified" }, { status: 400 })
