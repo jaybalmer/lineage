@@ -54,6 +54,11 @@ export async function POST(req: NextRequest) {
       membership_status:      "gifted",
       token_member:           20,
       membership_expires_at:  expiresAt,
+      // Redeeming a gift moves the profile to annual; clear any founding identity
+      // so a stale member number can't linger (same invariant the memberships
+      // route and Stripe webhook enforce: non-founding profiles hold no number).
+      founding_member_number: null,
+      founding_badge:         false,
     })
     .eq("id", user.id)
 
