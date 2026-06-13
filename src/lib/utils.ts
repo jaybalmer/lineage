@@ -36,7 +36,10 @@ export function formatSmartDate(dateStr?: string): string {
 export function formatDateRange(start?: string, end?: string): string {
   if (!start) return ""
   const s = formatSmartDate(start)
-  const e = end ? formatSmartDate(end) : "present"
+  // No end date stored → show the single date only. We do not synthesize a
+  // "to present" range (BUG-033): an open-ended claim renders just its start.
+  if (!end) return s
+  const e = formatSmartDate(end)
   return s === e ? s : `${s} – ${e}`
 }
 

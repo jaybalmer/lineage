@@ -83,14 +83,30 @@ function MountainHeader({ accent }: { accent: string }) {
 
 // ── Stat cell ─────────────────────────────────────────────────────────────────
 
-function Stat({ value, label }: { value: string | number; label: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center py-3 px-1 bg-surface-hover">
+function Stat({ value, label, onClick }: { value: string | number; label: string; onClick?: () => void }) {
+  const inner = (
+    <>
       <span className="text-xl font-bold text-foreground leading-none tabular-nums">{value}</span>
       <span className="text-[9px] text-muted uppercase tracking-widest mt-1"
         style={{ fontFamily: "var(--font-body)" }}>
         {label}
       </span>
+    </>
+  )
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="flex flex-col items-center justify-center py-3 px-1 bg-surface-hover hover:bg-surface-active transition-colors cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500"
+      >
+        {inner}
+      </button>
+    )
+  }
+  return (
+    <div className="flex flex-col items-center justify-center py-3 px-1 bg-surface-hover">
+      {inner}
     </div>
   )
 }
@@ -120,6 +136,10 @@ export interface RiderCardProps {
   onEdit?: () => void
   onPlayTimeline?: () => void
   onMemberCard?: () => void
+  /** When provided, the Boards / Places / Events stat tiles become clickable and
+   *  call this with the matching FeedView filter category (BUG-034). Omit to
+   *  render the tiles as static cells (for example on the public profile). */
+  onStatClick?: (category: "gear" | "places" | "events") => void
 }
 
 export function RiderCard({
@@ -132,6 +152,7 @@ export function RiderCard({
   onEdit,
   onPlayTimeline,
   onMemberCard,
+  onStatClick,
 }: RiderCardProps) {
   const { setProfileOverride } = useLineageStore()
   const personLink = usePersonHref()
@@ -409,8 +430,9 @@ export function RiderCard({
             {homeResort && (
               <span className="text-xs text-muted flex items-center gap-1">🏔 {homeResort.name}</span>
             )}
-            {/* Show location if set, otherwise fall back to birth year */}
-            {(person.city || person.region || person.country) ? (
+            {/* Precise location is owner-only (BUG-035 privacy decision). Non-owners
+                fall through to birth year; the owner sees location on their own card. */}
+            {isOwn && (person.city || person.region || person.country) ? (
               <span className="text-xs text-muted flex items-center gap-1">
                 📍 {[person.city, person.region, person.country].filter(Boolean).join(", ")}
               </span>
@@ -432,9 +454,9 @@ export function RiderCard({
             className="grid grid-cols-4 gap-px mt-5 rounded-xl overflow-hidden border border-border-default"
             style={{ background: "var(--color-border-default)" }}
           >
-            <Stat value={boardCount}  label="Boards"  />
-            <Stat value={placeCount}  label="Places"  />
-            <Stat value={eventCount}  label="Events"  />
+            <Stat value={boardCount}  label="Boards"  onClick={onStatClick ? () => onStatClick("gear")   : undefined} />
+            <Stat value={placeCount}  label="Places"  onClick={onStatClick ? () => onStatClick("places") : undefined} />
+            <Stat value={eventCount}  label="Events"  onClick={onStatClick ? () => onStatClick("events") : undefined} />
             <Stat
               value={yearsRiding != null ? `${yearsRiding}y` : (person.riding_since ?? "—")}
               label="Riding"
@@ -480,7 +502,9 @@ export function RiderCard({
                 onClick={onPlayTimeline}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-900 text-white text-xs font-semibold hover:opacity-80 transition-opacity"
               >
-                <span className="text-[10px]">▶</span> My Timeline
+                {/* Possessive label on a non-owner card (public profile) so it does
+                    not read "My Timeline" on someone else's page (BUG-035). */}
+                <span className="text-[10px]">▶</span> {isOwn ? "My Timeline" : `${name.split(" ")[0]}'s Timeline`}
               </button>
               {isOwn && (
                 <button

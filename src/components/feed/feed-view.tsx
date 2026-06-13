@@ -31,7 +31,7 @@ function injectEntranceStyles() {
   document.head.appendChild(el)
 }
 
-type FilterType = "all" | "places" | "gear" | "people" | "orgs" | "events" | "stories"
+export type FilterType = "all" | "places" | "gear" | "people" | "orgs" | "events" | "stories"
 
 const FILTER_PREDICATES: Record<Exclude<FilterType, "stories">, string[]> = {
   all: [],
@@ -131,6 +131,8 @@ export function FeedView({
   onStoryDeleted,
   order = "desc",
   animateEntrance = false,
+  filter: controlledFilter,
+  onFilterChange,
 }: {
   claims: Claim[]
   days?: RidingDay[]
@@ -146,8 +148,18 @@ export function FeedView({
   onStoryDeleted?: (id: string) => void
   order?: "asc" | "desc"
   animateEntrance?: boolean
+  /** Optional controlled filter. When provided (with onFilterChange), the parent
+   *  owns the active category so a sibling (the profile stat tiles, BUG-034) can
+   *  drive it. Omit both to keep the internal uncontrolled state. */
+  filter?: FilterType
+  onFilterChange?: (f: FilterType) => void
 }) {
-  const [filter, setFilter] = useState<FilterType>("all")
+  const [internalFilter, setInternalFilter] = useState<FilterType>("all")
+  const filter = controlledFilter ?? internalFilter
+  const applyFilter = (f: FilterType) => {
+    if (onFilterChange) onFilterChange(f)
+    else setInternalFilter(f)
+  }
   const [addingClaim, setAddingClaim] = useState(false)
   const [addingStory, setAddingStory] = useState(false)
   const [entranceDone, setEntranceDone] = useState(false)
@@ -294,7 +306,7 @@ export function FeedView({
           return (
             <button
               key={f}
-              onClick={() => setFilter(f)}
+              onClick={() => applyFilter(f)}
               className={`px-3 py-1 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 ${
                 active
                   ? isStoriesChip
