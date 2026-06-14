@@ -43,3 +43,13 @@ next-env.d.ts
 
 # bug triage docs (local-only: contains reporter emails + session ids)
 /bugs/
+
+# local-only scratch: personal Claude settings, planning docs, ops SQL (not app code)
+.claude/settings.local.json
+.claude/launch.json
+/AUDIT-PUNCH-LIST.md
+/FTUE-P0-Implementation-Plan-REFINED.md
+/bug-report-widget-brief.md
+/launch-bugfix-session-1-brief.md
+/migration-*.sql
+/docs/purge-*.sql
