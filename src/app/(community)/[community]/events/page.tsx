@@ -180,10 +180,12 @@ function SeriesCard({ series, filteredEventCount }: { series: EventSeries; filte
 }
 
 // Horizontal divider with label
-function SectionDivider({ label }: { label: string }) {
+function SectionDivider({ label, uppercase = true }: { label: string; uppercase?: boolean }) {
+  // Decade labels (e.g. "1990s") pass uppercase={false} so the trailing "s" is
+  // not capitalised to "1990S"; word labels keep the small-caps divider style.
   return (
     <div className="flex items-center gap-3">
-      <span className="text-xs font-semibold text-muted uppercase tracking-widest shrink-0">{label}</span>
+      <span className={cn("text-xs font-semibold text-muted tracking-widest shrink-0", uppercase && "uppercase")}>{label}</span>
       <div className="flex-1 h-px bg-surface-active" />
     </div>
   )
@@ -394,7 +396,7 @@ function EventsPageInner() {
             ) : (
               decadeGroups.map(({ label, events }) => (
                 <div key={label}>
-                  <SectionDivider label={label} />
+                  <SectionDivider label={label} uppercase={false} />
                   <div className="space-y-2 mt-3">
                     {events.map((event) => (
                       <EventCard key={event.id} event={event} />

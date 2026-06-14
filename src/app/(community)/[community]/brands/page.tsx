@@ -216,7 +216,7 @@ function BrandsPageInner() {
           <div>
             <h1 className="text-2xl font-bold text-foreground mb-1">Brands & Orgs</h1>
             <p className="text-sm text-muted">
-              {totalBrands} brands, media outlets, and collectives in the community graph
+              {totalBrands} brands, media outlets, and collectives in the community
             </p>
           </div>
           <div className="flex items-center gap-2">
