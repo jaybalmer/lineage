@@ -5,10 +5,13 @@ import { CommunityLink } from "@/components/ui/community-link"
 import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
-import { supabase } from "@/lib/supabase"
-import { nameToSlug, formatSmartDate } from "@/lib/utils"
-import { RiderAvatar } from "@/components/ui/rider-avatar"
-import type { Story, Claim, Person } from "@/types"
+import {
+  CommunityTimeline,
+  type CommunityFilter,
+  type CommunitySort,
+} from "@/components/feed/community-timeline"
+import { cn } from "@/lib/utils"
+import type { Story } from "@/types"
 
 // ─── Community emoji lookup ──────────────────────────────────────────────────
 
@@ -18,19 +21,6 @@ const COMMUNITY_META: Record<string, { dotColor: string; tagline: string }> = {
   skate:        { dotColor: "#78716C", tagline: "The living history of skateboarding" },
   ski:          { dotColor: "#78716C", tagline: "The living history of skiing" },
   mtb:          { dotColor: "#78716C", tagline: "The living history of mountain biking" },
-}
-
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-function timeAgo(dateStr: string | undefined | null): string {
-  if (!dateStr) return ""
-  const ms = Date.now() - new Date(dateStr).getTime()
-  const days = ms / 86_400_000
-  if (days < 1) return "Today"
-  if (days < 3) return "A couple days ago"
-  if (days < 14) return "Last week"
-  if (days < 60) return "Recently"
-  return "A while ago"
 }
 
 // ─── Stat Card ───────────────────────────────────────────────────────────────
@@ -44,59 +34,19 @@ function StatCard({ label, value, href }: { label: string; value: number | strin
   )
 }
 
-// ─── Activity Item ───────────────────────────────────────────────────────────
+// ─── Timeline controls ───────────────────────────────────────────────────────
 
-function ActivityItem({ person, text, time }: { person: Person | null; text: string; time: string }) {
-  return (
-    <div className="flex items-start gap-3 py-3 border-b border-border-default/50 last:border-0">
-      {person && (
-        <CommunityLink href={`/people/${nameToSlug(person.display_name)}`} className="flex-shrink-0">
-          <RiderAvatar person={person} size="sm" />
-        </CommunityLink>
-      )}
-      <div className="min-w-0 flex-1">
-        <div className="text-sm text-foreground leading-snug">{text}</div>
-        <div className="text-xs text-muted mt-0.5">{time}</div>
-      </div>
-    </div>
-  )
-}
+const FILTER_TABS: { value: CommunityFilter; label: string; activeClass: string }[] = [
+  { value: "all",     label: "All",     activeClass: "bg-[#1C1917] border-[#1C1917] text-white" },
+  { value: "stories", label: "Stories", activeClass: "bg-violet-700 border-violet-700 text-white" },
+  { value: "events",  label: "Events",  activeClass: "bg-amber-600 border-amber-600 text-white" },
+]
 
-// ─── Top Connection Pair ─────────────────────────────────────────────────────
-
-function ConnectionPair({
-  personA,
-  personB,
-  sharedCount,
-  label,
-}: {
-  personA: Person | null
-  personB: Person | null
-  sharedCount: number
-  label: string
-}) {
-  if (!personA || !personB) return null
-  return (
-    <div className="flex items-center gap-3 py-3 border-b border-border-default/50 last:border-0">
-      <div className="flex items-center -space-x-2">
-        <RiderAvatar person={personA} size="sm" />
-        <RiderAvatar person={personB} size="sm" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="text-sm text-foreground">
-          <CommunityLink href={`/people/${nameToSlug(personA.display_name)}`} className="font-medium hover:text-blue-400 transition-colors">
-            {personA.display_name}
-          </CommunityLink>
-          {" & "}
-          <CommunityLink href={`/people/${nameToSlug(personB.display_name)}`} className="font-medium hover:text-blue-400 transition-colors">
-            {personB.display_name}
-          </CommunityLink>
-        </div>
-        <div className="text-xs text-muted mt-0.5">{sharedCount} {label}</div>
-      </div>
-    </div>
-  )
-}
+const SORT_TABS: { value: CommunitySort; label: string }[] = [
+  { value: "newest",      label: "Newest" },
+  { value: "oldest",      label: "Oldest" },
+  { value: "connections", label: "Most connections" },
+]
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
@@ -106,18 +56,40 @@ export default function CommunityHome() {
 
   const meta = COMMUNITY_META[activeCommunitySlug] ?? { dotColor: "#78716C", tagline: "Welcome to this community" }
 
-  // ── Recent activity (stories + claims) ──────────────────────────────────
-  const [recentStories, setRecentStories] = useState<Story[]>([])
+  // ── Stories: full public set for the timeline ───────────────────────────
+  // At launch every public story is the snowboarding set (phase-1 community
+  // backfill), so no community filter is applied here. Stories come straight
+  // from GET /api/stories so each carries comment_count and renders its
+  // interaction row.
+  // Phase 2: filter stories by community_id once POST /api/stories stamps it
+  // (the column is nullable today and the write path leaves it unset, so a
+  // community filter would silently hide newly created stories).
+  const [stories, setStories] = useState<Story[]>([])
+  const [storiesLoaded, setStoriesLoaded] = useState(false)
   useEffect(() => {
-    supabase
-      .from("stories")
-      .select("*, author:profiles!stories_author_id_fkey(display_name, avatar_url)")
-      .order("created_at", { ascending: false })
-      .limit(5)
-      .then(({ data }) => {
-        if (data) setRecentStories(data as Story[])
+    let cancelled = false
+    fetch("/api/stories?limit=100")
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return
+        setStories(Array.isArray(data) ? (data as Story[]) : [])
+        setStoriesLoaded(true)
       })
+      .catch(() => {
+        if (!cancelled) setStoriesLoaded(true)
+      })
+    return () => {
+      cancelled = true
+    }
   }, [])
+
+  // ── Historical events: catalog events placeable on the timeline ─────────
+  // Events without a year cannot be positioned, so they are excluded (matching
+  // the events page).
+  const timelineEvents = useMemo(
+    () => (catalogLoaded ? catalog.events.filter((e) => e.year != null) : []),
+    [catalogLoaded, catalog.events],
+  )
 
   // ── Collective stats ────────────────────────────────────────────────────
   const stats = useMemo(() => {
@@ -128,79 +100,20 @@ export default function CommunityHome() {
       events: catalog.events.length,
       boards: catalog.boards.length,
       brands: catalog.orgs.length,
-      stories: recentStories.length > 0 ? recentStories.length + "+" : "0",
     }
-  }, [catalogLoaded, catalog, recentStories])
+  }, [catalogLoaded, catalog])
 
-  // ── Top connections (people with most shared places) ────────────────────
-  const topConnections = useMemo(() => {
-    if (!catalogLoaded || catalog.claims.length === 0) return []
-
-    // Build person → places map from rode_at claims
-    const personPlaces = new Map<string, Set<string>>()
-    for (const claim of catalog.claims) {
-      if (claim.predicate === "rode_at" && claim.subject_id && claim.object_id) {
-        if (!personPlaces.has(claim.subject_id)) personPlaces.set(claim.subject_id, new Set())
-        personPlaces.get(claim.subject_id)!.add(claim.object_id)
-      }
-    }
-
-    // Find pairs with most overlap
-    const entries = [...personPlaces.entries()]
-    const pairs: { a: string; b: string; shared: number }[] = []
-    for (let i = 0; i < entries.length && i < 50; i++) {
-      for (let j = i + 1; j < entries.length && j < 50; j++) {
-        const [idA, placesA] = entries[i]
-        const [idB, placesB] = entries[j]
-        let shared = 0
-        for (const p of placesA) if (placesB.has(p)) shared++
-        if (shared > 0) pairs.push({ a: idA, b: idB, shared })
-      }
-    }
-    pairs.sort((a, b) => b.shared - a.shared)
-    return pairs.slice(0, 4)
-  }, [catalogLoaded, catalog.claims])
-
-  // ── Recent claims for activity feed ─────────────────────────────────────
-  const recentClaims = useMemo(() => {
-    if (!catalogLoaded) return []
-    return [...catalog.claims]
-      .filter((c) => c.created_at)
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 8)
-  }, [catalogLoaded, catalog.claims])
-
-  const findPerson = (id: string): Person | null =>
-    catalog.people.find((p) => p.id === id) ?? null
-
-  const predicateLabel = (pred: string) => {
-    const labels: Record<string, string> = {
-      rode_at: "logged a session at", owned_board: "added a board",
-      competed_at: "competed at", spectated_at: "spectated",
-      sponsored_by: "picked up a sponsor", worked_at: "worked at",
-      part_of_team: "joined a team", organized_at: "organized",
-      coached_by: "trained with", fan_of: "follows", rode_with: "rode with",
-    }
-    return labels[pred] ?? pred.replace(/_/g, " ")
-  }
-
-  const entityName = (id: string, type: string) => {
-    if (type === "place") return catalog.places.find((p) => p.id === id)?.name ?? "a place"
-    if (type === "event") return catalog.events.find((e) => e.id === id)?.name ?? "an event"
-    if (type === "board") {
-      const b = catalog.boards.find((b) => b.id === id)
-      return b ? `${b.brand} ${b.model}` : "a board"
-    }
-    if (type === "org") return catalog.orgs.find((o) => o.id === id)?.name ?? "a brand"
-    if (type === "person") return catalog.people.find((p) => p.id === id)?.display_name ?? "someone"
-    return id
-  }
+  // ── Timeline filter + sort ──────────────────────────────────────────────
+  const [filter, setFilter] = useState<CommunityFilter>("all")
+  const [sort, setSort] = useState<CommunitySort>("newest")
 
   return (
     <div className="min-h-screen bg-background">
       <Nav />
 
       {/* Community header */}
+      {/* Phase 2: community background + profile image and a community "play"
+          button land in this header (community-setup screen). */}
       <div className="max-w-4xl mx-auto px-6 pt-12 pb-8">
         <div className="flex items-center gap-4 mb-3">
           <div className="w-10 h-10 rounded-full flex-shrink-0" style={{ background: meta.dotColor }} />
@@ -239,7 +152,7 @@ export default function CommunityHome() {
       </div>
 
       <div className="max-w-4xl mx-auto px-6 pb-12">
-        {/* Stats grid */}
+        {/* Stats grid — quick navigation to the category pages */}
         {stats && (
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-8">
             <StatCard label="Riders" value={stats.riders} href="/people" />
@@ -250,89 +163,65 @@ export default function CommunityHome() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Recent activity */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">Recent Activity</h2>
-              <CommunityLink href="/feed" className="text-xs text-muted hover:text-foreground transition-colors">
-                View all
-              </CommunityLink>
-            </div>
-            <div className="bg-surface border border-border-default rounded-xl p-4">
-              {recentClaims.length === 0 && (
-                <div className="text-sm text-muted py-4 text-center">Loading activity...</div>
-              )}
-              {recentClaims.map((claim) => {
-                const person = findPerson(claim.subject_id)
-                const displayName = person?.display_name ?? "Someone"
-                const action = predicateLabel(claim.predicate)
-                const target = entityName(claim.object_id, claim.object_type)
+        {/* Timeline section */}
+        <div className="mb-5">
+          <h2 className="text-xl font-bold text-foreground mb-4">Timeline</h2>
+
+          {/* Controls: category pills + sort tabs */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            {/* Category pills */}
+            <div className="flex gap-2 flex-wrap">
+              {FILTER_TABS.map(({ value, label, activeClass }) => {
+                const active = filter === value
                 return (
-                  <ActivityItem
-                    key={claim.id}
-                    person={person}
-                    text={`${displayName} ${action} ${target}`}
-                    time={timeAgo(claim.created_at)}
-                  />
+                  <button
+                    key={value}
+                    onClick={() => setFilter(value)}
+                    className={cn(
+                      "px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
+                      active
+                        ? activeClass
+                        : "bg-transparent border-border-default text-muted hover:text-foreground hover:border-foreground/30",
+                    )}
+                  >
+                    {label}
+                  </button>
                 )
               })}
             </div>
-          </div>
 
-          {/* Top connections */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">Top Connections</h2>
-              <CommunityLink href="/connections" className="text-xs text-muted hover:text-foreground transition-colors">
-                View all
-              </CommunityLink>
-            </div>
-            <div className="bg-surface border border-border-default rounded-xl p-4">
-              {topConnections.length === 0 && (
-                <div className="text-sm text-muted py-4 text-center">Loading connections...</div>
-              )}
-              {topConnections.map(({ a, b, shared }) => (
-                <ConnectionPair
-                  key={`${a}-${b}`}
-                  personA={findPerson(a)}
-                  personB={findPerson(b)}
-                  sharedCount={shared}
-                  label={shared === 1 ? "shared place" : "shared places"}
-                />
+            {/* Sort tabs — segmented control, matching the events page */}
+            <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1">
+              {SORT_TABS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setSort(value)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                    sort === value
+                      ? "bg-surface-active text-foreground"
+                      : "text-muted hover:text-foreground",
+                  )}
+                >
+                  {label}
+                </button>
               ))}
             </div>
-
-            {/* Recent stories */}
-            {recentStories.length > 0 && (
-              <div className="mt-6">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-bold text-foreground uppercase tracking-wider">Latest Stories</h2>
-                  <CommunityLink href="/stories" className="text-xs text-muted hover:text-foreground transition-colors">
-                    View all
-                  </CommunityLink>
-                </div>
-                <div className="bg-surface border border-border-default rounded-xl p-4">
-                  {recentStories.map((story) => (
-                    <div key={story.id} className="py-3 border-b border-border-default/50 last:border-0">
-                      <div className="text-sm font-medium text-foreground leading-snug">
-                        {story.title || "Untitled story"}
-                      </div>
-                      <div className="text-xs text-muted mt-1 flex items-center gap-2">
-                        {story.author?.display_name && (
-                          <span>by {story.author.display_name}</span>
-                        )}
-                        {story.story_date && (
-                          <span>{formatSmartDate(story.story_date)}</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
+
+        {/* Timeline body — gated on both catalog and the stories fetch so node
+            counts and avatar stacks never compute against an empty catalog. */}
+        {catalogLoaded && storiesLoaded ? (
+          <CommunityTimeline
+            stories={stories}
+            events={timelineEvents}
+            filter={filter}
+            sort={sort}
+          />
+        ) : (
+          <div className="text-center text-muted py-16 text-sm">Loading timeline…</div>
+        )}
       </div>
 
       {/* Footer */}
