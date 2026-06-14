@@ -312,7 +312,7 @@ function RidersPageInner() {
           <div>
             <h1 className="text-xl font-bold text-foreground">Riders</h1>
             <p className="text-sm text-muted mt-1">
-              {totalCount} rider{totalCount !== 1 ? "s" : ""} in the community graph
+              {totalCount} rider{totalCount !== 1 ? "s" : ""} in the community
             </p>
           </div>
           <button
