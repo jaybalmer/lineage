@@ -147,6 +147,10 @@ export interface Community {
   created_at?: string
   noun_map: NounMap
   type: CommunityType
+  // Phase 2: admin-set visual identity (see migration 20260613000001).
+  // Both nullable; landing page falls back to the color-dot header when unset.
+  hero_image_url?: string  // full-width background photo
+  avatar_url?: string      // community profile image
 }
 export type PlaceType = "resort" | "shop" | "zone" | "city" | "venue"
 export type OrgType = "brand" | "shop" | "team" | "magazine" | "event-series"

@@ -35,6 +35,7 @@ src/
       stories/          # CRUD for stories
       admin/            # Catalog entity creation (user-contributed)
       auth/magic-link/  # Passwordless email auth
+      bug-report/       # In-app bug reports: writes bug_reports + emails a [Linestry Bug] report via Resend
       (+ stripe, gift, founding, memberships, images, etc.)
     (pages)/            # 30+ routes — see Page Inventory below
   components/
@@ -106,6 +107,7 @@ Simple daily log: date, place, riders[], note. Lighter than a full claim.
 | `story_reactions` | One emoji reaction per member per story (composite PK story_id, reactor_id; upsert to change) |
 | `story_comments` | Flat story comments, hard-deleted, no threading |
 | `story_comment_notifications` | Per-story batch window (6h) for comment emails; see `supabase/migrations/20260609000001_story_reactions_comments.sql` |
+| `bug_reports` | In-app bug reports (note, expected, url, viewport, user_agent, posthog_session_url, reporter_id/email). Written by `POST /api/bug-report`; see migration-010-bug-reports.sql |
 
 ### Adding a column
 Run SQL directly in Supabase dashboard — there are no local migration files to maintain. After adding a column:
@@ -368,6 +370,28 @@ Tiers: `free | annual | lifetime | founding`
 - **Tokens:** Three types — founder_tokens, member_tokens, contribution_tokens
 - Contribution tokens earned by adding entities (places, boards, etc.)
 - `is_editor` flag in membership gives access to `/admin` catalog editor
+
+---
+
+## Bug-fix sessions
+
+Bug tracking lives in `bugs/` (local-only, gitignored: it holds reporter emails and PostHog session ids). The daily Cowork triage maintains it.
+
+**To start a bug-fix session, the user only needs to say "start a bug-fix session" (no file names required). On that cue:**
+
+1. Read `bugs/NEXT-SESSION.md` first. It is the single entry point and is always current.
+   - If it holds a build-ready brief (or points to a dated brief in `bugs/`), implement that brief. It is self-contained: BUG entries, suspected files, acceptance criteria, suggested order, pre-flight SQL.
+   - If it says **NO BUILD-READY BRIEF YET**, do not invent scope. Read `bugs/bug-triage.md` for the queue and the latest hand-off note, then ask the user which cluster to take.
+2. Read `bugs/bug-triage.md` for full context on the cluster (severity, repro, replay links, related bugs).
+
+**Standing rules for bug-fix sessions:**
+- `npx tsc --noEmit` clean before commit.
+- One PR per session: push a branch, open the PR, let the user merge.
+- Do NOT edit the **Shipped** section of `bugs/bug-triage.md`. Cowork reconciles that after the PR lands so the daily dedupe stays clean.
+- **Log the ship.** Before ending the session, append one entry to `bugs/SHIP-LOG.md` using the schema at the top of that file (type, pr, branch, ids, `status: pending`, tsc). This applies to bug-fix AND feature sessions, and it is what lets Cowork reconcile features too (bugs reconcile off `BUG-NNN`, features have no other sweep). A `SessionEnd` hook auto-appends a stub if you forget, but writing it yourself gives the richer line and the correct PR number. Leave `status: pending`; Cowork flips it to `merged` after the PR lands. Do NOT edit earlier SHIP-LOG entries.
+- No em dashes anywhere you write.
+
+Historical one-off briefs from before this convention live at the repo root (e.g. `launch-bugfix-session-1-brief.md`); new bug-fix briefs live in `bugs/`.
 
 ---
 

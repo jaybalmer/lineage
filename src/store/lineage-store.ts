@@ -97,6 +97,8 @@ interface LineageStore {
   communities: Community[]
   activeCommunitySlug: string
   setActiveCommunitySlug: (slug: string) => void
+  /** Optimistically patch a community's image URLs after an admin upload (Phase 2). */
+  setCommunityImages: (id: string, patch: { hero_image_url?: string | null; avatar_url?: string | null }) => void
 
   // Active view state
   activePersonId: string
@@ -849,6 +851,18 @@ export const useLineageStore = create<LineageStore>()(
       communities: [],
       activeCommunitySlug: "snowboarding",
       setActiveCommunitySlug: (slug) => set({ activeCommunitySlug: slug }),
+      setCommunityImages: (id, patch) =>
+        set((s) => ({
+          communities: s.communities.map((c) =>
+            c.id === id
+              ? {
+                  ...c,
+                  ...(patch.hero_image_url !== undefined ? { hero_image_url: patch.hero_image_url ?? undefined } : {}),
+                  ...(patch.avatar_url !== undefined ? { avatar_url: patch.avatar_url ?? undefined } : {}),
+                }
+              : c,
+          ),
+        })),
 
       activePersonId: "",
       setActivePersonId: (id) => set({ activePersonId: id }),

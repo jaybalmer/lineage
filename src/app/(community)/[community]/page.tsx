@@ -10,6 +10,7 @@ import {
   type CommunityFilter,
   type CommunitySort,
 } from "@/components/feed/community-timeline"
+import { CommunityTimelinePlayer } from "@/components/ui/community-timeline-player"
 import { cn } from "@/lib/utils"
 import type { Story } from "@/types"
 
@@ -51,10 +52,19 @@ const SORT_TABS: { value: CommunitySort; label: string }[] = [
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function CommunityHome() {
-  const { catalog, catalogLoaded, activeCommunitySlug, activePersonId } = useLineageStore()
+  const { catalog, catalogLoaded, activeCommunitySlug, activePersonId, communities } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
 
   const meta = COMMUNITY_META[activeCommunitySlug] ?? { dotColor: "#78716C", tagline: "Welcome to this community" }
+
+  // Phase 2: admin-set visual identity. Falls back to the color-dot header when
+  // unset (no regression for communities without images). Tagline stays sourced
+  // from COMMUNITY_META this phase (the DB name matches, but tagline is not yet
+  // editable — see the Phase 2 brief gotcha 7.4).
+  const community = communities.find((c) => c.slug === activeCommunitySlug)
+  const heroUrl = community?.hero_image_url
+  const avatarUrl = community?.avatar_url
+  const displayName = activeCommunitySlug.charAt(0).toUpperCase() + activeCommunitySlug.slice(1)
 
   // ── Stories: full public set for the timeline ───────────────────────────
   // At launch every public story is the snowboarding set (phase-1 community
@@ -107,49 +117,106 @@ export default function CommunityHome() {
   const [filter, setFilter] = useState<CommunityFilter>("all")
   const [sort, setSort] = useState<CommunitySort>("newest")
 
+  // ── Community play feature (Phase 2 PR2) ─────────────────────────────────
+  const [playing, setPlaying] = useState(false)
+
+  // CTA buttons — shared between the hero and color-dot header variants.
+  const ctas = (
+    <div className="flex flex-wrap items-center gap-2">
+      {isAuth ? (
+        <CommunityLink
+          href="/profile"
+          className="px-6 py-2.5 rounded-lg bg-[#1C1917] text-white font-semibold text-sm hover:bg-[#292524] transition-colors"
+        >
+          My Timeline
+        </CommunityLink>
+      ) : (
+        <Link
+          href="/onboarding"
+          className="px-6 py-2.5 rounded-lg bg-[#1C1917] text-white font-semibold text-sm hover:bg-[#292524] transition-colors"
+        >
+          Start Your Timeline
+        </Link>
+      )}
+      <CommunityLink
+        href="/collective"
+        className="px-6 py-2.5 rounded-lg border border-border-default text-muted font-semibold text-sm hover:text-foreground hover:border-foreground/30 transition-colors"
+      >
+        Collective Timeline
+      </CommunityLink>
+      {community && (
+        <button
+          onClick={() => setPlaying(true)}
+          className="px-6 py-2.5 rounded-lg border border-border-default text-muted font-semibold text-sm hover:text-foreground hover:border-foreground/30 transition-colors inline-flex items-center gap-1.5"
+        >
+          <span aria-hidden>▶</span> Play
+        </button>
+      )}
+    </div>
+  )
+
   return (
     <div className="min-h-screen bg-background">
       <Nav />
 
       {/* Community header */}
-      {/* Phase 2: community background + profile image and a community "play"
-          button land in this header (community-setup screen). */}
-      <div className="max-w-4xl mx-auto px-6 pt-12 pb-8">
-        <div className="flex items-center gap-4 mb-3">
-          <div className="w-10 h-10 rounded-full flex-shrink-0" style={{ background: meta.dotColor }} />
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
-              {activeCommunitySlug.charAt(0).toUpperCase() + activeCommunitySlug.slice(1)}
-            </h1>
-            <p className="text-muted text-sm mt-1">{meta.tagline}</p>
+      {/* Phase 2: a community "Play" button lands next to these CTAs in PR2,
+          alongside the community timeline player (Workstream C). */}
+      {heroUrl ? (
+        /* Hero variant — admin-set background photo with name/tagline overlaid */
+        <div className="w-full">
+          <div className="relative w-full h-56 sm:h-64 overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={heroUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+            {/* Scrim so a bright photo never washes out the name (gotcha 7.7) */}
+            <div
+              className="absolute inset-0"
+              style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.65) 100%)" }}
+            />
+            <div className="relative max-w-4xl mx-auto px-6 h-full flex items-end pb-5">
+              <div className="flex items-center gap-4">
+                {avatarUrl ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={avatarUrl} alt="" className="w-16 h-16 rounded-full object-cover border-2 border-white/80 shadow-lg flex-shrink-0" />
+                ) : (
+                  <div className="w-12 h-12 rounded-full flex-shrink-0 border-2 border-white/60" style={{ background: meta.dotColor }} />
+                )}
+                <div>
+                  <h1
+                    className="text-3xl sm:text-4xl font-bold text-white leading-tight"
+                    style={{ textShadow: "0 2px 14px rgba(0,0,0,0.55)" }}
+                  >
+                    {displayName}
+                  </h1>
+                  <p className="text-white/85 text-sm mt-1" style={{ textShadow: "0 1px 10px rgba(0,0,0,0.6)" }}>
+                    {meta.tagline}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
+          <div className="max-w-4xl mx-auto px-6 pt-5 pb-8">{ctas}</div>
         </div>
-
-        {/* CTAs */}
-        <div className="flex flex-wrap items-center gap-2 mt-5">
-          {isAuth ? (
-            <CommunityLink
-              href="/profile"
-              className="px-6 py-2.5 rounded-lg bg-[#1C1917] text-white font-semibold text-sm hover:bg-[#292524] transition-colors"
-            >
-              My Timeline
-            </CommunityLink>
-          ) : (
-            <Link
-              href="/onboarding"
-              className="px-6 py-2.5 rounded-lg bg-[#1C1917] text-white font-semibold text-sm hover:bg-[#292524] transition-colors"
-            >
-              Start Your Timeline
-            </Link>
-          )}
-          <CommunityLink
-            href="/collective"
-            className="px-6 py-2.5 rounded-lg border border-border-default text-muted font-semibold text-sm hover:text-foreground hover:border-foreground/30 transition-colors"
-          >
-            Collective Timeline
-          </CommunityLink>
+      ) : (
+        /* Fallback variant — color-dot (or avatar) header, unchanged layout */
+        <div className="max-w-4xl mx-auto px-6 pt-12 pb-8">
+          <div className="flex items-center gap-4 mb-3">
+            {avatarUrl ? (
+              /* eslint-disable-next-line @next/next/no-img-element */
+              <img src={avatarUrl} alt="" className="w-12 h-12 rounded-full object-cover border border-border-default flex-shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-full flex-shrink-0" style={{ background: meta.dotColor }} />
+            )}
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+                {displayName}
+              </h1>
+              <p className="text-muted text-sm mt-1">{meta.tagline}</p>
+            </div>
+          </div>
+          <div className="mt-5">{ctas}</div>
         </div>
-      </div>
+      )}
 
       <div className="max-w-4xl mx-auto px-6 pb-12">
         {/* Stats grid — quick navigation to the category pages */}
@@ -230,6 +297,11 @@ export default function CommunityHome() {
           Lineage Community Technologies Inc.
         </p>
       </div>
+
+      {/* Community timeline player (Phase 2 PR2) */}
+      {playing && community && (
+        <CommunityTimelinePlayer community={community} onClose={() => setPlaying(false)} />
+      )}
     </div>
   )
 }

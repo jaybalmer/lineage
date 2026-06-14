@@ -1,18 +1,18 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef, useMemo } from "react"
+import { useState, useEffect, useCallback, useRef, useMemo, type ReactNode } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { getEntityName, getPersonById } from "@/lib/mock-data"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { BrandMark } from "@/components/ui/brand-mark"
-import type { Claim, Person } from "@/types"
+import type { Claim, Person, Community } from "@/types"
 
 // ─── Slide definitions ─────────────────────────────────────────────────────────
 
-type IntroSlide  = { kind: "intro";  name: string; ridingSince?: number; yearsCount: number }
+type IntroSlide  = { kind: "intro";  name: string; ridingSince?: number; yearsCount: number; eyebrow?: string }
 type StatSlide   = { kind: "stat";   icon: string; accent: string; count: number; label: string; sublabel: string; items: string[] }
 type ClaimSlide  = { kind: "claim";  icon: string; accent: string; label: string; entityName: string; year?: string; predicate: string }
-type OutroSlide  = { kind: "outro";  name: string }
+type OutroSlide  = { kind: "outro";  name: string; headline?: string; subtext?: string; cta?: { label: string; onClick: () => void } }
 type Slide = IntroSlide | StatSlide | ClaimSlide | OutroSlide
 
 const PREDICATE_LABELS: Record<string, string> = {
@@ -89,6 +89,86 @@ function buildSlides(person: Person, claims: Claim[], catalog: ReturnType<typeof
   return slides
 }
 
+// ─── Community slides (Phase 2) ────────────────────────────────────────────────
+
+const EVENT_PREDICATES = new Set(["competed_at", "spectated_at", "organized_at"])
+
+/**
+ * Build the community-level slide deck: an intro, one stat slide per node type
+ * (skipping empties), one or two most-attended-event highlights, and an outro
+ * with a Start Your Timeline CTA. Reuses the same Slide kinds as personal play,
+ * so it renders through the shared TimelinePlayerShell unchanged.
+ */
+export function buildCommunitySlides(
+  community: Community,
+  catalog: ReturnType<typeof useLineageStore.getState>["catalog"],
+  onStart?: () => void,
+): Slide[] {
+  const slides: Slide[] = []
+  const name = community.name
+
+  // Founding year — the earliest dated signal across riders, events, and places.
+  const years: number[] = []
+  for (const p of catalog.people) if (p.riding_since && p.riding_since > 1900) years.push(p.riding_since)
+  for (const e of catalog.events) if (e.year && e.year > 1900) years.push(e.year)
+  for (const pl of catalog.places) if (pl.first_snowboard_year && pl.first_snowboard_year > 1900) years.push(pl.first_snowboard_year)
+  const foundingYear = years.length ? Math.min(...years) : undefined
+  const yearsCount = foundingYear ? new Date().getFullYear() - foundingYear : 0
+
+  slides.push({ kind: "intro", name, eyebrow: "The Linestry", ridingSince: foundingYear, yearsCount })
+
+  // Stat slides — one per node type, skipping any that are empty. Notable
+  // riders surface first in the rider sample.
+  const sample = (names: string[]) => names.filter(Boolean).slice(0, 8)
+  const notableFirst = [...catalog.people].sort((a, b) => Number(!!b.is_notable) - Number(!!a.is_notable))
+
+  if (catalog.people.length > 0)
+    slides.push({ kind: "stat", icon: "🤝", accent: "#a78bfa", count: catalog.people.length, label: "rider" + (catalog.people.length !== 1 ? "s" : ""), sublabel: "in the community", items: sample(notableFirst.map((p) => p.display_name)) })
+  if (catalog.places.length > 0)
+    slides.push({ kind: "stat", icon: "🏔", accent: "#0D9488", count: catalog.places.length, label: "place" + (catalog.places.length !== 1 ? "s" : ""), sublabel: "on the map", items: sample(catalog.places.map((p) => p.name)) })
+  if (catalog.events.length > 0)
+    slides.push({ kind: "stat", icon: "🏆", accent: "#f59e0b", count: catalog.events.length, label: "event" + (catalog.events.length !== 1 ? "s" : ""), sublabel: "logged", items: sample(catalog.events.map((e) => e.name)) })
+  if (catalog.boards.length > 0)
+    slides.push({ kind: "stat", icon: "🏂", accent: "#10b981", count: catalog.boards.length, label: "board" + (catalog.boards.length !== 1 ? "s" : ""), sublabel: "in the quiver", items: sample(catalog.boards.map((b) => `${b.brand} ${b.model}`)) })
+  if (catalog.orgs.length > 0)
+    slides.push({ kind: "stat", icon: "🏢", accent: "#06b6d4", count: catalog.orgs.length, label: "brand" + (catalog.orgs.length !== 1 ? "s" : ""), sublabel: "represented", items: sample(catalog.orgs.map((o) => o.name)) })
+
+  // Highlight — most-attended events by distinct rider count (Phase 2 fact 10).
+  const attend = new Map<string, Set<string>>()
+  for (const c of catalog.claims) {
+    if (!EVENT_PREDICATES.has(c.predicate)) continue
+    let s = attend.get(c.object_id)
+    if (!s) { s = new Set(); attend.set(c.object_id, s) }
+    s.add(c.subject_id)
+  }
+  const topEvents = catalog.events
+    .map((e) => ({ e, count: attend.get(e.id)?.size ?? 0 }))
+    .filter((x) => x.count > 0)
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 2)
+  for (const { e } of topEvents) {
+    slides.push({
+      kind: "claim",
+      icon: "🏆",
+      accent: "#f59e0b",
+      label: "Most attended",
+      entityName: e.name,
+      year: e.year ? String(e.year) : e.start_date?.slice(0, 4),
+      predicate: "competed_at",
+    })
+  }
+
+  slides.push({
+    kind: "outro",
+    name,
+    headline: `That's the ${name.toLowerCase()} linestry.`,
+    subtext: "Every rider, mountain, and moment.",
+    cta: onStart ? { label: "Start Your Timeline", onClick: onStart } : undefined,
+  })
+
+  return slides
+}
+
 // ─── Background gradients ──────────────────────────────────────────────────────
 
 function slideBg(slide: Slide): string {
@@ -102,6 +182,7 @@ function slideBg(slide: Slide): string {
       "#10b981": "radial-gradient(ellipse at 80% 25%, #053d1a 0%, #011408 55%, #000301 100%)",
       "#f59e0b": "radial-gradient(ellipse at 50% 75%, #3d1f00 0%, #150900 55%, #040200 100%)",
       "#a78bfa": "radial-gradient(ellipse at 30% 40%, #1e0b4a 0%, #09041e 55%, #020108 100%)",
+      "#06b6d4": "radial-gradient(ellipse at 70% 30%, #073a45 0%, #02141a 55%, #00060a 100%)",
     }
     return map[slide.accent] ?? "radial-gradient(ellipse at 50% 50%, #0d1020 0%, #040508 100%)"
   }
@@ -312,7 +393,7 @@ function IntroSlideView({ slide, active }: { slide: IntroSlide; active: boolean 
         style={{ opacity: show ? 1 : 0, transform: show ? "translateY(0) scale(1)" : "translateY(30px) scale(0.96)", transition: "opacity 0.8s ease, transform 0.8s ease" }}
       >
         <div className="text-8xl mb-5" style={{ filter: "drop-shadow(0 0 24px rgba(100,140,255,0.5))" }}>🏔</div>
-        <div className="text-white/40 text-xs uppercase tracking-[0.35em] mb-4">Your Linestry</div>
+        <div className="text-white/40 text-xs uppercase tracking-[0.35em] mb-4">{slide.eyebrow ?? "Your Linestry"}</div>
         <h1
           className="font-black text-white leading-none mb-5"
           style={{ fontSize: "clamp(3rem, 12vw, 6.5rem)", letterSpacing: "-0.02em", textShadow: "0 0 60px rgba(100,150,255,0.3)" }}
@@ -388,8 +469,10 @@ function StatSlideView({ slide, active }: { slide: StatSlide; active: boolean })
                   backgroundColor: `${slide.accent}1a`,
                   border: `1px solid ${slide.accent}40`,
                   opacity: 0,
-                  animation: show ? `tp-chip-in 0.4s ease forwards` : "none",
-                  animationDelay: `${0.4 + i * 90}ms`,
+                  // Delay folded into the shorthand (was a separate animationDelay
+                  // longhand) to clear a pre-existing React shorthand/longhand
+                  // conflict warning. Visually identical stagger.
+                  animation: show ? `tp-chip-in 0.4s ease ${0.4 + i * 90}ms forwards` : "none",
                 }}
               >
                 {item}
@@ -476,20 +559,48 @@ function OutroSlideView({ slide, active, onClose }: { slide: OutroSlide; active:
       >
         <div className="mb-6 flex justify-center" style={{ filter: "drop-shadow(0 0 20px rgba(59,130,246,0.5))" }}><BrandMark size={72} color="#3b82f6" /></div>
         <div className="text-white/35 text-xs uppercase tracking-[0.4em] mb-4">Linestry.com</div>
-        <h2
-          className="font-black text-white leading-tight mb-4"
-          style={{ fontSize: "clamp(2rem, 8vw, 4rem)", letterSpacing: "-0.02em" }}
-        >
-          That&apos;s {slide.name}&apos;s<br />linestry.
-        </h2>
-        <p className="text-white/35 text-sm mb-12">Every board, mountain, and moment.</p>
-        <button
-          onClick={onClose}
-          className="px-10 py-3.5 rounded-xl text-black text-sm font-bold transition-all hover:scale-105 active:scale-95"
-          style={{ background: "linear-gradient(135deg, #e0e7ff, #ffffff)", boxShadow: "0 0 40px rgba(160,130,255,0.3)" }}
-        >
-          Close
-        </button>
+        {slide.headline ? (
+          <h2
+            className="font-black text-white leading-tight mb-4"
+            style={{ fontSize: "clamp(2rem, 8vw, 4rem)", letterSpacing: "-0.02em" }}
+          >
+            {slide.headline}
+          </h2>
+        ) : (
+          <h2
+            className="font-black text-white leading-tight mb-4"
+            style={{ fontSize: "clamp(2rem, 8vw, 4rem)", letterSpacing: "-0.02em" }}
+          >
+            That&apos;s {slide.name}&apos;s<br />linestry.
+          </h2>
+        )}
+        <p className="text-white/35 text-sm mb-12">{slide.subtext ?? "Every board, mountain, and moment."}</p>
+        {slide.cta ? (
+          <div className="flex items-center justify-center gap-3">
+            <button
+              onClick={slide.cta.onClick}
+              className="px-10 py-3.5 rounded-xl text-black text-sm font-bold transition-all hover:scale-105 active:scale-95"
+              style={{ background: "linear-gradient(135deg, #e0e7ff, #ffffff)", boxShadow: "0 0 40px rgba(160,130,255,0.3)" }}
+            >
+              {slide.cta.label}
+            </button>
+            <button
+              onClick={onClose}
+              className="px-6 py-3.5 rounded-xl text-white/60 text-sm font-medium transition-all hover:bg-white/10"
+              style={{ border: "1px solid rgba(255,255,255,0.15)" }}
+            >
+              Close
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onClose}
+            className="px-10 py-3.5 rounded-xl text-black text-sm font-bold transition-all hover:scale-105 active:scale-95"
+            style={{ background: "linear-gradient(135deg, #e0e7ff, #ffffff)", boxShadow: "0 0 40px rgba(160,130,255,0.3)" }}
+          >
+            Close
+          </button>
+        )}
       </div>
     </div>
   )
@@ -505,9 +616,45 @@ interface TimelinePlayerProps {
   onClose: () => void
 }
 
+/**
+ * Personal timeline player — a thin wrapper over TimelinePlayerShell.
+ * Behaviour is identical to the pre-Phase-2 single component: it builds the
+ * person's slides and hands the shell a header with the rider's avatar + name.
+ */
 export function TimelinePlayer({ person, claims, onClose }: TimelinePlayerProps) {
   const { catalog } = useLineageStore()
   const slides = buildSlides(person, claims, catalog)
+  return (
+    <TimelinePlayerShell
+      slides={slides}
+      header={{
+        label: person.display_name,
+        avatar: (
+          <RiderAvatar
+            person={person}
+            size="sm"
+            ring={!!(person.membership_tier && person.membership_tier !== "free")}
+          />
+        ),
+      }}
+      onClose={onClose}
+    />
+  )
+}
+
+interface TimelinePlayerShellProps {
+  slides: Slide[]
+  header: { label: string; avatar?: ReactNode }
+  onClose: () => void
+}
+
+/**
+ * The reusable player chrome: progress bars, header, keyboard nav, pause, mute,
+ * ambient audio, and the slide loop. Personal play (TimelinePlayer) and the
+ * community player (CommunityTimelinePlayer) both render through this shell; the
+ * only difference is the slides passed in and the header label/avatar.
+ */
+export function TimelinePlayerShell({ slides, header, onClose }: TimelinePlayerShellProps) {
   const [index, setIndex] = useState(0)
   const [paused, setPaused] = useState(false)
   const [audioOn, setAudioOn] = useState(true)
@@ -619,8 +766,8 @@ export function TimelinePlayer({ person, claims, onClose }: TimelinePlayerProps)
         {/* Header */}
         <div className="relative z-10 flex items-center justify-between px-5 py-2 shrink-0">
           <div className="flex items-center gap-2.5">
-            <RiderAvatar person={person} size="sm" ring={!!(person.membership_tier && person.membership_tier !== "free")} />
-            <span className="text-white/50 text-xs tracking-wide">{person.display_name}</span>
+            {header.avatar}
+            <span className="text-white/50 text-xs tracking-wide">{header.label}</span>
           </div>
           <div className="flex items-center gap-1.5">
             {/* Mute */}
