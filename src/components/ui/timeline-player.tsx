@@ -217,7 +217,7 @@ function useAmbientAudio(enabled: boolean) {
     master.gain.value = 0
     master.connect(ctx.destination)
     gainRef.current = master
-    master.gain.setTargetAtTime(0.45, ctx.currentTime, 2)
+    master.gain.setTargetAtTime(0.22, ctx.currentTime, 2)
 
     // Reverb via convolver
     const reverbLen = ctx.sampleRate * 2.5
