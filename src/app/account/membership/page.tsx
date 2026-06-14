@@ -579,7 +579,7 @@ function MembershipDashboard() {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-muted" style={{ fontSize: 10 }}>The pool</span>
-                <span className="text-foreground" style={{ fontSize: 10 }}>{EQUITY_POOL_SHARES.toLocaleString()} founding shares</span>
+                <span className="text-foreground" style={{ fontSize: 10 }}>{EQUITY_POOL_SHARES.toLocaleString()} common shares</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted" style={{ fontSize: 10 }}>Snapshot</span>

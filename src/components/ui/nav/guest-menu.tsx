@@ -56,6 +56,13 @@ export function GuestMenu() {
             Sign in
           </Link>
 
+          {/* Membership: account-related, grouped with Sign in above the divider */}
+          <Link href="/membership"
+            className="flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
+            style={{ fontSize: 11 }}>
+            Membership
+          </Link>
+
           <div className="border-t border-border-default" />
 
           {/* Report a bug */}

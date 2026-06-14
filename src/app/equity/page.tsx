@@ -12,7 +12,7 @@ import {
 // The equity launch offer explainer. Replaced the revenue-sharing page
 // (token-system-equity-offer brief §5.4): there is no revenue yet, so the
 // premature revenue-share framing gave way to a concrete offer, one fixed
-// pool of 100,000 founding shares distributed by token balance at the
+// pool of 100,000 common shares distributed by token balance at the
 // September 30, 2026 snapshot. /revenue 308s here via next.config.
 
 const TOKEN_TABLE = [
@@ -80,7 +80,7 @@ export default function EquityPage() {
               OWN A PIECE<br />OF LINESTRY
             </div>
             <p className="text-muted mt-4" style={{ fontSize: 12, lineHeight: 1.8, maxWidth: 520 }}>
-              100,000 founding shares, set aside for the community that builds the record.
+              100,000 common shares, set aside for the community that builds the record.
               Your token balance decides your slice. First distribution September 2026.
             </p>
           </div>
