@@ -11,6 +11,7 @@ import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { BoardShelf } from "@/components/feed/board-shelf"
 import { cn } from "@/lib/utils"
 import { groupRodeAtCompanions } from "@/lib/companion-grouping"
+import { dateToSortNum, groupByDecade } from "@/lib/timeline-grouping"
 
 // Staggered entrance for the first post-signup timeline reveal (Task 4).
 // Runtime-injected to match the celebration keyframe pattern; reduced-motion
@@ -84,36 +85,6 @@ function predicateRank(item: FeedItem): number {
   if (p === "competed_at" || p === "spectated_at" || p === "organized_at") return 4
   if (p === "sponsored_by" || p === "part_of_team" || p === "fan_of") return 5
   return 6
-}
-
-// Normalize a YYYY, YYYY-MM, or YYYY-MM-DD date string to a comparable
-// YYYYMMDD number. Year-only values are a valid stored format, but
-// parseInt("2022") yields 2022, and itemDecade's `sortDate / 10000` then
-// collapses the year to 0, surfacing a bogus "0s" decade header (BUG-010).
-// Padding partial dates to Jan 1 keeps both the decade bucket and the sort order
-// correct.
-function dateToSortNum(dateStr?: string): number {
-  if (!dateStr) return 0
-  const [y, m = "01", d = "01"] = dateStr.split("-")
-  const year = parseInt(y)
-  if (isNaN(year)) return 0
-  return year * 10000 + (parseInt(m) || 1) * 100 + (parseInt(d) || 1)
-}
-
-function itemDecade(sortDate: number): string {
-  if (!sortDate) return "Unknown"
-  const year = Math.floor(sortDate / 10000)
-  return `${Math.floor(year / 10) * 10}s`
-}
-
-function groupByDecade(items: FeedItem[]): Record<string, FeedItem[]> {
-  const groups: Record<string, FeedItem[]> = {}
-  for (const item of items) {
-    const decade = itemDecade(item.sortDate)
-    if (!groups[decade]) groups[decade] = []
-    groups[decade].push(item)
-  }
-  return groups
 }
 
 export function FeedView({
