@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
-import { useLineageStore } from "@/store/lineage-store"
+import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 
 // ─── Tier definitions ─────────────────────────────────────────────────────────
 
@@ -132,7 +132,11 @@ async function startCheckout(tier: "annual" | "lifetime" | "founding" | "gift_an
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function MembershipPage() {
-  const { membership } = useLineageStore()
+  const { membership, activePersonId, authReady } = useLineageStore()
+  // Logged-out visitors must not see any tier marked active, and the Free tier
+  // gets a Sign in CTA instead of "Your current plan". Gate on authReady so a
+  // signed-in member's real tier is not flashed as logged-out mid-hydration.
+  const isLoggedIn = authReady && isAuthUser(activePersonId)
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [loading, setLoading] = useState<string | null>(null)
   const [foundingFilled, setFoundingFilled] = useState(0)
@@ -236,7 +240,7 @@ export default function MembershipPage() {
           <div id="tiers" className="grid gap-4"
             style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))" }}>
             {TIERS.map((tier) => {
-              const isCurrentTier = membership.tier === tier.id
+              const isCurrentTier = isLoggedIn && membership.tier === tier.id
               const hex = tier.accentHex
               return (
                 <div key={tier.id}
@@ -320,10 +324,24 @@ export default function MembershipPage() {
                     </div>
                   )}
                   {!tier.cta && !isCurrentTier && (
-                    <div className="w-full py-2.5 rounded-full text-center border border-border-default text-muted"
-                      style={{ fontSize: 10, letterSpacing: 1 }}>
-                      Your current plan
-                    </div>
+                    isLoggedIn ? (
+                      <div className="w-full py-2.5 rounded-full text-center border border-border-default text-muted"
+                        style={{ fontSize: 10, letterSpacing: 1 }}>
+                        Your current plan
+                      </div>
+                    ) : (
+                      <Link href="/auth/signin"
+                        className="w-full block py-2.5 rounded-full text-center font-bold transition-all"
+                        style={{
+                          background: "var(--accent)",
+                          color: "#fff",
+                          fontSize: 10,
+                          letterSpacing: 1,
+                          fontFamily: "var(--font-body)",
+                        }}>
+                        Sign in
+                      </Link>
+                    )
                   )}
                 </div>
               )
@@ -339,7 +357,7 @@ export default function MembershipPage() {
                   <span style={{ color: "#f59e0b" }}>✦</span> THE EQUITY LAUNCH OFFER
                 </div>
                 <p className="text-muted" style={{ fontSize: 11, lineHeight: 1.6, maxWidth: 480 }}>
-                  100,000 founding shares, distributed to the launch community by token balance.
+                  100,000 common shares, distributed to the launch community by token balance.
                   First distribution September 2026. Every entry, story, and daily visit grows
                   your slice, even on the free tier.
                 </p>
