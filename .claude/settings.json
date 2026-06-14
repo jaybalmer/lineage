@@ -1,1 +1,24 @@
-{}
+{
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -e '.stop_hook_active == true' >/dev/null 2>&1 && exit 0 || echo '{\"decision\": \"block\", \"reason\": \"Before ending this session: if you shipped anything (bug fix OR feature), append an entry to bugs/SHIP-LOG.md using the schema at the top of that file (type, pr, branch, ids, status: pending, tsc). Then state which BUG-IDs or feature scope shipped, with the PR number, so the daily triage can reconcile. If nothing shipped this session, say so explicitly and skip the SHIP-LOG entry.\"}'"
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"$CLAUDE_PROJECT_DIR/.claude/hooks/ship-log-append.sh\""
+          }
+        ]
+      }
+    ]
+  }
+}
