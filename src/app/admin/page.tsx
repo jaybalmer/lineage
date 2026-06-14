@@ -1784,6 +1784,13 @@ export default function AdminPage() {
                 <span>📋</span>
                 Results Scanner
               </Link>
+              <Link
+                href="/admin/community"
+                className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-border-default text-xs text-foreground hover:bg-surface-hover transition-colors"
+              >
+                <span>🖼</span>
+                Community
+              </Link>
             </div>
           </div>
         </div>
