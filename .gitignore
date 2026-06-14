@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .env.local
+
+# bug triage docs (local-only: contains reporter emails + session ids)
+/bugs/
