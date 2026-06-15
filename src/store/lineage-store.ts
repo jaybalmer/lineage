@@ -593,13 +593,16 @@ export const useLineageStore = create<LineageStore>()(
           catalog: { ...s.catalog, orgs: [...s.catalog.orgs, entity] },
         }))
         if (isAuthUser(get().activePersonId)) {
-          fetch("/api/admin", { method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ operation: "insert", table: "orgs", data: {
+          // Member-allowed create path (token brief §5.5, BUG-042). This used
+          // to post to /api/admin, which is requireEditor-gated, so every
+          // non-editor brand add 403ed and rolled back. The catalog route
+          // whitelists fields, dedups on name, and awards tokens server-side.
+          fetch("/api/catalog/entity", { method: "POST", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "org", data: {
               id: org.id, name: org.name, org_type: org.org_type,
               brand_category: org.brand_category ?? null, founded_year: org.founded_year ?? null,
               country: org.country ?? null, website: org.website ?? null,
               description: org.description ?? null,
-              community_status: "unverified", added_by: get().activePersonId,
             }})
           }).then(r => r.json()).then(d => {
             if (!d.ok) {
@@ -607,7 +610,7 @@ export const useLineageStore = create<LineageStore>()(
                 userEntities: { ...s.userEntities, orgs: s.userEntities.orgs.filter((o) => o.id !== org.id) },
                 catalog: { ...s.catalog, orgs: s.catalog.orgs.filter((o) => o.id !== org.id) },
               }))
-              get().addToast("Failed to save brand. Please try again.")
+              get().addToast(d.error ?? "Failed to save brand. Please try again.")
             }
           }).catch(() => get().addToast("Failed to save brand. Please try again."))
         }
