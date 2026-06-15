@@ -1,4 +1,6 @@
 import { ImageResponse } from "next/og"
+import { readFile } from "node:fs/promises"
+import { join } from "node:path"
 import { brandMarkSvgString } from "@/components/ui/brand-mark"
 
 export const size        = { width: 1200, height: 630 }
@@ -33,14 +35,41 @@ async function loadGeologica(weight: number, text: string): Promise<ArrayBuffer 
   }
 }
 
+/**
+ * Read the bundled Calendula Bold .ttf for the wordmark. Satori cannot parse
+ * woff2, so the OG route loads the .ttf (the live site serves the .woff2). This
+ * runs on the default Node runtime; next.config outputFileTracingIncludes keeps
+ * the asset in the Vercel function bundle. Returns null on any failure so the
+ * card falls back to Geologica rather than throwing.
+ */
+async function loadCalendula(): Promise<ArrayBuffer | null> {
+  try {
+    const buf = await readFile(join(process.cwd(), "src/app/fonts/Calendula-Bold.ttf"))
+    return buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer
+  } catch {
+    return null
+  }
+}
+
 export default async function OpengraphImage() {
-  const [displayFont, bodyFont] = await Promise.all([
-    loadGeologica(800, wordmark),
-    loadGeologica(300, tagline),
-  ])
+  // Wordmark prefers the licensed Calendula Bold, read from the bundled .ttf. If
+  // that read fails (for example the asset was not traced into the function),
+  // fall back to the previous Geologica 800 fetch so the wordmark still renders
+  // bold rather than in Satori's default face.
+  let wordmarkData = await loadCalendula()
+  let wordmarkFamily: "Calendula" | "Geologica" = "Calendula"
+  let wordmarkWeight: 700 | 800 = 700
+  if (!wordmarkData) {
+    wordmarkData = await loadGeologica(800, wordmark)
+    wordmarkFamily = "Geologica"
+    wordmarkWeight = 800
+  }
+
+  const bodyFont = await loadGeologica(300, tagline)
+
   const fonts = [
-    ...(displayFont ? [{ name: "Geologica", data: displayFont, weight: 800 as const, style: "normal" as const }] : []),
-    ...(bodyFont    ? [{ name: "Geologica", data: bodyFont,    weight: 300 as const, style: "normal" as const }] : []),
+    ...(wordmarkData ? [{ name: wordmarkFamily, data: wordmarkData, weight: wordmarkWeight, style: "normal" as const }] : []),
+    ...(bodyFont     ? [{ name: "Geologica",   data: bodyFont,     weight: 300 as const,   style: "normal" as const }] : []),
   ]
 
   const mark = "data:image/svg+xml," + encodeURIComponent(brandMarkSvgString(MARK_COLOR))
@@ -62,7 +91,7 @@ export default async function OpengraphImage() {
         <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img width={132} height={132} src={mark} alt="" />
-          <span style={{ fontSize: 104, fontWeight: 800, color: WORDMARK, letterSpacing: "-0.03em" }}>
+          <span style={{ fontFamily: wordmarkFamily, fontSize: 104, fontWeight: wordmarkWeight, color: WORDMARK, letterSpacing: "-0.03em" }}>
             Linestry<span style={{ color: PERIOD }}>.</span>
           </span>
         </div>

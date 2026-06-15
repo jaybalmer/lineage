@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { Geologica } from "next/font/google"
+import localFont from "next/font/local"
 import "./globals.css"
 import { CatalogLoader } from "@/components/catalog-loader"
 import { ClientOverlays } from "@/components/ClientOverlays"
@@ -19,6 +20,16 @@ const geologicaBody = Geologica({
   subsets: ["latin"],
   weight: ["300", "500", "600", "700"],
   variable: "--font-body",
+  display: "swap",
+})
+
+// Calendula Bold drives the "Linestry" wordmark only (header logo + hero).
+// Self-hosted .woff2 under the Web Font License. Single-weight bold face, so a
+// lone 700 declaration covers it; headings and body stay Geologica.
+const calendula = localFont({
+  src: "./fonts/Calendula-Bold.woff2",
+  variable: "--font-wordmark",
+  weight: "700",
   display: "swap",
 })
 
@@ -45,7 +56,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geologicaDisplay.variable} ${geologicaBody.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${geologicaDisplay.variable} ${geologicaBody.variable} ${calendula.variable}`} suppressHydrationWarning>
       <head>
         {/* Apply the saved theme before first paint so the server-rendered light
             default does not flash before useTheme() mounts, and so signing in

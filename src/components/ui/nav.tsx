@@ -44,7 +44,7 @@ function AppNav({ path, isAuth, dropdownProps, communitySlug, communities }: {
       {/* Row 1: title */}
       <div className="flex items-center h-12 px-4 gap-2">
         <Link href="/" className="font-black text-xl text-foreground tracking-tight flex-shrink-0">
-          Linestry<span className="inline-block rounded-full bg-accent" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em" }} />
+          <span style={{ fontFamily: "var(--font-wordmark)" }}>Linestry</span><span className="inline-block rounded-full bg-accent" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em" }} />
         </Link>
         {inCommunity && (
           <>

@@ -2,6 +2,12 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
+  // Keep the Calendula Bold .ttf (read at request time by the root
+  // opengraph-image route) inside the Vercel function bundle. That route reads
+  // the .ttf from disk because Satori cannot parse the .woff2 browsers use.
+  outputFileTracingIncludes: {
+    "/opengraph-image": ["./src/app/fonts/Calendula-Bold.ttf"],
+  },
   async redirects() {
     // The revenue-share explainer became the equity launch offer
     // (token-system brief §5.4). Old links live in emails and posts, so 308.
