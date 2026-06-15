@@ -151,6 +151,9 @@ export interface Community {
   // Both nullable; landing page falls back to the color-dot header when unset.
   hero_image_url?: string  // full-width background photo
   avatar_url?: string      // community profile image
+  // Landing Page Banner (see migration 20260615000002). Separate from hero_image_url:
+  // this is the band across the top of the root homepage (/), not the community page.
+  landing_banner_url?: string
 }
 export type PlaceType = "resort" | "shop" | "zone" | "city" | "venue"
 export type OrgType = "brand" | "shop" | "team" | "magazine" | "event-series"

@@ -29,25 +29,40 @@ const FEATURES = [
 
 export default function Home() {
   const { activePersonId } = useLineageStore()
+  const communities = useLineageStore((s) => s.communities)
   const isAuth = isAuthUser(activePersonId)
+  // Single-community launch: homepage banner reads snowboarding.
+  const banner = communities.find((c) => c.slug === "snowboarding")?.landing_banner_url
 
   return (
-    <div className="min-h-screen bg-background">
+    // Landing page is always dark, regardless of the theme toggle. The .dark
+    // wrapper re-scopes the theme tokens for this whole subtree (incl. Nav).
+    <div className="dark min-h-screen bg-background text-foreground">
       <Nav />
 
+      {/* Full-width banner band. No text overlaid on the photo, so no scrim. */}
+      {banner && (
+        <div className="w-full h-44 sm:h-56 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={banner} alt="" className="w-full h-full object-cover" />
+        </div>
+      )}
+
       {/* Hero */}
-      <div className="max-w-3xl mx-auto px-6 pt-20 pb-10 text-center">
+      <div className={cn("max-w-3xl mx-auto px-6 pb-10 text-center", banner ? "pt-10" : "pt-20")}>
         <div className="mb-8 select-none">
           <div
             className="font-bold text-foreground leading-none tracking-tight"
             style={{ fontSize: "clamp(4rem, 14vw, 7.5rem)", letterSpacing: "-0.03em" }}
           >
-            <span style={{ fontFamily: "var(--font-wordmark)" }}>Linestry</span><span className="inline-block rounded-full bg-accent" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em" }} />
+            <Link href="/word" className="inline-block hover:opacity-90 transition-opacity" aria-label="Linestry, see the definition">
+              <span style={{ fontFamily: "var(--font-wordmark)" }}>Linestry</span><span className="inline-block rounded-full bg-accent" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em" }} />
+            </Link>
           </div>
         </div>
 
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-snug mb-5 mt-8 max-w-2xl mx-auto">
-          Our history is real, but scattered. Don&rsquo;t let it scroll away.
+          Our history is real, but scattered. Let&rsquo;s weave our stories together.
         </h1>
 
         <p className="text-muted text-base leading-relaxed max-w-xl mx-auto">

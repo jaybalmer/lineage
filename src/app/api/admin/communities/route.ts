@@ -15,9 +15,10 @@ export async function PATCH(req: NextRequest) {
     id?: string
     hero_image_url?: string | null
     avatar_url?: string | null
+    landing_banner_url?: string | null
   }
 
-  const { id, hero_image_url, avatar_url } = body
+  const { id, hero_image_url, avatar_url, landing_banner_url } = body
   if (!id) {
     return NextResponse.json({ error: "id required" }, { status: 400 })
   }
@@ -27,6 +28,7 @@ export async function PATCH(req: NextRequest) {
   const patch: Record<string, string | null> = {}
   if (hero_image_url !== undefined) patch.hero_image_url = hero_image_url
   if (avatar_url !== undefined) patch.avatar_url = avatar_url
+  if (landing_banner_url !== undefined) patch.landing_banner_url = landing_banner_url
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "no image fields provided" }, { status: 400 })
   }
