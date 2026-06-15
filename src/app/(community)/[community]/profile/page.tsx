@@ -15,6 +15,7 @@ import { BulkInvitePrompt } from "@/components/ui/bulk-invite-prompt"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { readSeenIds, writeSeenIds } from "@/lib/seen-celebrations"
+import { estimateShares } from "@/lib/equity-offer"
 import type { Claim, CelebrationPayload, PrivacyLevel, Story } from "@/types"
 
 // ─── FTUE helpers ─────────────────────────────────────────────────────────────
@@ -238,6 +239,11 @@ export default function ProfilePage() {
   const [claimsLoaded,  setClaimsLoaded]  = useState(false)
   const [storiesLoaded, setStoriesLoaded] = useState(false)
 
+  // Platform-wide weighted token total for the equity share estimate (A3).
+  // Mirrors the fetch on /account/membership; a pending or failed fetch leaves
+  // this null so the share line falls back to the encouraging prompt copy.
+  const [poolTotal, setPoolTotal] = useState<number | null>(null)
+
   // Track previous claim count to detect new additions
   const prevClaimCountRef = useRef<number | null>(null)
   const welcomeFiredRef   = useRef(false)
@@ -248,6 +254,18 @@ export default function ProfilePage() {
       router.replace("/auth/signin")
     }
   }, [authReady, activePersonId, router])
+
+  // Equity pool total (A3). One public fetch, same pattern as
+  // /account/membership; failures are swallowed so the share line just falls
+  // back to the prompt copy.
+  useEffect(() => {
+    fetch("/api/equity/pool")
+      .then((r) => r.json())
+      .then((d) => {
+        if (typeof d.total_weighted_tokens === "number") setPoolTotal(d.total_weighted_tokens)
+      })
+      .catch(() => {})
+  }, [])
 
   // Fire welcome explosion once on first profile visit after signup
   useEffect(() => {
@@ -497,6 +515,15 @@ export default function ProfilePage() {
     ? PLACES.find((p) => p.id === (person as { home_resort_id?: string }).home_resort_id)
     : null
 
+  // Equity share estimate (A3). estimateShares returns null when myWeighted is
+  // 0 (free rider, no tokens yet) or the pool total has not loaded, so the
+  // share line shows the encouraging prompt instead of a zero estimate.
+  const myWeighted =
+    membership.token_balance.founder * 2 +
+    membership.token_balance.member +
+    membership.token_balance.contribution
+  const shareEst = poolTotal !== null ? estimateShares(myWeighted, poolTotal) : null
+
   return (
     <div className="min-h-screen bg-background">
       <Nav />
@@ -562,16 +589,26 @@ export default function ProfilePage() {
           />
         )}
 
-        {/* Token stats: members only */}
-        {membership.tier !== "free" && (
+        {/* Equity share so far (own profile only: this page redirects anyone
+            who is not the signed-in user). A member or any rider who has earned
+            tokens sees a live estimate; a free rider with no tokens sees the
+            encouraging prompt. Replaces the old "{n} tokens · In the equity
+            pool" teaser so we never stack two token readouts (brief A3). */}
+        {isAuthUser(activePersonId) && (
           <div className="flex items-center gap-4 mb-4 flex-wrap">
-            <Link href="/account/membership"
-              className="flex items-center gap-1.5 text-muted hover:text-foreground transition-colors"
-              style={{ fontSize: 10, fontFamily: "var(--font-body)" }}>
-              <span style={{ color: "#f59e0b" }}>◆</span>
-              <span>{membership.token_balance.founder * 2 + membership.token_balance.member + membership.token_balance.contribution} tokens</span>
-            </Link>
-            <span className="text-muted" style={{ fontSize: 10, fontFamily: "var(--font-body)" }}>· In the equity pool</span>
+            {shareEst ? (
+              <Link href="/equity"
+                className="flex items-center gap-1.5 text-muted hover:text-foreground transition-colors"
+                style={{ fontSize: 10, fontFamily: "var(--font-body)" }}>
+                <span style={{ color: "#f59e0b" }}>◆</span>
+                <span>Your share so far: ~{shareEst.shares.toLocaleString()} shares ({shareEst.pct.toFixed(2)}%)</span>
+              </Link>
+            ) : (
+              <p className="text-muted max-w-xl" style={{ fontSize: 10, fontFamily: "var(--font-body)", lineHeight: 1.6 }}>
+                Every entry counts toward the equity pool, even on the free tier. Add entries, post stories, and show up daily to start building your share.{" "}
+                <Link href="/equity" className="underline hover:text-foreground">How it works →</Link>
+              </p>
+            )}
           </div>
         )}
 

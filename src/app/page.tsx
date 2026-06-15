@@ -4,6 +4,7 @@ import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
+import { EQUITY_POOL_SHARES } from "@/lib/equity-offer"
 
 const FEATURES = [
   {
@@ -113,6 +114,17 @@ export default function Home() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Equity teaser: visible to everyone (auth + logged out). Surfaces the
+          offer that otherwise only lives behind /membership. */}
+      <div className="max-w-3xl mx-auto px-6 pb-10">
+        <p className="text-center text-muted text-sm leading-relaxed">
+          Free riders earn a share of a {EQUITY_POOL_SHARES.toLocaleString()} share pool, just by adding history.{" "}
+          <Link href="/equity" className="text-accent-strong font-semibold hover:underline">
+            See how it works
+          </Link>
+        </p>
       </div>
 
       {/* Footer */}

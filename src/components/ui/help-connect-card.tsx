@@ -137,6 +137,12 @@ export function HelpConnectCard({ personId, personName, profileUrl, inviterName 
             </form>
           </div>
 
+          {/* Equity microcopy: onboarding a rider earns the inviter contribution
+              tokens that grow their share of the pool. Subordinate to the pitch. */}
+          <p className="text-[11px] text-muted mt-2 leading-relaxed">
+            Onboarding a rider grows your share of the equity pool.
+          </p>
+
           {error && (
             <p className="text-[11px] text-red-400 mt-2">{error}</p>
           )}
