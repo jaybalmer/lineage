@@ -190,6 +190,13 @@ export function AvatarDropdown({ displayName, tier, totalTokens, pendingTagCount
             </Link>
           )}
 
+          {/* Settings (notifications + tag privacy + trusted + blocked via the /me sub-nav) */}
+          <Link href="/me/settings/notifications"
+            className="flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
+            style={{ fontSize: 11 }}>
+            Settings
+          </Link>
+
           {/* Report a bug */}
           <button
             type="button"
