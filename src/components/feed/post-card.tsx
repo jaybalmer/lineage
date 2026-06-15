@@ -713,7 +713,7 @@ export function PostCard({ claim, isOwn, readOnly, explicitCompanionIds }: { cla
               <div className="relative">
                 <button
                   onClick={() => { setMenuOpen((o) => !o); setConfirmDelete(false) }}
-                  className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-muted hover:text-foreground hover:bg-border-default transition-all text-sm"
+                  className="w-6 h-6 flex items-center justify-center rounded text-muted hover:text-foreground hover:bg-border-default transition-colors text-sm"
                   title="Options"
                 >
                   ⋯

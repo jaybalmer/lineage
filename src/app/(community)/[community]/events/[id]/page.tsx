@@ -97,7 +97,7 @@ function AttendeeList({ eventId }: { eventId: string }) {
           {isEditor && !isConfirming && (
             <button
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmDeleteId(claim.id) }}
-              className="opacity-0 group-hover:opacity-100 shrink-0 w-5 h-5 flex items-center justify-center rounded-full text-muted hover:text-red-400 hover:bg-red-500/10 transition-all text-xs"
+              className="shrink-0 w-5 h-5 flex items-center justify-center rounded-full text-muted hover:text-red-400 hover:bg-red-500/10 transition-colors text-xs"
               title="Remove from event"
             >
               ✕

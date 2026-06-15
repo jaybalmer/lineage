@@ -268,11 +268,13 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
             <div className="relative">
               <button
                 onClick={() => setMenuOpen((o) => !o)}
-                // BUG-044: hover-reveal only works with a mouse. Touch devices
-                // have no hover, so gate the hidden-until-hover behaviour behind
-                // (hover: hover) and keep the trigger visible (muted) on touch
-                // so owners can reach edit/delete on mobile.
-                className="[@media(hover:hover)]:opacity-0 [@media(hover:none)]:opacity-100 group-hover:opacity-100 text-muted hover:text-foreground transition-all text-lg leading-none px-1"
+                // BUG-044: the owner's edit/delete trigger is always visible (no
+                // hover gate). The earlier hover-reveal was invisible on touch
+                // (no hover state), and the (hover:hover)/(hover:none) opacity
+                // juggling that tried to fix that left it hidden even on desktop.
+                // Only the owner sees this control, so a persistent muted ⋯ that
+                // darkens on hover is the simplest reliable affordance everywhere.
+                className="text-muted hover:text-foreground transition-colors text-lg leading-none px-1"
                 aria-label="Story menu"
               >
                 ⋯
