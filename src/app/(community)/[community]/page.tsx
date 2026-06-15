@@ -12,6 +12,7 @@ import {
 } from "@/components/feed/community-timeline"
 import { CommunityTimelinePlayer } from "@/components/ui/community-timeline-player"
 import { cn } from "@/lib/utils"
+import { EQUITY_POOL_SHARES } from "@/lib/equity-offer"
 import type { Story } from "@/types"
 
 // ─── Community emoji lookup ──────────────────────────────────────────────────
@@ -229,6 +230,18 @@ export default function CommunityHome() {
             <StatCard label="Brands" value={stats.brands} href="/brands" />
           </div>
         )}
+
+        {/* Equity teaser: ownership-framed for a visitor who is already deeper
+            in than the home page. Slim card between the stats and the timeline. */}
+        <Link
+          href="/equity"
+          className="block mb-8 rounded-xl border border-border-default bg-surface p-4 hover:border-foreground/30 transition-colors"
+        >
+          <p className="text-sm text-foreground leading-relaxed">
+            This community is member-owned. Every entry, story, and daily visit grows your share of a {EQUITY_POOL_SHARES.toLocaleString()} share pool.{" "}
+            <span className="text-accent-strong font-semibold">How the equity offer works →</span>
+          </p>
+        </Link>
 
         {/* Timeline section */}
         <div className="mb-5">

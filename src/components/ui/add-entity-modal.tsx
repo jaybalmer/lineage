@@ -637,6 +637,14 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
           </span>
         </div>
 
+        {/* Equity microcopy: catalog additions earn contribution tokens that
+            count toward the member's share of the equity pool. Static helper
+            (the modal closes on add, so there is no post-success surface); no
+            change to the add behavior. */}
+        <p className="mt-3 text-[11px] text-muted leading-relaxed">
+          Adding to the catalog earns contribution tokens toward your share of the equity pool.
+        </p>
+
         {/* Actions */}
         <div className="flex gap-3 mt-4">
           <button
