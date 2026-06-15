@@ -14,22 +14,23 @@ import { str, optStr } from "@/app/api/claims/validation"
 // event creation). It deliberately does NOT relax /api/admin: that route
 // allows broad table operations; this one whitelists types and fields.
 //
-// Orgs and brands stay editor-only this round (higher collision and quality
-// stakes), so addUserOrg keeps posting to /api/admin.
-//
 // Dedup guard: an exact name match (case-insensitive) within the type blocks
 // with 409 and returns the existing id. Editor tooling at /admin remains the
 // backstop for near-duplicates.
 //
-// Award: +2 contribution tokens (contribution_entity) for place/board/event,
+// Award: +2 contribution tokens (contribution_entity) for place/board/event/org,
 // under the daily content cap. Series creation rides along with its event
 // and earns nothing on its own.
 
-type CreatableType = "place" | "board" | "event" | "event_series"
+type CreatableType = "place" | "board" | "event" | "event_series" | "org"
 
 const PLACE_TYPES = new Set(["resort", "shop", "zone", "city", "venue"])
 const EVENT_TYPES = new Set(["contest", "film-shoot", "trip", "camp", "gathering"])
 const SERIES_FREQUENCIES = new Set(["annual", "tour", "irregular"])
+const ORG_TYPES = new Set(["brand", "shop", "team", "magazine", "event-series"])
+const BRAND_CATEGORIES = new Set([
+  "board_brand", "outerwear", "bindings", "boots", "retailer", "media", "other",
+])
 
 function optInt(v: unknown, min: number, max: number): number | null {
   const n = typeof v === "number" ? v : typeof v === "string" && v !== "" ? Number(v) : NaN
@@ -56,9 +57,9 @@ export async function POST(req: NextRequest) {
   }
 
   const type = body.type as CreatableType
-  if (!["place", "board", "event", "event_series"].includes(type)) {
+  if (!["place", "board", "event", "event_series", "org"].includes(type)) {
     return NextResponse.json(
-      { ok: false, error: "type must be place, board, event, or event_series" },
+      { ok: false, error: "type must be place, board, event, event_series, or org" },
       { status: 400 },
     )
   }
@@ -140,6 +141,31 @@ export async function POST(req: NextRequest) {
       end_date: optStr(data.end_date, 32),
       series_id: optStr(data.series_id, 80),
       place_id: optStr(data.place_id, 80),
+      description: optStr(data.description, 2000),
+      community_status: "unverified",
+      added_by: user.id,
+    }
+  } else if (type === "org") {
+    const name = str(data.name, 160)
+    if (!name) return NextResponse.json({ ok: false, error: "name is required" }, { status: 400 })
+    const orgType = optStr(data.org_type, 24) ?? "brand"
+    if (!ORG_TYPES.has(orgType)) {
+      return NextResponse.json({ ok: false, error: "Unknown org_type" }, { status: 400 })
+    }
+    const brandCategory = optStr(data.brand_category, 24)
+    if (brandCategory !== null && !BRAND_CATEGORIES.has(brandCategory)) {
+      return NextResponse.json({ ok: false, error: "Unknown brand_category" }, { status: 400 })
+    }
+    const { data: existing } = await db
+      .from("orgs").select("id").ilike("name", ilikeExact(name)).limit(1)
+    duplicateId = existing?.[0]?.id ?? null
+    table = "orgs"
+    row = {
+      id, name, org_type: orgType,
+      brand_category: brandCategory,
+      founded_year: optInt(data.founded_year, 1900, 2100),
+      country: optStr(data.country, 120),
+      website: optStr(data.website, 300),
       description: optStr(data.description, 2000),
       community_status: "unverified",
       added_by: user.id,
