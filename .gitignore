@@ -53,3 +53,6 @@ next-env.d.ts
 /launch-bugfix-session-1-brief.md
 /migration-*.sql
 /docs/purge-*.sql
+
+# local Claude Code worktrees (tool artifact)
+.claude/worktrees/
