@@ -114,6 +114,35 @@ export interface TagEvent {
   updated_at: string
 }
 
+// ─── PB-010 Public Timeline + Stack View (Phase 1 foundation) ───────────────
+
+export type PublicStackEntryType =
+  | "story"
+  | "place"
+  | "event"
+  | "board"
+  | "rider"
+  | "category_summary"
+
+export type PublicStackCategoryKey = "places" | "boards" | "events" | "riders" | "stories"
+
+/** One owner-curated entry in a public Stack View, ordered by `position`.
+ *  A `category_summary` row carries `category_key` and no `entry_ref_id`; every
+ *  other type carries an `entry_ref_id` (text, because catalog ids are mixed-type)
+ *  and no `category_key`. Enforced by the public_stack_entry_shape DB constraint. */
+export interface PublicStackEntry {
+  id: string
+  owner_profile_id: string
+  entry_type: PublicStackEntryType
+  entry_ref_id: string | null
+  category_key: PublicStackCategoryKey | null
+  position: number
+  custom_title: string | null
+  custom_summary: string | null
+  created_at: string
+  updated_at: string
+}
+
 // ─── Person redirects (PB-008 Phase 2 Session 1) ────────────────────────────
 
 export interface PersonSlugAlias {
@@ -221,6 +250,13 @@ export interface Person {
   tier_changed_at?: string | null
   /** Default render mode for visitor-asserted tags. Per-moment overrides take precedence (Phase 6). */
   public_default_visitor_display?: VisitorDisplaySetting
+  // PB-010 Phase 1 (public timeline foundation). Profile-only fields.
+  /** Stored URL slug for the public timeline at /t/[slug]. The first stored slug column for a profile; derived from display_name via the public-slug helper. */
+  public_slug?: string | null
+  /** Opt-in gate for the public timeline route (Phase 2). Default false. */
+  public_timeline_enabled?: boolean
+  /** Nullable override for the default public view. The app resolves the effective default per owner type when this is null. */
+  public_timeline_default_view?: "timeline" | "stack" | null
 }
 
 export interface Place {
