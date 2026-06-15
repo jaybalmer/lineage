@@ -20,9 +20,12 @@ interface FireCommentNotificationArgs {
 
 /**
  * Fire-and-forget safe: failures are logged and reported in the return value,
- * never thrown. Two near-simultaneous comments can both read a stale window
- * and double-send; the upsert below narrows that race and a duplicate email
- * is a nuisance, not a correctness bug, so it is accepted at launch scale.
+ * never thrown. The 6h batch window is committed only AFTER Resend confirms a
+ * successful send (BUG-045), so a failed or rejected send never burns the
+ * window: the next comment retries instead of the author silently getting
+ * nothing for 6 hours. The trade is that two near-simultaneous comments can
+ * both pass the window check and double-send; a duplicate email is a nuisance,
+ * not a correctness bug, so it is accepted at launch scale.
  */
 export async function fireCommentNotification(
   supabase: SupabaseClient,
@@ -48,20 +51,7 @@ export async function fireCommentNotification(
     return { sent: false, reason: "batch_window" }
   }
 
-  // (3) Claim the window before sending.
-  const { error: upsertErr } = await supabase
-    .from("story_comment_notifications")
-    .upsert({
-      story_id: args.storyId,
-      last_sent_at: new Date().toISOString(),
-      send_count: ((existing as { send_count?: number } | null)?.send_count ?? 0) + 1,
-    })
-  if (upsertErr) {
-    console.error("[comment-emails] window upsert failed:", upsertErr.message)
-    return { sent: false, reason: "window_upsert_failed" }
-  }
-
-  // (4) Author email + display names. profiles has NO email column; the
+  // (3) Author email + display names. profiles has NO email column; the
   // address lives in auth.users and is resolved through the admin API, the
   // same way invite-tracking-server and the claim-request emails do it.
   // No email on file is a silent no-op.
@@ -122,6 +112,22 @@ export async function fireCommentNotification(
     if (sendErr) {
       console.error("[comment-emails] Resend send rejected:", sendErr)
       return { sent: false, reason: "send_failed" }
+    }
+
+    // Commit the batch window only now that the send succeeded, so a failed
+    // send above never burns the window and silently suppresses the next 6h
+    // of comment emails (BUG-045). send_count counts confirmed sends, not
+    // attempts. A failed commit here is logged but not fatal: the email is
+    // already out, and the worst case is a duplicate on the next comment.
+    const { error: windowErr } = await supabase
+      .from("story_comment_notifications")
+      .upsert({
+        story_id: args.storyId,
+        last_sent_at: new Date().toISOString(),
+        send_count: ((existing as { send_count?: number } | null)?.send_count ?? 0) + 1,
+      })
+    if (windowErr) {
+      console.error("[comment-emails] window upsert failed:", windowErr.message)
     }
     return { sent: true }
   } catch (err) {
