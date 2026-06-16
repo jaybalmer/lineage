@@ -89,6 +89,15 @@ export default async function OpengraphImage(
                 {sub}
               </span>
             )}
+            {/* Entity-color tiles evoke the curated stack of cards (stories, places,
+                events, boards, brands) without a remote-image fetch (Satori-safe). */}
+            {owner && (
+              <div style={{ display: "flex", gap: 12 * S, marginTop: 30 * S }}>
+                {["#7C3AED", "#0D9488", "#D97706", "#059669", "#0891B2"].map((c) => (
+                  <div key={c} style={{ display: "flex", width: 60 * S, height: 60 * S, borderRadius: 14 * S, background: c }} />
+                ))}
+              </div>
+            )}
           </div>
 
           <span style={{ fontSize: 26 * S, fontWeight: 500, color: ACCENT }}>

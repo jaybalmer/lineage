@@ -12,7 +12,10 @@
 // catalog joins; it never widens what the _public views already gate.
 
 import { getServiceClient } from "@/lib/auth"
-import type { Claim, Story } from "@/types"
+import type {
+  Claim, Story, EntityType, Predicate,
+  PublicStackEntry, PublicStackEntryType, PublicStackCategoryKey,
+} from "@/types"
 
 // ── Resolved-entity shapes (only the fields the read-only cards render) ───────
 
@@ -422,4 +425,360 @@ export async function readPublicTimelineOwner(slug: string): Promise<PublicTimel
     riding_since: profile.riding_since ?? null,
     era_start,
   }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PB-010A Phase 3: Stack View read
+//
+// The Stack is an owner-curated highlight reel (NOT a filter of the timeline).
+// readPublicStack loads the owner's public_stack_entries, resolves each one
+// against the SAME visibility-safe claims/stories/entities the Phase 2 timeline
+// read already produced, drops any entry whose underlying record is no longer
+// visible (a curated selection is additive to visibility, never a bypass), and
+// derives the category_summary counts + era spans from the owner's claim set.
+// It reuses readPublicTimeline rather than re-reading; callers that already hold
+// the timeline payload pass it as `pre` to avoid a second round-trip.
+// ════════════════════════════════════════════════════════════════════════════
+
+/** Left-edge + kicker accent, keyed to Linestry's entity color conventions
+ *  (places = teal per CLAUDE.md, not the legacy blue in the supplement). */
+export type StackAccent = "violet" | "teal" | "amber" | "emerald" | "cyan"
+
+/** One row inside a category_summary card's inline expansion (top 5-7 items). */
+export interface ResolvedStackSummaryItem {
+  id: string
+  name: string
+  meta: string | null   // "1983 – present", "1994", "7 shared moments", …
+}
+
+/** A fully server-resolved stack card, ready for the store-free renderer.
+ *  custom_title / custom_summary overrides are already applied. The five ref
+ *  types carry a thumbnail descriptor; category_summary carries count + items. */
+export interface ResolvedStackEntry {
+  id: string
+  entry_type: PublicStackEntryType
+  position: number
+  accent: StackAccent
+  kicker: string                 // "Story" | "Place" | … | "Places"
+  kickerMeta: string | null      // muted context line ("1994 · Blackcomb")
+  title: string
+  summary: string | null         // full text; the client truncates per breakpoint
+  // Thumbnail: a server-resolvable photo, else an entity-graphic fallback.
+  thumbPhotoUrl: string | null
+  thumbEntity: EntityType | null // entity-graphic fallback (null for story / summary)
+  thumbName: string              // seeds the lettered person / org tile
+  thumbYear: number | null       // seeds the event tile
+  board: { brand: string; model: string; year: number | null } | null  // useBoardImage hint
+  // category_summary only:
+  categoryKey: PublicStackCategoryKey | null
+  count: number | null
+  items: ResolvedStackSummaryItem[]
+}
+
+export interface PublicStackPayload {
+  owner: PublicTimelineOwner
+  entries: ResolvedStackEntry[]
+}
+
+const ACCENT_BY_TYPE: Record<Exclude<PublicStackEntryType, "category_summary">, StackAccent> = {
+  story: "violet", place: "teal", event: "amber", board: "emerald", rider: "violet",
+}
+const CATEGORY_ACCENT: Record<PublicStackCategoryKey, StackAccent> = {
+  places: "teal", boards: "emerald", events: "amber", riders: "violet", stories: "violet",
+}
+const CATEGORY_KICKER: Record<PublicStackCategoryKey, string> = {
+  places: "Places", boards: "Boards", events: "Events", riders: "Riders", stories: "Stories",
+}
+
+const EVENT_PREDICATES = new Set<Predicate>(["competed_at", "spectated_at", "organized_at", "organized"])
+
+/** A range label that keeps "present" for open-ended spans (unlike the shared
+ *  formatDateRange, which drops it per BUG-033). */
+function eraLabel(years: number[], ongoing: boolean): string | null {
+  if (years.length === 0) return null
+  const min = Math.min(...years)
+  const max = Math.max(...years)
+  if (ongoing) return `${min} – present`
+  return min === max ? String(min) : `${min} – ${max}`
+}
+
+function firstPhotoUrl(story: Story): string | null {
+  const photos = (story.photos ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+  return photos[0]?.url ?? null
+}
+
+function joinMeta(parts: (string | null | undefined)[]): string | null {
+  const cleaned = parts.filter((p): p is string => !!p && p.trim().length > 0)
+  return cleaned.length ? cleaned.join(" · ") : null
+}
+
+interface YearAgg { years: number[]; ongoing: boolean }
+function pushSpan(agg: YearAgg, start?: string, end?: string) {
+  const sy = yearOf(start); if (sy !== null) agg.years.push(sy)
+  const ey = yearOf(end); if (ey !== null) agg.years.push(ey)
+  if (start && !end) agg.ongoing = true
+}
+
+/** Resolve the owner's public_stack_entries against the already-read timeline.
+ *  Returns null when the slug is disabled/unknown (the caller 404s, matching the
+ *  timeline route). */
+export async function readPublicStack(
+  slug: string,
+  pre?: PublicTimelinePayload | null,
+): Promise<PublicStackPayload | null> {
+  const timeline = pre ?? (await readPublicTimeline(slug))
+  if (!timeline) return null
+
+  const { owner, claims, stories, entities } = timeline
+  const db = getServiceClient()
+
+  const { data: rowData } = await db
+    .from("public_stack_entries")
+    .select("*")
+    .eq("owner_profile_id", owner.id)
+    .order("position", { ascending: true })
+  const rows = (rowData ?? []) as PublicStackEntry[]
+  if (rows.length === 0) return { owner, entries: [] }
+
+  // ── Pre-aggregate the owner's claim set, once, for summaries + per-entity meta.
+  const storiesById = new Map(stories.map((s) => [s.id, s]))
+
+  const placeAgg = new Map<string, YearAgg>()
+  const boardAgg = new Map<string, YearAgg>()
+  const eventClaimByEvent = new Map<string, Claim>()
+  const eventYear = new Map<string, number>()
+  const riderAgg = new Map<string, YearAgg & { moments: number }>()
+
+  for (const c of claims) {
+    if (!c.object_id) continue
+    if (c.object_type === "place" && (c.predicate === "rode_at" || c.predicate === "worked_at")) {
+      const a = placeAgg.get(c.object_id) ?? { years: [], ongoing: false }
+      pushSpan(a, c.start_date, c.end_date)
+      placeAgg.set(c.object_id, a)
+    } else if (c.object_type === "board" && c.predicate === "owned_board") {
+      const a = boardAgg.get(c.object_id) ?? { years: [], ongoing: false }
+      pushSpan(a, c.start_date, c.end_date)
+      boardAgg.set(c.object_id, a)
+    } else if (c.object_type === "event" && EVENT_PREDICATES.has(c.predicate)) {
+      if (!eventClaimByEvent.has(c.object_id)) eventClaimByEvent.set(c.object_id, c)
+      const y = yearOf(c.start_date); if (y !== null) eventYear.set(c.object_id, y)
+    } else if (c.object_type === "person" && c.predicate === "rode_with") {
+      const a = riderAgg.get(c.object_id) ?? { years: [], ongoing: false, moments: 0 }
+      pushSpan(a, c.start_date, c.end_date)
+      a.moments += 1
+      riderAgg.set(c.object_id, a)
+    }
+  }
+  // Tagged-in stories count as shared moments with each co-tagged rider.
+  for (const s of stories) {
+    for (const rid of s.rider_ids ?? []) {
+      const a = riderAgg.get(rid) ?? { years: [], ongoing: false, moments: 0 }
+      a.moments += 1
+      riderAgg.set(rid, a)
+    }
+  }
+
+  // First story photo per linked place / event (thumbnail priority tier 2).
+  const placePhoto = new Map<string, string>()
+  const eventPhoto = new Map<string, string>()
+  for (const s of stories) {
+    const url = firstPhotoUrl(s)
+    if (!url) continue
+    const pIds = [s.linked_place_id, ...(s.community_places ?? []).map((cp) => cp.place_id)]
+    for (const pid of pIds) if (pid && !placePhoto.has(pid)) placePhoto.set(pid, url)
+    const eIds = [s.linked_event_id, ...(s.community_events ?? []).map((ce) => ce.event_id)]
+    for (const eid of eIds) if (eid && !eventPhoto.has(eid)) eventPhoto.set(eid, url)
+  }
+
+  // ── Category summary builders (count + era + top items). Counts come straight
+  // from the visibility-safe claim/story set, so they match the public surface.
+  function eventLabel(c: Claim | undefined): string | null {
+    if (!c) return null
+    const role = PREDICATE_RESULT_LABEL[c.predicate] ?? null
+    return joinMeta([role, c.division, c.result])
+  }
+
+  function buildSummary(key: PublicStackCategoryKey): { count: number; era: string | null; items: ResolvedStackSummaryItem[] } {
+    if (key === "places") {
+      const ids = [...placeAgg.keys()].filter((id) => entities.places[id])
+      const allYears: number[] = []; let ongoing = false
+      for (const id of ids) { const a = placeAgg.get(id)!; allYears.push(...a.years); ongoing = ongoing || a.ongoing }
+      const items = ids
+        .map((id) => ({ id, name: entities.places[id].name, agg: placeAgg.get(id)! }))
+        .sort((x, y) => (Math.min(...x.agg.years, Infinity)) - (Math.min(...y.agg.years, Infinity)))
+        .slice(0, 7)
+        .map((x) => ({ id: x.id, name: x.name, meta: eraLabel(x.agg.years, x.agg.ongoing) }))
+      return { count: ids.length, era: eraLabel(allYears, ongoing), items }
+    }
+    if (key === "boards") {
+      const ids = [...boardAgg.keys()].filter((id) => entities.boards[id])
+      const allYears: number[] = []; let ongoing = false
+      for (const id of ids) { const a = boardAgg.get(id)!; allYears.push(...a.years); ongoing = ongoing || a.ongoing }
+      const items = ids
+        .map((id) => { const b = entities.boards[id]; return { id, name: `${b.brand} ${b.model}`, year: b.model_year } })
+        .sort((x, y) => (y.year ?? 0) - (x.year ?? 0))
+        .slice(0, 7)
+        .map((x) => ({ id: x.id, name: x.name, meta: x.year ? String(x.year) : null }))
+      return { count: ids.length, era: eraLabel(allYears, ongoing), items }
+    }
+    if (key === "events") {
+      const ids = [...eventClaimByEvent.keys()].filter((id) => entities.events[id])
+      const years = ids.map((id) => eventYear.get(id)).filter((y): y is number => y != null)
+      const items = ids
+        .map((id) => ({ id, name: entities.events[id].name, year: eventYear.get(id) ?? entities.events[id].year ?? null }))
+        .sort((x, y) => (x.year ?? 0) - (y.year ?? 0))
+        .slice(0, 7)
+        .map((x) => ({ id: x.id, name: x.name, meta: x.year ? String(x.year) : null }))
+      return { count: ids.length, era: eraLabel(years, false), items }
+    }
+    if (key === "riders") {
+      const ids = [...riderAgg.keys()].filter((id) => entities.people[id])
+      const allYears: number[] = []; let ongoing = false
+      for (const id of ids) { const a = riderAgg.get(id)!; allYears.push(...a.years); ongoing = ongoing || a.ongoing }
+      const items = ids
+        .map((id) => ({ id, name: entities.people[id].display_name, agg: riderAgg.get(id)! }))
+        .sort((x, y) => y.agg.moments - x.agg.moments)
+        .slice(0, 7)
+        .map((x) => ({
+          id: x.id, name: x.name,
+          meta: eraLabel(x.agg.years, x.agg.ongoing) ?? `${x.agg.moments} shared moment${x.agg.moments === 1 ? "" : "s"}`,
+        }))
+      return { count: ids.length, era: eraLabel(allYears, ongoing), items }
+    }
+    // stories
+    const yrs = stories.map((s) => yearOf(s.story_date)).filter((y): y is number => y != null)
+    const items = stories.slice(0, 7).map((s) => ({
+      id: s.id, name: s.title || (s.body ?? "").slice(0, 48) || "Untitled story",
+      meta: yearOf(s.story_date) ? String(yearOf(s.story_date)) : null,
+    }))
+    return { count: stories.length, era: eraLabel(yrs, false), items }
+  }
+
+  // ── Resolve each curated row. A null result drops the row (gone-private etc.).
+  function resolveRow(row: PublicStackEntry): ResolvedStackEntry | null {
+    const base = { id: row.id, position: row.position }
+
+    if (row.entry_type === "category_summary") {
+      if (!row.category_key) return null
+      const { count, era, items } = buildSummary(row.category_key)
+      if (count === 0) return null  // nothing to summarise → drop
+      const noun = row.category_key
+      const title = row.custom_title ?? defaultSummaryTitle(noun, count)
+      return {
+        ...base, entry_type: "category_summary", accent: CATEGORY_ACCENT[noun],
+        kicker: CATEGORY_KICKER[noun], kickerMeta: era,
+        title, summary: row.custom_summary ?? null,
+        thumbPhotoUrl: null, thumbEntity: null, thumbName: "", thumbYear: null, board: null,
+        categoryKey: noun, count, items,
+      }
+    }
+
+    const ref = row.entry_ref_id
+    if (!ref) return null
+    const accent = ACCENT_BY_TYPE[row.entry_type]
+
+    if (row.entry_type === "story") {
+      const story = storiesById.get(ref)
+      if (!story) return null
+      const linkedPlace = story.linked_place_id ? entities.places[story.linked_place_id] : undefined
+      const linkedImg =
+        (story.linked_place_id && entities.places[story.linked_place_id]?.image_url) ||
+        (story.linked_event_id && entities.events[story.linked_event_id]?.image_url) ||
+        (story.board_ids ?? []).map((b) => entities.boards[b]?.image_url).find(Boolean) || null
+      return {
+        ...base, entry_type: "story", accent: "violet", kicker: "Story",
+        kickerMeta: joinMeta([yearOf(story.story_date)?.toString(), linkedPlace?.name]),
+        title: row.custom_title ?? story.title ?? (story.body ?? "").split("\n")[0].slice(0, 80) ?? "Story",
+        summary: row.custom_summary ?? story.body ?? null,
+        thumbPhotoUrl: firstPhotoUrl(story) ?? linkedImg, thumbEntity: null, thumbName: "", thumbYear: null, board: null,
+        categoryKey: null, count: null, items: [],
+      }
+    }
+
+    if (row.entry_type === "place") {
+      const place = entities.places[ref]
+      if (!place) return null
+      const agg = placeAgg.get(ref)
+      return {
+        ...base, entry_type: "place", accent, kicker: "Place",
+        kickerMeta: joinMeta([agg ? eraLabel(agg.years, agg.ongoing) : null, joinMeta([place.region, place.country])]),
+        title: row.custom_title ?? place.name,
+        summary: row.custom_summary ?? null,
+        thumbPhotoUrl: place.image_url ?? placePhoto.get(ref) ?? null,
+        thumbEntity: "place", thumbName: place.name, thumbYear: null, board: null,
+        categoryKey: null, count: null, items: [],
+      }
+    }
+
+    if (row.entry_type === "event") {
+      const event = entities.events[ref]
+      if (!event) return null
+      const yr = eventYear.get(ref) ?? event.year ?? yearOf(event.start_date)
+      return {
+        ...base, entry_type: "event", accent, kicker: "Event",
+        kickerMeta: joinMeta([yr?.toString(), event.event_type?.replace(/-/g, " ")]),
+        title: row.custom_title ?? event.name,
+        summary: row.custom_summary ?? eventLabel(eventClaimByEvent.get(ref)),
+        thumbPhotoUrl: event.image_url ?? eventPhoto.get(ref) ?? null,
+        thumbEntity: "event", thumbName: event.name, thumbYear: yr ?? null, board: null,
+        categoryKey: null, count: null, items: [],
+      }
+    }
+
+    if (row.entry_type === "board") {
+      const board = entities.boards[ref]
+      if (!board) return null
+      const agg = boardAgg.get(ref)
+      const yearLbl = board.model_year ? `'${String(board.model_year).slice(2)}` : null
+      return {
+        ...base, entry_type: "board", accent, kicker: "Board",
+        kickerMeta: joinMeta([board.model_year?.toString(), board.shape?.replace(/-/g, " ")]),
+        title: row.custom_title ?? `${board.brand} ${board.model}`,
+        summary: row.custom_summary ?? joinMeta([yearLbl, agg ? eraLabel(agg.years, agg.ongoing) : null]),
+        thumbPhotoUrl: board.image_url ?? null,
+        thumbEntity: "board", thumbName: `${board.brand} ${board.model}`, thumbYear: null,
+        board: { brand: board.brand, model: board.model, year: board.model_year ?? null },
+        categoryKey: null, count: null, items: [],
+      }
+    }
+
+    // rider
+    const person = entities.people[ref]
+    if (!person) return null
+    const agg = riderAgg.get(ref)
+    return {
+      ...base, entry_type: "rider", accent: "violet", kicker: "Rider",
+      kickerMeta: joinMeta([
+        agg ? eraLabel(agg.years, agg.ongoing) : null,
+        agg && agg.moments > 0 ? `${agg.moments} shared moment${agg.moments === 1 ? "" : "s"}` : null,
+      ]),
+      title: row.custom_title ?? `Rode with ${person.display_name}`,
+      summary: row.custom_summary ?? null,
+      thumbPhotoUrl: person.avatar_url ?? null,
+      thumbEntity: "person", thumbName: person.display_name, thumbYear: null, board: null,
+      categoryKey: null, count: null, items: [],
+    }
+  }
+
+  const entries = rows.map(resolveRow).filter((e): e is ResolvedStackEntry => e !== null)
+  return { owner, entries }
+}
+
+/** Human label for a category_summary card title, e.g. "Rode at 12 places". */
+function defaultSummaryTitle(key: PublicStackCategoryKey, count: number): string {
+  switch (key) {
+    case "places": return `Rode at ${count} place${count === 1 ? "" : "s"}`
+    case "boards": return `${count} board${count === 1 ? "" : "s"}`
+    case "events": return `${count} event${count === 1 ? "" : "s"}`
+    case "riders": return `Rode with ${count} rider${count === 1 ? "" : "s"}`
+    case "stories": return `${count} stor${count === 1 ? "y" : "ies"} told`
+  }
+}
+
+/** Short role label for an event claim's summary line. */
+const PREDICATE_RESULT_LABEL: Partial<Record<Predicate, string>> = {
+  competed_at: "Competed",
+  spectated_at: "Spectated",
+  organized_at: "Organized",
+  organized: "Organized",
 }

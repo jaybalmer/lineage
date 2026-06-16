@@ -1,6 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
+import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
 import { MeSubNav } from "@/components/ui/me-subnav"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
@@ -134,6 +135,20 @@ export default function MePublicTimelinePage() {
             </p>
           </div>
         </label>
+
+        {/* Stack View curation — the share-first card list (PB-010A Phase 3). */}
+        <Link
+          href="/me/public-view"
+          className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-border-default bg-surface p-4 hover:border-blue-600 transition-colors"
+        >
+          <div className="min-w-0">
+            <div className="text-sm font-medium text-foreground">Curate your Stack View</div>
+            <p className="text-xs text-muted mt-1">
+              Pick a short, scannable set of highlight cards to lead with when you share your link.
+            </p>
+          </div>
+          <span className="text-accent-strong text-sm flex-shrink-0">→</span>
+        </Link>
 
         {checked && slug && (
           <div className="mt-4 rounded-xl border border-border-default bg-surface p-4">
