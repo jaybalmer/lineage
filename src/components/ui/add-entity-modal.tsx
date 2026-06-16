@@ -53,6 +53,10 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
 
   // Shared
   const [name, setName] = useState(initialName)
+  // Awaiting the persistence round-trip keeps the modal open until the entity
+  // is saved, so callers that immediately use the new id (the story
+  // connections popover, BUG-059) can rely on onAdded meaning "it's in the DB".
+  const [submitting, setSubmitting] = useState(false)
 
   // Place fields
   const [placeType, setPlaceType] = useState<PlaceType>("resort")
@@ -109,93 +113,100 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
     return false
   }
 
-  const handleSubmit = () => {
-    if (!canSubmit()) return
+  const handleSubmit = async () => {
+    if (!canSubmit() || submitting) return
+    setSubmitting(true)
+    try {
+      let id: string
+      let ok = true
 
-    if (entityType === "place") {
-      const id = generateId("place")
-      addUserPlace({
-        id,
-        name: name.trim(),
-        place_type: placeType,
-        region: region.trim() || undefined,
-        country: country.trim() || undefined,
-        website: placeWebsite.trim() || undefined,
-        description: placeDescription.trim() || undefined,
-        first_snowboard_year: firstSnowboardYear ? parseInt(firstSnowboardYear) : undefined,
-        community_status: "unverified",
-        added_by: activePersonId,
-      })
-      onAdded(id)
-    } else if (entityType === "board") {
-      const id = generateId("board")
-      addUserBoard({
-        id,
-        brand: brand.trim(),
-        model: model.trim(),
-        model_year: modelYear,
-        community_status: "unverified",
-        added_by: activePersonId,
-      })
-      onAdded(id)
-    } else if (entityType === "org") {
-      const id = generateId("org")
-      addUserOrg({
-        id,
-        name: name.trim(),
-        org_type: orgType,
-        description: description.trim() || undefined,
-        country: orgCountry.trim() || undefined,
-        founded_year: foundedYear ? parseInt(foundedYear) : undefined,
-        website: website.trim() || undefined,
-        community_status: "unverified",
-        added_by: activePersonId,
-      })
-      onAdded(id)
-    } else if (entityType === "event") {
-      // If user typed a new series name but hasn't created it yet, create it now
-      let resolvedSeriesId = eventSeriesId
-      if (!resolvedSeriesId && showCreateSeries && newSeriesName.trim()) {
-        const sid = generateId("series")
-        addUserSeries({
-          id: sid,
-          name: newSeriesName.trim(),
-          frequency: newSeriesFreq,
-          start_year: newSeriesStartYear ? parseInt(newSeriesStartYear) : undefined,
-          place_id: eventPlaceId || undefined,
+      if (entityType === "place") {
+        id = generateId("place")
+        ok = await addUserPlace({
+          id,
+          name: name.trim(),
+          place_type: placeType,
+          region: region.trim() || undefined,
+          country: country.trim() || undefined,
+          website: placeWebsite.trim() || undefined,
+          description: placeDescription.trim() || undefined,
+          first_snowboard_year: firstSnowboardYear ? parseInt(firstSnowboardYear) : undefined,
+          community_status: "unverified",
+          added_by: activePersonId,
         })
-        resolvedSeriesId = sid
+      } else if (entityType === "board") {
+        id = generateId("board")
+        ok = await addUserBoard({
+          id,
+          brand: brand.trim(),
+          model: model.trim(),
+          model_year: modelYear,
+          community_status: "unverified",
+          added_by: activePersonId,
+        })
+      } else if (entityType === "org") {
+        id = generateId("org")
+        ok = await addUserOrg({
+          id,
+          name: name.trim(),
+          org_type: orgType,
+          description: description.trim() || undefined,
+          country: orgCountry.trim() || undefined,
+          founded_year: foundedYear ? parseInt(foundedYear) : undefined,
+          website: website.trim() || undefined,
+          community_status: "unverified",
+          added_by: activePersonId,
+        })
+      } else if (entityType === "event") {
+        // If user typed a new series name but hasn't created it yet, create it
+        // now and wait for it so the event can FK to it.
+        let resolvedSeriesId = eventSeriesId
+        if (!resolvedSeriesId && showCreateSeries && newSeriesName.trim()) {
+          const sid = generateId("series")
+          const seriesOk = await addUserSeries({
+            id: sid,
+            name: newSeriesName.trim(),
+            frequency: newSeriesFreq,
+            start_year: newSeriesStartYear ? parseInt(newSeriesStartYear) : undefined,
+            place_id: eventPlaceId || undefined,
+          })
+          if (seriesOk) resolvedSeriesId = sid
+        }
+        id = generateId("event")
+        const year = parseInt(eventYear)
+        let computedStart = eventYear
+        if (eventMonth) computedStart = `${eventYear}-${eventMonth.padStart(2, "0")}`
+        if (showExactDates && startDate) computedStart = startDate
+        ok = await addUserEvent({
+          id,
+          name: name.trim(),
+          event_type: eventType,
+          year,
+          start_date: computedStart,
+          end_date: showExactDates && endDate ? endDate : undefined,
+          place_id: eventPlaceId || undefined,
+          series_id: resolvedSeriesId || undefined,
+          community_status: "unverified",
+          added_by: activePersonId,
+        })
+      } else {
+        id = crypto.randomUUID()
+        ok = await addUserPerson({
+          id,
+          display_name: displayName.trim(),
+          riding_since: ridingSince ? parseInt(ridingSince) : undefined,
+          bio: bio.trim() || undefined,
+          privacy_level: "public",
+          community_status: "unverified",
+          added_by: activePersonId,
+        })
       }
-      const id = generateId("event")
-      const year = parseInt(eventYear)
-      let computedStart = eventYear
-      if (eventMonth) computedStart = `${eventYear}-${eventMonth.padStart(2, "0")}`
-      if (showExactDates && startDate) computedStart = startDate
-      addUserEvent({
-        id,
-        name: name.trim(),
-        event_type: eventType,
-        year,
-        start_date: computedStart,
-        end_date: showExactDates && endDate ? endDate : undefined,
-        place_id: eventPlaceId || undefined,
-        series_id: resolvedSeriesId || undefined,
-        community_status: "unverified",
-        added_by: activePersonId,
-      })
-      onAdded(id)
-    } else if (entityType === "person") {
-      const id = crypto.randomUUID()
-      addUserPerson({
-        id,
-        display_name: displayName.trim(),
-        riding_since: ridingSince ? parseInt(ridingSince) : undefined,
-        bio: bio.trim() || undefined,
-        privacy_level: "public",
-        community_status: "unverified",
-        added_by: activePersonId,
-      })
-      onAdded(id)
+
+      // On failure the store already rolled back and toasted; keep the modal
+      // open so the user can retry rather than firing onAdded with a dead id.
+      if (ok) onAdded(id)
+    } finally {
+      setSubmitting(false)
     }
   }
 
@@ -653,21 +664,22 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
         <div className="flex gap-3 mt-4">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-muted hover:text-foreground border border-border-default hover:border-border-default transition-all"
+            disabled={submitting}
+            className="flex-1 px-4 py-2.5 rounded-lg text-sm text-muted hover:text-foreground border border-border-default hover:border-border-default transition-all disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!canSubmit()}
+            disabled={!canSubmit() || submitting}
             className={cn(
               "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
-              canSubmit()
+              canSubmit() && !submitting
                 ? "bg-[#1C1917] text-white hover:bg-[#292524]"
                 : "bg-surface-active text-muted cursor-not-allowed"
             )}
           >
-            Add to graph
+            {submitting ? "Adding…" : "Add to graph"}
           </button>
         </div>
       </div>

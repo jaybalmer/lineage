@@ -57,11 +57,11 @@ interface LineageStore {
 
   // User-created entities (unverified until community confirms)
   userEntities: UserEntities
-  addUserPlace: (place: Place) => void
-  addUserBoard: (board: Board) => void
-  addUserOrg: (org: Org) => void
-  addUserEvent: (event: Event) => void
-  addUserSeries: (series: EventSeries) => void
+  addUserPlace: (place: Place) => Promise<boolean>
+  addUserBoard: (board: Board) => Promise<boolean>
+  addUserOrg: (org: Org) => Promise<boolean>
+  addUserEvent: (event: Event) => Promise<boolean>
+  addUserSeries: (series: EventSeries) => Promise<boolean>
   addUserPerson: (person: Person) => Promise<boolean>
   updateUserEvent: (id: string, updates: Partial<Event>) => void
   verifyEntity: (entityType: "place" | "board" | "org" | "event" | "person", id: string) => void
@@ -534,114 +534,145 @@ export const useLineageStore = create<LineageStore>()(
       claimOverrides: {},
 
       userEntities: { places: [], boards: [], orgs: [], events: [], eventSeries: [], people: [] },
-      addUserPlace: (place) => {
+      addUserPlace: async (place) => {
         const entity = { ...place, community_status: "unverified" as const }
         set((s) => ({
           userEntities: { ...s.userEntities, places: [...s.userEntities.places, entity] },
           catalog: { ...s.catalog, places: [...s.catalog.places, entity] },
         }))
-        if (isAuthUser(get().activePersonId)) {
-          // Member-allowed create path (token brief §5.5). This used to post
-          // to /api/admin, which is requireEditor-gated, so every non-editor
-          // add 403ed and rolled back. The catalog route whitelists fields,
-          // dedups on name, and awards contribution tokens server-side.
-          fetch("/api/catalog/entity", { method: "POST", headers: { "Content-Type": "application/json" },
+        if (!isAuthUser(get().activePersonId)) return true
+        // Member-allowed create path (token brief §5.5). This used to post
+        // to /api/admin, which is requireEditor-gated, so every non-editor
+        // add 403ed and rolled back. The catalog route whitelists fields,
+        // dedups on name, and awards contribution tokens server-side.
+        // Awaited so callers that immediately use the new id (the story
+        // connections popover, BUG-059) only proceed once the row has landed.
+        try {
+          const r = await fetch("/api/catalog/entity", { method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ type: "place", data: {
               id: place.id, name: place.name, place_type: place.place_type,
               region: place.region ?? null, country: place.country ?? null,
               website: place.website ?? null, description: place.description ?? null,
               first_snowboard_year: place.first_snowboard_year ?? null,
             }})
-          }).then(r => r.json()).then(d => {
-            if (!d.ok) {
-              set((s) => ({
-                userEntities: { ...s.userEntities, places: s.userEntities.places.filter((p) => p.id !== place.id) },
-                catalog: { ...s.catalog, places: s.catalog.places.filter((p) => p.id !== place.id) },
-              }))
-              get().addToast(d.error ?? "Failed to save place. Please try again.")
-            }
-          }).catch(() => get().addToast("Failed to save place. Please try again."))
+          })
+          const d = await r.json()
+          if (!d.ok) {
+            set((s) => ({
+              userEntities: { ...s.userEntities, places: s.userEntities.places.filter((p) => p.id !== place.id) },
+              catalog: { ...s.catalog, places: s.catalog.places.filter((p) => p.id !== place.id) },
+            }))
+            get().addToast(d.error ?? "Failed to save place. Please try again.")
+            return false
+          }
+          return true
+        } catch {
+          get().addToast("Failed to save place. Please try again.")
+          return false
         }
       },
-      addUserBoard: (board) => {
+      addUserBoard: async (board) => {
         const entity = { ...board, community_status: "unverified" as const }
         set((s) => ({
           userEntities: { ...s.userEntities, boards: [...s.userEntities.boards, entity] },
           catalog: { ...s.catalog, boards: [...s.catalog.boards, entity] },
         }))
-        if (isAuthUser(get().activePersonId)) {
-          fetch("/api/catalog/entity", { method: "POST", headers: { "Content-Type": "application/json" },
+        if (!isAuthUser(get().activePersonId)) return true
+        try {
+          const r = await fetch("/api/catalog/entity", { method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ type: "board", data: {
               id: board.id, brand: board.brand, model: board.model, model_year: board.model_year,
               shape: board.shape ?? null, external_ref: board.external_ref ?? null,
             }})
-          }).then(r => r.json()).then(d => {
-            if (!d.ok) {
-              set((s) => ({
-                userEntities: { ...s.userEntities, boards: s.userEntities.boards.filter((b) => b.id !== board.id) },
-                catalog: { ...s.catalog, boards: s.catalog.boards.filter((b) => b.id !== board.id) },
-              }))
-              get().addToast(d.error ?? "Failed to save board. Please try again.")
-            }
-          }).catch(() => get().addToast("Failed to save board. Please try again."))
+          })
+          const d = await r.json()
+          if (!d.ok) {
+            set((s) => ({
+              userEntities: { ...s.userEntities, boards: s.userEntities.boards.filter((b) => b.id !== board.id) },
+              catalog: { ...s.catalog, boards: s.catalog.boards.filter((b) => b.id !== board.id) },
+            }))
+            get().addToast(d.error ?? "Failed to save board. Please try again.")
+            return false
+          }
+          return true
+        } catch {
+          get().addToast("Failed to save board. Please try again.")
+          return false
         }
       },
-      addUserOrg: (org) => {
+      addUserOrg: async (org) => {
         const entity = { ...org, community_status: "unverified" as const }
         set((s) => ({
           userEntities: { ...s.userEntities, orgs: [...s.userEntities.orgs, entity] },
           catalog: { ...s.catalog, orgs: [...s.catalog.orgs, entity] },
         }))
-        if (isAuthUser(get().activePersonId)) {
-          // Member-allowed create path (token brief §5.5, BUG-042). This used
-          // to post to /api/admin, which is requireEditor-gated, so every
-          // non-editor brand add 403ed and rolled back. The catalog route
-          // whitelists fields, dedups on name, and awards tokens server-side.
-          fetch("/api/catalog/entity", { method: "POST", headers: { "Content-Type": "application/json" },
+        if (!isAuthUser(get().activePersonId)) return true
+        // Member-allowed create path (token brief §5.5, BUG-042). This used
+        // to post to /api/admin, which is requireEditor-gated, so every
+        // non-editor brand add 403ed and rolled back. The catalog route
+        // whitelists fields, dedups on name, and awards tokens server-side.
+        try {
+          const r = await fetch("/api/catalog/entity", { method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ type: "org", data: {
               id: org.id, name: org.name, org_type: org.org_type,
               brand_category: org.brand_category ?? null, founded_year: org.founded_year ?? null,
               country: org.country ?? null, website: org.website ?? null,
               description: org.description ?? null,
             }})
-          }).then(r => r.json()).then(d => {
-            if (!d.ok) {
-              set((s) => ({
-                userEntities: { ...s.userEntities, orgs: s.userEntities.orgs.filter((o) => o.id !== org.id) },
-                catalog: { ...s.catalog, orgs: s.catalog.orgs.filter((o) => o.id !== org.id) },
-              }))
-              get().addToast(d.error ?? "Failed to save brand. Please try again.")
-            }
-          }).catch(() => get().addToast("Failed to save brand. Please try again."))
+          })
+          const d = await r.json()
+          if (!d.ok) {
+            set((s) => ({
+              userEntities: { ...s.userEntities, orgs: s.userEntities.orgs.filter((o) => o.id !== org.id) },
+              catalog: { ...s.catalog, orgs: s.catalog.orgs.filter((o) => o.id !== org.id) },
+            }))
+            get().addToast(d.error ?? "Failed to save brand. Please try again.")
+            return false
+          }
+          return true
+        } catch {
+          get().addToast("Failed to save brand. Please try again.")
+          return false
         }
       },
-      addUserSeries: (series) => {
+      addUserSeries: async (series) => {
         set((s) => ({
           userEntities: { ...s.userEntities, eventSeries: [...(s.userEntities.eventSeries ?? []), series] },
           catalog: { ...s.catalog, eventSeries: [...s.catalog.eventSeries, series] },
         }))
-        if (isAuthUser(get().activePersonId)) {
-          fetch("/api/catalog/entity", { method: "POST", headers: { "Content-Type": "application/json" },
+        if (!isAuthUser(get().activePersonId)) return true
+        // Awaited so an event that references a brand-new series (created
+        // inline) only inserts after the series row exists (FK ordering).
+        try {
+          const r = await fetch("/api/catalog/entity", { method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ type: "event_series", data: {
               id: series.id, name: series.name, place_id: series.place_id ?? null,
               frequency: series.frequency, start_year: series.start_year ?? null,
               description: series.description ?? null,
             }})
-          }).then(r => r.json()).then(d => {
-            if (!d.ok) get().addToast(d.error ?? "Failed to save event series. Please try again.")
-          }).catch(() => get().addToast("Failed to save event series. Please try again."))
+          })
+          const d = await r.json()
+          if (!d.ok) {
+            get().addToast(d.error ?? "Failed to save event series. Please try again.")
+            return false
+          }
+          return true
+        } catch {
+          get().addToast("Failed to save event series. Please try again.")
+          return false
         }
       },
-      addUserEvent: (event) => {
+      addUserEvent: async (event) => {
         const entity = { ...event, community_status: "unverified" as const }
         set((s) => ({
           userEntities: { ...s.userEntities, events: [...s.userEntities.events, entity] },
           catalog: { ...s.catalog, events: [...s.catalog.events, entity] },
         }))
-        if (isAuthUser(get().activePersonId)) {
-          // start_date year-only normalisation now happens server-side in
-          // /api/catalog/entity, mirroring the old payload shape.
-          fetch("/api/catalog/entity", { method: "POST", headers: { "Content-Type": "application/json" },
+        if (!isAuthUser(get().activePersonId)) return true
+        // start_date year-only normalisation now happens server-side in
+        // /api/catalog/entity, mirroring the old payload shape.
+        try {
+          const r = await fetch("/api/catalog/entity", { method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ type: "event", data: {
               id: event.id, name: event.name, event_type: event.event_type,
               year: event.year ?? null,
@@ -649,15 +680,20 @@ export const useLineageStore = create<LineageStore>()(
               series_id: event.series_id ?? null, place_id: event.place_id ?? null,
               description: event.description ?? null,
             }})
-          }).then(r => r.json()).then(d => {
-            if (!d.ok) {
-              set((s) => ({
-                userEntities: { ...s.userEntities, events: s.userEntities.events.filter((e) => e.id !== event.id) },
-                catalog: { ...s.catalog, events: s.catalog.events.filter((e) => e.id !== event.id) },
-              }))
-              get().addToast(d.error ?? "Failed to save event. Please try again.")
-            }
-          }).catch(() => get().addToast("Failed to save event. Please try again."))
+          })
+          const d = await r.json()
+          if (!d.ok) {
+            set((s) => ({
+              userEntities: { ...s.userEntities, events: s.userEntities.events.filter((e) => e.id !== event.id) },
+              catalog: { ...s.catalog, events: s.catalog.events.filter((e) => e.id !== event.id) },
+            }))
+            get().addToast(d.error ?? "Failed to save event. Please try again.")
+            return false
+          }
+          return true
+        } catch {
+          get().addToast("Failed to save event. Please try again.")
+          return false
         }
       },
       addUserPerson: async (person) => {
