@@ -5,6 +5,37 @@ import { pairClaimTagEvents, isAsserterGloballyBlocked } from "@/lib/tag-events"
 import { awardContributionTokens } from "@/lib/tokens"
 import { PREDICATES, ENTITY_TYPES, CONFIDENCE, VISIBILITY, BOARD_RELATIONSHIPS, str, optStr } from "./validation"
 
+// Maps a claim object_type to the catalog table that holds the target row.
+// person is special: the people catalog merges both `people` (ghosts) and
+// `profiles` (registered users), so a person object_id can live in either.
+const OBJECT_TABLE: Record<string, string> = {
+  place: "places", org: "orgs", board: "boards", event: "events",
+}
+
+// Referential guard (PB-010 orphan-claims audit). object_id is a polymorphic
+// reference (the target table depends on object_type) so no DB foreign key can
+// enforce it. Without this check a claim can be saved against a mock/local id
+// that only the asserter's own browser resolves (localStorage userEntities +
+// the mock-data fallback); every other viewer and every server-side read sees
+// the target as "Unknown". Returns true when the referenced row exists.
+async function objectIdExists(
+  db: ReturnType<typeof getServiceClient>,
+  objectType: string,
+  objectId: string,
+): Promise<boolean> {
+  if (objectType === "person") {
+    const [people, profiles] = await Promise.all([
+      db.from("people").select("id").eq("id", objectId).limit(1),
+      db.from("profiles").select("id").eq("id", objectId).limit(1),
+    ])
+    return (people.data?.length ?? 0) > 0 || (profiles.data?.length ?? 0) > 0
+  }
+  const table = OBJECT_TABLE[objectType]
+  if (!table) return false
+  const { data } = await db.from(table).select("id").eq("id", objectId).limit(1)
+  return (data?.length ?? 0) > 0
+}
+
 // POST /api/claims
 //
 // Authed member claim creation (BUG-022). The store's addClaim used to insert
@@ -76,6 +107,17 @@ export async function POST(req: NextRequest) {
   if (objectType === "person" && objectId !== user.id && !personIds.includes(objectId)) personIds.push(objectId)
 
   const db = getServiceClient()
+
+  // Reject a claim whose object_id does not reference a real catalog row. This
+  // is the single backstop against orphaned claims (PB-010 audit): a mock id
+  // picked from an unloaded catalog, or an inline-created entity whose own DB
+  // write failed. addClaim rolls back the optimistic row and toasts on a 400.
+  if (!(await objectIdExists(db, objectType, objectId))) {
+    return NextResponse.json(
+      { error: "object_id does not reference a known entity", reason: "unknown_object" },
+      { status: 400 },
+    )
+  }
 
   // Fail-closed and BEFORE the insert: the old client flow could only refuse
   // after the fact (insert, then /api/tag-event deleted the orphan row).
