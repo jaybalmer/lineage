@@ -105,7 +105,9 @@ export async function GET(req: NextRequest) {
   const claimIds: string[] = []
   for (const t of tags) {
     const ref = (t.moment_ref ?? {}) as TagEventMomentRef
-    if (t.predicate === "story_tag" && ref.story_id) storyIds.push(ref.story_id)
+    // A story_id in the moment ref always wins the preview (member story_tag and
+    // PB-010 embed story co-presence both carry one); otherwise fall to the claim.
+    if (ref.story_id) storyIds.push(ref.story_id)
     else if (ref.claim_id) claimIds.push(ref.claim_id)
   }
   const uniqueStoryIds = Array.from(new Set(storyIds))

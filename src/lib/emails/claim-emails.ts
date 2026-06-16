@@ -78,6 +78,26 @@ export function claimDeniedHtml(personName: string, editorNotes: string | null):
   )
 }
 
+// PB-010 Phase 4a — the "claim your spot" email a public visitor gets after
+// tapping "I was there" on someone's public timeline. The link signs them in;
+// completing the claim (promoting the ghost into their new profile) is Phase 4b.
+// No em dashes in the copy (standing rule).
+export function claimYourSpotHtml(args: {
+  ownerName: string
+  momentLabel: string
+  link: string
+}): string {
+  const safeOwner = escapeHtml(args.ownerName)
+  const safeMoment = escapeHtml(args.momentLabel)
+  return shell(
+    `Claim your spot on ${safeOwner}'s timeline`,
+    `<p style="margin:0 0 14px;">You marked that you were there: <strong style="color:#e5e5e5;">${safeMoment}</strong>.</p>
+     <p style="margin:0 0 14px;">Confirm your email to claim your spot and start your own snowboarding timeline on Linestry. Your mark is held for 7 days.</p>
+     <p style="margin:0;">If this wasn&rsquo;t you, you can safely ignore this email.</p>`,
+    { label: "Claim your spot →", href: args.link },
+  )
+}
+
 interface SendArgs {
   to: string
   subject: string

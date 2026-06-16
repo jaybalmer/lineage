@@ -251,7 +251,10 @@ export default function MeTagsPage() {
         <ul className="flex flex-col gap-3">
           {tags.map((t) => {
             const asserter = t.asserter_id ? asserters[t.asserter_id] ?? null : null
+            // Embed tags have no asserter profile (asserter_id is null) — the
+            // anonymous visitor's name lives on the tag's visitor record.
             const asserterName = asserter?.display_name
+              ?? t.asserter_visitor_record?.name
               ?? (t.source === "system" ? "Linestry" : "Unknown rider")
             const ref = (t.moment_ref ?? {}) as { story_id?: string; claim_id?: string }
             const moment: MomentSummary | null = ref.story_id
