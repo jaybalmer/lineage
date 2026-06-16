@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { SearchPicker } from "@/components/ui/search-picker"
+import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 import { useLineageStore } from "@/store/lineage-store"
 import type { Story } from "@/types"
@@ -25,6 +26,10 @@ interface AddConnectionsPopoverProps {
 export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnectionsPopoverProps) {
   const { activePersonId, catalog, loadCatalog, addToast } = useLineageStore()
   const [posting, setPosting] = useState<string | null>(null)
+  // When a search returns no match, the member can create a brand-new entity
+  // inline (BUG-059), mirroring the Add Story modal. The AddEntityModal key
+  // uses "person" for riders, matching its entityType prop.
+  const [addingEntity, setAddingEntity] = useState<"person" | "place" | "event" | null>(null)
 
   // Lock the background page while the picker is open (BUG-048).
   useBodyScrollLock()
@@ -38,11 +43,13 @@ export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnection
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose()
+      // While the create sub-modal is open it owns Escape; closing the whole
+      // popover out from under it would drop the half-typed entity.
+      if (e.key === "Escape" && !addingEntity) onClose()
     }
     window.addEventListener("keydown", onKey)
     return () => window.removeEventListener("keydown", onKey)
-  }, [onClose])
+  }, [onClose, addingEntity])
 
   const viewerId = activePersonId
   const riderSet = new Set(story.rider_ids ?? [])
@@ -99,6 +106,15 @@ export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnection
     }
   }
 
+  // A brand-new entity was just created and persisted via AddEntityModal (it
+  // only calls onAdded once the DB write lands), so connecting it now is safe:
+  // connect()'s server-side FK checks resolve against a row that exists. Map
+  // the modal's "person" key onto the connection's "rider" type.
+  async function handleEntityCreated(kind: "person" | "place" | "event", entityId: string) {
+    setAddingEntity(null)
+    await connect(kind === "person" ? "rider" : kind, entityId)
+  }
+
   // Self-adds go through the dedicated button, so the rider picker hides the
   // viewer (same filter as AddStoryModal's rider picker).
   const riders = catalog.people.filter((p) => p.id !== viewerId)
@@ -107,6 +123,16 @@ export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnection
   // below the fold on a long story card, off-screen behind the comments; a
   // centered portal-style overlay is always in view on desktop and mobile.
   return (
+    <>
+    {/* Create sub-modal: AddEntityModal is z-[60], so it stacks above this
+        z-50 popover and closing it returns here rather than the story card. */}
+    {addingEntity && (
+      <AddEntityModal
+        entityType={addingEntity}
+        onClose={() => setAddingEntity(null)}
+        onAdded={(id) => handleEntityCreated(addingEntity, id)}
+      />
+    )}
     <div
       className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-0 sm:p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
@@ -150,6 +176,8 @@ export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnection
                 onToggle={(id) => connect("rider", id)}
                 getLabel={(r) => r.display_name}
                 placeholder="Search riders…"
+                onAddNew={() => setAddingEntity("person")}
+                addNewLabel="Add a rider"
               />
             </div>
             <div>
@@ -160,6 +188,8 @@ export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnection
                 onToggle={(id) => connect("place", id)}
                 getLabel={(p) => p.name}
                 placeholder="Search places…"
+                onAddNew={() => setAddingEntity("place")}
+                addNewLabel="Add a new place"
               />
             </div>
             <div>
@@ -170,6 +200,8 @@ export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnection
                 onToggle={(id) => connect("event", id)}
                 getLabel={(e) => `${e.name} ${e.year ?? ""}`}
                 placeholder="Search events…"
+                onAddNew={() => setAddingEntity("event")}
+                addNewLabel="Add a new event"
               />
             </div>
           </div>
@@ -180,5 +212,6 @@ export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnection
         </div>
       </div>
     </div>
+    </>
   )
 }
