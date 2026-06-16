@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, useMemo } from "react"
-import { useLineageStore, getAllClaims } from "@/store/lineage-store"
+import { useLineageStore, getAllClaims, isAuthUser } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import { PREDICATE_ICONS, PREDICATE_LABELS, formatEventDateRange } from "@/lib/utils"
 import { PLACES, ORGS, BOARDS, PEOPLE, EVENTS } from "@/lib/mock-data"
@@ -408,23 +408,30 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
     }
   }, [entityId, predicate]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // All people excluding current user, catalog first, then mock fallback
+  // Signed-in members must only ever pick real DB entities. The mock-data
+  // fallbacks below are for anon/demo users (who cannot persist claims anyway);
+  // showing a mock id to an authed user lets them save a claim that no other
+  // viewer or server read can resolve (PB-010 orphan-claims audit). An authed
+  // user with an unloaded catalog gets an empty list, never a mock id.
+  const authed = isAuthUser(activePersonId)
+
+  // All people excluding current user, catalog first, mock fallback for anon only
   const getAllPeople = (): Person[] => {
-    const people = catalog.people.length ? catalog.people : PEOPLE
+    const people = catalog.people.length ? catalog.people : (authed ? [] : PEOPLE)
     return people.filter((p) => p.id !== activePersonId)
   }
 
   // Get the entity list based on type, use catalog (Supabase) first so IDs
-  // match what's used during display; fall back to mock-data only if catalog
-  // hasn't loaded yet (empty array guard).
+  // match what's used during display; anon/demo users fall back to mock-data,
+  // authed users get an empty list until the catalog loads.
   const getEntityList = () => {
     if (!entityType) return []
     switch (entityType) {
-      case "place": return [...(catalog.places.length ? catalog.places : PLACES), ...userEntities.places]
-      case "org": return [...(catalog.orgs.length ? catalog.orgs : ORGS), ...userEntities.orgs]
-      case "board": return [...(catalog.boards.length ? catalog.boards : BOARDS), ...userEntities.boards]
+      case "place": return [...(catalog.places.length ? catalog.places : (authed ? [] : PLACES)), ...userEntities.places]
+      case "org": return [...(catalog.orgs.length ? catalog.orgs : (authed ? [] : ORGS)), ...userEntities.orgs]
+      case "board": return [...(catalog.boards.length ? catalog.boards : (authed ? [] : BOARDS)), ...userEntities.boards]
       case "person": return getAllPeople()
-      case "event": return [...(catalog.events.length ? catalog.events : EVENTS), ...userEntities.events]
+      case "event": return [...(catalog.events.length ? catalog.events : (authed ? [] : EVENTS)), ...userEntities.events]
       default: return []
     }
   }
