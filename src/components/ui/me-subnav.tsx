@@ -8,6 +8,7 @@ const ITEMS: { href: string; label: string }[] = [
   { href: "/me/tags",                  label: "Tags"          },
   { href: "/me/settings/notifications", label: "Notifications" },
   { href: "/me/settings/tag-privacy",  label: "Tag privacy"   },
+  { href: "/me/settings/public-timeline", label: "Public timeline" },
   { href: "/me/settings/trust",        label: "Trusted"       },
   { href: "/me/settings/blocks",       label: "Blocked"       },
 ]
