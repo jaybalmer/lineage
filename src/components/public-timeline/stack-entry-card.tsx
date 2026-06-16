@@ -103,9 +103,11 @@ export function StackEntryCard({ entry, owner }: { entry: ResolvedStackEntry; ow
   const hasItems = isSummary && entry.items.length > 0
   const taggable =
     TAGGABLE.has(entry.entry_type as TagMoment["kind"]) && !!entry.refId
-  // Non-summary cards expand to reveal the full summary text when it is long
-  // enough to be worth clamping; summary cards expand to the item list.
-  const canExpand = hasItems || (!isSummary && !!entry.summary && entry.summary.length > 70)
+  // The chevron reveals the card's hidden detail: the item list (summary cards),
+  // the full summary text when it is long enough to clamp, and — for taggable
+  // cards — the "I was there" affordance, which stays hidden until expanded.
+  const canExpand =
+    hasItems || (!isSummary && !!entry.summary && entry.summary.length > 70) || taggable
 
   return (
     <div>
@@ -176,8 +178,9 @@ export function StackEntryCard({ entry, owner }: { entry: ResolvedStackEntry; ow
         </div>
       )}
 
-      {/* PB-010 Phase 4: tag-to-claim affordance (story / place / event only) */}
-      {taggable && (
+      {/* PB-010 Phase 4: tag-to-claim affordance (story / place / event only),
+          hidden until the visitor opens the card via the chevron. */}
+      {taggable && expanded && (
         <IWasThere
           ownerSlug={owner.slug}
           ownerName={owner.display_name}

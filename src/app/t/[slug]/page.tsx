@@ -55,47 +55,21 @@ export async function generateMetadata(
   }
 }
 
-// View resolution (D6): explicit ?view= wins, then the owner's stored default,
-// then the owner-type default (members default to stack; v1 is members-only).
-// Clamped to timeline whenever the owner has no curated stack, so a Phase 2 link
-// or an uncurated member never lands on an empty stack. The mobile <480px
-// auto-stack is applied client-side in PublicProfileView.
-function resolveInitialView(
-  paramRaw: string | string[] | undefined,
-  storedDefault: "timeline" | "stack" | null,
-  canStack: boolean,
-): "timeline" | "stack" {
-  const param = Array.isArray(paramRaw) ? paramRaw[0] : paramRaw
-  if (param === "timeline") return "timeline"
-  if (param === "stack") return canStack ? "stack" : "timeline"
-  const ownerDefault = storedDefault ?? "stack" // member default
-  return ownerDefault === "stack" && canStack ? "stack" : "timeline"
-}
-
+// /t/[slug] is the curated Stack surface: render the Stack when the owner has
+// curated one, else fall back to the read-only timeline (PublicProfileView
+// decides from stack.entries). The sibling timeline view now lives at the full
+// profile page /people/[id], reached via the "Timeline" toggle, so there is no
+// in-page view param to resolve here.
 export default async function PublicTimelinePage(
-  { params, searchParams }: {
-    params: Promise<{ slug: string }>
-    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
-  },
+  { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params
-  const { view: viewParam } = await searchParams
   const timeline = await getPayload(slug)
   if (!timeline) notFound()
 
   // Reuse the already-read timeline so the stack read only fetches the curated
   // selection (no second entity resolution).
   const stack = (await readPublicStack(slug, timeline)) ?? { owner: timeline.owner, entries: [] }
-  const canStack = stack.entries.length > 0
-  const initialView = resolveInitialView(viewParam, timeline.default_view, canStack)
-  const lockTimeline = (Array.isArray(viewParam) ? viewParam[0] : viewParam) === "timeline"
 
-  return (
-    <PublicProfileView
-      timeline={timeline}
-      stack={stack}
-      initialView={initialView}
-      lockTimeline={lockTimeline}
-    />
-  )
+  return <PublicProfileView timeline={timeline} stack={stack} />
 }

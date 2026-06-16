@@ -1,22 +1,19 @@
 "use client"
 
-// PB-010A Phase 3: the chromeless /t/[slug] view switch.
+// PB-010 cleanup: the chromeless /t/[slug] surface.
 //
-// Holds both server-resolved payloads (timeline + stack) so the visitor can
-// toggle between views with zero reload / refetch (acceptance §3). Resolution
-// order for the initial view is decided server-side in page.tsx (?view= →
-// public_timeline_default_view → owner-type default), and clamped to timeline
-// whenever the owner has not curated any stack entries — that protects every
-// Phase 2 link and never shows an empty stack. On phones (<480px) the stack is
-// auto-preferred regardless of the owner setting (the supplement's IG-bio rule),
-// but only when there is a stack to show and the visitor did not explicitly ask
-// for the timeline.
+// /t/[slug] is the curated **Stack** — the shareable public card. Its sibling
+// view, the full timeline, now lives at the in-app profile page /people/[id],
+// so the "Timeline" toggle navigates there instead of switching an in-page
+// renderer (the two views are two URLs). A top bar carries the Linestry mark
+// (a path back into the platform) on the left and the Stack/Timeline toggle +
+// Share on the right.
 //
-// The timeline branch reproduces the Phase 2 screen verbatim (light .postcard
-// ground); the stack branch is the dark-ground curated list. Store-free: both
-// renderers take server-resolved payloads.
+// Owners with no curated stack fall back to the read-only chromeless timeline
+// (the Phase 2 screen, story-first, light .postcard ground) so the page is
+// never empty; that fallback shows the mark but no toggle (there is no stack to
+// toggle to). Store-free: both renderers take server-resolved payloads.
 
-import { useState, useSyncExternalStore } from "react"
 import Link from "next/link"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { PublicTimeline } from "@/components/public-timeline/public-timeline"
@@ -24,54 +21,53 @@ import { StackView } from "@/components/public-timeline/stack-view"
 import { StackHeader, StackViewControls } from "@/components/public-timeline/stack-header"
 import type { PublicTimelinePayload, PublicStackPayload } from "@/lib/public-timeline-read"
 
-type StackView = "stack" | "timeline"
-
 function locationLine(region: string | null, country: string | null): string {
   return [region, country].filter(Boolean).join(", ")
 }
 
-// Subscribe to the <480px breakpoint as an external store. getServerSnapshot
-// returns false so SSR + hydration render the server-decided view; the real
-// match applies right after hydration (no mismatch, no setState-in-effect).
-function useIsNarrow(): boolean {
-  return useSyncExternalStore(
-    (onChange) => {
-      const mq = window.matchMedia("(max-width: 479px)")
-      mq.addEventListener("change", onChange)
-      return () => mq.removeEventListener("change", onChange)
-    },
-    () => window.matchMedia("(max-width: 479px)").matches,
-    () => false,
+// Brand mark + wordmark, linking home — the path back into the platform from
+// the chromeless page (top-left of the top bar).
+function BrandHome({ variant }: { variant: "light" | "dark" }) {
+  const dark = variant === "dark"
+  return (
+    <Link
+      href="/"
+      aria-label="Linestry home"
+      className={dark
+        ? "inline-flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+        : "inline-flex items-center gap-2 text-foreground/80 hover:text-foreground transition-colors"}
+    >
+      <BrandMark size={22} color={dark ? "#ffffff" : "#3b82f6"} />
+      <span className="text-sm font-bold" style={{ fontFamily: "var(--font-display)" }}>
+        Linestry
+      </span>
+    </Link>
   )
 }
 
 export function PublicProfileView({
-  timeline, stack, initialView, lockTimeline,
+  timeline, stack,
 }: {
   timeline: PublicTimelinePayload
   stack: PublicStackPayload
-  initialView: StackView
-  /** true when the visitor arrived with ?view=timeline — suppresses the mobile auto-stack. */
-  lockTimeline: boolean
 }) {
-  const canStack = stack.entries.length > 0
-  const isNarrow = useIsNarrow()
-  // A manual toggle wins (in-memory only, per D5); otherwise follow the
-  // server-decided view, but prefer the stack on phones (the IG-bio rule) when
-  // there is one to show and the visitor did not ask for the timeline.
-  const [manualView, setManualView] = useState<StackView | null>(null)
-  const autoView: StackView = isNarrow && canStack && !lockTimeline ? "stack" : initialView
-  let view = manualView ?? autoView
-  if (view === "stack" && !canStack) view = "timeline" // never show an empty stack
-  const setView = (v: StackView) => setManualView(v)
-
   const { owner } = timeline
+  const canStack = stack.entries.length > 0
+  // Resolve to the canonical UUID; /people/[id] rewrites the address bar to the
+  // name slug client-side (collision-safe), so we never risk landing a visitor
+  // on the wrong profile by guessing a slug here.
+  const profileHref = `/people/${owner.id}`
 
-  if (view === "stack" && canStack) {
+  if (canStack) {
     return (
       <div className="min-h-screen w-full" style={{ background: "#1C1917" }}>
-        <main className="mx-auto max-w-xl px-4 py-8 sm:py-10">
-          <StackHeader owner={owner} view={view} onView={setView} showToggle />
+        <main className="mx-auto max-w-xl px-4 py-6 sm:py-8">
+          <div className="flex items-center justify-between gap-3 mb-6">
+            <BrandHome variant="dark" />
+            <StackViewControls timelineHref={profileHref} variant="dark" />
+          </div>
+
+          <StackHeader owner={owner} />
           <StackView entries={stack.entries} owner={owner} />
 
           <footer className="mt-12 pt-6 border-t border-white/10 flex flex-col items-center gap-3 text-center">
@@ -88,19 +84,17 @@ export function PublicProfileView({
     )
   }
 
-  // ── Timeline view (Phase 2 screen, unchanged) ──
+  // ── Timeline fallback (stackless owner): Phase 2 screen on the light ground ──
   const loc = locationLine(owner.region, owner.country)
   const eraLine = owner.era_start ? `Snowboarding since ${owner.era_start}` : null
   const subline = [eraLine, loc].filter(Boolean).join(" · ")
 
   return (
     <div className="postcard min-h-screen w-full">
-      <main className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
-        {(canStack) && (
-          <div className="flex justify-end mb-6">
-            <StackViewControls view={view} onView={setView} showToggle variant="light" />
-          </div>
-        )}
+      <main className="mx-auto max-w-3xl px-4 py-6 sm:py-10">
+        <div className="flex items-center justify-between gap-3 mb-8">
+          <BrandHome variant="light" />
+        </div>
 
         {/* Owner hero */}
         <header className="mb-10 flex items-start gap-4">
