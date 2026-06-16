@@ -1,10 +1,8 @@
 import { cache } from "react"
 import type { Metadata } from "next"
-import Link from "next/link"
 import { notFound } from "next/navigation"
-import { BrandMark } from "@/components/ui/brand-mark"
-import { PublicTimeline } from "@/components/public-timeline/public-timeline"
-import { readPublicTimeline } from "@/lib/public-timeline-read"
+import { PublicProfileView } from "@/components/public-timeline/public-profile-view"
+import { readPublicTimeline, readPublicStack } from "@/lib/public-timeline-read"
 
 // PB-010 Phase 2: the chromeless public timeline at /t/[slug].
 //
@@ -57,76 +55,47 @@ export async function generateMetadata(
   }
 }
 
+// View resolution (D6): explicit ?view= wins, then the owner's stored default,
+// then the owner-type default (members default to stack; v1 is members-only).
+// Clamped to timeline whenever the owner has no curated stack, so a Phase 2 link
+// or an uncurated member never lands on an empty stack. The mobile <480px
+// auto-stack is applied client-side in PublicProfileView.
+function resolveInitialView(
+  paramRaw: string | string[] | undefined,
+  storedDefault: "timeline" | "stack" | null,
+  canStack: boolean,
+): "timeline" | "stack" {
+  const param = Array.isArray(paramRaw) ? paramRaw[0] : paramRaw
+  if (param === "timeline") return "timeline"
+  if (param === "stack") return canStack ? "stack" : "timeline"
+  const ownerDefault = storedDefault ?? "stack" // member default
+  return ownerDefault === "stack" && canStack ? "stack" : "timeline"
+}
+
 export default async function PublicTimelinePage(
-  { params }: { params: Promise<{ slug: string }> },
+  { params, searchParams }: {
+    params: Promise<{ slug: string }>
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+  },
 ) {
   const { slug } = await params
-  const payload = await getPayload(slug)
-  if (!payload) notFound()
+  const { view: viewParam } = await searchParams
+  const timeline = await getPayload(slug)
+  if (!timeline) notFound()
 
-  const { owner } = payload
-  const loc = locationLine(owner.region, owner.country)
-  const eraLine = owner.era_start ? `Snowboarding since ${owner.era_start}` : null
-  const subline = [eraLine, loc].filter(Boolean).join(" · ")
-
-  // Phase 3: when public_timeline_default_view (or a ?view=stack param) selects
-  // the Stack, branch to <StackView /> here. Phase 2 always renders the
-  // timeline, ignoring ?view=stack so links already shared keep working (D6).
+  // Reuse the already-read timeline so the stack read only fetches the curated
+  // selection (no second entity resolution).
+  const stack = (await readPublicStack(slug, timeline)) ?? { owner: timeline.owner, entries: [] }
+  const canStack = stack.entries.length > 0
+  const initialView = resolveInitialView(viewParam, timeline.default_view, canStack)
+  const lockTimeline = (Array.isArray(viewParam) ? viewParam[0] : viewParam) === "timeline"
 
   return (
-    <div className="postcard min-h-screen w-full">
-      <main className="mx-auto max-w-3xl px-4 py-10 sm:py-14">
-        {/* Owner hero */}
-        <header className="mb-10 flex items-start gap-4">
-          {owner.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={owner.avatar_url}
-              alt={owner.display_name}
-              className="w-16 h-16 sm:w-20 sm:h-20 rounded-full object-cover flex-shrink-0 border border-default"
-            />
-          ) : (
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-violet-600 flex items-center justify-center flex-shrink-0 text-2xl font-bold text-white">
-              {owner.display_name[0]?.toUpperCase() ?? "?"}
-            </div>
-          )}
-          <div className="min-w-0 flex-1">
-            <h1
-              className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground leading-tight"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              {owner.display_name}
-            </h1>
-            {subline && <p className="mt-1.5 text-sm text-muted">{subline}</p>}
-            {owner.bio && (
-              <p className="mt-3 text-sm font-light leading-relaxed text-foreground/90 whitespace-pre-wrap">
-                {owner.bio}
-              </p>
-            )}
-          </div>
-        </header>
-
-        {/* Read-only timeline */}
-        <PublicTimeline payload={payload} />
-
-        {/* Attribution footer */}
-        <footer className="mt-16 border-t border-default pt-6 flex flex-col items-center gap-3 text-center">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-muted hover:text-foreground transition-colors"
-            aria-label="Linestry home"
-          >
-            <BrandMark size={18} color="#3b82f6" />
-            <span className="text-xs font-medium">Powered by Linestry</span>
-          </Link>
-          <Link
-            href="/"
-            className="text-xs text-accent-strong hover:underline"
-          >
-            Start your own timeline →
-          </Link>
-        </footer>
-      </main>
-    </div>
+    <PublicProfileView
+      timeline={timeline}
+      stack={stack}
+      initialView={initialView}
+      lockTimeline={lockTimeline}
+    />
   )
 }
