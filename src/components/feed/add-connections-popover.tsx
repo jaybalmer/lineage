@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { SearchPicker } from "@/components/ui/search-picker"
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 import { useLineageStore } from "@/store/lineage-store"
 import type { Story } from "@/types"
 
@@ -24,6 +25,9 @@ interface AddConnectionsPopoverProps {
 export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnectionsPopoverProps) {
   const { activePersonId, catalog, loadCatalog, addToast } = useLineageStore()
   const [posting, setPosting] = useState<string | null>(null)
+
+  // Lock the background page while the picker is open (BUG-048).
+  useBodyScrollLock()
 
   // Same staleness rationale as AddStoryModal: the catalog is fetched once at
   // app boot and never invalidated, so re-fetch when the pickers are about to
@@ -99,17 +103,21 @@ export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnection
   // viewer (same filter as AddStoryModal's rider picker).
   const riders = catalog.people.filter((p) => p.id !== viewerId)
 
+  // Centered modal overlay (BUG-047). Anchored-to-the-card popovers opened far
+  // below the fold on a long story card, off-screen behind the comments; a
+  // centered portal-style overlay is always in view on desktop and mobile.
   return (
-    <>
-      {/* Backdrop: click to close. Dims on mobile, invisible on desktop. */}
-      <div className="fixed inset-0 z-40 bg-black/40 sm:bg-transparent" onClick={onClose} />
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center p-0 sm:p-4"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+    >
+      {/* Backdrop: click to close. */}
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
 
-      {/* Mobile: bottom sheet. Desktop: absolute panel opening DOWNWARD from
-          the interaction row. Downward keeps the whole panel scroll-reachable;
-          an upward panel taller than the space above the first card would
-          clip past the document top. */}
-      <div className="fixed inset-x-0 bottom-0 z-50 max-h-[80vh] overflow-y-auto rounded-t-2xl border border-border-default bg-surface p-4 shadow-2xl sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-full sm:left-0 sm:mt-2 sm:w-96 sm:max-h-[70vh] sm:rounded-xl">
-        <div className="flex items-center justify-between mb-3">
+      {/* Panel: bottom sheet on mobile, centered card on desktop. The header is
+          fixed and the body scrolls so a long catalog list stays reachable. */}
+      <div className="relative z-10 flex max-h-[85vh] w-full flex-col rounded-t-2xl border border-border-default bg-surface shadow-2xl sm:max-h-[80vh] sm:w-96 sm:rounded-2xl">
+        <div className="flex items-center justify-between px-4 pt-4 pb-3">
           <h3 className="text-sm font-bold text-foreground">Add connections</h3>
           <button
             type="button"
@@ -121,54 +129,56 @@ export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnection
           </button>
         </div>
 
-        {viewerId && !viewerOnStory && (
-          <button
-            type="button"
-            onClick={() => connect("rider", viewerId)}
-            disabled={posting !== null}
-            className="w-full mb-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors"
-          >
-            {posting === viewerId ? "Adding…" : "I was there"}
-          </button>
-        )}
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+          {viewerId && !viewerOnStory && (
+            <button
+              type="button"
+              onClick={() => connect("rider", viewerId)}
+              disabled={posting !== null}
+              className="w-full mb-4 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors"
+            >
+              {posting === viewerId ? "Adding…" : "I was there"}
+            </button>
+          )}
 
-        <div className="space-y-4">
-          <div>
-            <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">Riders</label>
-            <SearchPicker
-              items={riders}
-              selected={[]}
-              onToggle={(id) => connect("rider", id)}
-              getLabel={(r) => r.display_name}
-              placeholder="Search riders…"
-            />
+          <div className="space-y-4">
+            <div>
+              <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">Riders</label>
+              <SearchPicker
+                items={riders}
+                selected={[]}
+                onToggle={(id) => connect("rider", id)}
+                getLabel={(r) => r.display_name}
+                placeholder="Search riders…"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">Places</label>
+              <SearchPicker
+                items={catalog.places}
+                selected={[]}
+                onToggle={(id) => connect("place", id)}
+                getLabel={(p) => p.name}
+                placeholder="Search places…"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">Events</label>
+              <SearchPicker
+                items={catalog.events}
+                selected={[]}
+                onToggle={(id) => connect("event", id)}
+                getLabel={(e) => `${e.name} ${e.year ?? ""}`}
+                placeholder="Search events…"
+              />
+            </div>
           </div>
-          <div>
-            <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">Places</label>
-            <SearchPicker
-              items={catalog.places}
-              selected={[]}
-              onToggle={(id) => connect("place", id)}
-              getLabel={(p) => p.name}
-              placeholder="Search places…"
-            />
-          </div>
-          <div>
-            <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">Events</label>
-            <SearchPicker
-              items={catalog.events}
-              selected={[]}
-              onToggle={(id) => connect("event", id)}
-              getLabel={(e) => `${e.name} ${e.year ?? ""}`}
-              placeholder="Search events…"
-            />
-          </div>
+
+          <p className="mt-4 text-[11px] text-muted leading-relaxed">
+            Connections you add are visible to everyone and attributed to you. Riders you tag can remove the tag.
+          </p>
         </div>
-
-        <p className="mt-4 text-[11px] text-muted leading-relaxed">
-          Connections you add are visible to everyone and attributed to you. Riders you tag can remove the tag.
-        </p>
       </div>
-    </>
+    </div>
   )
 }

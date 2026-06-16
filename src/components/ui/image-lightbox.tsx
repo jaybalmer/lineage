@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect } from "react"
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 
 interface ImageLightboxProps {
   src: string
@@ -22,11 +23,9 @@ export function ImageLightbox({ src, alt, href, hrefLabel, onClose }: ImageLight
     return () => window.removeEventListener("keydown", onKey)
   }, [onClose])
 
-  // Prevent scroll behind modal
-  useEffect(() => {
-    document.body.style.overflow = "hidden"
-    return () => { document.body.style.overflow = "" }
-  }, [])
+  // Prevent scroll behind the lightbox (shared, ref-counted so a lightbox
+  // opened over a modal does not release the modal's lock). See BUG-048.
+  useBodyScrollLock()
 
   return (
     <div

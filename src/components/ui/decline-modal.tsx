@@ -12,6 +12,7 @@
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import { USER_FACING_CATEGORIES } from "@/lib/decline-categories"
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 import type { TagEventDeclineCategory } from "@/types"
 
 interface DeclineModalProps {
@@ -39,6 +40,10 @@ export function DeclineModal({
 }: DeclineModalProps) {
   const [category, setCategory] = useState<TagEventDeclineCategory | null>(null)
   const [note,     setNote]     = useState("")
+
+  // Lock the background page while the modal is open (BUG-048). Called before
+  // the early return so the hook order stays stable across renders.
+  useBodyScrollLock(open)
 
   if (!open) return null
 

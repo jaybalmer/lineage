@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { PREDICATE_LABELS } from "@/lib/utils"
 import { trackInviteError, trackInviteEvent, type InviteSurface } from "@/lib/invite-tracking"
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 import type { Predicate } from "@/types"
 
 interface InviteRiderModalProps {
@@ -17,6 +18,10 @@ interface InviteRiderModalProps {
 
 export function InviteRiderModal({ personId, personName, predicate, onClose, surface = "person_profile" }: InviteRiderModalProps) {
   const { activePersonId, profileOverride, catalog } = useLineageStore()
+
+  // Lock the background page while the modal is open (BUG-048).
+  useBodyScrollLock()
+
   const [email, setEmail] = useState("")
   const [sending, setSending] = useState(false)
   const [done, setDone] = useState(false)

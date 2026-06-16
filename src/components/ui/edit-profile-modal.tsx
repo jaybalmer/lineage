@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/utils"
 import { PLACES } from "@/lib/mock-data"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 import type { Person, PrivacyLevel, ProfileLink } from "@/types"
 
 interface EditProfileModalProps {
@@ -35,6 +36,9 @@ export function getLinkIcon(url: string): string {
 
 export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
   const { setProfileOverride, onboarding, activePersonId } = useLineageStore()
+
+  // Lock the background page while the modal is open (BUG-048).
+  useBodyScrollLock()
 
   const [displayName, setDisplayName] = useState(person.display_name ?? "")
   const [birthYear, setBirthYear] = useState(person.birth_year ? String(person.birth_year) : "")

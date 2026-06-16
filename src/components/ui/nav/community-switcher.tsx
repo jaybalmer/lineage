@@ -74,7 +74,11 @@ export function CommunitySwitcher({ activeCommunitySlug, communities }: Communit
 
       {open && (
         <div
-          className="absolute left-0 top-full mt-2 w-[260px] bg-surface border border-border-default rounded-xl shadow-lg overflow-hidden z-50"
+          // BUG-049: on mobile the trigger dot sits mid-row, so a trigger-anchored
+          // menu ran off the right edge. Pin it just below the sticky nav row and
+          // clamp to the viewport on mobile; keep the trigger-anchored dropdown on
+          // desktop.
+          className="fixed left-auto right-3 top-14 w-[260px] max-w-[calc(100vw-1.5rem)] sm:absolute sm:left-0 sm:right-auto sm:top-full sm:mt-2 bg-surface border border-border-default rounded-xl shadow-lg overflow-hidden z-50"
           style={{ fontFamily: "var(--font-body)" }}
         >
           <div className="max-h-[400px] overflow-y-auto py-1">

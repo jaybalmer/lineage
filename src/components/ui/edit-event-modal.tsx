@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import { PLACES, EVENT_SERIES } from "@/lib/mock-data"
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 import type { Event, EventType, EventSeries } from "@/types"
 
 function isDbEvent(id: string): boolean {
@@ -50,6 +51,9 @@ interface EditEventModalProps {
 
 export function EditEventModal({ event, onClose, onSaved }: EditEventModalProps) {
   const { updateUserEvent, addUserSeries, catalog, activePersonId } = useLineageStore()
+
+  // Lock the background page while the modal is open (BUG-048).
+  useBodyScrollLock()
 
   const [name, setName] = useState(event.name)
   const [eventType, setEventType] = useState<EventType>(event.event_type)

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react"
 import posthog from "posthog-js"
 import { cn } from "@/lib/utils"
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 import { useLineageStore } from "@/store/lineage-store"
 
 interface ReportBugModalProps {
@@ -85,6 +86,9 @@ export function ReportBugModal({ open, onClose, includeAccount = false }: Report
       replayUrlAtOpenRef.current = null
     }
   }, [open])
+
+  // Lock the background page while the modal is open (BUG-048).
+  useBodyScrollLock(open)
 
   if (!open) return null
 

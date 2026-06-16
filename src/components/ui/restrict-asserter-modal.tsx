@@ -10,6 +10,7 @@
 
 import { useState } from "react"
 import { cn } from "@/lib/utils"
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 
 interface CascadePreview {
   pending_declined:  number
@@ -36,6 +37,10 @@ export function RestrictAsserterModal({
   submitting = false,
 }: RestrictAsserterModalProps) {
   const [reason, setReason] = useState("")
+
+  // Lock the background page while the modal is open (BUG-048). Called before
+  // the early return so the hook order stays stable across renders.
+  useBodyScrollLock(open)
 
   if (!open) return null
 

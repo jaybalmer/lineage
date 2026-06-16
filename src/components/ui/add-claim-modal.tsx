@@ -11,6 +11,7 @@ import { BoardRelationshipToggles } from "@/components/ui/board-relationship-tog
 import { toBoardRelationship, boardRelationshipFlags } from "@/lib/board-relationship"
 import { RiderAvatar, getInitials } from "@/components/ui/rider-avatar"
 import { isInvitableNodeStatus } from "@/lib/invite-tracking"
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 import type { Predicate, EntityType, ConfidenceLevel, PrivacyLevel, Board, Person } from "@/types"
 
 const inputCls =
@@ -326,6 +327,9 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
     activePersonId, addClaim, updateClaim, userEntities, catalog, loadCatalog,
     sessionClaims, dbClaims, deletedClaimIds, claimOverrides,
   } = useLineageStore()
+
+  // Lock the background page while the modal is open (BUG-048).
+  useBodyScrollLock()
 
   // Silent-failures brief Finding #4: refresh the public catalog whenever the
   // modal opens, so deleted/merged ghosts disappear from the riders/entities

@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 import type { Claim, ConfidenceLevel, PrivacyLevel } from "@/types"
 import { PREDICATE_LABELS, PREDICATE_ICONS, formatEventDateRange } from "@/lib/utils"
 
@@ -38,6 +39,9 @@ function yearToDate(year: string): string | undefined {
 
 export function EditClaimModal({ claim, entityName, onClose }: EditClaimModalProps) {
   const { updateClaim } = useLineageStore()
+
+  // Lock the background page while the modal is open (BUG-048).
+  useBodyScrollLock()
 
   const isEventClaim = EVENT_PREDICATES.has(claim.predicate)
 

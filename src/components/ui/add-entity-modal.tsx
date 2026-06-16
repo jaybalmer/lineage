@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import { PLACES, EVENT_SERIES, getPersonById } from "@/lib/mock-data"
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 import type { PlaceType, OrgType, EventType, EventSeries } from "@/types"
 
 type AddEntityType = "place" | "board" | "org" | "event" | "person"
@@ -37,6 +38,9 @@ const MONTHS = [
 
 export function AddEntityModal({ entityType, initialName = "", initialSeriesId = "", initialPlaceId = "", onClose, onAdded }: AddEntityModalProps) {
   const { addUserPlace, addUserBoard, addUserOrg, addUserEvent, addUserSeries, addUserPerson, activePersonId, profileOverride, catalog } = useLineageStore()
+
+  // Lock the background page while the modal is open (BUG-048).
+  useBodyScrollLock()
 
   // Combined series/places lists (catalog includes user-added entries)
   const allSeries = catalog.eventSeries?.length ? catalog.eventSeries : EVENT_SERIES
