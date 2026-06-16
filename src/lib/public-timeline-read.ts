@@ -457,6 +457,9 @@ export interface ResolvedStackSummaryItem {
 export interface ResolvedStackEntry {
   id: string
   entry_type: PublicStackEntryType
+  /** The underlying entity id (place/event/story/board/rider). Null for
+   *  category_summary. PB-010 Phase 4 reads this to build the tag moment. */
+  refId: string | null
   position: number
   accent: StackAccent
   kicker: string                 // "Story" | "Place" | … | "Places"
@@ -656,7 +659,7 @@ export async function readPublicStack(
 
   // ── Resolve each curated row. A null result drops the row (gone-private etc.).
   function resolveRow(row: PublicStackEntry): ResolvedStackEntry | null {
-    const base = { id: row.id, position: row.position }
+    const base = { id: row.id, position: row.position, refId: row.entry_ref_id ?? null }
 
     if (row.entry_type === "category_summary") {
       if (!row.category_key) return null

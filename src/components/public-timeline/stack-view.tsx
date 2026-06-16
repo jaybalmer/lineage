@@ -5,10 +5,10 @@
 // supplement is explicit that the stack is one list). Store-free: every entry is
 // resolved server-side by readPublicStack. Decoupled from the timeline renderer.
 
-import type { ResolvedStackEntry } from "@/lib/public-timeline-read"
+import type { ResolvedStackEntry, PublicTimelineOwner } from "@/lib/public-timeline-read"
 import { StackEntryCard } from "@/components/public-timeline/stack-entry-card"
 
-export function StackView({ entries }: { entries: ResolvedStackEntry[] }) {
+export function StackView({ entries, owner }: { entries: ResolvedStackEntry[]; owner: PublicTimelineOwner }) {
   if (entries.length === 0) {
     return (
       <div className="text-center text-white/55 py-16">
@@ -20,7 +20,7 @@ export function StackView({ entries }: { entries: ResolvedStackEntry[] }) {
   return (
     <div className="flex flex-col gap-2.5">
       {entries.map((entry) => (
-        <StackEntryCard key={entry.id} entry={entry} />
+        <StackEntryCard key={entry.id} entry={entry} owner={owner} />
       ))}
     </div>
   )

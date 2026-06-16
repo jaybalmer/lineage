@@ -9,10 +9,15 @@
 // at once. The card layout leaves room for it and stops there.
 
 import { useState } from "react"
-import type { ResolvedStackEntry, StackAccent } from "@/lib/public-timeline-read"
+import type { ResolvedStackEntry, StackAccent, PublicTimelineOwner } from "@/lib/public-timeline-read"
 import { useBoardImage } from "@/hooks/use-board-image"
 import { EntityGraphic } from "@/components/public-timeline/entity-graphic"
+import { IWasThere, type TagMoment } from "@/components/public-timeline/i-was-there"
 import { cn } from "@/lib/utils"
+
+// Only story / place / event stack entries are taggable (brief §5). Board,
+// rider and category_summary entries get no "I was there" affordance.
+const TAGGABLE = new Set<TagMoment["kind"]>(["story", "place", "event"])
 
 const ACCENT_EDGE: Record<StackAccent, string> = {
   violet: "bg-violet-600", teal: "bg-teal-600", amber: "bg-amber-500",
@@ -92,10 +97,12 @@ function StackThumb({ entry }: { entry: ResolvedStackEntry }) {
   )
 }
 
-export function StackEntryCard({ entry }: { entry: ResolvedStackEntry }) {
+export function StackEntryCard({ entry, owner }: { entry: ResolvedStackEntry; owner: PublicTimelineOwner }) {
   const [expanded, setExpanded] = useState(false)
   const isSummary = entry.entry_type === "category_summary"
   const hasItems = isSummary && entry.items.length > 0
+  const taggable =
+    TAGGABLE.has(entry.entry_type as TagMoment["kind"]) && !!entry.refId
   // Non-summary cards expand to reveal the full summary text when it is long
   // enough to be worth clamping; summary cards expand to the item list.
   const canExpand = hasItems || (!isSummary && !!entry.summary && entry.summary.length > 70)
@@ -167,6 +174,16 @@ export function StackEntryCard({ entry }: { entry: ResolvedStackEntry }) {
             </div>
           )}
         </div>
+      )}
+
+      {/* PB-010 Phase 4: tag-to-claim affordance (story / place / event only) */}
+      {taggable && (
+        <IWasThere
+          ownerSlug={owner.slug}
+          ownerName={owner.display_name}
+          moment={{ kind: entry.entry_type as TagMoment["kind"], id: entry.refId! }}
+          variant="panel"
+        />
       )}
     </div>
   )

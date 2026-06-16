@@ -21,6 +21,7 @@ import type {
   TagEventSubjectTier,
   TagEventDisplayState,
   TagEventMomentRef,
+  TagEventVisitorRecord,
 } from "@/types"
 
 // ── Subject-tier resolution ─────────────────────────────────────────────────
@@ -119,6 +120,11 @@ export function tagPredicateLabel(predicate: string, ownerName?: string): string
   switch (predicate) {
     case "story_tag":     return `tagged ${subject} in a story`
     case "rode_with":     return ownerName ? `said they rode with ${ownerName}` : "said you rode together"
+    // PB-010 Phase 4 — public-embed co-presence tags. The owner's moment
+    // (place / event) shows in the preview below, so these stay short.
+    case "rode_at":       return ownerName ? `marked the same place as ${ownerName}` : "marked they were there too"
+    case "spectated_at":  return ownerName ? `said they were at ${ownerName}'s event` : "said they were at this event too"
+    case "competed_at":   return ownerName ? `said they competed at ${ownerName}'s event` : "said they competed here too"
     case "shot_by":       return ownerName ? `said ${ownerName} photographed them` : "said you photographed them"
     case "sponsored_by":  return ownerName ? `said ${ownerName} sponsored them` : "said you sponsored them"
     case "coached_by":    return ownerName ? `said ${ownerName} coached them` : "said you coached them"
@@ -153,6 +159,10 @@ export interface InsertTagEventInput {
   predicate: string
   momentRef: TagEventMomentRef
   communityId?: string | null
+  /** PB-010 Phase 4: anonymous public-timeline-embed tags carry their asserter
+   *  here (hashed email + ip, name, role) since asserterId is null. The
+   *  blocklist cascade trigger keys off ->>'email_hash' / ->>'ip_hash'. */
+  asserterVisitorRecord?: TagEventVisitorRecord | null
 }
 
 export async function insertTagEvent(
@@ -170,6 +180,7 @@ export async function insertTagEvent(
     .insert({
       source: input.source,
       asserter_id: input.asserterId,
+      asserter_visitor_record: input.asserterVisitorRecord ?? null,
       subject_id: input.subjectId,
       subject_tier_at_assert: subjectTier,
       predicate: input.predicate,

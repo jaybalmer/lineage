@@ -17,11 +17,13 @@ import type { Claim, EntityType, Story, Predicate } from "@/types"
 import type {
   PublicTimelinePayload,
   PublicTimelineEntities,
+  PublicTimelineOwner,
 } from "@/lib/public-timeline-read"
 import { cn, parseYouTubeId, PREDICATE_LABELS, formatDateRange } from "@/lib/utils"
 import { groupRodeAtCompanions } from "@/lib/companion-grouping"
 import { dateToSortNum, groupByDecade } from "@/lib/timeline-grouping"
 import { EntityGraphic } from "@/components/public-timeline/entity-graphic"
+import { IWasThere } from "@/components/public-timeline/i-was-there"
 
 type FeedItem =
   | { kind: "claim"; claim: Claim; sortDate: number }
@@ -207,7 +209,7 @@ function PublicClaimCard({
 
 const CHIP = "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full"
 
-function PublicStoryCard({ story, entities }: { story: Story; entities: PublicTimelineEntities }) {
+function PublicStoryCard({ story, entities, owner }: { story: Story; entities: PublicTimelineEntities; owner: PublicTimelineOwner }) {
   const [lightbox, setLightbox] = useState<string | null>(null)
   const photos = (story.photos ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
 
@@ -338,6 +340,14 @@ function PublicStoryCard({ story, entities }: { story: Story; entities: PublicTi
         </div>
       )}
 
+      {/* PB-010 Phase 4: tag-to-claim affordance */}
+      <IWasThere
+        ownerSlug={owner.slug}
+        ownerName={owner.display_name}
+        moment={{ kind: "story", id: story.id }}
+        variant="inline"
+      />
+
       {/* Lightbox */}
       {lightbox && (
         <div
@@ -415,7 +425,7 @@ export function PublicTimeline({ payload }: { payload: PublicTimelinePayload }) 
                       entities={entities}
                     />
                   ) : (
-                    <PublicStoryCard story={item.story} entities={entities} />
+                    <PublicStoryCard story={item.story} entities={entities} owner={payload.owner} />
                   )}
                 </div>
               )
