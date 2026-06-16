@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase"
 import { cn, parseYouTubeId } from "@/lib/utils"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { SearchPicker } from "@/components/ui/search-picker"
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 import type { Story, PrivacyLevel } from "@/types"
 
 type AddableEntity = "place" | "event" | "org" | "board" | "person"
@@ -32,6 +33,9 @@ type UploadState = { file: File; preview: string; uploading: boolean; url?: stri
 export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStoryModalProps) {
   const { activePersonId, profileOverride, catalog, loadCatalog } = useLineageStore()
   const isEditing = !!editStory
+
+  // Lock the background page while the modal is open (BUG-048).
+  useBodyScrollLock()
 
   // Silent-failures brief Finding #4: the catalog is fetched once at app boot
   // by <CatalogLoader/> and never invalidated, so deleted/merged ghosts linger

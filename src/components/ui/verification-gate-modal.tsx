@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { useLineageStore } from "@/store/lineage-store"
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 
 interface Props {
   onClose: () => void
@@ -9,6 +10,9 @@ interface Props {
 
 export function VerificationGateModal({ onClose }: Props) {
   const { setTriggerPrefs } = useLineageStore()
+
+  // Lock the background page while the modal is open (BUG-048).
+  useBodyScrollLock()
 
   const handleNotNow = () => {
     setTriggerPrefs({ verification_gate_session_shown: true })

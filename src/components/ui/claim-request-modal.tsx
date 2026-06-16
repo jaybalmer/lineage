@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 import type { ClaimRequest } from "@/types"
 
 interface ClaimRequestModalProps {
@@ -14,6 +15,9 @@ export function ClaimRequestModal({ personId, personName, onClose, onCreated }: 
   const [evidence, setEvidence] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
+
+  // Lock the background page while the modal is open (BUG-048).
+  useBodyScrollLock()
 
   async function handleSubmit() {
     setSubmitting(true)
