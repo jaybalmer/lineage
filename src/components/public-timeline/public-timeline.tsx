@@ -66,6 +66,26 @@ function formatStoryDate(dateStr: string): string {
   return d.toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" })
 }
 
+// Place and event claim cards are excluded from the public timeline (owner
+// decision: keep the public surface story-first). It is also a correctness
+// guard: many place/event refs are mock or local-only catalog ids that exist
+// in the browser store but not in the DB, so they cannot resolve server-side.
+const HIDDEN_CLAIM_OBJECT_TYPES = new Set<EntityType>(["place", "event"])
+
+// True when a claim's object actually resolved in the payload, so we never
+// render an "Unknown" card if a person/board/org id is ever missing.
+function claimObjectResolves(claim: Claim, entities: PublicTimelineEntities): boolean {
+  const id = claim.object_id
+  switch (claim.object_type) {
+    case "person": return !!entities.people[id]
+    case "board":  return !!entities.boards[id]
+    case "org":    return !!entities.orgs[id]
+    case "place":  return !!entities.places[id]
+    case "event":  return !!entities.events[id]
+    default:       return false
+  }
+}
+
 // ── Claim card (read-only, store-free) ───────────────────────────────────────
 
 function PublicClaimCard({
@@ -340,11 +360,17 @@ export function PublicTimeline({ payload }: { payload: PublicTimelinePayload }) 
   const { entities } = payload
 
   // Fold companion rode_with rows into their matching rode_at (same as FeedView)
-  // so the timeline shows one card per trip with a companion list.
+  // so a rode_with fanned out from a hidden rode_at is absorbed, not surfaced.
   const { claims: groupedClaims, companionMap } = groupRodeAtCompanions(payload.claims)
 
+  // Story-first: drop place/event claim cards and any claim whose object did
+  // not resolve, so the timeline never shows an "Unknown" card.
+  const visibleClaims = groupedClaims.filter(
+    (c) => !HIDDEN_CLAIM_OBJECT_TYPES.has(c.object_type) && claimObjectResolves(c, entities),
+  )
+
   const items: FeedItem[] = [
-    ...groupedClaims.map((claim) => ({ kind: "claim" as const, claim, sortDate: dateToSortNum(claim.start_date) })),
+    ...visibleClaims.map((claim) => ({ kind: "claim" as const, claim, sortDate: dateToSortNum(claim.start_date) })),
     ...payload.stories.map((story) => ({ kind: "story" as const, story, sortDate: dateToSortNum(story.story_date) })),
   ].sort((a, b) => {
     if (a.sortDate !== b.sortDate) return b.sortDate - a.sortDate
