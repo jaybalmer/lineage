@@ -140,6 +140,19 @@ export default function AuthCompletePage() {
         console.error("Invite merge error:", mergeErr)
       }
 
+      // ── 5. Public tag-to-claim completion (PB-010 Phase 4b) ───────────────
+      // If this email was publicly tagged on someone's timeline (a Phase 4a
+      // "I was there" ghost), promote that ghost into this account: repoint its
+      // claims here, flip the paired tags to attributed, and remove the ghost.
+      // The route is keyed server-side on the authenticated email, so it is safe
+      // to call for everyone — it no-ops for a normal signup with no pending tag.
+      try {
+        setStatus("Claiming your spot…")
+        await fetch("/api/public/claim-complete", { method: "POST" })
+      } catch (claimErr) {
+        console.error("Public claim completion error:", claimErr)
+      }
+
       // Mark welcome explosion as pending — profile page picks this up and fires it
       if (!existingProfile) {
         store.setTriggerPrefs({ welcome_pending: true })
