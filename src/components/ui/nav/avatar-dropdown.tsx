@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { CommunityLink } from "@/components/ui/community-link"
 import { getInitials } from "@/components/ui/rider-avatar"
 import { useLineageStore } from "@/store/lineage-store"
 import { useTheme } from "@/lib/theme"
@@ -22,6 +21,8 @@ export interface AvatarDropdownProps {
   totalTokens:     number
   pendingTagCount: number
   isEditor:        boolean
+  /** The viewer's unified profile URL (/people/{slug}); /onboarding when signed out. */
+  myTimelineHref:  string
 }
 
 /**
@@ -29,7 +30,7 @@ export interface AvatarDropdownProps {
  * the theme toggle, and the editor link off the main nav rows (D6). Its own ref
  * and state keep each rendered instance isolated.
  */
-export function AvatarDropdown({ displayName, tier, totalTokens, pendingTagCount, isEditor }: AvatarDropdownProps) {
+export function AvatarDropdown({ displayName, tier, totalTokens, pendingTagCount, isEditor, myTimelineHref }: AvatarDropdownProps) {
   const path   = usePathname()
   const router = useRouter()
   const { theme, toggle } = useTheme()
@@ -105,12 +106,12 @@ export function AvatarDropdown({ displayName, tier, totalTokens, pendingTagCount
             )}
           </div>
 
-          {/* My Timeline */}
-          <CommunityLink href="/profile"
+          {/* My Timeline — the unified /people/{slug} owner page */}
+          <Link href={myTimelineHref}
             className="flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
             style={{ fontSize: 11 }}>
             My Timeline
-          </CommunityLink>
+          </Link>
 
           {/* Tags */}
           <Link href="/me/tags"

@@ -16,6 +16,7 @@ import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { StackTimelineToggle } from "@/components/public-timeline/stack-timeline-toggle"
+import { OwnerTimelinePanel } from "@/components/profile/owner-timeline-panel"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import { HelpConnectCard } from "@/components/ui/help-connect-card"
 import { isInvitableNodeStatus, trackInviteEvent } from "@/lib/invite-tracking"
@@ -79,6 +80,10 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   // Fetch Supabase claims for this rider — fires once resolved ID is known
   useEffect(() => {
     if (!catalogLoaded || !resolvedId) return
+    // The owner's own profile renders <OwnerTimelinePanel/> below, which does its
+    // own claims read (unfiltered by visibility). Skip the public read here so we
+    // don't fetch a visibility-filtered set the owner never sees.
+    if (isAuthUser(activePersonId) && resolvedId === activePersonId) return
     // PB-009 Phase 1: person-detail public read through claims_public.
     supabase
       .from("claims_public")
@@ -140,6 +145,16 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
         <div className="animate-pulse text-accent"><BrandMark size={30} /></div>
       </div>
     )
+  }
+
+  // Unified profile: the viewer's own /people page renders owner mode — the full
+  // timeline toolkit, claims read unfiltered by visibility, and optimistic adds
+  // via getAllClaims. Placed before the notFound() guard so the owner reaching
+  // their page by UUID (the redirect target from /me/timeline and
+  // /{community}/profile) never 404s if their profile row is not yet in the
+  // merged catalog. Everyone else falls through to the read-only public view.
+  if (isAuthUser(activePersonId) && resolvedId === activePersonId) {
+    return <OwnerTimelinePanel />
   }
 
   if (!resolvedPerson) notFound()
