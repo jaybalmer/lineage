@@ -1,22 +1,25 @@
 import { ImageResponse } from "next/og"
+import { readFile } from "node:fs/promises"
+import { join } from "node:path"
 import { brandMarkSvgString } from "@/components/ui/brand-mark"
 import { readPublicTimelineOwner } from "@/lib/public-timeline-read"
 
-// PB-010 Phase 2: dynamic share card for /t/[slug]. Mirrors the /word OG route
-// (Satori-compatible Geologica fetch, light dictionary-card palette). Renders
-// the owner's name + era + location so a shared timeline link previews richly.
+// PB-010 Phase 2: dynamic share card for /t/[slug]. Dark brand-guide treatment:
+// warm near-black ground, blue eyebrow, the tilted monogram + Calendula "Linestry"
+// wordmark lockup, the owner as the subject line, and a large blue share link.
 
 const S = 2
 export const size = { width: 1200 * S, height: 630 * S }
 export const contentType = "image/png"
 export const alt = "A snowboarding timeline on Linestry"
 
-const FRAME      = "#F6F6F5"
-const CARD       = "#FFFFFF"
-const BORDER     = "#E7E5E4"
-const INK        = "#1C1917"
-const MUTED      = "#78716C"
-const ACCENT     = "#2563EB"
+const FRAME   = "#100F0E"  // page ground (near-black, warm)
+const CARD     = "#1A1715"  // dark panel
+const BORDER   = "#2C2926"  // hairline
+const WHITE    = "#FAFAF9"  // foreground on dark
+const MUTED     = "#A8A29E"  // muted body on dark
+const BLUE      = "#60A5FA"  // accent text on dark (AA-legible)
+const MARK_BLUE = "#3B82F6"  // vivid brand blue for the mark body
 
 async function loadGeologica(weight: number, text: string): Promise<ArrayBuffer | null> {
   try {
@@ -31,30 +34,44 @@ async function loadGeologica(weight: number, text: string): Promise<ArrayBuffer 
   }
 }
 
+async function loadCalendula(): Promise<Buffer | null> {
+  try {
+    return await readFile(join(process.cwd(), "src/app/fonts/Calendula-Bold.ttf"))
+  } catch {
+    return null
+  }
+}
+
 export default async function OpengraphImage(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params
   const owner = await readPublicTimelineOwner(slug)
 
-  const name = owner?.display_name ?? "Linestry"
   const era = owner?.era_start ? `Snowboarding since ${owner.era_start}` : null
   const loc = [owner?.region, owner?.country].filter(Boolean).join(", ")
-  const sub = [era, loc || null].filter(Boolean).join("  ·  ")
-  const label = owner ? "Linestry timeline" : "Linestry"
+  const subjectName = owner?.display_name ?? null
+  const subjectSub = [era, loc || null].filter(Boolean).join("  ·  ")
+  const eyebrow = "LINESTRY · TIMELINE"
+  const tagline = "A living, community-authored snowboarding history"
   const urlLine = owner ? `linestry.com/t/${owner.slug}` : "linestry.com"
 
-  const [displayFont, bodyFont] = await Promise.all([
-    loadGeologica(800, name),
-    loadGeologica(500, label + sub + urlLine),
+  const boldText = eyebrow + (subjectName ?? "") + urlLine
+  const mutedText = subjectSub + tagline
+
+  const [boldFont, mutedFont, wordmarkFont] = await Promise.all([
+    loadGeologica(700, boldText),
+    loadGeologica(400, mutedText),
+    loadCalendula(),
   ])
   const fonts = [
-    ...(displayFont ? [{ name: "Geologica", data: displayFont, weight: 800 as const, style: "normal" as const }] : []),
-    ...(bodyFont    ? [{ name: "Geologica", data: bodyFont,    weight: 500 as const, style: "normal" as const }] : []),
+    ...(boldFont   ? [{ name: "Geologica", data: boldFont,  weight: 700 as const, style: "normal" as const }] : []),
+    ...(mutedFont  ? [{ name: "Geologica", data: mutedFont, weight: 400 as const, style: "normal" as const }] : []),
+    ...(wordmarkFont ? [{ name: "Calendula", data: wordmarkFont, weight: 700 as const, style: "normal" as const }] : []),
   ]
 
-  // Light card ground: defaults give a blue body with an ink contrast dot.
-  const mark = "data:image/svg+xml," + encodeURIComponent(brandMarkSvgString())
+  // Dark ground: blue mark body with a white contrast dot.
+  const mark = "data:image/svg+xml," + encodeURIComponent(brandMarkSvgString(MARK_BLUE, "#FFFFFF"))
 
   return new ImageResponse(
     (
@@ -69,38 +86,42 @@ export default async function OpengraphImage(
           style={{
             display: "flex", flexDirection: "column", width: "100%", height: "100%",
             justifyContent: "space-between", background: CARD,
-            border: `${1 * S}px solid ${BORDER}`, borderRadius: 28 * S,
-            padding: 64 * S, boxShadow: `0 ${2 * S}px ${24 * S}px rgba(0,0,0,0.05)`,
+            border: `${1 * S}px solid ${BORDER}`, borderRadius: 28 * S, padding: 72 * S,
           }}
         >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <span style={{ fontSize: 24 * S, fontWeight: 500, color: MUTED, letterSpacing: "0.16em", textTransform: "uppercase" }}>
-              {label}
-            </span>
-            <img width={64 * S} height={42 * S} src={mark} alt="" />
-          </div>
-
+          {/* Top cluster: eyebrow, lockup, subject */}
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontSize: 88 * S, fontWeight: 800, color: INK, letterSpacing: "-0.03em", lineHeight: 1.02 }}>
-              {name}
+            <span style={{ fontSize: 26 * S, fontWeight: 700, color: BLUE, letterSpacing: "0.2em" }}>
+              {eyebrow}
             </span>
-            {sub && (
-              <span style={{ marginTop: 22 * S, fontSize: 32 * S, fontWeight: 500, color: MUTED }}>
-                {sub}
+
+            <div style={{ display: "flex", alignItems: "center", gap: 28 * S, marginTop: 34 * S }}>
+              <img width={208 * S} height={137 * S} src={mark} alt="" />
+              <span style={{ fontFamily: "Calendula", fontSize: 116 * S, color: WHITE, lineHeight: 1 }}>
+                Linestry
+              </span>
+            </div>
+
+            {subjectName ? (
+              <div style={{ display: "flex", flexDirection: "column", marginTop: 40 * S }}>
+                <span style={{ fontSize: 48 * S, fontWeight: 700, color: WHITE, letterSpacing: "-0.01em" }}>
+                  {subjectName}
+                </span>
+                {subjectSub && (
+                  <span style={{ marginTop: 10 * S, fontSize: 30 * S, fontWeight: 400, color: MUTED }}>
+                    {subjectSub}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <span style={{ marginTop: 40 * S, fontSize: 32 * S, fontWeight: 400, color: MUTED }}>
+                {tagline}
               </span>
             )}
-            {/* Entity-color tiles evoke the curated stack of cards (stories, places,
-                events, boards, brands) without a remote-image fetch (Satori-safe). */}
-            {owner && (
-              <div style={{ display: "flex", gap: 12 * S, marginTop: 30 * S }}>
-                {["#7C3AED", "#0D9488", "#D97706", "#059669", "#0891B2"].map((c) => (
-                  <div key={c} style={{ display: "flex", width: 60 * S, height: 60 * S, borderRadius: 14 * S, background: c }} />
-                ))}
-              </div>
-            )}
           </div>
 
-          <span style={{ fontSize: 26 * S, fontWeight: 500, color: ACCENT }}>
+          {/* Footer: share link */}
+          <span style={{ fontSize: 42 * S, fontWeight: 700, color: BLUE }}>
             {urlLine}
           </span>
         </div>
