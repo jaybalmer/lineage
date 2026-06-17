@@ -130,7 +130,10 @@ export default function MeTagsPage() {
   }
 
   // ── Render guards ────────────────────────────────────────────────────────
-  if (!authReady || loading) {
+  // Only gate the whole page on auth-readiness. Data reloads (filter changes)
+  // are handled inline below so the header and filter chip row stay mounted and
+  // the chip scroller keeps its position instead of resetting. (BUG-073)
+  if (!authReady) {
     return (
       <>
         <Nav />
@@ -225,6 +228,12 @@ export default function MeTagsPage() {
           ))}
         </div>
 
+        {/* Cards area: reloads on filter change live here so the chip row above
+            stays mounted and keeps its scroll position. (BUG-073) */}
+        {loading ? (
+          <div className="text-muted text-sm py-8">Loading…</div>
+        ) : (
+          <>
         {/* Select-all (only when there are rows) */}
         {tags.length > 0 && (
           <div className="flex items-center gap-2 mb-3 text-xs text-muted">
@@ -369,6 +378,8 @@ export default function MeTagsPage() {
             )
           })}
         </ul>
+          </>
+        )}
       </main>
 
       {/* Sticky bulk action bar */}
