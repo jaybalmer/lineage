@@ -188,7 +188,7 @@ export default function CommunityHome() {
                 <div>
                   <h1
                     className="text-3xl sm:text-4xl font-bold text-white leading-tight"
-                    style={{ textShadow: "0 2px 14px rgba(0,0,0,0.55)" }}
+                    style={{ textShadow: "0 2px 14px rgba(0,0,0,0.55)", fontFamily: "var(--font-wordmark)" }}
                   >
                     {displayName}
                   </h1>
@@ -212,7 +212,7 @@ export default function CommunityHome() {
               <div className="w-10 h-10 rounded-full flex-shrink-0" style={{ background: meta.dotColor }} />
             )}
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight">
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight" style={{ fontFamily: "var(--font-wordmark)" }}>
                 {displayName}
               </h1>
               <p className="text-muted text-sm mt-1">{meta.tagline}</p>
@@ -248,7 +248,7 @@ export default function CommunityHome() {
 
         {/* Timeline section */}
         <div className="mb-5">
-          <h2 className="text-xl font-bold text-foreground mb-4">Timeline</h2>
+          <h2 className="text-xl font-bold text-foreground mb-4" style={{ fontFamily: "var(--font-wordmark)" }}>Timeline</h2>
 
           {/* Controls: category pills + sort tabs */}
           <div className="flex items-center justify-between gap-3 flex-wrap">

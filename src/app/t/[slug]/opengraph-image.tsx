@@ -17,7 +17,6 @@ const BORDER     = "#E7E5E4"
 const INK        = "#1C1917"
 const MUTED      = "#78716C"
 const ACCENT     = "#2563EB"
-const MARK_COLOR = "#3b82f6"
 
 async function loadGeologica(weight: number, text: string): Promise<ArrayBuffer | null> {
   try {
@@ -54,7 +53,8 @@ export default async function OpengraphImage(
     ...(bodyFont    ? [{ name: "Geologica", data: bodyFont,    weight: 500 as const, style: "normal" as const }] : []),
   ]
 
-  const mark = "data:image/svg+xml," + encodeURIComponent(brandMarkSvgString(MARK_COLOR))
+  // Light card ground: defaults give a blue body with an ink contrast dot.
+  const mark = "data:image/svg+xml," + encodeURIComponent(brandMarkSvgString())
 
   return new ImageResponse(
     (
@@ -77,7 +77,7 @@ export default async function OpengraphImage(
             <span style={{ fontSize: 24 * S, fontWeight: 500, color: MUTED, letterSpacing: "0.16em", textTransform: "uppercase" }}>
               {label}
             </span>
-            <img width={64 * S} height={64 * S} src={mark} alt="" />
+            <img width={64 * S} height={42 * S} src={mark} alt="" />
           </div>
 
           <div style={{ display: "flex", flexDirection: "column" }}>

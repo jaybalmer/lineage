@@ -267,7 +267,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                 )}
                 <Link href={`/compare?b=${resolvedId}`}>
                   <button className="px-3 py-2 rounded-lg bg-surface-hover border border-border-default text-xs text-muted hover:text-foreground transition-all inline-flex items-center gap-1">
-                    Compare <BrandMark size={12} />
+                    Compare <BrandMark size={12} dotColor="#3b82f6" />
                   </button>
                 </Link>
                 <CommunityLink href={`/connections/${resolvedId}`}>

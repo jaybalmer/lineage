@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { Nav } from "@/components/ui/nav"
+import { BrandMark } from "@/components/ui/brand-mark"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { EQUITY_POOL_SHARES } from "@/lib/equity-offer"
 
@@ -55,8 +56,14 @@ export default function Home() {
             className="font-bold text-foreground leading-none tracking-tight"
             style={{ fontSize: "clamp(4rem, 14vw, 7.5rem)", letterSpacing: "-0.03em" }}
           >
-            <Link href="/word" className="inline-block hover:opacity-90 transition-opacity" aria-label="Linestry, see the definition">
-              <span style={{ fontFamily: "var(--font-wordmark)" }}>Linestry</span><span className="inline-block rounded-full bg-accent" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em" }} />
+            <Link href="/word" className="inline-flex items-center justify-center gap-[0.18em] hover:opacity-90 transition-opacity" aria-label="Linestry, see the definition">
+              {/* Mark + wordmark lockup (matches the brand banner). Mark height is
+                  set in em so it scales with the responsive wordmark; width auto
+                  keeps the landscape aspect. ~1.15em so the mark reads at the full
+                  wordmark height like the banner, not just cap height. Dot is
+                  white here (dark hero). */}
+              <BrandMark aria-hidden style={{ height: "1.15em", width: "auto" }} />
+              <span style={{ fontFamily: "var(--font-wordmark)" }}>Linestry</span>
             </Link>
           </div>
         </div>
