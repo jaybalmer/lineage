@@ -7,6 +7,8 @@ interface LensRowProps {
   communitySlug: string
   pathname: string
   isAuth: boolean
+  /** The viewer's unified profile URL (/people/{slug}); /onboarding when signed out. */
+  myTimelineHref: string
 }
 
 /**
@@ -19,25 +21,14 @@ interface LensRowProps {
  * /onboarding aha-before-auth flow rather than dumping the visitor at the bare
  * sign-in screen, since the most prominent lens should invite, not gate.
  */
-export function LensRow({ communitySlug, pathname, isAuth }: LensRowProps) {
-  const inCommunity =
-    pathname === `/${communitySlug}` || pathname.startsWith(`/${communitySlug}/`)
-
-  // Timeline lens: signed out it invites into the /onboarding flow as "Start My
-  // Timeline"; signed in it reads "My Timeline" and points in-community at the
-  // community-scoped profile, at global scope at the cross-community /me/timeline.
-  // (The avatar "My Timeline" item stays community-scoped per PB-011 Phase 3A
-  // decision Q2.)
-  const timelineHref = !isAuth
-    ? "/onboarding"
-    : inCommunity
-      ? `/${communitySlug}/profile`
-      : "/me/timeline"
+export function LensRow({ communitySlug, pathname, isAuth, myTimelineHref }: LensRowProps) {
+  // Timeline lens points at the viewer's unified /people/{slug} page in every
+  // scope (the old /{community}/profile and /me/timeline URLs now redirect
+  // there). Signed out, myTimelineHref is /onboarding and the lens reads "Start
+  // My Timeline" so the most prominent lens invites rather than gates.
+  const timelineHref = myTimelineHref
   const timelineLabel = isAuth ? "My Timeline" : "Start My Timeline"
-  const timelineActive = inCommunity
-    ? (pathname === `/${communitySlug}/profile` ||
-       pathname.startsWith(`/${communitySlug}/profile/`))
-    : pathname === "/me/timeline"
+  const timelineActive = isAuth && pathname === myTimelineHref
 
   // TODO PB-013 (Member Landing & Default Scope): when a weighted global Feed surface exists
   // (the "From your communities / Across Lineage" split), route Feed at global scope to /feed

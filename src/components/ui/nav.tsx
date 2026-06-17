@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { getPersonById } from "@/lib/mock-data"
+import { personHrefById } from "@/lib/entity-links"
 import { getCommunityBySlug } from "@/lib/community"
 import type { Community } from "@/types"
 import { BrandMark } from "@/components/ui/brand-mark"
@@ -77,7 +78,7 @@ function AppNav({ path, isAuth, dropdownProps, communitySlug, communities }: {
       )}
 
       {/* Row 2: lens */}
-      <LensRow communitySlug={communitySlug} pathname={path} isAuth={isAuth} />
+      <LensRow communitySlug={communitySlug} pathname={path} isAuth={isAuth} myTimelineHref={dropdownProps.myTimelineHref} />
 
       <div className="border-t border-border-default" />
 
@@ -91,7 +92,7 @@ function AppNav({ path, isAuth, dropdownProps, communitySlug, communities }: {
 
 export function Nav() {
   const path = usePathname()
-  const { activePersonId, profileOverride, loadDbEntities, membership, activeCommunitySlug, communities, pendingTagCount } = useLineageStore()
+  const { activePersonId, profileOverride, loadDbEntities, membership, activeCommunitySlug, communities, pendingTagCount, catalog, userEntities } = useLineageStore()
   const basePerson  = getPersonById(activePersonId)
   const loadedForId = useRef<string | null>(null)
 
@@ -108,12 +109,21 @@ export function Nav() {
   const tier        = membership.tier
   const totalTokens = membership.token_balance.founder * 2 + membership.token_balance.member + membership.token_balance.contribution
 
+  // The viewer's own unified profile (/people/{slug}). Both the "My Timeline"
+  // lens and the avatar dropdown item point here now that the old /profile and
+  // /me/timeline URLs redirect to it. Resolve through the merged catalog so the
+  // slug (and its collision fallback to id) matches the destination's
+  // canonicalization; signed-out visitors get the onboarding invite instead.
+  const allPeople = [...catalog.people, ...(userEntities.people ?? [])]
+  const myTimelineHref = isAuth ? personHrefById(activePersonId, allPeople) : "/onboarding"
+
   const dropdownProps: AvatarDropdownProps = {
     displayName,
     tier,
     totalTokens,
     pendingTagCount,
     isEditor: membership.is_editor,
+    myTimelineHref,
   }
 
   return (
