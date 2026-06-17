@@ -157,6 +157,7 @@ export default function ConnectionsPage() {
     deletedClaimIds,
     claimOverrides,
     catalog,
+    activeCommunitySlug,
   } = useLineageStore()
 
   const [connectionCtaDismissed, setConnectionCtaDismissed] = useState(false)
@@ -234,6 +235,24 @@ export default function ConnectionsPage() {
     [authReady, sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId]
   )
 
+  // BUG-038: a rider removed from the active community's People directory (their
+  // community_people junction row dropped, so community_slugs no longer includes
+  // this community) still lingers in catalog.people, and the claim / story rows
+  // that feed the scorer are untouched, so the rider kept surfacing here. Mirror
+  // the /people directory predicate exactly and drop any candidate that is in the
+  // catalog but no longer visible in this community, so connections match the
+  // live directory. People with empty community_slugs degrade gracefully (kept),
+  // matching the directory; no community context means no filtering.
+  const hiddenFromCommunity = useMemo(() => {
+    const hidden = new Set<string>()
+    if (!activeCommunitySlug) return hidden
+    for (const p of catalog.people) {
+      const inDirectory = !p.community_slugs?.length || p.community_slugs.includes(activeCommunitySlug)
+      if (!inDirectory) hidden.add(p.id)
+    }
+    return hidden
+  }, [catalog.people, activeCommunitySlug])
+
   // Direct rode_with connections, symmetric: people I tagged (I'm subject) plus
   // people who tagged me (I'm object). Fixes Cory's approved member-to-member
   // tag showing nothing (BUG-014 §3).
@@ -241,8 +260,8 @@ export default function ConnectionsPage() {
     () => [...new Set([
       ...myClaims.filter((c) => c.predicate === "rode_with").map((c) => c.object_id),
       ...incomingClaims.filter((c) => c.predicate === "rode_with").map((c) => c.subject_id),
-    ].filter((id) => id && id !== activePersonId))],
-    [myClaims, incomingClaims, activePersonId]
+    ].filter((id) => id && id !== activePersonId && !hiddenFromCommunity.has(id)))],
+    [myClaims, incomingClaims, activePersonId, hiddenFromCommunity]
   )
 
   // Places I've ridden
@@ -275,9 +294,9 @@ export default function ConnectionsPage() {
       allOtherClaims
         .filter((c) => c.predicate === "rode_at" && myPlaceIds.has(c.object_id))
         .map((c) => c.subject_id)
-        .filter((id) => id !== activePersonId && !directSet.has(id))
+        .filter((id) => id !== activePersonId && !directSet.has(id) && !hiddenFromCommunity.has(id))
     )],
-    [allOtherClaims, myPlaceIds, activePersonId, directSet]
+    [allOtherClaims, myPlaceIds, activePersonId, directSet, hiddenFromCommunity]
   )
 
   // Riders who share at least one event (exclude above sections + self)
@@ -291,9 +310,9 @@ export default function ConnectionsPage() {
       allOtherClaims
         .filter((c) => EVENT_PREDICATES.has(c.predicate) && myEventIds.has(c.object_id))
         .map((c) => c.subject_id)
-        .filter((id) => id !== activePersonId && !knownSet.has(id))
+        .filter((id) => id !== activePersonId && !knownSet.has(id) && !hiddenFromCommunity.has(id))
     )],
-    [allOtherClaims, myEventIds, activePersonId, knownSet]
+    [allOtherClaims, myEventIds, activePersonId, knownSet, hiddenFromCommunity]
   )
 
   // Story-co-tagged riders not already surfaced through a claim overlap. Ghosts
@@ -303,8 +322,8 @@ export default function ConnectionsPage() {
     [directConnections, sharedPlaceRiders, sharedEventRiders]
   )
   const storyConnections = useMemo(
-    () => storyCandidates.filter((id) => id !== activePersonId && !shownSet.has(id)),
-    [storyCandidates, shownSet, activePersonId]
+    () => storyCandidates.filter((id) => id !== activePersonId && !shownSet.has(id) && !hiddenFromCommunity.has(id)),
+    [storyCandidates, shownSet, activePersonId, hiddenFromCommunity]
   )
 
   const totalConnections =

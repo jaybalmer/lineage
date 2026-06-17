@@ -248,10 +248,16 @@ export default function ProfilePage() {
   const prevClaimCountRef = useRef<number | null>(null)
   const welcomeFiredRef   = useRef(false)
 
+  // BUG-046: a logged-out visitor has no "my timeline" to show, and the old
+  // behaviour rendered a seeded mock/demo persona (e.g. "3 boards, 12 events")
+  // that jarringly differed from the real counts after sign-in. Per Jay's
+  // June 16 decision we no longer show the mock demo here and do not gate behind
+  // a sign-in wall: non-auth visitors go to the public riders directory, which
+  // is real public data. The body is also gated below so the demo never flashes.
   useEffect(() => {
     if (!authReady) return
     if (!isAuthUser(activePersonId)) {
-      router.replace("/auth/signin")
+      router.replace("/people")
     }
   }, [authReady, activePersonId, router])
 
@@ -523,6 +529,19 @@ export default function ProfilePage() {
     membership.token_balance.member +
     membership.token_balance.contribution
   const shareEst = poolTotal !== null ? estimateShares(myWeighted, poolTotal) : null
+
+  // BUG-046: never render the mock/demo profile for a non-auth visitor. They are
+  // being redirected to /people by the effect above; until that lands (and while
+  // auth is still resolving) show a bare shell instead of the seeded persona.
+  // activePersonId is persisted, so a signed-in member's UUID is present on first
+  // paint and they skip this branch with no flash.
+  if (!isAuthUser(activePersonId)) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Nav />
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
