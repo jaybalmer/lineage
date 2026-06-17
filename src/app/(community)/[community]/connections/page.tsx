@@ -98,7 +98,7 @@ function ConnectionCard({
         <div className="flex flex-wrap gap-1.5 flex-shrink-0 justify-end">
           <Link href={`/compare?b=${personId}`}>
             <button className="px-2.5 py-1 bg-surface-hover border border-border-default rounded-lg text-[11px] text-muted hover:text-foreground transition-all whitespace-nowrap inline-flex items-center gap-1">
-              Compare <BrandMark size={12} />
+              Compare <BrandMark size={12} dotColor="#3b82f6" />
             </button>
           </Link>
           {invitable && onInvite ? (

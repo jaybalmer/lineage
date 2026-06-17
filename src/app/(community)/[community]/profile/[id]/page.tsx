@@ -105,7 +105,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <Link href={`/compare?b=${id}`}>
                     <button className="px-3 py-1.5 rounded-lg bg-surface-hover border border-border-default text-xs text-muted hover:border-border-default hover:text-foreground transition-all inline-flex items-center gap-1">
-                      Compare <BrandMark size={12} />
+                      Compare <BrandMark size={12} dotColor="#3b82f6" />
                     </button>
                   </Link>
                   <CommunityLink href={`/connections/${id}`}>

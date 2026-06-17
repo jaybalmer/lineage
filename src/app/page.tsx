@@ -56,7 +56,7 @@ export default function Home() {
             style={{ fontSize: "clamp(4rem, 14vw, 7.5rem)", letterSpacing: "-0.03em" }}
           >
             <Link href="/word" className="inline-block hover:opacity-90 transition-opacity" aria-label="Linestry, see the definition">
-              <span style={{ fontFamily: "var(--font-wordmark)" }}>Linestry</span><span className="inline-block rounded-full bg-accent" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em" }} />
+              <span style={{ fontFamily: "var(--font-wordmark)" }}>Linestry</span>
             </Link>
           </div>
         </div>

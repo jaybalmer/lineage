@@ -12,7 +12,9 @@ const DEV_COLOR     = "#f59e0b"
 export default function Icon() {
   const isProd = process.env.VERCEL_ENV === "production"
   const color  = isProd ? PROD_COLOR : DEV_COLOR
-  const mark   = "data:image/svg+xml," + encodeURIComponent(brandMarkSvgString(color))
+  // At 32px a contrast dot reads as noise, so render mono: body and dot share
+  // the one color. Keep the existing dev/prod color signal.
+  const mark   = "data:image/svg+xml," + encodeURIComponent(brandMarkSvgString(color, color))
 
   return new ImageResponse(
     (

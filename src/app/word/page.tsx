@@ -48,10 +48,6 @@ export default function WordPage() {
           <BrandMark size={22} color="#3b82f6" />
           <span style={displayFont} className="text-lg font-bold tracking-tight text-foreground">
             Linestry
-            <span
-              className="inline-block rounded-full bg-accent align-baseline"
-              style={{ width: "0.26em", height: "0.26em", marginLeft: "0.04em" }}
-            />
           </span>
         </Link>
       </header>

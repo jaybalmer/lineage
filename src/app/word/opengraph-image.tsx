@@ -16,7 +16,6 @@ const CARD       = "#FFFFFF"  // card fill
 const BORDER     = "#E7E5E4"  // hairline
 const INK        = "#1C1917"  // foreground
 const MUTED      = "#78716C"  // muted body
-const MARK_COLOR = "#3b82f6"  // brand blue, used for fills / large display
 
 const HEADWORD   = "linestry"
 const LABEL      = "Dictionary"
@@ -53,7 +52,8 @@ export default async function OpengraphImage() {
     ...(bodyFont    ? [{ name: "Geologica", data: bodyFont,    weight: 500 as const, style: "normal" as const }] : []),
   ]
 
-  const mark = "data:image/svg+xml," + encodeURIComponent(brandMarkSvgString(MARK_COLOR))
+  // Light card: defaults give a blue body with an ink contrast dot.
+  const mark = "data:image/svg+xml," + encodeURIComponent(brandMarkSvgString())
 
   return new ImageResponse(
     (
@@ -86,7 +86,7 @@ export default async function OpengraphImage() {
               {LABEL}
             </span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img width={62 * S} height={62 * S} src={mark} alt="" />
+            <img width={62 * S} height={41 * S} src={mark} alt="" />
           </div>
 
           <span style={{ marginTop: 14 * S, fontSize: 96 * S, fontWeight: 800, color: INK, letterSpacing: "-0.03em", lineHeight: 1 }}>

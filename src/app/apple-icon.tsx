@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og"
-import { brandMarkSvgString } from "@/components/ui/brand-mark"
+import { brandMarkSvgString, BRAND_INK } from "@/components/ui/brand-mark"
 
 export const size        = { width: 180, height: 180 }
 export const contentType = "image/png"
@@ -7,13 +7,14 @@ export const contentType = "image/png"
 const PROD_COLOR = "#3b82f6"
 const DEV_COLOR  = "#f59e0b"
 
-// Cream mark sits on the colored tile (matches the reversed email header).
-const MARK_COLOR = "#F6F6F5"
+// White mark on the colored tile. The center punches a true transparent hole
+// (knockout) so the tile shows through, and the dot never vanishes into it.
+const MARK_COLOR = "#ffffff"
 
 export default function AppleIcon() {
   const isProd = process.env.VERCEL_ENV === "production"
   const color  = isProd ? PROD_COLOR : DEV_COLOR
-  const mark   = "data:image/svg+xml," + encodeURIComponent(brandMarkSvgString(MARK_COLOR))
+  const mark   = "data:image/svg+xml," + encodeURIComponent(brandMarkSvgString(MARK_COLOR, BRAND_INK, true))
 
   return new ImageResponse(
     (

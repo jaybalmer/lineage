@@ -8,12 +8,10 @@ export const contentType = "image/png"
 export const alt         = "Linestry, a living, community-authored snowboarding history"
 
 const GROUND     = "#161413"  // brand near-black
-const MARK_COLOR = "#F6F6F5"  // cream
 const WORDMARK   = "#ffffff"
-const PERIOD     = "#3b82f6"  // the single blue accent
 const TAGLINE    = "#a1a1aa"
 
-const wordmark = "Linestry."
+const wordmark = "Linestry"
 const tagline  = "A living, community-authored snowboarding history graph"
 
 /**
@@ -72,7 +70,8 @@ export default async function OpengraphImage() {
     ...(bodyFont     ? [{ name: "Geologica",   data: bodyFont,     weight: 300 as const,   style: "normal" as const }] : []),
   ]
 
-  const mark = "data:image/svg+xml," + encodeURIComponent(brandMarkSvgString(MARK_COLOR))
+  // Dark OG ground: blue body with a white contrast dot, matching the banner set.
+  const mark = "data:image/svg+xml," + encodeURIComponent(brandMarkSvgString("#3b82f6", "#ffffff"))
 
   return new ImageResponse(
     (
@@ -90,9 +89,10 @@ export default async function OpengraphImage() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img width={132} height={132} src={mark} alt="" />
+          {/* Landscape mark box (aspect 1.518) sized to the 104px wordmark. */}
+          <img width={152} height={100} src={mark} alt="" />
           <span style={{ fontFamily: wordmarkFamily, fontSize: 104, fontWeight: wordmarkWeight, color: WORDMARK, letterSpacing: "-0.03em" }}>
-            Linestry<span style={{ color: PERIOD }}>.</span>
+            Linestry
           </span>
         </div>
         <span style={{ marginTop: 32, fontSize: 32, fontWeight: 300, color: TAGLINE, letterSpacing: "0.01em" }}>

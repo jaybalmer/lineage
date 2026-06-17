@@ -7,6 +7,7 @@ import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { getPersonById } from "@/lib/mock-data"
 import { getCommunityBySlug } from "@/lib/community"
 import type { Community } from "@/types"
+import { BrandMark } from "@/components/ui/brand-mark"
 import { LensRow } from "@/components/ui/nav/lens-row"
 import { CategoryRow } from "@/components/ui/nav/category-row"
 import { CommunityAvatarPill } from "@/components/ui/nav/community-avatar-pill"
@@ -43,8 +44,9 @@ function AppNav({ path, isAuth, dropdownProps, communitySlug, communities }: {
     <div>
       {/* Row 1: title */}
       <div className="flex items-center h-12 px-4 gap-2">
-        <Link href="/" className="font-black text-xl text-foreground tracking-tight flex-shrink-0">
-          <span style={{ fontFamily: "var(--font-wordmark)" }}>Linestry</span><span className="inline-block rounded-full bg-accent" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em" }} />
+        <Link href="/" className="flex items-center gap-2 flex-shrink-0">
+          <BrandMark size={28} />
+          <span className="font-black text-xl text-foreground tracking-tight" style={{ fontFamily: "var(--font-wordmark)" }}>Linestry</span>
         </Link>
         {inCommunity && (
           <>
