@@ -14,6 +14,7 @@ import { TimelinePlayer } from "@/components/ui/timeline-player"
 import { BulkInvitePrompt } from "@/components/ui/bulk-invite-prompt"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
+import { StackTimelineToggle } from "@/components/public-timeline/stack-timeline-toggle"
 import { readSeenIds, writeSeenIds } from "@/lib/seen-celebrations"
 import { estimateShares } from "@/lib/equity-offer"
 import type { Claim, CelebrationPayload, PrivacyLevel, Story } from "@/types"
@@ -249,6 +250,13 @@ export function OwnerTimelinePanel() {
   // this null so the share line falls back to the encouraging prompt copy.
   const [poolTotal, setPoolTotal] = useState<number | null>(null)
 
+  // Owner's public Stack (/t/[slug]) availability — drives the Stack/Timeline
+  // toggle. Read from the profiles row fetched below. Kept on the owner panel so
+  // the unified /people/[id] still offers the cross-link to the curated Stack
+  // when the owner has a public timeline enabled (the public RiderPage carries
+  // the same toggle).
+  const [publicTimeline, setPublicTimeline] = useState<{ enabled: boolean; slug: string | null } | null>(null)
+
   // Track previous claim count to detect new additions
   const prevClaimCountRef = useRef<number | null>(null)
   const welcomeFiredRef   = useRef(false)
@@ -330,6 +338,10 @@ export function OwnerTimelinePanel() {
             home_resort_id: data.home_resort_id ?? undefined,
             privacy_level: data.privacy_level as PrivacyLevel,
             links: data.links ?? undefined,
+          })
+          setPublicTimeline({
+            enabled: data.public_timeline_enabled === true && !!data.public_slug,
+            slug: data.public_slug ?? null,
           })
         }
       })
@@ -579,6 +591,24 @@ export function OwnerTimelinePanel() {
       )}
 
       <div className="max-w-3xl mx-auto px-4 py-10">
+
+        {/* Breadcrumb + Stack/Timeline toggle. The unified /people/[id] keeps the
+            owner's cross-link to their public Stack at /t/[slug] (shown only when
+            a public timeline is enabled), matching the public profile's top row. */}
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="text-xs text-muted">
+            <Link href="/people" className="hover:text-foreground">Riders</Link>
+            <span className="mx-2">/</span>
+            <span className="text-muted">{person?.display_name ?? "You"}</span>
+          </div>
+          {publicTimeline?.enabled && publicTimeline.slug && (
+            <StackTimelineToggle
+              active="timeline"
+              stackHref={`/t/${publicTimeline.slug}`}
+              variant="light"
+            />
+          )}
+        </div>
 
         {/* PB-009 Phase 2: pending-tag pill, owner-only by virtue of this
             page being the active user's own profile (no [id] segment). */}
