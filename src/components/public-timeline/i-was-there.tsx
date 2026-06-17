@@ -15,6 +15,14 @@ import { cn } from "@/lib/utils"
 
 export type TagMoment = { kind: "place" | "event" | "story"; id: string }
 
+type EventRole = "spectator" | "competitor" | "organizer"
+
+const ROLES: { key: EventRole; label: string }[] = [
+  { key: "spectator", label: "I watched" },
+  { key: "competitor", label: "I competed" },
+  { key: "organizer", label: "I organized" },
+]
+
 const CTA: Record<TagMoment["kind"], string> = {
   place: "I rode there",
   event: "I was there",
@@ -28,18 +36,25 @@ export function IWasThere({
   ownerSlug,
   ownerName,
   moment,
+  linkedEvent,
   variant = "inline",
 }: {
   ownerSlug: string
   ownerName: string
   moment: TagMoment
+  /** Set on an event-linked story: offer spectator / competitor / organizer,
+   *  tagged on the story AND this event. */
+  linkedEvent?: { id: string; name: string }
   variant?: "inline" | "panel"
 }) {
   const [open, setOpen] = useState(false)
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
-  const [role, setRole] = useState<"spectator" | "rider">("spectator")
+  const [role, setRole] = useState<EventRole>("spectator")
   const [note, setNote] = useState("")
+
+  // Event moments and event-linked stories both pick a role.
+  const showRoles = moment.kind === "event" || (moment.kind === "story" && !!linkedEvent)
   const [submitting, setSubmitting] = useState(false)
   const [doneLabel, setDoneLabel] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -70,7 +85,10 @@ export function IWasThere({
           moment,
           name: name.trim(),
           email: email.trim(),
-          role: moment.kind === "event" ? role : undefined,
+          role: showRoles ? role : undefined,
+          // Event-linked story: tells the server which event to tag alongside
+          // the story (the moment id is the story id in that case).
+          eventId: moment.kind === "story" && linkedEvent ? linkedEvent.id : undefined,
           note: note.trim() || undefined,
         }),
       })
@@ -145,26 +163,33 @@ export function IWasThere({
           maxLength={200}
           autoComplete="email"
         />
-        {moment.kind === "event" && (
-          <div className="flex items-center gap-1.5">
-            {(["spectator", "rider"] as const).map((r) => (
-              <button
-                key={r}
-                type="button"
-                onClick={(e) => {
-                  stop(e)
-                  setRole(r)
-                }}
-                className={cn(
-                  "px-3 py-1 rounded-full text-xs font-medium border transition-colors capitalize",
-                  role === r
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-surface text-muted border-border-default hover:text-foreground",
-                )}
-              >
-                {r === "rider" ? "I competed" : "I watched"}
-              </button>
-            ))}
+        {showRoles && (
+          <div className="flex flex-col gap-1.5">
+            {moment.kind === "story" && linkedEvent && (
+              <span className="text-[11px] text-muted">
+                Your role at <span className="font-medium text-foreground">{linkedEvent.name}</span>
+              </span>
+            )}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {ROLES.map(({ key, label }) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={(e) => {
+                    stop(e)
+                    setRole(key)
+                  }}
+                  className={cn(
+                    "px-3 py-1 rounded-full text-xs font-medium border transition-colors",
+                    role === key
+                      ? "bg-blue-600 text-white border-blue-600"
+                      : "bg-surface text-muted border-border-default hover:text-foreground",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         <input

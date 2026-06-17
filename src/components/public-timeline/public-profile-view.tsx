@@ -68,7 +68,12 @@ export function PublicProfileView({
           </div>
 
           <StackHeader owner={owner} />
-          <StackView entries={stack.entries} owner={owner} />
+          <StackView
+            entries={stack.entries}
+            owner={owner}
+            stories={timeline.stories}
+            entities={timeline.entities}
+          />
 
           <footer className="mt-12 pt-6 border-t border-white/10 flex flex-col items-center gap-3 text-center">
             <Link href="/" className="inline-flex items-center gap-2 text-white/55 hover:text-white transition-colors" aria-label="Linestry home">
