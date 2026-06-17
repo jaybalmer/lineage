@@ -9,10 +9,12 @@
 // at once. The card layout leaves room for it and stops there.
 
 import { useState } from "react"
-import type { ResolvedStackEntry, StackAccent, PublicTimelineOwner } from "@/lib/public-timeline-read"
+import type { ResolvedStackEntry, StackAccent, PublicTimelineOwner, PublicTimelineEntities } from "@/lib/public-timeline-read"
+import type { Story } from "@/types"
 import { useBoardImage } from "@/hooks/use-board-image"
 import { EntityGraphic } from "@/components/public-timeline/entity-graphic"
 import { IWasThere, type TagMoment } from "@/components/public-timeline/i-was-there"
+import { StoryMedia } from "@/components/public-timeline/story-media"
 import { cn } from "@/lib/utils"
 
 // Only story / place / event stack entries are taggable (brief §5). Board,
@@ -97,17 +99,37 @@ function StackThumb({ entry }: { entry: ResolvedStackEntry }) {
   )
 }
 
-export function StackEntryCard({ entry, owner }: { entry: ResolvedStackEntry; owner: PublicTimelineOwner }) {
+export function StackEntryCard({ entry, owner, story, entities }: {
+  entry: ResolvedStackEntry
+  owner: PublicTimelineOwner
+  /** Full story behind a story entry — drives the rich in-place expansion. */
+  story?: Story
+  entities?: PublicTimelineEntities
+}) {
   const [expanded, setExpanded] = useState(false)
   const isSummary = entry.entry_type === "category_summary"
   const hasItems = isSummary && entry.items.length > 0
   const taggable =
     TAGGABLE.has(entry.entry_type as TagMoment["kind"]) && !!entry.refId
+
+  // An event-linked story offers spectator / competitor / organizer in its tag
+  // panel, tagged on the story and the event.
+  const linkedEventEntity = story?.linked_event_id && entities
+    ? entities.events[story.linked_event_id]
+    : undefined
+  const linkedEvent = story?.linked_event_id && linkedEventEntity
+    ? { id: story.linked_event_id, name: linkedEventEntity.name }
+    : undefined
+  // Story entries expand to show their full media inline (photos / video / link).
+  const storyHasMedia = !!story &&
+    (((story.photos?.length ?? 0) > 0) || !!story.youtube_url || !!story.url)
+
   // The chevron reveals the card's hidden detail: the item list (summary cards),
-  // the full summary text when it is long enough to clamp, and — for taggable
-  // cards — the "I was there" affordance, which stays hidden until expanded.
+  // the full summary text when it is long enough to clamp, the story's media,
+  // and — for taggable cards — the "I was there" affordance (hidden by default).
   const canExpand =
-    hasItems || (!isSummary && !!entry.summary && entry.summary.length > 70) || taggable
+    hasItems || (!isSummary && !!entry.summary && entry.summary.length > 70) ||
+    storyHasMedia || taggable
 
   return (
     <div>
@@ -178,13 +200,23 @@ export function StackEntryCard({ entry, owner }: { entry: ResolvedStackEntry; ow
         </div>
       )}
 
+      {/* Story entries expand to the full story media in place (photos / video
+          / link), on a light panel above the tag affordance. */}
+      {entry.entry_type === "story" && expanded && story && storyHasMedia && (
+        <div className="postcard bg-surface rounded-xl mt-1.5 px-3.5 py-3 shadow-sm">
+          <StoryMedia story={story} />
+        </div>
+      )}
+
       {/* PB-010 Phase 4: tag-to-claim affordance (story / place / event only),
-          hidden until the visitor opens the card via the chevron. */}
+          hidden until the visitor opens the card via the chevron. Event-linked
+          stories carry the event so the panel can offer the role choices. */}
       {taggable && expanded && (
         <IWasThere
           ownerSlug={owner.slug}
           ownerName={owner.display_name}
           moment={{ kind: entry.entry_type as TagMoment["kind"], id: entry.refId! }}
+          linkedEvent={linkedEvent}
           variant="panel"
         />
       )}

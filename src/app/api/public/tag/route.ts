@@ -87,7 +87,8 @@ export async function POST(req: NextRequest) {
   const momentId = clampStr(moment.id, 80)
   const name = clampStr(body.name, 120)
   const emailRaw = clampStr(body.email, 200)
-  const role = clampStr(body.role, 16) // event only: "rider" → competed_at
+  const role = clampStr(body.role, 16) // spectator | competitor | organizer (rider = legacy competitor)
+  const eventId = clampStr(body.eventId, 80) // event-linked story: the event to co-tag
   const note = clampStr(body.note, 500)
 
   if (!slug || !kind || !MOMENT_KINDS.has(kind) || !momentId) {
@@ -173,9 +174,12 @@ export async function POST(req: NextRequest) {
   }
 
   // ── Moment → claim shape (brief §5) ─────────────────────────────────────────
-  // place  → ghost rode_at place
-  // event  → ghost spectated_at (default) | competed_at (role=rider) event
-  // story  → ghost rode_with owner, story-linked (Q4: co-presence with owner)
+  // place              → ghost rode_at place
+  // event              → ghost {role}_at event (spectator|competitor|organizer)
+  // story (no event)   → ghost rode_with owner (co-presence with the owner)
+  // story + event role → ghost {role}_at the linked event, moment_ref carries
+  //                      BOTH story_id and event_id (tagged on story AND event)
+  const story = kind === "story" ? timeline.stories.find((s) => s.id === momentId) ?? null : null
   let predicate: string
   let objectId: string
   let objectType: string
@@ -188,18 +192,39 @@ export async function POST(req: NextRequest) {
     visitorRole = "rider"
     momentRefBase.place_id = momentId
   } else if (kind === "event") {
-    const isRider = role === "rider"
-    predicate = isRider ? "competed_at" : "spectated_at"
+    const r = roleForEvent(role)
+    predicate = r.predicate
     objectType = "event"
     objectId = momentId
-    visitorRole = isRider ? "rider" : "spectator"
+    visitorRole = r.role
     momentRefBase.event_id = momentId
   } else {
-    predicate = "rode_with"
-    objectType = "person"
-    objectId = owner.id
-    visitorRole = "rider"
-    momentRefBase.story_id = momentId
+    // An eventId is only honoured when it is genuinely linked to this story on
+    // the owner's surface (the story's own linked event or a community-added
+    // one) — otherwise it is a tampering attempt, not a real co-tag.
+    const eventLinked =
+      !!eventId && !!story &&
+      (story.linked_event_id === eventId ||
+        (story.community_events ?? []).some((ce) => ce.event_id === eventId)) &&
+      !!timeline.entities.events[eventId]
+    if (eventId && !eventLinked) {
+      return NextResponse.json({ error: "That event is not linked to this story" }, { status: 400 })
+    }
+    if (eventLinked) {
+      const r = roleForEvent(role)
+      predicate = r.predicate
+      objectType = "event"
+      objectId = eventId!
+      visitorRole = r.role
+      momentRefBase.story_id = momentId
+      momentRefBase.event_id = eventId!
+    } else {
+      predicate = "rode_with"
+      objectType = "person"
+      objectId = owner.id
+      visitorRole = "rider"
+      momentRefBase.story_id = momentId
+    }
   }
 
   // The claim is the ghost's future timeline data (becomes theirs on claim).
@@ -252,7 +277,10 @@ export async function POST(req: NextRequest) {
   await recordTagThrottle(db, { emailHash, ipHash, ownerId: owner.id })
 
   // ── Claim-your-spot email (best-effort) ─────────────────────────────────────
-  const momentLabel = labelForMoment(kind, momentId, timeline)
+  // For an event-linked story the meaningful subject is the event, so label it.
+  const momentLabel = kind === "story" && objectType === "event"
+    ? timeline.entities.events[objectId]?.name ?? "this event"
+    : labelForMoment(kind, momentId, timeline)
   const origin = resolveOrigin(req)
   const link = await generateClaimLink(db, email, origin)
   if (link) {
@@ -264,6 +292,20 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ ok: true, momentLabel })
+}
+
+/** Map the visitor's chosen event role to its predicate. "rider" is the legacy
+ *  competitor value from the pre-roles client. Unknown / null → spectator. */
+function roleForEvent(role: string | null): { predicate: string; role: string } {
+  switch (role) {
+    case "competitor":
+    case "rider":
+      return { predicate: "competed_at", role: "competitor" }
+    case "organizer":
+      return { predicate: "organized_at", role: "organizer" }
+    default:
+      return { predicate: "spectated_at", role: "spectator" }
+  }
 }
 
 /** Human label for the moment, for the email + the marked-state card. */

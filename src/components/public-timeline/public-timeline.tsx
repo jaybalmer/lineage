@@ -12,18 +12,18 @@
 // The payload types are imported type-only so this client bundle never pulls in
 // the server-only read module.
 
-import { useState } from "react"
 import type { Claim, EntityType, Story, Predicate } from "@/types"
 import type {
   PublicTimelinePayload,
   PublicTimelineEntities,
   PublicTimelineOwner,
 } from "@/lib/public-timeline-read"
-import { cn, parseYouTubeId, PREDICATE_LABELS, formatDateRange } from "@/lib/utils"
+import { cn, PREDICATE_LABELS, formatDateRange } from "@/lib/utils"
 import { groupRodeAtCompanions } from "@/lib/companion-grouping"
 import { dateToSortNum, groupByDecade } from "@/lib/timeline-grouping"
 import { EntityGraphic } from "@/components/public-timeline/entity-graphic"
 import { IWasThere } from "@/components/public-timeline/i-was-there"
+import { StoryMedia } from "@/components/public-timeline/story-media"
 
 type FeedItem =
   | { kind: "claim"; claim: Claim; sortDate: number }
@@ -210,9 +210,6 @@ function PublicClaimCard({
 const CHIP = "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full"
 
 function PublicStoryCard({ story, entities, owner }: { story: Story; entities: PublicTimelineEntities; owner: PublicTimelineOwner }) {
-  const [lightbox, setLightbox] = useState<string | null>(null)
-  const photos = (story.photos ?? []).slice().sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
-
   const linkedPlace = story.linked_place_id ? entities.places[story.linked_place_id] : undefined
   const linkedEvent = story.linked_event_id ? entities.events[story.linked_event_id] : undefined
   const linkedOrg   = story.linked_org_id   ? entities.orgs[story.linked_org_id]     : undefined
@@ -227,8 +224,6 @@ function PublicStoryCard({ story, entities, owner }: { story: Story; entities: P
 
   const hasLinks = linkedPlace || linkedEvent || linkedOrg || linkedBoards.length > 0 ||
     taggedRiders.length > 0 || communityPlaces.length > 0 || communityEvents.length > 0
-
-  const ytId = story.youtube_url ? parseYouTubeId(story.youtube_url) : null
 
   return (
     <div className="postcard bg-surface border-2 border-violet-700 rounded-xl p-5 mb-4">
@@ -254,51 +249,7 @@ function PublicStoryCard({ story, entities, owner }: { story: Story; entities: P
       {story.title && <h3 className="font-bold text-foreground text-base leading-snug mb-2">{story.title}</h3>}
       {story.body && <p className="text-sm text-muted leading-relaxed mb-3 whitespace-pre-wrap">{story.body}</p>}
 
-      {story.url && (
-        <a href={story.url} target="_blank" rel="noopener noreferrer nofollow"
-          className="inline-flex items-center gap-1.5 text-sm text-accent-strong hover:underline mb-3 break-all">
-          🔗 {story.url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/$/, "")}
-        </a>
-      )}
-
-      {ytId && (
-        <div className="mt-3 mb-3 rounded-xl overflow-hidden aspect-video bg-black">
-          <iframe
-            src={`https://www.youtube.com/embed/${ytId}`}
-            className="w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen loading="lazy" title="Story video"
-          />
-        </div>
-      )}
-
-      {photos.length > 0 && (
-        <div className={cn(
-          "grid gap-1.5 mb-3 rounded-lg overflow-hidden",
-          photos.length === 1 ? "grid-cols-1" : photos.length === 2 ? "grid-cols-2" : "grid-cols-3",
-        )}>
-          {photos.slice(0, 6).map((photo, i) => (
-            <button
-              key={photo.id}
-              type="button"
-              onClick={() => setLightbox(photo.url)}
-              className={cn(
-                "relative cursor-pointer overflow-hidden bg-surface-hover",
-                photos.length === 1 ? "aspect-[16/9]" : "aspect-square",
-                i === 0 && photos.length === 3 ? "col-span-2" : "",
-              )}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={photo.url} alt={photo.caption ?? `Photo ${i + 1}`} className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" />
-              {i === 5 && photos.length > 6 && (
-                <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                  <span className="text-white font-bold text-lg">+{photos.length - 6}</span>
-                </div>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
+      <StoryMedia story={story} />
 
       {hasLinks && (
         <div className="flex flex-wrap gap-1.5 mt-2">
@@ -340,26 +291,17 @@ function PublicStoryCard({ story, entities, owner }: { story: Story; entities: P
         </div>
       )}
 
-      {/* PB-010 Phase 4: tag-to-claim affordance */}
+      {/* PB-010 Phase 4: tag-to-claim affordance. Event-linked stories offer
+          spectator / competitor / organizer, tagged on the story + the event. */}
       <IWasThere
         ownerSlug={owner.slug}
         ownerName={owner.display_name}
         moment={{ kind: "story", id: story.id }}
+        linkedEvent={linkedEvent && story.linked_event_id
+          ? { id: story.linked_event_id, name: linkedEvent.name }
+          : undefined}
         variant="inline"
       />
-
-      {/* Lightbox */}
-      {lightbox && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 cursor-zoom-out"
-          onClick={() => setLightbox(null)}
-          role="dialog"
-          aria-modal="true"
-        >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={lightbox} alt="" className="max-h-full max-w-full rounded-lg object-contain" />
-        </div>
-      )}
     </div>
   )
 }
