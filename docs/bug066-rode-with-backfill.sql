@@ -1,246 +1,92 @@
 -- ============================================================================
--- BUG-066 backfill — run in the Supabase SQL editor AFTER applying the schema
--- migration 20260617000001_bug066_rode_with_parent_claim.sql (column +
--- claims_public rebuild) and BEFORE merging the PR.
+-- BUG-066 backfill — AS APPLIED to prod 2026-06-17 (after migration
+-- 20260617000001 added claims.parent_claim_id + rebuilt claims_public).
 --
--- This is a MANUAL, data-specific, partly destructive script. Run it phase by
--- phase. Each mutating phase is wrapped in BEGIN; ... and ends with a
--- verification SELECT: inspect it, then COMMIT; if it matches, or ROLLBACK; if
--- anything looks off. Nothing here is idempotent-by-design, so do not re-run a
--- committed phase.
---
--- Confirmed affected data (June 17 working session) is exactly two clusters:
---   A. Companion-edge leak: Jay -> Sean Balmer, 1986 — 3 rode_at + 3 rode_with
---      on the same year-only date. Fix: parent each rode_with 1:1 to a rode_at
---      so they fold into the place cards as chips.
---   B. Standalone duplicates: "Cy 2" -> Cory Yip, 2026 — 5 rode_with, 0 rode_at.
---      Fix: collapse to one crew row with start=min, end=max; drop the rest and
---      their paired tag_events. NO account merge ("Cy 2" stays a separate user).
+-- This file records the actual, executed procedure. The discovery step found
+-- the data had moved on from the original brief (both clusters grew and now
+-- span multiple years), so the plan became "collapse-only, consent-aware"
+-- rather than the brief's speculative parent-then-collapse. NO account merge.
 --
 -- TYPE NOTE: claims.id / subject_id / object_id / parent_claim_id are all TEXT.
 -- ============================================================================
+--
+-- DISCOVERY FINDINGS (read-only Phase 0). Two duplicate (subject, object)
+-- crew clusters of NULL-parent rode_with; everything else is n=1.
+--
+--   Jay (0394914d) -> Sean Balmer (06fc2b45): 4 rows
+--     1986 x3  (swy0i approved [KEEP], 4csr3 approved, qsrps pending)
+--     2026 x1  (nurv8 DECLINED)
+--     -> 1986 has only 2 rode_at, so the 3 companions can't be 1:1 attributed
+--        (ambiguous): collapse, do not parent. The 2026 row is DECLINED, so it
+--        must NOT contribute its year to the surviving crew row (else the
+--        collapse would re-assert a relationship Sean declined). Survivor stays
+--        1986. Result card: "Rode with Sean, 1986".
+--
+--   Cy 2 (3a467197) -> Cory Yip (499deddd): 6 rows
+--     2020 x1  (iukh7 approved)
+--     2026 x5  (lag0s approved [KEEP], ierp5/8lzc9/u8b7e/agnq7 approved)
+--     -> all approved. Collapse to one crew row spanning 2020-2026.
+--        Result card: "Rode with Cory, 2020 - 2026".
+--
+-- (Note: the original 0.2 join double-counted rode_at as n_rode_with*n_rode_at;
+--  the per-key scalar-subquery breakdown gave the true counts above. The kept
+--  rows were verified `approved` via tag_events before the run.)
+--
+-- Net: 8 claims + their 8 paired tag_events deleted, 1 survivor widened, 1
+-- survivor left as-is. NULL-parent rode_with universe 12 -> 4 (2 survivors +
+-- 2 untouched singletons: 63c6a57a->Jay 1997, 63c6a57a->ad2d9ef4 1996).
 
 
--- ────────────────────────────────────────────────────────────────────────────
--- PHASE 0 — DISCOVERY (read-only). Run these four, share the output. Confirm
--- the ONLY clusters that show up are A and B above before running any mutation.
--- ────────────────────────────────────────────────────────────────────────────
-
--- 0.1  Duplicate crew clusters: any (subject, object) with >1 NULL-parent
---      rode_with. Expect exactly one row: Cy 2 -> Cory Yip, n=5.
-select subject_id, object_id,
-       count(*)                                            as n_rows,
-       min(start_date)                                     as min_start,
-       max(coalesce(end_date, start_date))                 as max_end
-from public.claims
-where predicate = 'rode_with' and parent_claim_id is null
-group by subject_id, object_id
-having count(*) > 1
-order by n_rows desc;
-
--- 0.2  Companion candidates: each NULL-parent rode_with and how many rode_at
---      share its (subject, date) key. n_match=1 => unambiguous (Phase 1a);
---      n_match>1 with equal rode_with count => balanced (Phase 1b, Jay->Sean);
---      n_match=0 => standalone/crew (left for Phase 2).
-select rw.subject_id, rw.object_id, rw.start_date, rw.end_date,
-       count(ra.id) as n_matching_rode_at
-from public.claims rw
-left join public.claims ra
-  on ra.predicate = 'rode_at'
- and ra.subject_id = rw.subject_id
- and coalesce(ra.start_date, '') = coalesce(rw.start_date, '')
- and coalesce(ra.end_date, '')   = coalesce(rw.end_date, '')
-where rw.predicate = 'rode_with' and rw.parent_claim_id is null
-group by rw.subject_id, rw.object_id, rw.start_date, rw.end_date
-order by n_matching_rode_at desc, rw.subject_id;
-
--- 0.3  The balanced multi-match keys (rode_at count == NULL-parent rode_with
---      count, both > 1). Expect exactly one: Jay -> Sean's 1986 key, 3 == 3.
-select rw.subject_id,
-       coalesce(rw.start_date, '') as s,
-       coalesce(rw.end_date, '')   as e,
-       count(*) as n_rode_with,
-       (select count(*) from public.claims ra
-         where ra.predicate = 'rode_at' and ra.subject_id = rw.subject_id
-           and coalesce(ra.start_date, '') = coalesce(rw.start_date, '')
-           and coalesce(ra.end_date, '')   = coalesce(rw.end_date, '')) as n_rode_at
-from public.claims rw
-where rw.predicate = 'rode_with' and rw.parent_claim_id is null
-group by rw.subject_id, coalesce(rw.start_date, ''), coalesce(rw.end_date, '')
-having count(*) > 1
-   and count(*) = (select count(*) from public.claims ra
-         where ra.predicate = 'rode_at' and ra.subject_id = rw.subject_id
-           and coalesce(ra.start_date, '') = coalesce(rw.start_date, '')
-           and coalesce(ra.end_date, '')   = coalesce(rw.end_date, ''));
-
--- 0.4  Sanity: total NULL-parent rode_with rows (the universe this touches).
-select count(*) as null_parent_rode_with from public.claims
-where predicate = 'rode_with' and parent_claim_id is null;
-
-
--- ────────────────────────────────────────────────────────────────────────────
--- PHASE 1a — Parent the UNAMBIGUOUS companions (exactly one matching rode_at).
--- Safe: only sets parent where the date key maps to a single place. Standalone
--- crew rows (zero matching rode_at) are untouched and stay NULL-parent.
--- ────────────────────────────────────────────────────────────────────────────
+-- ── EXECUTED MUTATION (run once with the trailing `rollback;` as a dry run,
+--    confirmed the verify returned 0 dup rows, then re-ran with `commit;`). ───
 begin;
 
--- preview the rows that will be parented (run, eyeball, then continue)
-select rw.id as rode_with_id, rw.subject_id, rw.object_id, rw.start_date,
-       ra.id as parent_rode_at_id
-from public.claims rw
-join public.claims ra
-  on ra.predicate = 'rode_at'
- and ra.subject_id = rw.subject_id
- and coalesce(ra.start_date, '') = coalesce(rw.start_date, '')
- and coalesce(ra.end_date, '')   = coalesce(rw.end_date, '')
-where rw.predicate = 'rode_with' and rw.parent_claim_id is null
-  and (select count(*) from public.claims ra2
-        where ra2.predicate = 'rode_at' and ra2.subject_id = rw.subject_id
-          and coalesce(ra2.start_date, '') = coalesce(rw.start_date, '')
-          and coalesce(ra2.end_date, '')   = coalesce(rw.end_date, '')) = 1;
-
-update public.claims rw
-set parent_claim_id = ra.id
-from public.claims ra
-where rw.predicate = 'rode_with' and rw.parent_claim_id is null
-  and ra.predicate = 'rode_at'
-  and ra.subject_id = rw.subject_id
-  and coalesce(ra.start_date, '') = coalesce(rw.start_date, '')
-  and coalesce(ra.end_date, '')   = coalesce(rw.end_date, '')
-  and (select count(*) from public.claims ra2
-        where ra2.predicate = 'rode_at' and ra2.subject_id = rw.subject_id
-          and coalesce(ra2.start_date, '') = coalesce(rw.start_date, '')
-          and coalesce(ra2.end_date, '')   = coalesce(rw.end_date, '')) = 1;
-
--- COMMIT; if the updated count matches the preview, else ROLLBACK;
-
-
--- ────────────────────────────────────────────────────────────────────────────
--- PHASE 1b — Parent the BALANCED multi-match companions 1:1 (Jay -> Sean 1986).
--- Pairs each rode_with to a distinct rode_at of the same date by row number.
--- Only runs on keys where rode_at count == NULL-parent rode_with count > 1
--- (confirm Phase 0.3 shows ONLY the Jay->Sean key before committing).
--- ────────────────────────────────────────────────────────────────────────────
-begin;
-
-with rode_at_n as (
-  select id, subject_id,
-         coalesce(start_date, '') as s, coalesce(end_date, '') as e,
-         row_number() over (partition by subject_id, coalesce(start_date, ''), coalesce(end_date, '')
-                            order by id) as rn
-  from public.claims
-  where predicate = 'rode_at'
-),
-rode_with_n as (
-  select id, subject_id,
-         coalesce(start_date, '') as s, coalesce(end_date, '') as e,
-         row_number() over (partition by subject_id, coalesce(start_date, ''), coalesce(end_date, '')
-                            order by id) as rn
-  from public.claims
-  where predicate = 'rode_with' and parent_claim_id is null
-),
-balanced as (
-  select rw.subject_id, rw.s, rw.e
-  from rode_with_n rw
-  group by rw.subject_id, rw.s, rw.e
-  having count(*) > 1
-     and count(*) = (select count(*) from rode_at_n ra
-                     where ra.subject_id = rw.subject_id and ra.s = rw.s and ra.e = rw.e)
-)
-update public.claims c
-set parent_claim_id = ra.id
-from rode_with_n rw
-join rode_at_n ra
-  on ra.subject_id = rw.subject_id and ra.s = rw.s and ra.e = rw.e and ra.rn = rw.rn
-join balanced b
-  on b.subject_id = rw.subject_id and b.s = rw.s and b.e = rw.e
-where c.id = rw.id and c.parent_claim_id is null;
-
--- verify (expect the 3 Jay->Sean rows now parented):
-select id, subject_id, object_id, start_date, parent_claim_id
-from public.claims
-where predicate = 'rode_with' and parent_claim_id is not null
-order by subject_id, start_date;
-
--- COMMIT; if correct, else ROLLBACK;
-
-
--- ────────────────────────────────────────────────────────────────────────────
--- PHASE 2 — Collapse standalone crew duplicates (Cy 2 -> Cory 2026, 5 -> 1).
--- Keep the earliest row per (subject, object), widen its range, delete the rest
--- and their paired tag_events. Delete claims first so no claim still references
--- the tag_event via tag_event_id, then delete the orphaned tag_events by
--- moment_ref->>'claim_id'.
--- ────────────────────────────────────────────────────────────────────────────
-begin;
-
--- 2.0  Stage the duplicates (rn>1 = to delete) and the keep target + new range.
-create temporary table bug066_dups on commit drop as
-with ranked as (
-  select id, subject_id, object_id, created_at,
-         row_number() over (partition by subject_id, object_id
-                            order by created_at asc, id asc) as rn,
-         min(start_date) over (partition by subject_id, object_id)               as keep_start,
-         max(coalesce(end_date, start_date)) over (partition by subject_id, object_id) as keep_end
-  from public.claims
-  where predicate = 'rode_with' and parent_claim_id is null
-)
-select * from ranked
-where (subject_id, object_id) in (
-  select subject_id, object_id from public.claims
-  where predicate = 'rode_with' and parent_claim_id is null
-  group by subject_id, object_id having count(*) > 1
+-- Jay -> Sean: drop the 2 other 1986 dups AND the declined 2026 row.
+-- Keep swy0i (approved, 1986); its year stays 1986 (declined 2026 not re-asserted).
+delete from public.claims where id in (
+  'claim_1773985566088_4csr3',   -- approved dup, 1986
+  'qc-1781532682402-qsrps',      -- pending dup, 1986
+  'claim_1778911741624_nurv8'    -- DECLINED, 2026 (consent: do not re-assert)
 );
 
--- preview: rows to delete (rn>1) and the paired tag_events that will go with them
-select * from bug066_dups where rn > 1 order by subject_id, object_id, created_at;
-select te.id, te.status, te.moment_ref->>'claim_id' as claim_id
-from public.tag_events te
-where te.moment_ref->>'claim_id' in (select id from bug066_dups where rn > 1);
+-- Cy 2 -> Cory: drop the 5 dups; keep lag0s (approved), widened below.
+delete from public.claims where id in (
+  'claim_1781456293125_iukh7',
+  'qc-1781060378600-ierp5',
+  'qc-1781060400398-8lzc9',
+  'qc-1781062813651-u8b7e',
+  'qc-1781062972839-agnq7'
+);
 
--- 2.1  Delete the duplicate claims (rn>1). Removes their claims.tag_event_id refs.
-delete from public.claims
-where id in (select id from bug066_dups where rn > 1);
+-- Delete the paired tag_events for all 8 removed claims (by moment_ref->>claim_id).
+-- Claims are deleted first above so no surviving claim still FKs these tag_events.
+delete from public.tag_events where moment_ref->>'claim_id' in (
+  'claim_1773985566088_4csr3','qc-1781532682402-qsrps','claim_1778911741624_nurv8',
+  'claim_1781456293125_iukh7','qc-1781060378600-ierp5','qc-1781060400398-8lzc9',
+  'qc-1781062813651-u8b7e','qc-1781062972839-agnq7'
+);
 
--- 2.2  Delete the now-orphaned paired tag_events for those removed claims.
-delete from public.tag_events
-where moment_ref->>'claim_id' in (select id from bug066_dups where rn > 1);
+-- Widen the surviving Cy 2 -> Cory crew row to span 2020-2026.
+update public.claims set start_date = '2020-01-01', end_date = '2026-01-01'
+  where id = 'qc-1781060310289-lag0s';
 
--- 2.3  Widen the kept row (rn=1) to span the full [min, max] year range.
-update public.claims c
-set start_date = d.keep_start,
-    end_date   = case when d.keep_end = d.keep_start then c.end_date else d.keep_end end
-from bug066_dups d
-where d.rn = 1 and c.id = d.id;
-
--- verify (expect exactly one crew row per pair, with the widened range):
-select subject_id, object_id, count(*) as n_rows,
-       min(start_date) as start_date, max(coalesce(end_date, start_date)) as end_date
+-- VERIFY: no duplicate crew pairs remain (returned 0 rows).
+select subject_id, object_id, count(*) as dup_rows
 from public.claims
 where predicate = 'rode_with' and parent_claim_id is null
-group by subject_id, object_id
-having count(*) > 1;   -- expect ZERO rows
+group by subject_id, object_id having count(*) > 1;
 
--- COMMIT; if the dup-pair count is now zero, else ROLLBACK;
+commit;
 
 
--- ────────────────────────────────────────────────────────────────────────────
--- PHASE 3 — Final verification (read-only).
--- ────────────────────────────────────────────────────────────────────────────
+-- ── POST-COMMIT VERIFICATION (read-only, all passed) ────────────────────────
+-- Survivors: swy0i = 1986-01-01/null ("Rode with Sean, 1986");
+--            lag0s = 2020-01-01/2026-01-01 ("Rode with Cory, 2020 - 2026").
+select id, subject_id, object_id, start_date, end_date
+from public.claims where id in ('claim_1773701395039_swy0i','qc-1781060310289-lag0s');
 
--- No (subject, object) crew pair has more than one NULL-parent rode_with:
-select count(*) as remaining_dup_pairs from (
-  select subject_id, object_id from public.claims
-  where predicate = 'rode_with' and parent_claim_id is null
-  group by subject_id, object_id having count(*) > 1
-) x;   -- expect 0
+-- Universe shrank 12 -> 4.
+select count(*) as null_parent_rode_with
+from public.claims where predicate = 'rode_with' and parent_claim_id is null;
 
--- The Jay->Sean companions are now parented (chips, not standalone cards):
-select count(*) as parented_companions from public.claims
-where predicate = 'rode_with' and parent_claim_id is not null;   -- expect 3 (Jay->Sean)
-
--- No orphaned tag_events left pointing at deleted claims:
-select count(*) as orphan_tag_events from public.tag_events te
-where te.moment_ref ? 'claim_id'
-  and not exists (select 1 from public.claims c where c.id = te.moment_ref->>'claim_id');
+-- Browser: /people/cy_2 dropped from 6 cards to one "Rode with Cory, 2020 - 2026".
