@@ -11,6 +11,7 @@ import { useSearchParams, useRouter } from "next/navigation"
 import {
   EQUITY_POOL_SHARES,
   EQUITY_SNAPSHOT_LABEL,
+  EQUITY_ESTIMATE_QUALIFIER,
   estimateShares,
 } from "@/lib/equity-offer"
 
@@ -586,12 +587,16 @@ function MembershipDashboard() {
                 <span className="text-foreground" style={{ fontSize: 10 }}>{EQUITY_SNAPSHOT_LABEL}</span>
               </div>
               {shareEst ? (
-                <div className="flex justify-between">
-                  <span className="text-muted" style={{ fontSize: 10 }}>Your estimated share</span>
-                  <span className="font-bold" style={{ fontSize: 12, color: "#f59e0b" }}>
-                    ~{shareEst.shares.toLocaleString()} shares ({shareEst.pct.toFixed(2)}%)
-                  </span>
-                </div>
+                <>
+                  <div className="flex justify-between">
+                    <span className="text-muted" style={{ fontSize: 10 }}>Your estimated share</span>
+                    <span className="font-bold" style={{ fontSize: 12, color: "#f59e0b" }}>
+                      ~{shareEst.shares.toLocaleString()} shares ({shareEst.pct.toFixed(2)}%)
+                    </span>
+                  </div>
+                  {/* BUG-061: frame the number as a projection, not a promise. */}
+                  <p className="text-muted" style={{ fontSize: 9, lineHeight: 1.5 }}>{EQUITY_ESTIMATE_QUALIFIER}</p>
+                </>
               ) : (
                 <p className="text-muted" style={{ fontSize: 10, lineHeight: 1.7 }}>
                   Every token counts in the pool, even on the free tier. Add entries, post

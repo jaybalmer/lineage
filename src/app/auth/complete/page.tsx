@@ -6,6 +6,7 @@ import { useLineageStore } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 import { trackEvent, identifyUser } from "@/lib/analytics"
 import { BrandMark } from "@/components/ui/brand-mark"
+import { safeReturnTo } from "@/lib/safe-redirect"
 import type { User } from "@supabase/supabase-js"
 
 export default function AuthCompletePage() {
@@ -16,6 +17,13 @@ export default function AuthCompletePage() {
 
   useEffect(() => {
     let handled = false
+
+    // BUG-054: honor a validated returnTo (set by the sign-in entry and carried
+    // through the callback / magic-link hop) after login, defaulting to My
+    // Timeline when absent. Preserved on the expiry bounce so a re-attempt lands
+    // in the right place too.
+    const returnTo = safeReturnTo(new URLSearchParams(window.location.search).get("returnTo"))
+    const expiredUrl = `/auth/signin?error=link_expired${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""}`
 
     async function saveAndRedirect(user: User) {
       if (handled) return
@@ -159,12 +167,12 @@ export default function AuthCompletePage() {
       }
 
       setStatus("Done! Opening your linestry…")
-      router.replace(`/${activeCommunitySlug}/profile`)
+      router.replace(returnTo ?? `/${activeCommunitySlug}/profile`)
     }
 
     // ── Timeout: never hang indefinitely ──────────────────────────────────
     const timeout = setTimeout(() => {
-      if (!handled) router.replace("/auth/signin?error=link_expired")
+      if (!handled) router.replace(expiredUrl)
     }, 10000)
 
     async function init() {
@@ -202,10 +210,10 @@ export default function AuthCompletePage() {
 
       // ── 4. Nothing worked → expired or invalid ───────────────────────────
       clearTimeout(timeout)
-      router.replace("/auth/signin?error=link_expired")
+      router.replace(expiredUrl)
     }
 
-    init().catch(() => { if (!handled) router.replace("/auth/signin?error=link_expired") })
+    init().catch(() => { if (!handled) router.replace(expiredUrl) })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

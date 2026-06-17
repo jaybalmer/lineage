@@ -6,6 +6,7 @@ import { Nav } from "@/components/ui/nav"
 import {
   EQUITY_POOL_SHARES,
   EQUITY_SNAPSHOT_LABEL,
+  PROJECTED_TOTAL_WEIGHTED,
   estimateShares,
 } from "@/lib/equity-offer"
 
@@ -33,8 +34,6 @@ const CONTRIB_TABLE = [
   { action: "Entry verified by 3+ members (bonus to you)",         tokens: "+2", live: false },
 ]
 
-const ILLUSTRATIVE_TOTAL = 2600
-
 export default function EquityPage() {
   const [myTokens, setMyTokens] = useState(50)
   const [poolTotal, setPoolTotal] = useState<number | null>(null)
@@ -52,8 +51,13 @@ export default function EquityPage() {
       .catch(() => {})
   }, [])
 
-  const denominator = poolTotal ?? ILLUSTRATIVE_TOTAL
-  const est = estimateShares(myTokens, denominator)
+  // BUG-061: the estimate is floored at a projected end-of-offer pool so an
+  // early estimate is realistic rather than dividing by the tiny live total.
+  // Display the same effective denominator so the copy below matches the number.
+  const liveTotal = poolTotal ?? 0
+  const projectionFloored = liveTotal < PROJECTED_TOTAL_WEIGHTED
+  const effectiveTotal = Math.max(liveTotal, PROJECTED_TOTAL_WEIGHTED)
+  const est = estimateShares(myTokens, effectiveTotal)
 
   return (
     <>
@@ -208,7 +212,7 @@ export default function EquityPage() {
             </div>
             <p className="text-muted mb-5" style={{ fontSize: 11, lineHeight: 1.8 }}>
               Slide to a weighted token balance and see the slice of the pool it would earn
-              against {poolTotal ? "the community's current total" : "an illustrative community total"}.
+              against {projectionFloored ? "a projected end-of-offer total" : "the community's current total"}.
             </p>
 
             <div className="bg-surface border border-border-default rounded-2xl p-5">
@@ -246,8 +250,8 @@ export default function EquityPage() {
               </div>
 
               <p className="text-muted mt-4 pt-4 border-t border-border-default" style={{ fontSize: 9, lineHeight: 1.7 }}>
-                Based on ~{denominator.toLocaleString()} total weighted tokens
-                {poolTotal ? " in circulation right now" : " (illustrative)"}. Every estimate moves
+                Based on ~{effectiveTotal.toLocaleString()} total weighted tokens
+                {projectionFloored ? " (projected end-of-offer pool)" : " in circulation right now"}. Every estimate moves
                 until the {EQUITY_SNAPSHOT_LABEL} snapshot: as the community earns, the pie divides
                 further; as you contribute, your slice grows back.
               </p>
