@@ -132,7 +132,11 @@ export async function fireCommentNotification(
       .maybeSingle()
     if (community?.slug) communitySlug = community.slug
   }
-  const storyUrl = `${BASE_URL}/${communitySlug}/stories?focus=${story.id}`
+  // BUG-054: stamp a returnTo so a logged-out recipient who taps Sign in on the
+  // story is returned to this exact conversation after login (the nav Sign in
+  // entry prefers an existing returnTo over the raw path, so it does not nest).
+  const storyPath = `/${communitySlug}/stories?focus=${story.id}`
+  const storyUrl = `${BASE_URL}${storyPath}&returnTo=${encodeURIComponent(storyPath)}`
 
   const key = process.env.RESEND_API_KEY
   if (!key) return { sent: false, reason: "no_resend_key" }

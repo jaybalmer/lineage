@@ -7,6 +7,16 @@ import { supabase } from "@/lib/supabase"
 import { trackEvent } from "@/lib/analytics"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { cn } from "@/lib/utils"
+import { safeReturnTo } from "@/lib/safe-redirect"
+
+// BUG-054: where to send the user after login. Read from this page's own
+// ?returnTo= (set by the nav Sign in entry / a comment-email deep link) at action
+// time, so it survives without useSearchParams forcing dynamic render. Always
+// validated to an internal path.
+function currentReturnTo(): string | null {
+  if (typeof window === "undefined") return null
+  return safeReturnTo(new URLSearchParams(window.location.search).get("returnTo"))
+}
 
 const inputCls =
   "w-full px-3 py-2.5 rounded-lg bg-surface border border-border-default text-foreground placeholder-muted focus:outline-none focus:border-blue-500 transition-colors"
@@ -37,9 +47,11 @@ export default function SignInPage() {
   const continueWithGoogle = async () => {
     setError(null)
     trackEvent("auth", "signin_started", { method: "google" })
+    const rt = currentReturnTo()
+    const redirectTo = `${window.location.origin}/auth/callback${rt ? `?returnTo=${encodeURIComponent(rt)}` : ""}`
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo },
     })
     if (oauthError) setError(oauthError.message)
   }
@@ -57,7 +69,7 @@ export default function SignInPage() {
       const res = await fetch("/api/auth/magic-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: e, intent: "signin" }),
+        body: JSON.stringify({ email: e, intent: "signin", returnTo: currentReturnTo() }),
       })
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean
@@ -75,10 +87,11 @@ export default function SignInPage() {
       // shouldCreateUser is false here: this is the sign-in surface, so a stray
       // address must not silently create a brand new account.
       if (data.fallback) {
+        const rt = currentReturnTo()
         const { error: otpError } = await supabase.auth.signInWithOtp({
           email: e,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/complete`,
+            emailRedirectTo: `${window.location.origin}/auth/complete${rt ? `?returnTo=${encodeURIComponent(rt)}` : ""}`,
             shouldCreateUser: false,
           },
         })
@@ -123,7 +136,9 @@ export default function SignInPage() {
       return
     }
 
-    router.push("/")
+    // Password sign-in establishes the session client-side (no callback hop), so
+    // honor returnTo here directly; default stays the home redirect (BUG-054).
+    router.push(currentReturnTo() ?? "/")
     router.refresh()
   }
 

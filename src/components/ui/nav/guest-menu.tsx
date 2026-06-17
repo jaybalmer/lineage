@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTheme } from "@/lib/theme"
 import { ReportBugModal } from "@/components/ui/report-bug-modal"
+import { signInHref } from "@/lib/safe-redirect"
 
 /**
  * Logged-out counterpart to AvatarDropdown. The "Sign in" button doubles as a
@@ -17,10 +18,21 @@ export function GuestMenu() {
   const { theme, toggle } = useTheme()
   const [open, setOpen] = useState(false)
   const [bugOpen, setBugOpen] = useState(false)
+  // BUG-054: carry where the visitor is now into Sign in, so login returns them
+  // here instead of always landing on My Timeline. Recomputed on navigation; read
+  // from window so the current search (e.g. ?focus=) and any returnTo a
+  // comment-email link stamped are both captured without forcing dynamic render.
+  const [signInTo, setSignInTo] = useState("/auth/signin")
   const ref = useRef<HTMLDivElement>(null)
 
   // Close when the route changes (navigation completed)
   useEffect(() => { setOpen(false) }, [path])
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const existing = new URLSearchParams(window.location.search).get("returnTo")
+    setSignInTo(signInHref(window.location.pathname + window.location.search, existing))
+  }, [path])
 
   // Close on outside mousedown
   useEffect(() => {
@@ -50,7 +62,7 @@ export function GuestMenu() {
           style={{ fontFamily: "var(--font-body)" }}
         >
           {/* Sign in (primary) */}
-          <Link href="/auth/signin"
+          <Link href={signInTo}
             className="flex items-center px-4 py-2.5 text-accent-strong font-semibold hover:bg-surface-hover transition-colors"
             style={{ fontSize: 11 }}>
             Sign in

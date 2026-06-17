@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { emailHeaderHtml, emailFooterHtml } from "@/lib/emails/shared-header"
+import { safeReturnTo } from "@/lib/safe-redirect"
 
 // ─── Supabase admin client (service role required for generateLink) ───────────
 function getSupabaseAdmin() {
@@ -61,11 +62,14 @@ function magicLinkEmailHtml(link: string): string {
 // ─── POST /api/auth/magic-link ────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    const { email, intent } = await req.json() as { email?: string; intent?: "signin" | "signup" }
+    const { email, intent, returnTo } = await req.json() as { email?: string; intent?: "signin" | "signup"; returnTo?: string }
 
     if (!email || !email.includes("@")) {
       return NextResponse.json({ error: "Valid email required" }, { status: 400 })
     }
+
+    // BUG-054: validated internal path to return to after the magic-link login.
+    const safeReturn = safeReturnTo(returnTo)
 
     const supabaseAdmin = getSupabaseAdmin()
     const resendKey = process.env.RESEND_API_KEY
@@ -113,11 +117,12 @@ export async function POST(req: NextRequest) {
     const ALLOWED_ORIGINS = ["https://linestry.com", "https://lineage.wtf", "https://lineage.community", "http://localhost:3000"]
     const reqOrigin = req.headers.get("origin")
     const origin = reqOrigin && ALLOWED_ORIGINS.includes(reqOrigin) ? reqOrigin : "https://linestry.com"
+    const completeRedirect = `${origin}/auth/complete${safeReturn ? `?returnTo=${encodeURIComponent(safeReturn)}` : ""}`
     const { data, error: genError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
       email: normalizedEmail,
       options: {
-        redirectTo: `${origin}/auth/complete`,
+        redirectTo: completeRedirect,
       },
     })
 
