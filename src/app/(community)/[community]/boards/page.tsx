@@ -267,7 +267,7 @@ function BoardsPageInner() {
 
         {/* Tab bar + Mine toggle */}
         <div className="flex items-center justify-between gap-3 mb-6">
-          <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1">
+          <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1 min-w-0 overflow-x-auto scrollbar-none">
             {([
               { key: "all" as MainTab, label: "All" },
               { key: "brands" as MainTab, label: "Brands" },
@@ -278,7 +278,7 @@ function BoardsPageInner() {
                 key={key}
                 onClick={() => setMainTab(key)}
                 className={cn(
-                  "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
+                  "px-4 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap shrink-0",
                   mainTab === key
                     ? "bg-surface-active text-foreground"
                     : "text-muted hover:text-foreground"
