@@ -17,7 +17,7 @@ function getServiceClient() {
 }
 
 // ── GET /api/stories ─────────────────────────────────────────────────────────
-// Query params: id | author_id | place_id | event_id | org_id | board_id | rider_id | limit
+// Query params: id | author_id | place_id | event_id | org_id | board_id | rider_id | limit | sort
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const storyId   = searchParams.get("id")        // single-story fetch (focus pin)
@@ -29,6 +29,10 @@ export async function GET(req: NextRequest) {
   const riderId   = searchParams.get("rider_id")  // stories that tag this rider
   const limit     = Math.min(parseInt(searchParams.get("limit") ?? "50"), 100)
   const offset    = Math.max(parseInt(searchParams.get("offset") ?? "0"), 0)
+  // BUG-055: the feed's "Recently added" sort needs stories paginated by when
+  // they were POSTED (created_at), not by when the event happened (story_date).
+  // Default stays story_date so every other caller is unchanged.
+  const orderColumn = searchParams.get("sort") === "recent" ? "created_at" : "story_date"
 
   try {
     const supabase = getServiceClient()
@@ -60,7 +64,7 @@ export async function GET(req: NextRequest) {
         boards:story_boards(board_id),
         author:profiles!author_id(display_name, avatar_url)
       `)
-      .order("story_date", { ascending: false })
+      .order(orderColumn, { ascending: false })
       .range(offset, offset + limit - 1)
 
     // Single-story fetch mirrors the stories RLS rule: public, or the viewer

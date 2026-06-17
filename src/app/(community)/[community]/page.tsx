@@ -48,6 +48,9 @@ const SORT_TABS: { value: CommunitySort; label: string }[] = [
   { value: "newest",      label: "Newest" },
   { value: "oldest",      label: "Oldest" },
   { value: "connections", label: "Most connections" },
+  // BUG-055: posted-order option on the community timeline. Default stays
+  // "newest" (event date) per Jay's scope note; this is an extra tab only.
+  { value: "added",       label: "Recently added" },
 ]
 
 // ─── Main Page ───────────────────────────────────────────────────────────────
@@ -270,14 +273,16 @@ export default function CommunityHome() {
               })}
             </div>
 
-            {/* Sort tabs — segmented control, matching the events page */}
-            <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1">
+            {/* Sort tabs — segmented control, matching the events page. Scrolls
+                internally on narrow screens so the 4th tab (BUG-055) never pushes
+                the page past the viewport. */}
+            <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1 max-w-full overflow-x-auto">
               {SORT_TABS.map(({ value, label }) => (
                 <button
                   key={value}
                   onClick={() => setSort(value)}
                   className={cn(
-                    "px-3 py-1.5 rounded-md text-sm font-medium transition-all",
+                    "px-3 py-1.5 rounded-md text-sm font-medium transition-all shrink-0 whitespace-nowrap",
                     sort === value
                       ? "bg-surface-active text-foreground"
                       : "text-muted hover:text-foreground",

@@ -8,7 +8,7 @@ import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 import Link from "next/link"
-import { nameToSlug } from "@/lib/utils"
+import { nameToSlug, cn } from "@/lib/utils"
 import { groupRodeAtCompanions } from "@/lib/companion-grouping"
 import type { Story, Claim } from "@/types"
 
@@ -64,11 +64,34 @@ function storyAction(story: Story): string {
 
 type FeedFilter = "all" | "stories" | "claims"
 
+// BUG-055: "added" sorts by when content was POSTED (created_at) and is the feed
+// default so freshly posted entries surface first; "happened" keeps the original
+// event-date order (story_date / claim start_date) as a secondary option.
+type FeedSort = "added" | "happened"
+
 type FeedEntry =
   | { kind: "story"; story: Story; date: string }
   | { kind: "claim"; claim: Claim; date: string }
 
 const PAGE_SIZE = 30
+
+const SORT_OPTIONS: { value: FeedSort; label: string }[] = [
+  { value: "added",    label: "Recently added" },
+  { value: "happened", label: "Date happened" },
+]
+
+// Sort key per entry for the chosen mode. "added" reads created_at (posted time);
+// if a row somehow lacks a parseable created_at it falls back to its event date
+// so it is never silently dropped to the bottom.
+function entrySortKey(e: FeedEntry, mode: FeedSort): number {
+  if (mode === "added") {
+    const postedAt = e.kind === "story" ? e.story.created_at : e.claim.created_at
+    const t = postedAt ? new Date(postedAt).getTime() : NaN
+    if (!Number.isNaN(t)) return t
+  }
+  const t = e.date ? new Date(e.date).getTime() : NaN
+  return Number.isNaN(t) ? 0 : t
+}
 
 function ContextLine({ name, href, action, ago }: {
   name?: string
@@ -97,6 +120,7 @@ export default function FeedPage() {
   const { catalog, activePersonId } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
   const [filter, setFilter] = useState<FeedFilter>("all")
+  const [sort, setSort] = useState<FeedSort>("added")
   const [addingStory, setAddingStory] = useState(false)
   const [entries, setEntries] = useState<FeedEntry[]>([])
   const [loading, setLoading] = useState(true)
@@ -112,7 +136,10 @@ export default function FeedPage() {
 
     const [storiesRes, claimsRes] = await Promise.all([
       filter !== "claims"
-        ? fetch(`/api/stories?limit=${PAGE_SIZE}&offset=${sOffset}`).then((r) => r.json()).catch(() => [])
+        // sort=recent paginates stories by created_at so the "Recently added"
+        // default actually leads with the newest posts (the route otherwise
+        // orders by story_date). claims_public is already created_at desc below.
+        ? fetch(`/api/stories?limit=${PAGE_SIZE}&offset=${sOffset}${sort === "added" ? "&sort=recent" : ""}`).then((r) => r.json()).catch(() => [])
         : Promise.resolve([]),
       filter !== "stories"
         ? supabase
@@ -133,7 +160,7 @@ export default function FeedPage() {
       .map((c) => ({ kind: "claim" as const, claim: c, date: c.start_date ?? c.created_at ?? "" }))
 
     const merged = [...storyEntries, ...claimEntries].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      (a, b) => entrySortKey(b, sort) - entrySortKey(a, sort)
     )
 
     setEntries((prev) => replace ? merged : [...prev, ...merged])
@@ -142,7 +169,7 @@ export default function FeedPage() {
     setHasMore(storyEntries.length === PAGE_SIZE || claimEntries.length === PAGE_SIZE)
     if (isLoadingMore) setLoadingMore(false)
     else setLoading(false)
-  }, [filter])
+  }, [filter, sort])
 
   useEffect(() => {
     setEntries([])
@@ -150,7 +177,7 @@ export default function FeedPage() {
     setClaimsOffset(0)
     setHasMore(true)
     fetchPage(0, 0, true)
-  }, [filter]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filter, sort]) // eslint-disable-line react-hooks/exhaustive-deps
 
   function authorForClaim(claim: Claim) {
     return catalog.people.find((p) => p.id === claim.subject_id)
@@ -171,6 +198,15 @@ export default function FeedPage() {
     }
     return { absorbedIds: absorbed, companionMap: result.companionMap }
   }, [entries])
+
+  // BUG-055: re-sort the full accumulated set on each render so the chosen order
+  // holds across page boundaries. Each fetched page is independently paginated
+  // (stories and claims are separate streams), so a plain append can interleave
+  // slightly out of order; sorting the whole list keeps it honest.
+  const sortedEntries = useMemo(
+    () => [...entries].sort((a, b) => entrySortKey(b, sort) - entrySortKey(a, sort)),
+    [entries, sort],
+  )
 
   return (
     <div className="min-h-screen bg-background">
@@ -193,23 +229,45 @@ export default function FeedPage() {
           )}
         </div>
 
-        {/* Filter chips */}
-        <div className="flex gap-2 mb-6">
-          {(["all", "stories", "claims"] as FeedFilter[]).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1 rounded-full text-xs font-medium border transition-all capitalize ${
-                filter === f
-                  ? f === "stories"
-                    ? "bg-violet-700 border-violet-700 text-foreground"
-                    : "bg-[#1C1917] border-[#1C1917] text-white"
-                  : "border-border-default text-muted hover:text-foreground"
-              }`}
-            >
-              {f === "stories" ? "✍ Stories" : f === "claims" ? "📌 Claims" : "All"}
-            </button>
-          ))}
+        {/* Filter chips + sort toggle. Wraps on narrow screens so neither row
+            pushes the page past the viewport (BUG-055 acceptance: no overflow). */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div className="flex gap-2">
+            {(["all", "stories", "claims"] as FeedFilter[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-3 py-1 rounded-full text-xs font-medium border transition-all capitalize ${
+                  filter === f
+                    ? f === "stories"
+                      ? "bg-violet-700 border-violet-700 text-foreground"
+                      : "bg-[#1C1917] border-[#1C1917] text-white"
+                    : "border-border-default text-muted hover:text-foreground"
+                }`}
+              >
+                {f === "stories" ? "✍ Stories" : f === "claims" ? "📌 Claims" : "All"}
+              </button>
+            ))}
+          </div>
+
+          {/* Posted-order vs event-date order. "Recently added" is the default so
+              freshly posted content leads (BUG-055). */}
+          <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1">
+            {SORT_OPTIONS.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setSort(value)}
+                className={cn(
+                  "px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap",
+                  sort === value
+                    ? "bg-surface-active text-foreground"
+                    : "text-muted hover:text-foreground",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Feed */}
@@ -222,7 +280,7 @@ export default function FeedPage() {
           </div>
         ) : (
           <div className="space-y-5">
-            {entries.map((entry) => {
+            {sortedEntries.map((entry) => {
               if (entry.kind === "claim" && absorbedIds.has(entry.claim.id)) {
                 return null
               }

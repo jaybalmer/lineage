@@ -8,19 +8,43 @@ import { useLineageStore } from "@/store/lineage-store"
 import type { Event, Story } from "@/types"
 
 export type CommunityFilter = "all" | "stories" | "events"
-export type CommunitySort = "newest" | "oldest" | "connections"
+// BUG-055: "added" orders by when content was POSTED (story created_at). It is an
+// optional tab here; the landing default stays "newest" (event date).
+export type CommunitySort = "newest" | "oldest" | "connections" | "added"
 
 // Rider-implicating event predicates (events/page.tsx). A distinct subject_id
 // across these counts as one connection toward an event.
 const EVENT_PREDICATES = ["competed_at", "spectated_at", "organized_at"]
 
 type TimelineItem =
-  | { kind: "story"; story: Story; sortDate: number; connections: number }
-  | { kind: "event"; event: Event; sortDate: number; connections: number }
+  | { kind: "story"; story: Story; sortDate: number; connections: number; addedAt: number }
+  | { kind: "event"; event: Event; sortDate: number; connections: number; addedAt: number }
 
 // Stories sort ahead of events when their date is identical (brief §4.2).
 function kindRank(item: TimelineItem): number {
   return item.kind === "story" ? 0 : 1
+}
+
+function toMs(dateStr?: string | null): number {
+  if (!dateStr) return NaN
+  return new Date(dateStr).getTime()
+}
+
+// Posted-order key (epoch ms) for the "added" sort. Stories use created_at (when
+// posted); events have no posted timestamp, so they fall back to their event
+// date (start_date, then year). A story missing created_at also falls back to
+// its story date. Floored to 0 so a row is never silently dropped to the bottom.
+function storyAddedAt(story: Story): number {
+  const posted = toMs(story.created_at)
+  if (!Number.isNaN(posted)) return posted
+  const happened = toMs(story.story_date)
+  return Number.isNaN(happened) ? 0 : happened
+}
+function eventAddedAt(event: Event): number {
+  const happened = toMs(event.start_date)
+  if (!Number.isNaN(happened)) return happened
+  const byYear = event.year ? toMs(`${event.year}-01-01`) : NaN
+  return Number.isNaN(byYear) ? 0 : byYear
 }
 
 function storyConnections(story: Story): number {
@@ -95,6 +119,7 @@ export function CommunityTimeline({
             story,
             sortDate: dateToSortNum(story.story_date),
             connections: storyConnections(story),
+            addedAt: storyAddedAt(story),
           }))
 
     const eventItems: TimelineItem[] =
@@ -111,9 +136,15 @@ export function CommunityTimeline({
               (eventStoryCounts.get(event.id) ?? 0) +
               (event.place_id ? 1 : 0) +
               (event.series_id ? 1 : 0),
+            addedAt: eventAddedAt(event),
           }))
 
     const items = [...storyItems, ...eventItems].sort((a, b) => {
+      if (sort === "added") {
+        if (b.addedAt !== a.addedAt) return b.addedAt - a.addedAt
+        if (b.sortDate !== a.sortDate) return b.sortDate - a.sortDate
+        return kindRank(a) - kindRank(b)
+      }
       if (sort === "connections") {
         if (b.connections !== a.connections) return b.connections - a.connections
         if (b.sortDate !== a.sortDate) return b.sortDate - a.sortDate
