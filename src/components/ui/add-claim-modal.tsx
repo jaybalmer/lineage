@@ -364,7 +364,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
   const [companionQuery, setCompanionQuery] = useState("")
 
   const [confidence, setConfidence] = useState<ConfidenceLevel>("self-reported")
-  const [visibility, setVisibility] = useState<PrivacyLevel>("private")
+  const [visibility, setVisibility] = useState<PrivacyLevel>("public")
   const [note, setNote] = useState("")
   const [showAddEntity, setShowAddEntity] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
