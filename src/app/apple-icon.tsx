@@ -29,8 +29,10 @@ export default function AppleIcon() {
           borderRadius: 36,
         }}
       >
+        {/* Landscape mark (aspect ~1.518): match the img box to that aspect so
+            Satori does not squish it into the square tile. Flex-centered. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img width={120} height={120} src={mark} alt="" />
+        <img width={120} height={79} src={mark} alt="" />
       </div>
     ),
     { ...size }

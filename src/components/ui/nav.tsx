@@ -53,7 +53,7 @@ function AppNav({ path, isAuth, dropdownProps, communitySlug, communities }: {
             <span className="text-foreground/40 font-black text-xl flex-shrink-0" style={{ letterSpacing: "-0.03em" }}>/</span>
             <Link href={`/${communitySlug}`} className="flex items-center gap-1.5 min-w-0 flex-shrink">
               <CommunityAvatarPill community={activeCommunity} slug={communitySlug} size="sm" />
-              <span className="font-black text-xl text-foreground tracking-tight truncate">
+              <span className="font-black text-xl text-foreground tracking-tight truncate" style={{ fontFamily: "var(--font-wordmark)" }}>
                 {activeCommunity?.name ?? communitySlug}
               </span>
             </Link>
