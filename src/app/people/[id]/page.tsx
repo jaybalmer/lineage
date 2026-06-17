@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase"
 import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
 import { BrandMark } from "@/components/ui/brand-mark"
+import { StackTimelineToggle } from "@/components/public-timeline/stack-timeline-toggle"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import { HelpConnectCard } from "@/components/ui/help-connect-card"
 import { isInvitableNodeStatus, trackInviteEvent } from "@/lib/invite-tracking"
@@ -37,6 +38,9 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [claimRequests, setClaimRequests] = useState<ClaimRequestWithClaimant[]>([])
   const [showClaimModal, setShowClaimModal] = useState(false)
+  // Public Stack (/t/[slug]) availability for this person — drives the
+  // Stack/Timeline toggle. Null until resolved; only shown when enabled.
+  const [publicTimeline, setPublicTimeline] = useState<{ enabled: boolean; slug: string | null } | null>(null)
 
   // Show post-onboarding welcome banner (once, on first profile visit after signup)
   useEffect(() => {
@@ -87,6 +91,27 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
     // Tagged-in reads through story_riders_public, so pending tags stay hidden
     // until the tagged rider approves them via /me/tags.
     const isProperUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-/i.test(resolvedId)
+
+    // PB-010 cleanup: does this person have a live public Stack at /t/[slug]?
+    // profiles is the source of truth for public_slug (the catalog `people`
+    // table has no such column), so read it directly. Only members (UUID ids)
+    // can have one; mock/catalog people never do.
+    setPublicTimeline(null)
+    if (isProperUuid) {
+      supabase
+        .from("profiles")
+        .select("public_slug, public_timeline_enabled")
+        .eq("id", resolvedId)
+        .maybeSingle()
+        .then(({ data }) => {
+          const row = data as { public_slug: string | null; public_timeline_enabled: boolean | null } | null
+          setPublicTimeline({
+            enabled: row?.public_timeline_enabled === true && !!row?.public_slug,
+            slug: row?.public_slug ?? null,
+          })
+        })
+    }
+
     if (isProperUuid) {
       Promise.all([
         fetch(`/api/stories?author_id=${resolvedId}&limit=100`).then((r) => r.json()).catch(() => []),
@@ -183,11 +208,21 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
 
       <div className="max-w-3xl mx-auto px-4 py-10">
 
-        {/* Breadcrumb */}
-        <div className="text-xs text-muted mb-6">
-          <Link href="/people" className="hover:text-foreground">Riders</Link>
-          <span className="mx-2">/</span>
-          <span className="text-muted">{person.display_name}</span>
+        {/* Breadcrumb + Stack/Timeline toggle (toggle only when this person has
+            a live public Stack at /t/[slug]). */}
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="text-xs text-muted">
+            <Link href="/people" className="hover:text-foreground">Riders</Link>
+            <span className="mx-2">/</span>
+            <span className="text-muted">{person.display_name}</span>
+          </div>
+          {publicTimeline?.enabled && publicTimeline.slug && (
+            <StackTimelineToggle
+              active="timeline"
+              stackHref={`/t/${publicTimeline.slug}`}
+              variant="light"
+            />
+          )}
         </div>
 
         {/* Profile header */}

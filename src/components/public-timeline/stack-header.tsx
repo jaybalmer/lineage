@@ -1,29 +1,30 @@
 "use client"
 
-// PB-010A Phase 3: the Stack View header node + the shared view controls.
+// PB-010A Phase 3: the Stack View identity block + the chromeless share control.
 //
 // StackHeader is the Campsite-style identity block that sits above the curated
 // stack on the dark ground: avatar, name, tagline, an era chip ("Snowboarding
 // since 1983" — the differentiator the supplement calls out) and a location
-// chip, with the share + view-toggle controls. Store-free; fed the resolved
-// owner header from the public read.
+// chip. Store-free; fed the resolved owner header from the public read. The
+// Stack/Timeline toggle + brand mark now live in the page's top bar
+// (public-profile-view), not in this header.
 //
-// StackViewControls is shared by both screens (stack on the dark ground,
-// timeline on the light .postcard ground) so the toggle + share render
-// consistently with ground-appropriate styling.
+// StackViewControls bundles that toggle with the Share button for the chromeless
+// /t/ page. The toggle itself is the shared StackTimelineToggle so it stays
+// consistent with the in-app profile page; "Timeline" navigates to the full
+// profile rather than switching an in-page view.
 
 import { useState } from "react"
 import type { PublicTimelineOwner } from "@/lib/public-timeline-read"
+import { StackTimelineToggle } from "@/components/public-timeline/stack-timeline-toggle"
 import { cn } from "@/lib/utils"
 
-type StackView = "stack" | "timeline"
-
 export function StackViewControls({
-  view, onView, showToggle, variant,
+  timelineHref,
+  variant,
 }: {
-  view: StackView
-  onView: (v: StackView) => void
-  showToggle: boolean
+  /** Full-profile URL the "Timeline" segment navigates to. */
+  timelineHref: string
   variant: "light" | "dark"
 }) {
   const [copied, setCopied] = useState(false)
@@ -42,31 +43,10 @@ export function StackViewControls({
   }
 
   const dark = variant === "dark"
-  const segBase = "px-2.5 py-1 text-[11px] font-semibold rounded-full transition-colors"
-  const segActive = dark ? "bg-white text-[#1C1917]" : "bg-foreground text-background"
-  const segIdle = dark ? "text-white/60 hover:text-white" : "text-muted hover:text-foreground"
 
   return (
     <div className="flex items-center gap-2">
-      {showToggle && (
-        <div
-          className={cn(
-            "flex items-center gap-0.5 rounded-full p-0.5 border",
-            dark ? "border-white/15 bg-white/5" : "border-border-default bg-surface",
-          )}
-          role="tablist"
-          aria-label="View"
-        >
-          <button role="tab" aria-selected={view === "stack"} onClick={() => onView("stack")}
-            className={cn(segBase, view === "stack" ? segActive : segIdle)}>
-            Stack
-          </button>
-          <button role="tab" aria-selected={view === "timeline"} onClick={() => onView("timeline")}
-            className={cn(segBase, view === "timeline" ? segActive : segIdle)}>
-            Timeline
-          </button>
-        </div>
-      )}
+      <StackTimelineToggle active="stack" timelineHref={timelineHref} variant={variant} />
       <button
         onClick={share}
         aria-label="Share this page"
@@ -83,23 +63,12 @@ export function StackViewControls({
   )
 }
 
-export function StackHeader({
-  owner, view, onView, showToggle,
-}: {
-  owner: PublicTimelineOwner
-  view: StackView
-  onView: (v: StackView) => void
-  showToggle: boolean
-}) {
+export function StackHeader({ owner }: { owner: PublicTimelineOwner }) {
   const tagline = owner.bio ? owner.bio.split("\n")[0] : null
   const location = [owner.region, owner.country].filter(Boolean).join(", ")
 
   return (
     <header className="mb-6">
-      <div className="flex justify-end mb-3">
-        <StackViewControls view={view} onView={onView} showToggle={showToggle} variant="dark" />
-      </div>
-
       <div className="flex flex-col items-center text-center">
         {owner.avatar_url ? (
           // eslint-disable-next-line @next/next/no-img-element
