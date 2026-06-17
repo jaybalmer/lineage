@@ -394,6 +394,17 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
     [sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId],
   )
 
+  // The viewer's crew `rode_with` relationships (BUG-066). One row per person:
+  // a standalone or place-companion ride with someone updates that row's year
+  // range instead of stacking duplicate cards. Companion chip rows (those
+  // parented to a `rode_at`) are excluded so only the crew relationship dedupes.
+  const myCrewClaims = useMemo(
+    () =>
+      getAllClaims(sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId)
+        .filter((c) => c.subject_id === activePersonId && c.predicate === "rode_with" && !c.parent_claim_id),
+    [sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId],
+  )
+
   // When a board is picked, prefill the relationship toggles + year from an
   // existing claim for that board (so the user sees and can adjust their current
   // state), or reset to defaults for a board they have not added yet.
@@ -567,24 +578,69 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
 
     if (!resolvedStartDate) return
 
-    // Create main claim
-    addClaim({
-      id: generateId("claim"),
-      subject_id: activePersonId,
-      subject_type: "person",
-      predicate,
-      object_id: entityId,
-      object_type: PREDICATE_ENTITY_TYPE[predicate],
-      start_date: resolvedStartDate,
-      end_date: resolvedEndDate,
-      confidence,
-      visibility,
-      asserted_by: activePersonId,
-      created_at: new Date().toISOString(),
-      note: note.trim() || undefined,
-      ...(predicate === "competed_at" && division.trim() ? { division: division.trim() } : {}),
-      ...(predicate === "competed_at" && result.trim() ? { result: result.trim() } : {}),
-    })
+    // BUG-066: crew `rode_with` is one relationship row per person. Re-adding a
+    // ride with someone widens its [start, end] year range (client-side, like
+    // the board upsert above; /api/claims is the stale-client-state backstop)
+    // instead of stacking a duplicate standalone card. Dates are ISO-ish
+    // ("YYYY-..."), so a lexical min/max is a year min/max. Crew rows carry no
+    // parent_claim_id; the place-companion chip rows (parented below) stay
+    // separate and are excluded from this dedup.
+    const upsertCrewRodeWith = (personId: string, start: string, end?: string, noteText?: string) => {
+      const existing = myCrewClaims.find((c) => c.object_id === personId)
+      if (existing) {
+        const nextStart = [existing.start_date, start]
+          .filter((d): d is string => !!d)
+          .reduce((a, b) => (a < b ? a : b), start)
+        const nextEnd = [existing.end_date ?? existing.start_date, end ?? start]
+          .filter((d): d is string => !!d)
+          .reduce((a, b) => (a > b ? a : b), end ?? start)
+        if (nextStart !== existing.start_date || nextEnd !== existing.end_date) {
+          updateClaim(existing.id, { start_date: nextStart, end_date: nextEnd })
+        }
+        return
+      }
+      addClaim({
+        id: generateId("claim"),
+        subject_id: activePersonId,
+        subject_type: "person",
+        predicate: "rode_with",
+        object_id: personId,
+        object_type: "person",
+        start_date: start,
+        end_date: end,
+        confidence: "self-reported",
+        visibility,
+        asserted_by: activePersonId,
+        created_at: new Date().toISOString(),
+        note: noteText || undefined,
+      })
+    }
+
+    // The main claim id is the parent link for the companion rode_with rows in
+    // the rode_at flow, so capture it up front. A direct "rode with <person>"
+    // claim is itself a crew relationship and routes through the dedup upsert.
+    const mainClaimId = generateId("claim")
+    if (predicate === "rode_with") {
+      upsertCrewRodeWith(entityId, resolvedStartDate, resolvedEndDate, note.trim())
+    } else {
+      addClaim({
+        id: mainClaimId,
+        subject_id: activePersonId,
+        subject_type: "person",
+        predicate,
+        object_id: entityId,
+        object_type: PREDICATE_ENTITY_TYPE[predicate],
+        start_date: resolvedStartDate,
+        end_date: resolvedEndDate,
+        confidence,
+        visibility,
+        asserted_by: activePersonId,
+        created_at: new Date().toISOString(),
+        note: note.trim() || undefined,
+        ...(predicate === "competed_at" && division.trim() ? { division: division.trim() } : {}),
+        ...(predicate === "competed_at" && result.trim() ? { result: result.trim() } : {}),
+      })
+    }
 
     // Silent-failures brief Finding #3: when the predicate is rode_at and the
     // user tagged companions, write rode_with edges from the asserter to each
@@ -601,6 +657,9 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
     const unverifiedCompanions: Person[] = []
     for (const personId of companions) {
       if (predicate === "rode_at") {
+        // Per-ride companion edge, parented to the rode_at so the timeline folds
+        // it into that place card as a chip (BUG-066, fold-by-parent). One row
+        // per ride: this is the chip source and always inserts.
         addClaim({
           id: generateId("claim"),
           subject_id: activePersonId,
@@ -614,7 +673,12 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
           visibility,
           asserted_by: activePersonId,
           created_at: new Date().toISOString(),
+          parent_claim_id: mainClaimId,
         })
+        // Crew relationship row (one per person, deduped with a widening range)
+        // so the standalone "Rode with <person>" card and connection scoring
+        // stay correct while the per-ride edge above folds away into a chip.
+        upsertCrewRodeWith(personId, resolvedStartDate, resolvedEndDate)
       } else {
         addClaim({
           id: generateId("claim"),

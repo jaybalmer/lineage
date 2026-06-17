@@ -159,6 +159,46 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // rode_with crew relationship dedup (BUG-066). A standalone / crew rode_with
+  // (parent_claim_id NULL) is one row per (subject, object): re-adding a ride
+  // with the same person widens that row's year range instead of inserting a
+  // duplicate. Parented companion rows (parent_claim_id set, one per ride, the
+  // place-card chip source) always insert and are excluded here. Mirrors the
+  // owned_board upsert above; the client usually catches this and PATCHes the
+  // existing crew row, so this is the stale-client-state backstop.
+  const parentClaimId = optStr(body.parent_claim_id, 80)
+  if (predicate === "rode_with" && parentClaimId === null) {
+    const { data: existingRows } = await db
+      .from("claims")
+      .select("id, start_date, end_date")
+      .eq("subject_id", subjectId)
+      .eq("object_id", objectId)
+      .eq("predicate", "rode_with")
+      .is("parent_claim_id", null)
+      .order("created_at", { ascending: true })
+      .limit(1)
+    const existing = existingRows?.[0]
+    if (existing) {
+      const newStart = optStr(body.start_date, 32)
+      const newEnd = optStr(body.end_date, 32) ?? newStart
+      // start_date / end_date are ISO-ish "YYYY-..." so a lexical min/max is a
+      // year min/max. Widen [start, end] to span the existing row and the new ride.
+      const starts = [existing.start_date as string | null, newStart].filter((d): d is string => !!d)
+      const ends = [(existing.end_date ?? existing.start_date) as string | null, newEnd].filter((d): d is string => !!d)
+      const upd: Record<string, unknown> = {}
+      if (starts.length > 0) upd.start_date = starts.reduce((a, b) => (a < b ? a : b))
+      if (ends.length > 0) upd.end_date = ends.reduce((a, b) => (a > b ? a : b))
+      if (Object.keys(upd).length > 0) {
+        const { error: updErr } = await db.from("claims").update(upd).eq("id", existing.id)
+        if (updErr) {
+          console.error("[api/claims] rode_with crew upsert failed:", updErr)
+          return NextResponse.json({ error: updErr.message }, { status: 400 })
+        }
+      }
+      return NextResponse.json({ ok: true, paired: 0, updated: existing.id })
+    }
+  }
+
   const { error: insertError } = await db.from("claims").insert({
     id,
     subject_id: subjectId,
@@ -178,6 +218,7 @@ export async function POST(req: NextRequest) {
     division: optStr(body.division, 120),
     result: optStr(body.result, 120),
     board_relationship: boardRelationship,
+    parent_claim_id: parentClaimId,
     community_id: optStr(body.community_id, 40),
   })
   if (insertError) {

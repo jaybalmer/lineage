@@ -59,7 +59,11 @@ export function computeConnectionSummary(
     (c) => c.predicate === "rode_with" && c.object_id === personA.id
   )
   if (directAtoB.length > 0 || directBtoA.length > 0) {
-    const claim = directAtoB[0] || directBtoA[0]
+    // One direct rode_with fact per pair (BUG-066). Prefer the crew relationship
+    // row (no parent_claim_id) so the detail shows the full year range; a
+    // per-ride companion row would only carry a single year.
+    const directRows = [...directAtoB, ...directBtoA]
+    const claim = directRows.find((c) => !c.parent_claim_id) ?? directRows[0]
     const w = claimWindow(claim)
     raw.push({
       type: "rode_with",

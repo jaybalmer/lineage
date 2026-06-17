@@ -397,6 +397,11 @@ export interface Claim {
   board_relationship?: BoardRelationship
   // PB-009 Phase 1: paired tag_event for person-implicating claims (NULL for self-claims and grandfathered rows)
   tag_event_id?: string | null
+  // BUG-066: a companion `rode_with` points at its parent `rode_at` claim so the
+  // timeline folds it into that place card (instead of guessing by year-only
+  // date). NULL => a standalone / crew relationship row (one per pair, deduped
+  // on write with a widening year range). NULL for every non-rode_with predicate.
+  parent_claim_id?: string | null
 }
 
 /** A board claim records whether the rider rode the board, owns it (collection), or both. */
