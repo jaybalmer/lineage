@@ -7,27 +7,6 @@ import { BrandMark } from "@/components/ui/brand-mark"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { EQUITY_POOL_SHARES } from "@/lib/equity-offer"
 
-const FEATURES = [
-  {
-    icon: "📍",
-    title: "Map your timeline",
-    desc: "Log the places, boards, events and people that shaped your journey.",
-    accent: "border-blue-700",
-  },
-  {
-    icon: "✕",
-    title: "Find where lines cross",
-    desc: "Discover where your timeline overlaps with other people who share the same stories.",
-    accent: "border-violet-700",
-  },
-  {
-    icon: "🌍",
-    title: "Build the collective timeline",
-    desc: "Individual timelines weave into a shared community history. The more people add, the more complete the linestry becomes.",
-    accent: "border-emerald-700",
-  },
-]
-
 export default function Home() {
   const { activePersonId } = useLineageStore()
   const communities = useLineageStore((s) => s.communities)
@@ -112,29 +91,6 @@ export default function Home() {
               Browse Snowboarding
             </Link>
           </div>
-        </div>
-      </div>
-
-      {/* Feature cards */}
-      <div className="max-w-3xl mx-auto px-6 pb-6">
-        <div className="flex flex-col gap-4">
-          {FEATURES.map(({ icon, title, desc, accent }, i) => (
-            <div
-              key={title}
-              className={cn("postcard bg-surface border-2 rounded-xl p-5", accent)}
-            >
-              <div className="flex items-start gap-3">
-                <span className="text-2xl leading-none mt-0.5">{icon}</span>
-                <div>
-                  <div className="text-[10px] text-muted mb-1 tabular-nums">
-                    {String(i + 1).padStart(2, "0")}
-                  </div>
-                  <div className="text-sm font-bold text-foreground leading-snug mb-2">{title}</div>
-                  <div className="text-muted text-sm leading-relaxed">{desc}</div>
-                </div>
-              </div>
-            </div>
-          ))}
         </div>
       </div>
 
