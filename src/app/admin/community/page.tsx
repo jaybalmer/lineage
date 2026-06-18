@@ -12,18 +12,20 @@ import type { Community } from "@/types"
 // layout (requireEditorPage), so no extra auth here. Images only this phase;
 // name/tagline/emoji editing is a Phase 3 follow-up.
 
-type ImageKind = "avatar" | "hero" | "banner"
+type ImageKind = "avatar" | "hero" | "banner" | "boards"
 
-const FIELD: Record<ImageKind, "avatar_url" | "hero_image_url" | "landing_banner_url"> = {
+const FIELD: Record<ImageKind, "avatar_url" | "hero_image_url" | "landing_banner_url" | "boards_banner_url"> = {
   avatar: "avatar_url",
   hero: "hero_image_url",
   banner: "landing_banner_url",
+  boards: "boards_banner_url",
 }
 
 const META: Record<ImageKind, { label: string; hint: string }> = {
   avatar: { label: "Profile image", hint: "Square works best. Shown in place of the color dot in the header." },
   hero: { label: "Background image", hint: "Wide photo. Renders full-width behind the community name." },
   banner: { label: "Homepage banner", hint: "Wide photo. Full-width band across the top of the main landing page (not the community page)." },
+  boards: { label: "Boards page banner", hint: "Wide photo. Full-width band across the top of the /boards catalog page." },
 }
 
 function ImageUploadField({ community, kind }: { community: Community; kind: ImageKind }) {
@@ -154,10 +156,11 @@ function CommunityCard({ community }: { community: Community }) {
         <h2 className="text-base font-bold text-foreground">{community.name}</h2>
         <span className="text-xs text-muted">/{community.slug}</span>
       </div>
-      <div className="flex flex-col sm:flex-row gap-5">
+      <div className="flex flex-col sm:flex-row flex-wrap gap-5">
         <ImageUploadField community={community} kind="avatar" />
         <ImageUploadField community={community} kind="hero" />
         <ImageUploadField community={community} kind="banner" />
+        <ImageUploadField community={community} kind="boards" />
       </div>
     </div>
   )

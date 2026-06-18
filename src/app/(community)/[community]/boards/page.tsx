@@ -3,252 +3,62 @@
 import { useState, useMemo, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
-import { boardSlug, orgSlug } from "@/lib/mock-data"
+import { orgSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
-import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
-import { useBoardImage } from "@/hooks/use-board-image"
-import { BrandMark } from "@/components/ui/brand-mark"
+import { boardRelationshipFlags } from "@/lib/board-relationship"
 import { cn } from "@/lib/utils"
 import { CommunityLink } from "@/components/ui/community-link"
 import type { Board, Org } from "@/types"
+import {
+  BoardTile,
+  BoardListRow,
+  BrandIndexCard,
+  StatButton,
+  BoardSortSelect,
+  ViewToggle,
+  DecadeDivider,
+  SearchIcon,
+  ChevronLeft,
+  sortBoards,
+  groupByDecade,
+  isChronoSort,
+  type BoardSort,
+  type BrandSort,
+  type ViewMode,
+  type BoardCounts,
+} from "./board-parts"
 
-type BrandSort = "count" | "az"
-type BoardSort = "newest" | "collected"
+const GRID_CLASS = "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
 
-// ─── Icons (no emoji on this page) ──────────────────────────────────────────
-
-function SearchIcon({ className }: { className?: string }) {
+function ChevronDown({ className }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <circle cx="11" cy="11" r="7" />
-      <path d="m20 20-3.5-3.5" />
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="m6 9 6 6 6-6" />
     </svg>
   )
 }
-
-function ChevronLeft({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-      <path d="m15 18-6-6 6-6" />
-    </svg>
-  )
-}
-
-// ─── Board cover: the image fallback chain ──────────────────────────────────
-// 1. board.image_url (manual)  2. useBoardImage (auto)  3. brand logo (contain)
-// 4. greyed BrandMark on a muted field. No emoji. Loading shows a pulse box.
-// useBoardImage is a hook, so this is called once per rendered board — never
-// in a loop. Brand-index strips render it only for the 2-3 thumbnails shown.
-
-function BoardCover({
-  board,
-  orgLogoUrl,
-  className,
-  markSize = 44,
-}: {
-  board: Board
-  orgLogoUrl?: string
-  className?: string
-  markSize?: number
-}) {
-  const manualImage = board.image_url
-  const autoImage = useBoardImage(board.brand, board.model, board.model_year, board.id)
-  const imageUrl = manualImage ?? (autoImage || undefined)
-  const loading = !manualImage && autoImage === undefined
-
-  if (imageUrl) {
-    return (
-      <div className={cn("bg-surface-2 overflow-hidden", className)}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imageUrl} alt={`${board.brand} ${board.model}`} className="w-full h-full object-cover" />
-      </div>
-    )
-  }
-  if (loading) {
-    return <div className={cn("bg-surface-hover animate-pulse", className)} />
-  }
-  if (orgLogoUrl) {
-    return (
-      <div className={cn("bg-surface-2 overflow-hidden flex items-center justify-center p-4", className)}>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={orgLogoUrl} alt={board.brand} className="max-w-full max-h-full object-contain opacity-90" />
-      </div>
-    )
-  }
-  return (
-    <div className={cn("bg-surface-2 flex items-center justify-center", className)}>
-      <BrandMark size={markSize} color="var(--muted)" dotColor="var(--muted)" className="opacity-30" />
-    </div>
-  )
-}
-
-// ─── Portrait product tile ──────────────────────────────────────────────────
-
-function BoardTile({
-  board,
-  orgLogoUrl,
-  collectorCount,
-  addedByName,
-}: {
-  board: Board
-  orgLogoUrl?: string
-  collectorCount: number
-  addedByName?: string
-}) {
-  const isUnverified = board.community_status === "unverified"
-  const yearShort = `'${String(board.model_year).slice(2)}`
-  const href = `/boards/${boardSlug(board)}`
-
-  return (
-    <div>
-      {/* Cover + overlaid chrome. The cover wrapper is position:relative with
-          z-auto so it never traps the QuickClaim popover (z-50) under a
-          neighbouring tile. */}
-      <div className="relative">
-        <CommunityLink href={href} className="block">
-          <BoardCover
-            board={board}
-            orgLogoUrl={orgLogoUrl}
-            className="aspect-[3/4] rounded-xl border border-border-default"
-            markSize={48}
-          />
-        </CommunityLink>
-        {isUnverified && (
-          <span className="absolute top-2 left-2 text-[10px] text-amber-600 bg-background/80 backdrop-blur-sm border border-amber-500/40 rounded px-1.5 py-0.5 pointer-events-none">
-            unverified
-          </span>
-        )}
-        <div className="absolute top-2 right-2">
-          <QuickClaimPopover
-            entityId={board.id}
-            entityType="board"
-            entityName={`${board.brand} ${board.model} ${yearShort}`}
-          />
-        </div>
-      </div>
-
-      <CommunityLink href={href} className="block mt-2 group">
-        <div className="text-sm font-medium text-foreground truncate group-hover:text-accent-strong transition-colors">
-          {board.brand} {board.model}
-        </div>
-        <div className="text-xs text-muted mt-0.5 flex items-center gap-1.5 flex-wrap">
-          <span className="tabular-nums">{yearShort}</span>
-          {board.shape && <span className="capitalize">· {board.shape.replace("-", " ")}</span>}
-        </div>
-        {collectorCount > 0 && (
-          <div className="text-[11px] text-muted mt-1">
-            {collectorCount} collector{collectorCount !== 1 ? "s" : ""}
-          </div>
-        )}
-        {isUnverified && addedByName && (
-          <div className="text-[10px] text-muted mt-1 truncate">Added by {addedByName}</div>
-        )}
-      </CommunityLink>
-    </div>
-  )
-}
-
-// ─── Brand index card (default landing) ─────────────────────────────────────
-
-function BrandIndexCard({
-  brand,
-  boards,
-  org,
-  onOpen,
-}: {
-  brand: string
-  boards: Board[] // newest model year first
-  org?: Org
-  onOpen: () => void
-}) {
-  const thumbs = boards.slice(0, 3)
-  return (
-    <button
-      onClick={onOpen}
-      className="text-left w-full bg-surface border border-border-default rounded-xl p-3 hover:border-foreground/30 transition-colors"
-    >
-      <div className="flex items-center justify-between gap-2 mb-2.5">
-        <span className="font-semibold text-foreground truncate">{brand}</span>
-        <span className="text-[11px] text-muted tabular-nums shrink-0">
-          {boards.length} board{boards.length !== 1 ? "s" : ""}
-        </span>
-      </div>
-      <div className="flex gap-1.5">
-        {thumbs.map((b) => (
-          <BoardCover
-            key={b.id}
-            board={b}
-            orgLogoUrl={org?.logo_url}
-            className="w-12 h-16 rounded-lg border border-border-default shrink-0"
-            markSize={18}
-          />
-        ))}
-      </div>
-    </button>
-  )
-}
-
-// ─── Small shared controls ──────────────────────────────────────────────────
-
-function StatBlock({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="bg-surface border border-border-default rounded-xl px-4 py-3">
-      <div className="text-2xl font-bold text-foreground tabular-nums">{value}</div>
-      <div className="text-xs text-muted mt-0.5">{label}</div>
-    </div>
-  )
-}
-
-function SortToggle<T extends string>({
-  value,
-  onChange,
-  options,
-}: {
-  value: T
-  onChange: (v: T) => void
-  options: [T, string][]
-}) {
-  return (
-    <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1 shrink-0 overflow-x-auto scrollbar-none">
-      {options.map(([v, label]) => (
-        <button
-          key={v}
-          onClick={() => onChange(v)}
-          className={cn(
-            "px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap shrink-0",
-            value === v ? "bg-surface-active text-foreground" : "text-muted hover:text-foreground"
-          )}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  )
-}
-
-function sortBoards(boards: Board[], sort: BoardSort, counts: Map<string, number>): Board[] {
-  if (sort === "collected") {
-    return [...boards].sort(
-      (a, b) => (counts.get(b.id) ?? 0) - (counts.get(a.id) ?? 0) || b.model_year - a.model_year
-    )
-  }
-  return [...boards].sort((a, b) => b.model_year - a.model_year)
-}
-
-// ─── Page ────────────────────────────────────────────────────────────────────
 
 function BoardsPageInner() {
   const searchParams = useSearchParams()
   const yearParam = searchParams.get("year")
-  const [myOnly, setMyOnly] = useState(false)
-  const [addOpen, setAddOpen] = useState(false)
-  const [search, setSearch] = useState(yearParam ?? "")
+
+  const [level, setLevel] = useState<"brands" | "all">("brands")
   const [selectedBrand, setSelectedBrand] = useState<string | null>(null)
+  const [selectedYear, setSelectedYear] = useState<number | null>(null)
+  const [search, setSearch] = useState(yearParam ?? "")
+  const [myOnly, setMyOnly] = useState(false)
   const [brandSort, setBrandSort] = useState<BrandSort>("count")
   const [boardSort, setBoardSort] = useState<BoardSort>("newest")
-  const { catalog, activePersonId } = useLineageStore()
+  const [viewMode, setViewMode] = useState<ViewMode>("card")
+  const [addOpen, setAddOpen] = useState(false)
+  const [addBrandOpen, setAddBrandOpen] = useState(false)
+
+  const { catalog, activePersonId, communities, activeCommunitySlug } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
+
+  const community = communities.find((c) => c.slug === activeCommunitySlug)
+  const bannerUrl = community?.boards_banner_url
 
   // Display totals for the intro card — always the full catalog, never filtered.
   const totalBoards = catalog.boards.length
@@ -264,17 +74,31 @@ function BoardsPageInner() {
     )
   }, [activePersonId, catalog.claims])
 
-  // Distinct owners (owned_board) per board — powers the collector count.
-  const boardRiderCounts = useMemo(() => {
-    const sets = new Map<string, Set<string>>()
+  // Distinct riders / owners per board, split by board_relationship. Powers the
+  // rode/own counts on the tiles and the most/least rode/owned sorts.
+  const counts: BoardCounts = useMemo(() => {
+    const rode = new Map<string, Set<string>>()
+    const own = new Map<string, Set<string>>()
+    const bump = (m: Map<string, Set<string>>, k: string, v: string) => {
+      let s = m.get(k)
+      if (!s) {
+        s = new Set()
+        m.set(k, s)
+      }
+      s.add(v)
+    }
     for (const c of catalog.claims) {
       if (c.predicate !== "owned_board") continue
-      if (!sets.has(c.object_id)) sets.set(c.object_id, new Set())
-      sets.get(c.object_id)!.add(c.subject_id)
+      const f = boardRelationshipFlags(c.board_relationship)
+      if (f.rode) bump(rode, c.object_id, c.subject_id)
+      if (f.own) bump(own, c.object_id, c.subject_id)
     }
-    const counts = new Map<string, number>()
-    for (const [id, s] of sets) counts.set(id, s.size)
-    return counts
+    const toCount = (m: Map<string, Set<string>>) => {
+      const r = new Map<string, number>()
+      for (const [k, v] of m) r.set(k, v.size)
+      return r
+    }
+    return { rode: toCount(rode), own: toCount(own) }
   }, [catalog.claims])
 
   // Display name lookup for unverified "Added by" attribution.
@@ -299,13 +123,12 @@ function BoardsPageInner() {
     return map
   }, [catalog.boards, catalog.orgs])
 
-  // My Boards scope (no search). Brand index + brand detail derive from this.
+  // My Boards scope (no search). All listings derive from this.
   const scopedBoards = useMemo(
     () => (myOnly ? catalog.boards.filter((b) => myBoardIds.has(b.id)) : catalog.boards),
     [myOnly, catalog.boards, myBoardIds]
   )
 
-  // Search results — flat grid across all brands. Same haystack as before.
   const searchActive = search.trim().length > 0
   const searchResults = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -320,107 +143,198 @@ function BoardsPageInner() {
   const brandIndex = useMemo(() => {
     const byBrand = new Map<string, Board[]>()
     scopedBoards.forEach((b) => {
-      if (!byBrand.has(b.brand)) byBrand.set(b.brand, [])
-      byBrand.get(b.brand)!.push(b)
+      const bucket = byBrand.get(b.brand)
+      if (bucket) bucket.push(b)
+      else byBrand.set(b.brand, [b])
     })
     const entries = [...byBrand.entries()].map(([brand, boards]) => ({
       brand,
       boards: [...boards].sort((a, b) => b.model_year - a.model_year),
     }))
-    if (brandSort === "az") {
-      entries.sort((a, b) => a.brand.localeCompare(b.brand))
-    } else {
-      entries.sort((a, b) => b.boards.length - a.boards.length || a.brand.localeCompare(b.brand))
-    }
+    if (brandSort === "az") entries.sort((a, b) => a.brand.localeCompare(b.brand))
+    else entries.sort((a, b) => b.boards.length - a.boards.length || a.brand.localeCompare(b.brand))
     return entries
   }, [scopedBoards, brandSort])
 
-  // Boards for the drilled-in brand, sortable, newest model year first by default.
-  const brandDetailBoards = useMemo(() => {
+  // Years available within the drilled-in brand (for the breadcrumb year filter).
+  const brandYears = useMemo(() => {
     if (!selectedBrand) return []
-    const boards = scopedBoards.filter((b) => b.brand === selectedBrand)
-    return sortBoards(boards, boardSort, boardRiderCounts)
-  }, [scopedBoards, selectedBrand, boardSort, boardRiderCounts])
+    return [...new Set(scopedBoards.filter((b) => b.brand === selectedBrand).map((b) => b.model_year))].sort(
+      (a, b) => b - a
+    )
+  }, [scopedBoards, selectedBrand])
 
-  const flatBoards = useMemo(
-    () => sortBoards(searchResults, boardSort, boardRiderCounts),
-    [searchResults, boardSort, boardRiderCounts]
-  )
+  // Sorted board lists per view.
+  const flatSearch = useMemo(() => sortBoards(searchResults, boardSort, counts), [searchResults, boardSort, counts])
+  const allSorted = useMemo(() => sortBoards(scopedBoards, boardSort, counts), [scopedBoards, boardSort, counts])
+  const brandBoards = useMemo(() => {
+    if (!selectedBrand) return []
+    let bs = scopedBoards.filter((b) => b.brand === selectedBrand)
+    if (selectedYear != null) bs = bs.filter((b) => b.model_year === selectedYear)
+    return sortBoards(bs, boardSort, counts)
+  }, [scopedBoards, selectedBrand, selectedYear, boardSort, counts])
 
-  const renderTile = (board: Board) => (
-    <BoardTile
-      key={board.id}
-      board={board}
-      orgLogoUrl={orgByBrand.get(board.brand)?.logo_url}
-      collectorCount={boardRiderCounts.get(board.id) ?? 0}
-      addedByName={board.added_by ? nameById.get(board.added_by) : undefined}
-    />
-  )
+  // Navigation. Level clicks clear search so the chosen level is authoritative.
+  const goBrands = () => { setLevel("brands"); setSelectedBrand(null); setSelectedYear(null); setSearch("") }
+  const goAll = () => { setLevel("all"); setSelectedBrand(null); setSelectedYear(null); setSearch("") }
+  const openBrand = (brand: string) => { setLevel("brands"); setSelectedBrand(brand); setSelectedYear(null) }
+  const backToBrands = () => { setSelectedBrand(null); setSelectedYear(null) }
 
   const selectedOrg = selectedBrand ? orgByBrand.get(selectedBrand) : undefined
   const catalogEmpty = catalog.boards.length === 0
-  const gridClass = "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
+
+  // Per-board props shared by card + list renderers.
+  const boardProps = (board: Board) => ({
+    board,
+    orgLogoUrl: orgByBrand.get(board.brand)?.logo_url,
+    rodeCount: counts.rode.get(board.id) ?? 0,
+    ownCount: counts.own.get(board.id) ?? 0,
+    addedByName: board.added_by ? nameById.get(board.added_by) : undefined,
+  })
+
+  const renderBoardGrid = (boards: Board[]) =>
+    viewMode === "card" ? (
+      <div className={GRID_CLASS}>
+        {boards.map((b) => (
+          <BoardTile key={b.id} {...boardProps(b)} />
+        ))}
+      </div>
+    ) : (
+      <div className="divide-y divide-border-default">
+        {boards.map((b) => (
+          <BoardListRow key={b.id} {...boardProps(b)} />
+        ))}
+      </div>
+    )
+
+  // Decade dividers when sorted chronologically (and not a single-year view).
+  const renderBoards = (boards: Board[], allowDecades: boolean) => {
+    if (!(allowDecades && isChronoSort(boardSort))) return renderBoardGrid(boards)
+    const sections = groupByDecade(boards, boardSort === "oldest")
+    return (
+      <div className="space-y-8">
+        {sections.map((s) => (
+          <div key={s.decade}>
+            <DecadeDivider label={s.label} />
+            {renderBoardGrid(s.boards)}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  const listingControls = (count: number) =>
+    count > 1 ? (
+      <div className="flex items-center gap-2 shrink-0">
+        <BoardSortSelect value={boardSort} onChange={setBoardSort} />
+        <ViewToggle value={viewMode} onChange={setViewMode} />
+      </div>
+    ) : null
 
   return (
     <div className="min-h-screen bg-background">
       <Nav />
+
+      {/* Admin-set boards-page banner band (optional) */}
+      {bannerUrl && (
+        <div className="w-full relative h-36 sm:h-44 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <div
+            className="absolute inset-0"
+            style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0) 45%, rgba(0,0,0,0.30) 100%)" }}
+          />
+        </div>
+      )}
+
       <div className="max-w-5xl mx-auto px-4 py-8">
-        {/* Intro card — community framing */}
-        <div className="bg-surface border border-border-default rounded-xl p-5 mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        {/* Intro card */}
+        <div className="bg-surface border border-border-default rounded-xl p-5 mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div className="min-w-0">
             <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-wordmark)" }}>
               The Snowboard Catalog
             </h1>
             <p className="text-sm text-muted mt-1 max-w-md">
-              Built together by the community. Add the boards you have ridden and the ones in your collection.
+              Built together by the community. {totalBoards.toLocaleString()} boards across{" "}
+              {totalBrands.toLocaleString()} brands mapped so far — help us catalog every board ever ridden.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
             <div className="grid grid-cols-2 gap-3">
-              <StatBlock label="Boards" value={totalBoards} />
-              <StatBlock label="Brands" value={totalBrands} />
+              <StatButton label="Boards" value={totalBoards} active={level === "all" && !searchActive} onClick={goAll} />
+              <StatButton label="Brands" value={totalBrands} active={level === "brands" && !searchActive} onClick={goBrands} />
             </div>
-            <button
-              onClick={() => setAddOpen(true)}
-              className="px-4 py-2.5 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-all whitespace-nowrap"
-            >
-              + Add a board
-            </button>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setAddOpen(true)}
+                className="px-4 py-2.5 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-all whitespace-nowrap"
+              >
+                + Add a board
+              </button>
+              <button
+                onClick={() => setAddBrandOpen(true)}
+                className="px-4 py-2.5 rounded-lg border border-border-default text-sm font-medium text-foreground hover:bg-surface-hover transition-all whitespace-nowrap"
+              >
+                + Add a brand
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Search + My Boards */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="relative flex-1 min-w-0">
-            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by brand, model, or year"
-              className="w-full bg-surface border border-border-default rounded-xl pl-9 pr-9 py-2.5 text-sm text-foreground placeholder-muted focus:outline-none focus:border-accent transition-colors"
-            />
-            {search && (
-              <button
-                onClick={() => setSearch("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground text-lg leading-none"
-                aria-label="Clear search"
-              >
-                ×
-              </button>
-            )}
+        {/* Level switch + My Boards */}
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1">
+            {([
+              ["brands", "Brands"],
+              ["all", "All boards"],
+            ] as const).map(([v, label]) => {
+              const active = !searchActive && level === v
+              return (
+                <button
+                  key={v}
+                  onClick={() => (v === "brands" ? goBrands() : goAll())}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap",
+                    active ? "bg-surface-active text-foreground" : "text-muted hover:text-foreground"
+                  )}
+                >
+                  {label}
+                </button>
+              )
+            })}
           </div>
           {isAuth && (
             <button
               onClick={() => setMyOnly(!myOnly)}
               className={cn(
-                "px-3 py-2.5 rounded-xl text-xs font-medium transition-colors border shrink-0 whitespace-nowrap",
+                "px-3 py-2 rounded-lg text-xs font-medium transition-colors border shrink-0 whitespace-nowrap",
                 myOnly
                   ? "bg-[#1C1917]/15 border-[#1C1917]/30 text-foreground"
                   : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
               )}
             >
               My Boards{myOnly && myBoardIds.size > 0 ? ` · ${myBoardIds.size}` : ""}
+            </button>
+          )}
+        </div>
+
+        {/* Search */}
+        <div className="relative mb-6">
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by brand, model, or year"
+            className="w-full bg-surface border border-border-default rounded-xl pl-9 pr-9 py-2.5 text-sm text-foreground placeholder-muted focus:outline-none focus:border-accent transition-colors"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground text-lg leading-none"
+              aria-label="Clear search"
+            >
+              ×
             </button>
           )}
         </div>
@@ -438,71 +352,70 @@ function BoardsPageInner() {
           <div>
             <div className="flex items-center justify-between gap-3 mb-4">
               <span className="text-sm text-muted">
-                {flatBoards.length} result{flatBoards.length !== 1 ? "s" : ""}
+                {flatSearch.length} result{flatSearch.length !== 1 ? "s" : ""}
               </span>
-              {flatBoards.length > 1 && (
-                <SortToggle
-                  value={boardSort}
-                  onChange={setBoardSort}
-                  options={[
-                    ["newest", "Newest"],
-                    ["collected", "Most collected"],
-                  ]}
-                />
-              )}
+              {listingControls(flatSearch.length)}
             </div>
-            {flatBoards.length === 0 ? (
+            {flatSearch.length === 0 ? (
               <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
                 No boards match “{search.trim()}”.
               </div>
             ) : (
-              <div className={gridClass}>{flatBoards.map(renderTile)}</div>
+              renderBoards(flatSearch, true)
             )}
           </div>
-        ) : selectedBrand ? (
+        ) : level === "brands" && selectedBrand ? (
           /* ── Brand detail ── */
           <div>
-            <div className="flex items-center justify-between gap-3 mb-5">
-              <div className="flex items-center gap-2 text-sm min-w-0">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+              {/* Breadcrumb: Boards / Brand / year filter */}
+              <div className="flex items-center gap-2 text-sm min-w-0 flex-wrap">
                 <button
-                  onClick={() => setSelectedBrand(null)}
+                  onClick={backToBrands}
                   className="inline-flex items-center gap-1 text-muted hover:text-foreground transition-colors shrink-0"
                 >
                   <ChevronLeft className="w-4 h-4" />
                   Boards
                 </button>
                 <span className="text-muted shrink-0">/</span>
-                {selectedOrg ? (
+                <span className="font-semibold text-foreground truncate">{selectedBrand}</span>
+                <span className="text-muted shrink-0">/</span>
+                <label className="relative inline-flex items-center shrink-0">
+                  <span className="sr-only">Filter by year</span>
+                  <select
+                    value={selectedYear ?? ""}
+                    onChange={(e) => setSelectedYear(e.target.value ? Number(e.target.value) : null)}
+                    className="appearance-none bg-surface border border-border-default rounded-lg pl-2.5 pr-7 py-1 text-sm font-medium text-foreground focus:outline-none focus:border-accent cursor-pointer"
+                  >
+                    <option value="">All time</option>
+                    {brandYears.map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2 w-3 h-3 text-muted" />
+                </label>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {selectedOrg && (
                   <CommunityLink
                     href={`/brands/${orgSlug(selectedOrg)}`}
-                    className="font-semibold text-foreground hover:text-accent-strong transition-colors truncate"
+                    className="inline-flex items-center px-3 py-2 rounded-lg border border-border-default text-xs font-medium text-foreground hover:bg-surface-hover hover:border-foreground/30 transition-colors whitespace-nowrap"
                   >
-                    {selectedBrand}
+                    View brand page →
                   </CommunityLink>
-                ) : (
-                  <span className="font-semibold text-foreground truncate">{selectedBrand}</span>
                 )}
+                {listingControls(brandBoards.length)}
               </div>
-              {brandDetailBoards.length > 1 && (
-                <SortToggle
-                  value={boardSort}
-                  onChange={setBoardSort}
-                  options={[
-                    ["newest", "Newest"],
-                    ["collected", "Most collected"],
-                  ]}
-                />
-              )}
             </div>
-            {brandDetailBoards.length === 0 ? (
+            {brandBoards.length === 0 ? (
               <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
                 No boards in this brand for this view.
               </div>
             ) : (
-              <div className={gridClass}>{brandDetailBoards.map(renderTile)}</div>
+              renderBoards(brandBoards, selectedYear == null)
             )}
           </div>
-        ) : (
+        ) : level === "brands" ? (
           /* ── Brand index (default landing) ── */
           <div>
             <div className="flex items-center justify-between gap-3 mb-4">
@@ -510,14 +423,23 @@ function BoardsPageInner() {
                 {brandIndex.length} brand{brandIndex.length !== 1 ? "s" : ""}
               </span>
               {brandIndex.length > 1 && (
-                <SortToggle
-                  value={brandSort}
-                  onChange={setBrandSort}
-                  options={[
+                <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1 shrink-0">
+                  {([
                     ["count", "Most boards"],
                     ["az", "A–Z"],
-                  ]}
-                />
+                  ] as const).map(([v, label]) => (
+                    <button
+                      key={v}
+                      onClick={() => setBrandSort(v)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap",
+                        brandSort === v ? "bg-surface-active text-foreground" : "text-muted hover:text-foreground"
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
             {brandIndex.length === 0 ? (
@@ -531,11 +453,28 @@ function BoardsPageInner() {
                     key={brand}
                     brand={brand}
                     boards={boards}
-                    org={orgByBrand.get(brand)}
-                    onOpen={() => setSelectedBrand(brand)}
+                    orgLogoUrl={orgByBrand.get(brand)?.logo_url}
+                    onOpen={() => openBrand(brand)}
                   />
                 ))}
               </div>
+            )}
+          </div>
+        ) : (
+          /* ── All boards (flat) ── */
+          <div>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <span className="text-sm text-muted">
+                {allSorted.length} board{allSorted.length !== 1 ? "s" : ""}
+              </span>
+              {listingControls(allSorted.length)}
+            </div>
+            {allSorted.length === 0 ? (
+              <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
+                {myOnly ? "You have not added any boards yet." : "No boards yet."}
+              </div>
+            ) : (
+              renderBoards(allSorted, true)
             )}
           </div>
         )}
@@ -543,6 +482,14 @@ function BoardsPageInner() {
 
       {addOpen && (
         <AddEntityModal entityType="board" onClose={() => setAddOpen(false)} onAdded={() => setAddOpen(false)} />
+      )}
+      {addBrandOpen && (
+        <AddEntityModal
+          entityType="org"
+          initialOrgType="brand"
+          onClose={() => setAddBrandOpen(false)}
+          onAdded={() => setAddBrandOpen(false)}
+        />
       )}
     </div>
   )
