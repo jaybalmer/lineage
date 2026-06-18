@@ -157,8 +157,6 @@ export function MemberCardTile({ data, animate = false, replayKey = 0 }: {
   replayKey?: number
 }) {
   const c = TIER_CONFIG[data.tier]
-  const yearsRiding = data.ridingSince ? new Date().getFullYear() - data.ridingSince : 0
-  const filledDots  = Math.min(5, Math.max(1, Math.ceil(yearsRiding / 10)))
 
   const cardStyle: React.CSSProperties = {
     background:    data.tier === "annual"   ? "linear-gradient(135deg, #1a1f4e 0%, #1e2460 100%)"
@@ -239,16 +237,6 @@ export function MemberCardTile({ data, animate = false, replayKey = 0 }: {
             {c.stat3Val}
           </p>
         </div>
-      </div>
-
-      {/* Dots (timeline motif) */}
-      <div style={{ display: "flex", gap: 4, marginBottom: 28 }}>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} style={{
-            width: 5, height: 5, borderRadius: "50%",
-            background: i < filledDots ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.15)",
-          }} />
-        ))}
       </div>
 
       {/* Wordmark */}
