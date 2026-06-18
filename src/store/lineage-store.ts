@@ -98,7 +98,7 @@ interface LineageStore {
   activeCommunitySlug: string
   setActiveCommunitySlug: (slug: string) => void
   /** Optimistically patch a community's image URLs after an admin upload (Phase 2). */
-  setCommunityImages: (id: string, patch: { hero_image_url?: string | null; avatar_url?: string | null; landing_banner_url?: string | null }) => void
+  setCommunityImages: (id: string, patch: { hero_image_url?: string | null; avatar_url?: string | null; landing_banner_url?: string | null; boards_banner_url?: string | null }) => void
 
   // Active view state
   activePersonId: string
@@ -899,6 +899,7 @@ export const useLineageStore = create<LineageStore>()(
                   ...(patch.hero_image_url !== undefined ? { hero_image_url: patch.hero_image_url ?? undefined } : {}),
                   ...(patch.avatar_url !== undefined ? { avatar_url: patch.avatar_url ?? undefined } : {}),
                   ...(patch.landing_banner_url !== undefined ? { landing_banner_url: patch.landing_banner_url ?? undefined } : {}),
+                  ...(patch.boards_banner_url !== undefined ? { boards_banner_url: patch.boards_banner_url ?? undefined } : {}),
                 }
               : c,
           ),

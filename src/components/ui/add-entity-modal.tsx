@@ -14,6 +14,7 @@ interface AddEntityModalProps {
   initialName?: string
   initialSeriesId?: string
   initialPlaceId?: string
+  initialOrgType?: OrgType
   onClose: () => void
   onAdded: (id: string) => void
 }
@@ -36,7 +37,7 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ]
 
-export function AddEntityModal({ entityType, initialName = "", initialSeriesId = "", initialPlaceId = "", onClose, onAdded }: AddEntityModalProps) {
+export function AddEntityModal({ entityType, initialName = "", initialSeriesId = "", initialPlaceId = "", initialOrgType, onClose, onAdded }: AddEntityModalProps) {
   const { addUserPlace, addUserBoard, addUserOrg, addUserEvent, addUserSeries, addUserPerson, activePersonId, profileOverride, catalog } = useLineageStore()
 
   // Lock the background page while the modal is open (BUG-048).
@@ -72,7 +73,7 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
   const [modelYear, setModelYear] = useState<number>(new Date().getFullYear())
 
   // Org fields
-  const [orgType, setOrgType] = useState<OrgType>("shop")
+  const [orgType, setOrgType] = useState<OrgType>(initialOrgType ?? "shop")
   const [orgCountry, setOrgCountry] = useState("")
   const [foundedYear, setFoundedYear] = useState("")
   const [website, setWebsite] = useState("")

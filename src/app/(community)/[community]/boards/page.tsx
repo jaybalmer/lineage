@@ -3,144 +3,68 @@
 import { useState, useMemo, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
-import { boardSlug, orgSlug } from "@/lib/mock-data"
+import { orgSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
-import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
-import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
+import { boardRelationshipFlags } from "@/lib/board-relationship"
 import { cn } from "@/lib/utils"
 import { CommunityLink } from "@/components/ui/community-link"
-import type { Board } from "@/types"
+import type { Board, Org } from "@/types"
+import {
+  BoardTile,
+  BoardListRow,
+  BrandIndexCard,
+  StatButton,
+  BoardSortSelect,
+  ViewToggle,
+  DecadeDivider,
+  SearchIcon,
+  ChevronLeft,
+  sortBoards,
+  groupByDecade,
+  isChronoSort,
+  type BoardSort,
+  type BrandSort,
+  type ViewMode,
+  type BoardCounts,
+} from "./board-parts"
 
-type MainTab = "all" | "brands" | "models" | "entries"
+const GRID_CLASS = "grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"
 
-function AvatarStack({ riderIds }: { riderIds: string[] }) {
-  const { catalog } = useLineageStore()
-  const shown = riderIds.slice(0, 3)
-  const extra = riderIds.length - shown.length
-  if (shown.length === 0) return null
+function ChevronDown({ className }: { className?: string }) {
   return (
-    <div className="flex items-center">
-      {shown.map((rid, i) => {
-        const person = catalog.people.find((p) => p.id === rid)
-        if (!person) return null
-        return (
-          <div key={rid} style={{ marginLeft: i === 0 ? 0 : -6 }} title={person.display_name} className="rounded-full border border-background">
-            <RiderAvatar person={person} size="xs" />
-          </div>
-        )
-      })}
-      {extra > 0 && (
-        <div
-          style={{ marginLeft: -6 }}
-          className="w-5 h-5 rounded-full bg-border-default border border-border-default flex items-center justify-center text-[8px] text-muted"
-        >
-          +{extra}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function BoardCard({ board }: { board: Board }) {
-  const { catalog } = useLineageStore()
-  const riderIds = [...new Set(
-    catalog.claims.filter((c) => c.object_id === board.id && c.predicate === "owned_board").map((c) => c.subject_id)
-  )]
-  const addedByPerson = board.added_by ? catalog.people.find((p) => p.id === board.added_by) : null
-  const isUnverified = board.community_status === "unverified"
-
-  return (
-    <div className="flex items-center gap-2">
-      <CommunityLink href={`/boards/${boardSlug(board)}`} className="flex-1 min-w-0 block">
-        <div className="bg-surface border-2 border-emerald-600 rounded-xl p-4 hover:opacity-90 transition-all">
-          <div className="flex items-center gap-3">
-            <span className="text-xl shrink-0">🏂</span>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-foreground text-sm leading-snug">
-                  {board.brand} {board.model}
-                </span>
-                {isUnverified && (
-                  <span className="text-[10px] text-amber-600 border border-amber-500/40 rounded px-1.5 py-0.5">unverified</span>
-                )}
-              </div>
-              <div className="text-xs text-muted mt-0.5">
-                &apos;{String(board.model_year).slice(2)}
-                {board.shape && (
-                  <span className="capitalize"> · {board.shape.replace("-", " ")}</span>
-                )}
-              </div>
-              {isUnverified && addedByPerson && (
-                <div className="flex items-center gap-1 mt-1 text-[10px] text-muted">
-                  <RiderAvatar person={addedByPerson} size="xs" />
-                  Added by {addedByPerson.display_name}
-                </div>
-              )}
-            </div>
-            {riderIds.length > 0 && (
-              <div className="shrink-0 flex flex-col items-end gap-1">
-                <AvatarStack riderIds={riderIds} />
-                <div className="text-[10px] text-muted">
-                  {riderIds.length} rider{riderIds.length !== 1 ? "s" : ""}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </CommunityLink>
-      <QuickClaimPopover
-        entityId={board.id}
-        entityType="board"
-        entityName={`${board.brand} ${board.model} '${String(board.model_year).slice(2)}`}
-      />
-    </div>
-  )
-}
-
-function SectionDivider({ label, count, unit = "board", href }: { label: string; count: number; unit?: string; href?: string }) {
-  const nameEl = href ? (
-    <CommunityLink href={href} className="text-sm font-semibold text-muted hover:text-blue-400 transition-colors">
-      {label}
-    </CommunityLink>
-  ) : (
-    <span className="text-sm font-semibold text-muted">{label}</span>
-  )
-
-  return (
-    <div className="flex items-center gap-3 mb-3">
-      <div className="w-7 h-7 rounded bg-surface-active border border-border-default flex items-center justify-center text-xs font-bold text-muted shrink-0">
-        {label[0]}
-      </div>
-      {nameEl}
-      <div className="flex-1 h-px bg-surface-active" />
-      <span className="text-[10px] text-muted">
-        {count} {unit}{count !== 1 ? "s" : ""}
-      </span>
-    </div>
-  )
-}
-
-function DecadeDivider({ label }: { label: string }) {
-  return (
-    <div className="flex items-center gap-3">
-      <span className="text-xs font-semibold text-muted uppercase tracking-widest shrink-0">{label}</span>
-      <div className="flex-1 h-px bg-surface-active" />
-    </div>
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+      <path d="m6 9 6 6 6-6" />
+    </svg>
   )
 }
 
 function BoardsPageInner() {
   const searchParams = useSearchParams()
   const yearParam = searchParams.get("year")
-  const [mainTab, setMainTab] = useState<MainTab>("all")
-  const [myOnly, setMyOnly] = useState(false)
-  const [addOpen, setAddOpen] = useState(false)
+
+  const [level, setLevel] = useState<"brands" | "all">("brands")
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(null)
+  const [selectedYear, setSelectedYear] = useState<number | null>(null)
   const [search, setSearch] = useState(yearParam ?? "")
-  const { catalog, activePersonId } = useLineageStore()
+  const [myOnly, setMyOnly] = useState(false)
+  const [brandSort, setBrandSort] = useState<BrandSort>("count")
+  const [boardSort, setBoardSort] = useState<BoardSort>("newest")
+  const [viewMode, setViewMode] = useState<ViewMode>("card")
+  const [addOpen, setAddOpen] = useState(false)
+  const [addBrandOpen, setAddBrandOpen] = useState(false)
+
+  const { catalog, activePersonId, communities, activeCommunitySlug } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
 
-  // IDs of boards the active user owns
+  const community = communities.find((c) => c.slug === activeCommunitySlug)
+  const bannerUrl = community?.boards_banner_url
+
+  // Display totals for the intro card — always the full catalog, never filtered.
+  const totalBoards = catalog.boards.length
+  const totalBrands = useMemo(() => new Set(catalog.boards.map((b) => b.brand)).size, [catalog.boards])
+
+  // IDs of boards the active user owns.
   const myBoardIds = useMemo(() => {
     if (!activePersonId) return new Set<string>()
     return new Set(
@@ -150,149 +74,240 @@ function BoardsPageInner() {
     )
   }, [activePersonId, catalog.claims])
 
-  const allBoards = useMemo(() => {
-    const base = myOnly ? catalog.boards.filter((b) => myBoardIds.has(b.id)) : catalog.boards
+  // Distinct riders / owners per board, split by board_relationship. Powers the
+  // rode/own counts on the tiles and the most/least rode/owned sorts.
+  const counts: BoardCounts = useMemo(() => {
+    const rode = new Map<string, Set<string>>()
+    const own = new Map<string, Set<string>>()
+    const bump = (m: Map<string, Set<string>>, k: string, v: string) => {
+      let s = m.get(k)
+      if (!s) {
+        s = new Set()
+        m.set(k, s)
+      }
+      s.add(v)
+    }
+    for (const c of catalog.claims) {
+      if (c.predicate !== "owned_board") continue
+      const f = boardRelationshipFlags(c.board_relationship)
+      if (f.rode) bump(rode, c.object_id, c.subject_id)
+      if (f.own) bump(own, c.object_id, c.subject_id)
+    }
+    const toCount = (m: Map<string, Set<string>>) => {
+      const r = new Map<string, number>()
+      for (const [k, v] of m) r.set(k, v.size)
+      return r
+    }
+    return { rode: toCount(rode), own: toCount(own) }
+  }, [catalog.claims])
+
+  // Display name lookup for unverified "Added by" attribution.
+  const nameById = useMemo(() => {
+    const m = new Map<string, string>()
+    catalog.people.forEach((p) => m.set(p.id, p.display_name))
+    return m
+  }, [catalog.people])
+
+  // Brand → org match (lowercased exact-or-prefix), precomputed once per brand.
+  const orgByBrand = useMemo(() => {
+    const map = new Map<string, Org>()
+    const brands = new Set(catalog.boards.map((b) => b.brand))
+    brands.forEach((brand) => {
+      const org = catalog.orgs.find(
+        (o) =>
+          o.name.toLowerCase() === brand.toLowerCase() ||
+          o.name.toLowerCase().startsWith(brand.toLowerCase() + " ")
+      )
+      if (org) map.set(brand, org)
+    })
+    return map
+  }, [catalog.boards, catalog.orgs])
+
+  // My Boards scope (no search). All listings derive from this.
+  const scopedBoards = useMemo(
+    () => (myOnly ? catalog.boards.filter((b) => myBoardIds.has(b.id)) : catalog.boards),
+    [myOnly, catalog.boards, myBoardIds]
+  )
+
+  const searchActive = search.trim().length > 0
+  const searchResults = useMemo(() => {
     const q = search.trim().toLowerCase()
-    if (!q) return base
-    return base.filter((b) => {
+    if (!q) return scopedBoards
+    return scopedBoards.filter((b) => {
       const haystack = [b.brand, b.model, String(b.model_year), b.shape ?? ""].join(" ").toLowerCase()
       return haystack.includes(q)
     })
-  }, [myOnly, search, catalog.boards, myBoardIds])
+  }, [scopedBoards, search])
 
-  // ── All tab: decade groups ────────────────────────────────────────────────
-  const decadeGroups = useMemo(() => {
-    const byDecade = new Map<number, Board[]>()
-    allBoards.forEach((b) => {
-      const decade = Math.floor(b.model_year / 10) * 10
-      if (!byDecade.has(decade)) byDecade.set(decade, [])
-      byDecade.get(decade)!.push(b)
-    })
-    return [...byDecade.entries()]
-      .sort(([a], [b]) => b - a)
-      .map(([decade, boards]) => ({
-        label: `${decade}s`,
-        boards: [...boards].sort((a, b) => b.model_year - a.model_year),
-      }))
-  }, [allBoards])
-
-  // ── Brands tab: grouped by brand, alphabetical ────────────────────────────
-  const brandGroups = useMemo(() => {
+  // Brand index entries (default level).
+  const brandIndex = useMemo(() => {
     const byBrand = new Map<string, Board[]>()
-    allBoards.forEach((b) => {
-      if (!byBrand.has(b.brand)) byBrand.set(b.brand, [])
-      byBrand.get(b.brand)!.push(b)
+    scopedBoards.forEach((b) => {
+      const bucket = byBrand.get(b.brand)
+      if (bucket) bucket.push(b)
+      else byBrand.set(b.brand, [b])
     })
-    return [...byBrand.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([brand, boards]) => ({
-        brand,
-        boards: [...boards].sort((a, b) => b.model_year - a.model_year),
-      }))
-  }, [allBoards])
+    const entries = [...byBrand.entries()].map(([brand, boards]) => ({
+      brand,
+      boards: [...boards].sort((a, b) => b.model_year - a.model_year),
+    }))
+    if (brandSort === "az") entries.sort((a, b) => a.brand.localeCompare(b.brand))
+    else entries.sort((a, b) => b.boards.length - a.boards.length || a.brand.localeCompare(b.brand))
+    return entries
+  }, [scopedBoards, brandSort])
 
-  // ── Models tab: grouped by model name, alphabetical ───────────────────────
-  const modelGroups = useMemo(() => {
-    const byModel = new Map<string, Board[]>()
-    allBoards.forEach((b) => {
-      if (!byModel.has(b.model)) byModel.set(b.model, [])
-      byModel.get(b.model)!.push(b)
-    })
-    return [...byModel.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([model, boards]) => ({
-        model,
-        boards: [...boards].sort((a, b) => b.model_year - a.model_year),
-      }))
-  }, [allBoards])
+  // Years available within the drilled-in brand (for the breadcrumb year filter).
+  const brandYears = useMemo(() => {
+    if (!selectedBrand) return []
+    return [...new Set(scopedBoards.filter((b) => b.brand === selectedBrand).map((b) => b.model_year))].sort(
+      (a, b) => b - a
+    )
+  }, [scopedBoards, selectedBrand])
 
-  // ── Most entries tab: unique owners per board (owned_board) ───────────────
-  const boardRiderCounts = useMemo(() => {
-    const sets = new Map<string, Set<string>>()
-    for (const c of catalog.claims) {
-      if (c.predicate !== "owned_board") continue
-      if (!sets.has(c.object_id)) sets.set(c.object_id, new Set())
-      sets.get(c.object_id)!.add(c.subject_id)
-    }
-    const counts = new Map<string, number>()
-    for (const [id, s] of sets) counts.set(id, s.size)
-    return counts
-  }, [catalog.claims])
+  // Sorted board lists per view.
+  const flatSearch = useMemo(() => sortBoards(searchResults, boardSort, counts), [searchResults, boardSort, counts])
+  const allSorted = useMemo(() => sortBoards(scopedBoards, boardSort, counts), [scopedBoards, boardSort, counts])
+  const brandBoards = useMemo(() => {
+    if (!selectedBrand) return []
+    let bs = scopedBoards.filter((b) => b.brand === selectedBrand)
+    if (selectedYear != null) bs = bs.filter((b) => b.model_year === selectedYear)
+    return sortBoards(bs, boardSort, counts)
+  }, [scopedBoards, selectedBrand, selectedYear, boardSort, counts])
 
-  const entriesSorted = useMemo(
-    () =>
-      [...allBoards].sort(
-        (a, b) =>
-          (boardRiderCounts.get(b.id) ?? 0) - (boardRiderCounts.get(a.id) ?? 0) ||
-          b.model_year - a.model_year
-      ),
-    [allBoards, boardRiderCounts]
-  )
+  // Navigation. Level clicks clear search so the chosen level is authoritative.
+  const goBrands = () => { setLevel("brands"); setSelectedBrand(null); setSelectedYear(null); setSearch("") }
+  const goAll = () => { setLevel("all"); setSelectedBrand(null); setSelectedYear(null); setSearch("") }
+  const openBrand = (brand: string) => { setLevel("brands"); setSelectedBrand(brand); setSelectedYear(null) }
+  const backToBrands = () => { setSelectedBrand(null); setSelectedYear(null) }
 
-  const isEmpty = allBoards.length === 0
+  const selectedOrg = selectedBrand ? orgByBrand.get(selectedBrand) : undefined
+  const catalogEmpty = catalog.boards.length === 0
+
+  // Per-board props shared by card + list renderers.
+  const boardProps = (board: Board) => ({
+    board,
+    orgLogoUrl: orgByBrand.get(board.brand)?.logo_url,
+    rodeCount: counts.rode.get(board.id) ?? 0,
+    ownCount: counts.own.get(board.id) ?? 0,
+    addedByName: board.added_by ? nameById.get(board.added_by) : undefined,
+  })
+
+  const renderBoardGrid = (boards: Board[]) =>
+    viewMode === "card" ? (
+      <div className={GRID_CLASS}>
+        {boards.map((b) => (
+          <BoardTile key={b.id} {...boardProps(b)} />
+        ))}
+      </div>
+    ) : (
+      <div className="divide-y divide-border-default">
+        {boards.map((b) => (
+          <BoardListRow key={b.id} {...boardProps(b)} />
+        ))}
+      </div>
+    )
+
+  // Decade dividers when sorted chronologically (and not a single-year view).
+  const renderBoards = (boards: Board[], allowDecades: boolean) => {
+    if (!(allowDecades && isChronoSort(boardSort))) return renderBoardGrid(boards)
+    const sections = groupByDecade(boards, boardSort === "oldest")
+    return (
+      <div className="space-y-8">
+        {sections.map((s) => (
+          <div key={s.decade}>
+            <DecadeDivider label={s.label} />
+            {renderBoardGrid(s.boards)}
+          </div>
+        ))}
+      </div>
+    )
+  }
+
+  const listingControls = (count: number) =>
+    count > 1 ? (
+      <div className="flex items-center gap-2 shrink-0">
+        <BoardSortSelect value={boardSort} onChange={setBoardSort} />
+        <ViewToggle value={viewMode} onChange={setViewMode} />
+      </div>
+    ) : null
 
   return (
     <div className="min-h-screen bg-background">
       <Nav />
-      <div className="max-w-3xl mx-auto px-4 py-8">
 
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Boards</h1>
-            <p className="text-sm text-muted mt-1">The shapes that shaped the scene</p>
-          </div>
-          <button
-            onClick={() => setAddOpen(true)}
-            className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-all"
-          >
-            + Add board
-          </button>
-        </div>
-
-        {/* Search */}
-        <div className="relative mb-4">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted text-sm pointer-events-none">🔍</span>
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by brand, model, or year…"
-            className="w-full bg-surface border border-border-default rounded-xl pl-9 pr-4 py-2.5 text-sm text-foreground placeholder-muted focus:outline-none focus:border-blue-500 transition-colors"
+      {/* Admin-set boards-page banner band (optional) */}
+      {bannerUrl && (
+        <div className="w-full relative h-36 sm:h-44 overflow-hidden">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          <div
+            className="absolute inset-0"
+            style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0) 45%, rgba(0,0,0,0.30) 100%)" }}
           />
-          {search && (
-            <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground text-lg leading-none">×</button>
-          )}
+        </div>
+      )}
+
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        {/* Intro card */}
+        <div className="bg-surface border border-border-default rounded-xl p-5 mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-wordmark)" }}>
+              The Snowboard Catalog
+            </h1>
+            <p className="text-sm text-muted mt-1 max-w-md">
+              Built together by the community. {totalBoards.toLocaleString()} boards across{" "}
+              {totalBrands.toLocaleString()} brands mapped so far — help us catalog every board ever ridden.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">
+            <div className="grid grid-cols-2 gap-3">
+              <StatButton label="Boards" value={totalBoards} active={level === "all" && !searchActive} onClick={goAll} />
+              <StatButton label="Brands" value={totalBrands} active={level === "brands" && !searchActive} onClick={goBrands} />
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setAddOpen(true)}
+                className="px-4 py-2.5 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-all whitespace-nowrap"
+              >
+                + Add a board
+              </button>
+              <button
+                onClick={() => setAddBrandOpen(true)}
+                className="px-4 py-2.5 rounded-lg border border-border-default text-sm font-medium text-foreground hover:bg-surface-hover transition-all whitespace-nowrap"
+              >
+                + Add a brand
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* Tab bar + Mine toggle */}
-        <div className="flex items-center justify-between gap-3 mb-6">
-          <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1 min-w-0 overflow-x-auto scrollbar-none">
+        {/* Level switch + My Boards */}
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1">
             {([
-              { key: "all" as MainTab, label: "All" },
-              { key: "brands" as MainTab, label: "Brands" },
-              { key: "models" as MainTab, label: "Models" },
-              { key: "entries" as MainTab, label: "Most entries" },
-            ]).map(({ key, label }) => (
-              <button
-                key={key}
-                onClick={() => setMainTab(key)}
-                className={cn(
-                  "px-4 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap shrink-0",
-                  mainTab === key
-                    ? "bg-surface-active text-foreground"
-                    : "text-muted hover:text-foreground"
-                )}
-              >
-                {label}
-              </button>
-            ))}
+              ["brands", "Brands"],
+              ["all", "All boards"],
+            ] as const).map(([v, label]) => {
+              const active = !searchActive && level === v
+              return (
+                <button
+                  key={v}
+                  onClick={() => (v === "brands" ? goBrands() : goAll())}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap",
+                    active ? "bg-surface-active text-foreground" : "text-muted hover:text-foreground"
+                  )}
+                >
+                  {label}
+                </button>
+              )
+            })}
           </div>
           {isAuth && (
             <button
               onClick={() => setMyOnly(!myOnly)}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border shrink-0",
+                "px-3 py-2 rounded-lg text-xs font-medium transition-colors border shrink-0 whitespace-nowrap",
                 myOnly
                   ? "bg-[#1C1917]/15 border-[#1C1917]/30 text-foreground"
                   : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
@@ -303,85 +318,177 @@ function BoardsPageInner() {
           )}
         </div>
 
-        {isEmpty ? (
+        {/* Search */}
+        <div className="relative mb-6">
+          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search by brand, model, or year"
+            className="w-full bg-surface border border-border-default rounded-xl pl-9 pr-9 py-2.5 text-sm text-foreground placeholder-muted focus:outline-none focus:border-accent transition-colors"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground text-lg leading-none"
+              aria-label="Clear search"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        {/* Body */}
+        {catalogEmpty ? (
           <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
-            No boards found.{" "}
-            <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
+            No boards yet.{" "}
+            <button onClick={() => setAddOpen(true)} className="text-accent-strong hover:underline">
+              Add one.
+            </button>
+          </div>
+        ) : searchActive ? (
+          /* ── Flat search grid across all brands ── */
+          <div>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <span className="text-sm text-muted">
+                {flatSearch.length} result{flatSearch.length !== 1 ? "s" : ""}
+              </span>
+              {listingControls(flatSearch.length)}
+            </div>
+            {flatSearch.length === 0 ? (
+              <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
+                No boards match “{search.trim()}”.
+              </div>
+            ) : (
+              renderBoards(flatSearch, true)
+            )}
+          </div>
+        ) : level === "brands" && selectedBrand ? (
+          /* ── Brand detail ── */
+          <div>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+              {/* Breadcrumb: Boards / Brand / year filter */}
+              <div className="flex items-center gap-2 text-sm min-w-0 flex-wrap">
+                <button
+                  onClick={backToBrands}
+                  className="inline-flex items-center gap-1 text-muted hover:text-foreground transition-colors shrink-0"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  Boards
+                </button>
+                <span className="text-muted shrink-0">/</span>
+                <span className="font-semibold text-foreground truncate">{selectedBrand}</span>
+                <span className="text-muted shrink-0">/</span>
+                <label className="relative inline-flex items-center shrink-0">
+                  <span className="sr-only">Filter by year</span>
+                  <select
+                    value={selectedYear ?? ""}
+                    onChange={(e) => setSelectedYear(e.target.value ? Number(e.target.value) : null)}
+                    className="appearance-none bg-surface border border-border-default rounded-lg pl-2.5 pr-7 py-1 text-sm font-medium text-foreground focus:outline-none focus:border-accent cursor-pointer"
+                  >
+                    <option value="">All time</option>
+                    {brandYears.map((y) => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="pointer-events-none absolute right-2 w-3 h-3 text-muted" />
+                </label>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {selectedOrg && (
+                  <CommunityLink
+                    href={`/brands/${orgSlug(selectedOrg)}`}
+                    className="inline-flex items-center px-3 py-2 rounded-lg border border-border-default text-xs font-medium text-foreground hover:bg-surface-hover hover:border-foreground/30 transition-colors whitespace-nowrap"
+                  >
+                    View brand page →
+                  </CommunityLink>
+                )}
+                {listingControls(brandBoards.length)}
+              </div>
+            </div>
+            {brandBoards.length === 0 ? (
+              <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
+                No boards in this brand for this view.
+              </div>
+            ) : (
+              renderBoards(brandBoards, selectedYear == null)
+            )}
+          </div>
+        ) : level === "brands" ? (
+          /* ── Brand index (default landing) ── */
+          <div>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <span className="text-sm text-muted">
+                {brandIndex.length} brand{brandIndex.length !== 1 ? "s" : ""}
+              </span>
+              {brandIndex.length > 1 && (
+                <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1 shrink-0">
+                  {([
+                    ["count", "Most boards"],
+                    ["az", "A–Z"],
+                  ] as const).map(([v, label]) => (
+                    <button
+                      key={v}
+                      onClick={() => setBrandSort(v)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap",
+                        brandSort === v ? "bg-surface-active text-foreground" : "text-muted hover:text-foreground"
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            {brandIndex.length === 0 ? (
+              <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
+                {myOnly ? "You have not added any boards yet." : "No boards yet."}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {brandIndex.map(({ brand, boards }) => (
+                  <BrandIndexCard
+                    key={brand}
+                    brand={brand}
+                    boards={boards}
+                    orgLogoUrl={orgByBrand.get(brand)?.logo_url}
+                    onOpen={() => openBrand(brand)}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         ) : (
-          <>
-            {/* ── Most entries tab: flat list by owner count ── */}
-            {mainTab === "entries" && (
-              <div className="space-y-2">
-                {entriesSorted.map((board) => (
-                  <BoardCard key={board.id} board={board} />
-                ))}
+          /* ── All boards (flat) ── */
+          <div>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <span className="text-sm text-muted">
+                {allSorted.length} board{allSorted.length !== 1 ? "s" : ""}
+              </span>
+              {listingControls(allSorted.length)}
+            </div>
+            {allSorted.length === 0 ? (
+              <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
+                {myOnly ? "You have not added any boards yet." : "No boards yet."}
               </div>
+            ) : (
+              renderBoards(allSorted, true)
             )}
-
-            {/* ── All tab: by decade ── */}
-            {mainTab === "all" && (
-              <div className="space-y-8">
-                {decadeGroups.map(({ label, boards }) => (
-                  <div key={label}>
-                    <DecadeDivider label={label} />
-                    <div className="space-y-2 mt-3">
-                      {boards.map((board) => (
-                        <BoardCard key={board.id} board={board} />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* ── Brands tab: by brand alphabetically ── */}
-            {mainTab === "brands" && (
-              <div className="space-y-8">
-                {brandGroups.map(({ brand, boards }) => {
-                  const org = catalog.orgs.find((o) =>
-                    o.name.toLowerCase() === brand.toLowerCase() ||
-                    o.name.toLowerCase().startsWith(brand.toLowerCase() + " ")
-                  )
-                  const href = org ? `/brands/${orgSlug(org)}` : undefined
-                  return (
-                    <div key={brand}>
-                      <SectionDivider label={brand} count={boards.length} unit="model" href={href} />
-                      <div className="space-y-2">
-                        {boards.map((board) => (
-                          <BoardCard key={board.id} board={board} />
-                        ))}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-            {/* ── Models tab: by model name alphabetically ── */}
-            {mainTab === "models" && (
-              <div className="space-y-8">
-                {modelGroups.map(({ model, boards }) => (
-                  <div key={model}>
-                    <SectionDivider label={model} count={boards.length} />
-                    <div className="space-y-2">
-                      {boards.map((board) => (
-                        <BoardCard key={board.id} board={board} />
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </>
+          </div>
         )}
       </div>
 
       {addOpen && (
+        <AddEntityModal entityType="board" onClose={() => setAddOpen(false)} onAdded={() => setAddOpen(false)} />
+      )}
+      {addBrandOpen && (
         <AddEntityModal
-          entityType="board"
-          onClose={() => setAddOpen(false)}
-          onAdded={() => setAddOpen(false)}
+          entityType="org"
+          initialOrgType="brand"
+          onClose={() => setAddBrandOpen(false)}
+          onAdded={() => setAddBrandOpen(false)}
         />
       )}
     </div>

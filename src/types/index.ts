@@ -183,6 +183,10 @@ export interface Community {
   // Landing Page Banner (see migration 20260615000002). Separate from hero_image_url:
   // this is the band across the top of the root homepage (/), not the community page.
   landing_banner_url?: string
+  // Boards Catalog Banner (see migration 20260618000001). Full-width band across
+  // the top of the community /boards catalog page; admin-set, same plumbing as
+  // the other community images.
+  boards_banner_url?: string
 }
 export type PlaceType = "resort" | "shop" | "zone" | "city" | "venue"
 export type OrgType = "brand" | "shop" | "team" | "magazine" | "event-series"
