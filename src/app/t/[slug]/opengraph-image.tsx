@@ -4,9 +4,9 @@ import { join } from "node:path"
 import { brandMarkSvgString } from "@/components/ui/brand-mark"
 import { readPublicTimelineOwner } from "@/lib/public-timeline-read"
 
-// PB-010 Phase 2: dynamic share card for /t/[slug]. Dark brand-guide treatment:
-// warm near-black ground, blue eyebrow, the tilted monogram + Calendula "Linestry"
-// wordmark lockup, the owner as the subject line, and a large blue share link.
+// PB-010 Phase 2: dynamic share card for /t/[slug]. Dark brand-guide treatment,
+// person-first: a small Linestry lockup masthead, then the owner as the hero,
+// their era + share link, and a playful "I'll show you mine" invite at the foot.
 
 const S = 2
 export const size = { width: 1200 * S, height: 630 * S }
@@ -20,6 +20,8 @@ const WHITE    = "#FAFAF9"  // foreground on dark
 const MUTED     = "#A8A29E"  // muted body on dark
 const BLUE      = "#60A5FA"  // accent text on dark (AA-legible)
 const MARK_BLUE = "#3B82F6"  // vivid brand blue for the mark body
+
+const TAGLINE = "I'll show you mine . . ."
 
 async function loadGeologica(weight: number, text: string): Promise<ArrayBuffer | null> {
   try {
@@ -50,23 +52,20 @@ export default async function OpengraphImage(
 
   const era = owner?.era_start ? `Snowboarding since ${owner.era_start}` : null
   const loc = [owner?.region, owner?.country].filter(Boolean).join(", ")
-  const subjectName = owner?.display_name ?? null
-  const subjectSub = [era, loc || null].filter(Boolean).join("  ·  ")
-  const eyebrow = "LINESTRY · TIMELINE"
-  const tagline = "A living, community-authored snowboarding history"
+  const name = owner?.display_name ?? "Linestry"
+  const sub = [era, loc || null].filter(Boolean).join("  ·  ")
   const urlLine = owner ? `linestry.com/t/${owner.slug}` : "linestry.com"
 
-  const boldText = eyebrow + (subjectName ?? "") + urlLine
-  const mutedText = subjectSub + tagline
-
-  const [boldFont, mutedFont, wordmarkFont] = await Promise.all([
-    loadGeologica(700, boldText),
-    loadGeologica(400, mutedText),
+  const [nameFont, linkFont, mutedFont, wordmarkFont] = await Promise.all([
+    loadGeologica(800, name),
+    loadGeologica(700, urlLine),
+    loadGeologica(400, sub + TAGLINE),
     loadCalendula(),
   ])
   const fonts = [
-    ...(boldFont   ? [{ name: "Geologica", data: boldFont,  weight: 700 as const, style: "normal" as const }] : []),
-    ...(mutedFont  ? [{ name: "Geologica", data: mutedFont, weight: 400 as const, style: "normal" as const }] : []),
+    ...(nameFont  ? [{ name: "Geologica", data: nameFont,  weight: 800 as const, style: "normal" as const }] : []),
+    ...(linkFont  ? [{ name: "Geologica", data: linkFont,  weight: 700 as const, style: "normal" as const }] : []),
+    ...(mutedFont ? [{ name: "Geologica", data: mutedFont, weight: 400 as const, style: "normal" as const }] : []),
     ...(wordmarkFont ? [{ name: "Calendula", data: wordmarkFont, weight: 700 as const, style: "normal" as const }] : []),
   ]
 
@@ -89,40 +88,31 @@ export default async function OpengraphImage(
             border: `${1 * S}px solid ${BORDER}`, borderRadius: 28 * S, padding: 72 * S,
           }}
         >
-          {/* Top cluster: eyebrow, lockup, subject */}
+          {/* Top: brand lockup masthead + the person as hero */}
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontSize: 26 * S, fontWeight: 700, color: BLUE, letterSpacing: "0.2em" }}>
-              {eyebrow}
-            </span>
-
-            <div style={{ display: "flex", alignItems: "center", gap: 28 * S, marginTop: 34 * S }}>
-              <img width={208 * S} height={137 * S} src={mark} alt="" />
-              <span style={{ fontFamily: "Calendula", fontSize: 116 * S, color: WHITE, lineHeight: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 18 * S }}>
+              <img width={88 * S} height={58 * S} src={mark} alt="" />
+              <span style={{ fontFamily: "Calendula", fontSize: 52 * S, color: WHITE, lineHeight: 1 }}>
                 Linestry
               </span>
             </div>
 
-            {subjectName ? (
-              <div style={{ display: "flex", flexDirection: "column", marginTop: 40 * S }}>
-                <span style={{ fontSize: 48 * S, fontWeight: 700, color: WHITE, letterSpacing: "-0.01em" }}>
-                  {subjectName}
-                </span>
-                {subjectSub && (
-                  <span style={{ marginTop: 10 * S, fontSize: 30 * S, fontWeight: 400, color: MUTED }}>
-                    {subjectSub}
-                  </span>
-                )}
-              </div>
-            ) : (
-              <span style={{ marginTop: 40 * S, fontSize: 32 * S, fontWeight: 400, color: MUTED }}>
-                {tagline}
+            <span style={{ marginTop: 44 * S, fontSize: 96 * S, fontWeight: 800, color: WHITE, letterSpacing: "-0.03em", lineHeight: 1.0 }}>
+              {name}
+            </span>
+            {sub && (
+              <span style={{ marginTop: 16 * S, fontSize: 32 * S, fontWeight: 400, color: MUTED }}>
+                {sub}
               </span>
             )}
+            <span style={{ marginTop: 18 * S, fontSize: 40 * S, fontWeight: 700, color: BLUE }}>
+              {urlLine}
+            </span>
           </div>
 
-          {/* Footer: share link */}
-          <span style={{ fontSize: 42 * S, fontWeight: 700, color: BLUE }}>
-            {urlLine}
+          {/* Foot: the share invite */}
+          <span style={{ fontSize: 34 * S, fontWeight: 400, color: MUTED }}>
+            {TAGLINE}
           </span>
         </div>
       </div>
