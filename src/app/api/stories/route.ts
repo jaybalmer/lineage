@@ -27,6 +27,9 @@ export async function GET(req: NextRequest) {
   const orgId     = searchParams.get("org_id")
   const boardId   = searchParams.get("board_id")
   const riderId   = searchParams.get("rider_id")  // stories that tag this rider
+  // Story-author timeline toggle: "true"/"false" filters by on_timeline.
+  // Absent = no filter, so the community feed and entity pages are unchanged.
+  const onTimeline = searchParams.get("on_timeline")
   const limit     = Math.min(parseInt(searchParams.get("limit") ?? "50"), 100)
   const offset    = Math.max(parseInt(searchParams.get("offset") ?? "0"), 0)
   // BUG-055: the feed's "Recently added" sort needs stories paginated by when
@@ -79,6 +82,8 @@ export async function GET(req: NextRequest) {
     }
 
     if (authorId)  query = query.eq("author_id", authorId)
+    if (onTimeline === "true")  query = query.eq("on_timeline", true)
+    if (onTimeline === "false") query = query.eq("on_timeline", false)
     if (orgId)     query = query.eq("linked_org_id", orgId)
 
     // Story Connections: place and event filters are a union of the author's
@@ -245,6 +250,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const {
       title, body: storyBody, story_date, visibility = "public",
+      on_timeline = true,
       linked_event_id, linked_place_id, linked_org_id,
       board_ids = [], rider_ids = [],
       photos = [],   // [{ url, caption?, sort_order? }]
@@ -274,6 +280,7 @@ export async function POST(req: NextRequest) {
       .insert({
         author_id: user.id, title: title || null, body: storyBody ?? "",
         story_date, visibility,
+        on_timeline,
         linked_event_id: linked_event_id || null,
         linked_place_id: linked_place_id || null,
         linked_org_id: linked_org_id || null,
@@ -382,6 +389,7 @@ export async function PATCH(req: NextRequest) {
     const {
       id,
       title, body: storyBody, story_date, visibility,
+      on_timeline,
       linked_event_id, linked_place_id, linked_org_id,
       board_ids = [], rider_ids = [],
       keep_photo_ids = [],
@@ -392,10 +400,11 @@ export async function PATCH(req: NextRequest) {
 
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })
 
-    // Verify ownership
+    // Verify ownership (also read on_timeline so an old client payload that
+    // omits it falls back to the stored value instead of forcing true).
     const { data: existing } = await supabase
       .from("stories")
-      .select("author_id")
+      .select("author_id, on_timeline")
       .eq("id", id)
       .single()
 
@@ -412,6 +421,7 @@ export async function PATCH(req: NextRequest) {
         body: storyBody ?? "",
         story_date,
         visibility,
+        on_timeline: on_timeline ?? existing.on_timeline ?? true,
         linked_event_id: linked_event_id || null,
         linked_place_id: linked_place_id || null,
         linked_org_id: linked_org_id || null,

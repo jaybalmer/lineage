@@ -52,6 +52,18 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
   const [body, setBody]         = useState(editStory?.body ?? "")
   const [date, setDate]         = useState(editStory?.story_date ?? "")
   const [visibility, setVisibility] = useState<PrivacyLevel>(editStory?.visibility ?? "public")
+
+  // Story-author timeline toggle. Default rule: a brand-new story opened from an
+  // entity page (place/event/board/brand pre-linked) starts OFF the author's
+  // timeline (they are documenting that entity, not their own history); a story
+  // opened from the generic Add Story / their own timeline starts ON. Editing
+  // reads the stored value, defaulting true for legacy rows predating the column.
+  const startedFromEntity = !!(defaults?.linkedPlaceId || defaults?.linkedEventId
+    || defaults?.linkedOrgId || defaults?.boardId)
+  const [onTimeline, setOnTimeline] = useState<boolean>(
+    editStory?.on_timeline ?? (isEditing ? true : !startedFromEntity)
+  )
+
   const [saving, setSaving]     = useState(false)
   const [error, setError]       = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<"details" | "links">("details")
@@ -150,6 +162,7 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
       body:            body.trim(),
       story_date:      date,
       visibility,
+      on_timeline:     onTimeline,
       linked_place_id: selectedPlaceId || undefined,
       linked_event_id: selectedEventId || undefined,
       linked_org_id:   selectedOrgId || undefined,
@@ -439,6 +452,30 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Add to my timeline: the story-author timeline toggle. Default is
+                  set by where the modal was opened (off when started from an
+                  entity page, on otherwise) and is always editable here. When
+                  off, the story still surfaces on its linked entity pages and
+                  in the community feed, just not on the author's own timeline. */}
+              <div>
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={onTimeline}
+                    onChange={(e) => setOnTimeline(e.target.checked)}
+                    className="h-5 w-5 mt-0.5 rounded border-border-default flex-shrink-0 accent-blue-600"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-foreground">Add to my timeline</div>
+                    {!onTimeline && (
+                      <p className="text-xs text-muted mt-1 leading-relaxed">
+                        This story stays off your personal timeline. It still shows on the pages it is linked to and in the community feed.
+                      </p>
+                    )}
+                  </div>
+                </label>
               </div>
             </>
           )}

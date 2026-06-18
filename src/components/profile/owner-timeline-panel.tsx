@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { FeedView, type FilterType } from "@/components/feed/feed-view"
+import { StoryCard } from "@/components/feed/story-card"
 import { useLineageStore, getAllClaims, isAuthUser } from "@/store/lineage-store"
 import { getPersonById, PLACES } from "@/lib/mock-data"
 import { EditProfileModal } from "@/components/ui/edit-profile-modal"
@@ -223,6 +224,11 @@ export function OwnerTimelinePanel() {
   const [playingTimeline, setPlayingTimeline]  = useState(false)
   const [timelineOrder,  setTimelineOrder]     = useState<"asc" | "desc">("desc")
   const [stories,        setStories]           = useState<Story[]>([])
+  // Stories this author kept OFF their timeline (on_timeline=false). Rendered
+  // in a separate Contributions section below the timeline, never merged into
+  // `stories` (so they don't show on the timeline or trip the story
+  // celebration, which keys off the `stories` array).
+  const [contributions,  setContributions]     = useState<Story[]>([])
   const [claimDefaultFilter, setClaimDefaultFilter] = useState<string>("all")
   // Lifted so the summary stat tiles can drive the timeline filter (BUG-034).
   const [timelineFilter, setTimelineFilter]    = useState<FilterType>("all")
@@ -369,8 +375,13 @@ export function OwnerTimelinePanel() {
     // Same loaded-flag pattern as claims: storiesLoaded gates the story
     // celebration so the seed sees the full authored+tagged-in set on first
     // visit instead of an empty array.
+    // Authored fetch is filtered to on_timeline=true: off-timeline stories the
+    // author wrote about other entities are pulled separately into Contributions
+    // (below) and never appear on the timeline. The tagged-in fetch is left
+    // unfiltered. Being tagged in someone else's off-timeline story is still a
+    // tag against you, governed by PB-009, not by this flag.
     Promise.all([
-      fetch(`/api/stories?author_id=${activePersonId}&limit=100`).then((r) => r.json()).catch(() => []),
+      fetch(`/api/stories?author_id=${activePersonId}&on_timeline=true&limit=100`).then((r) => r.json()).catch(() => []),
       fetch(`/api/stories?rider_id=${activePersonId}&limit=100`).then((r) => r.json()).catch(() => []),
     ])
       .then(([authored, taggedIn]) => {
@@ -383,6 +394,12 @@ export function OwnerTimelinePanel() {
         setStories(merged)
       })
       .finally(() => setStoriesLoaded(true))
+
+    // Contributions: stories this author kept off their own timeline.
+    fetch(`/api/stories?author_id=${activePersonId}&on_timeline=false&limit=100`)
+      .then((r) => r.json())
+      .then((rows) => setContributions(Array.isArray(rows) ? (rows as Story[]) : []))
+      .catch(() => setContributions([]))
   }, [activePersonId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const allClaims    = getAllClaims(sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId)
@@ -749,6 +766,25 @@ export function OwnerTimelinePanel() {
           filter={timelineFilter}
           onFilterChange={setTimelineFilter}
         />
+
+        {/* Contributions: stories the owner authored but kept off their own
+            timeline. Owner view, so each card keeps the edit/delete menu and Jay
+            can re-toggle a story back onto his timeline from here. Renders
+            nothing when there are none (no empty header). */}
+        {contributions.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-black tracking-widest uppercase text-foreground">Contributions</h2>
+            <p className="text-xs text-muted mt-1 mb-5">Stories you added to other pages, kept off your timeline.</p>
+            {contributions.map((s) => (
+              <StoryCard
+                key={s.id}
+                story={s}
+                isOwn
+                onDelete={(id) => setContributions((prev) => prev.filter((x) => x.id !== id))}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )
