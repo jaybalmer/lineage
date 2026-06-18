@@ -118,8 +118,9 @@ export default function EquityPage() {
               </p>
               <p className="text-muted pt-3 mt-3 border-t border-border-default"
                 style={{ fontSize: 9, lineHeight: 1.7, letterSpacing: 0.3 }}>
-                One pool, shared by everyone, not 100,000 shares per member. Share issuance is a
-                corporate action completed through formal equity documents after the snapshot.
+                One pool, shared by everyone, not 100,000 shares per member. After the snapshot,
+                shares are held collectively in the Lineage Community Trust on your behalf. Your slice
+                is determined by your tokens. The trust handles the rest.
               </p>
             </div>
           </section>
@@ -279,10 +280,16 @@ export default function EquityPage() {
                 before then except keep building your linestry.
               </p>
               <p className="text-foreground">
-                <span className="text-muted">Issuance:</span>{" "}
-                After the snapshot, shares are issued through formal equity documents to each
-                eligible member. The pool is a fixed 0.5% carve-out of the company&apos;s
-                authorized common shares.
+                <span className="text-muted">Community Trust:</span>{" "}
+                After the snapshot, shares are held in the Lineage Community Trust on behalf of all
+                qualifying members. Your beneficial interest in the trust is proportional to your
+                weighted token balance. One trust, one pool, shared by the community that built it.
+              </p>
+              <p className="text-foreground">
+                <span className="text-muted">Your stake:</span>{" "}
+                You don&apos;t hold shares directly. The trust holds them for you. Your token balance
+                determines your share of the trust, and your share of any future value event: sale,
+                dividend, or IPO. Think of it as community ownership without the paperwork.
               </p>
               <p className="text-foreground">
                 <span className="text-muted">Estimates:</span>{" "}
@@ -292,7 +299,7 @@ export default function EquityPage() {
               <p className="text-foreground">
                 <span className="text-muted">Tokens stay tokens:</span>{" "}
                 Tokens are not securities and never convert by themselves. They are the measuring
-                stick the distribution uses on snapshot day.
+                stick the trust uses on snapshot day to calculate each member&apos;s beneficial interest.
               </p>
             </div>
           </section>
