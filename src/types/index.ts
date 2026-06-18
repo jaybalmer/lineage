@@ -537,6 +537,9 @@ export interface Story {
   body: string
   story_date: string   // YYYY-MM-DD — positions it on the timeline
   visibility: PrivacyLevel
+  /** false = authored but kept off the author's own timeline. Still public on
+   * linked entity pages and in the community feed. Default true. */
+  on_timeline?: boolean
   linked_event_id?: string
   linked_place_id?: string
   linked_org_id?: string

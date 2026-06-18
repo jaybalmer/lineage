@@ -105,7 +105,9 @@ export default function MePublicViewPage() {
       supabase.from("claims_public").select("*").eq("subject_id", activePersonId).eq("visibility", "public")
         .then(({ data }) => (data ?? []) as Claim[]),
       Promise.all([
-        fetch(`/api/stories?author_id=${activePersonId}&limit=100`).then((r) => r.json()).catch(() => []),
+        // on_timeline=true only: the stack mirrors the public timeline, so a
+        // story kept off the author's timeline is not offered as a stack entry.
+        fetch(`/api/stories?author_id=${activePersonId}&on_timeline=true&limit=100`).then((r) => r.json()).catch(() => []),
         fetch(`/api/stories?rider_id=${activePersonId}&limit=100`).then((r) => r.json()).catch(() => []),
       ]).then(([a, b]) => {
         const byId = new Map<string, Story>()

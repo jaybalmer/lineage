@@ -4,6 +4,7 @@ import { use, useState, useEffect } from "react"
 import { Nav } from "@/components/ui/nav"
 import { CLAIMS, getPersonById, getSharedContext } from "@/lib/mock-data"
 import { FeedView } from "@/components/feed/feed-view"
+import { StoryCard } from "@/components/feed/story-card"
 import { useLineageStore } from "@/store/lineage-store"
 import { getRiderTier } from "@/components/ui/rider-avatar"
 import { RiderCard } from "@/components/ui/rider-card"
@@ -36,6 +37,10 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   const [milestoneDismissed, setMilestoneDismissed] = useState(false)
   const [dbClaims, setDbClaims] = useState<Claim[]>([])
   const [stories, setStories] = useState<Story[]>([])
+  // Off-timeline stories this person authored (on_timeline=false). Shown in a
+  // read-only Contributions section below their timeline. Public on their
+  // entity pages already, so this just gathers them on the profile.
+  const [contributions, setContributions] = useState<Story[]>([])
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [claimRequests, setClaimRequests] = useState<ClaimRequestWithClaimant[]>([])
   const [showClaimModal, setShowClaimModal] = useState(false)
@@ -118,8 +123,10 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
     }
 
     if (isProperUuid) {
+      // Authored fetch filtered to on_timeline=true; off-timeline stories go
+      // into Contributions below. Tagged-in fetch stays unfiltered.
       Promise.all([
-        fetch(`/api/stories?author_id=${resolvedId}&limit=100`).then((r) => r.json()).catch(() => []),
+        fetch(`/api/stories?author_id=${resolvedId}&on_timeline=true&limit=100`).then((r) => r.json()).catch(() => []),
         fetch(`/api/stories?rider_id=${resolvedId}&limit=100`).then((r) => r.json()).catch(() => []),
       ]).then(([authored, taggedIn]) => {
         const byId = new Map<string, Story>()
@@ -130,6 +137,12 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
         )
         setStories(merged)
       })
+
+      // Contributions: off-timeline stories this person authored.
+      fetch(`/api/stories?author_id=${resolvedId}&on_timeline=false&limit=100`)
+        .then((r) => r.json())
+        .then((rows) => setContributions(Array.isArray(rows) ? (rows as Story[]) : []))
+        .catch(() => setContributions([]))
     }
 
     fetch(`/api/claim-requests?node_id=${encodeURIComponent(resolvedId)}`)
@@ -511,6 +524,22 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
           ridingSince={person.riding_since}
           person={person}
         />
+
+        {/* Contributions: stories this person authored but kept off their own
+            timeline. Read-only here (no edit menu): they are already public on
+            their linked entity pages, so this gathers them and shows the person
+            as an active contributor. Renders nothing when there are none. */}
+        {contributions.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-black tracking-widest uppercase text-foreground">Contributions</h2>
+            <p className="text-xs text-muted mt-1 mb-5">
+              Stories {person.display_name.split(" ")[0]} added to other pages.
+            </p>
+            {contributions.map((s) => (
+              <StoryCard key={s.id} story={s} />
+            ))}
+          </div>
+        )}
 
       </div>
 
