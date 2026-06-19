@@ -30,7 +30,9 @@ const COMMUNITY_SEGMENTS = new Set([
  */
 export function communityHref(href: string, slug: string): string {
   if (href.startsWith("/")) {
-    const firstSeg = href.split("/")[1] // "" for "/", "feed" for "/feed"
+    // Strip any ?query / #hash before reading the segment so community-scoped
+    // links with params (e.g. "/boards?brand=Burton") still get prefixed.
+    const firstSeg = href.split(/[?#]/)[0].split("/")[1] // "" for "/", "feed" for "/feed"
     if (firstSeg && COMMUNITY_SEGMENTS.has(firstSeg)) {
       return `/${slug}${href}`
     }

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect, Suspense } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { orgSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
@@ -41,12 +41,28 @@ function ChevronDown({ className }: { className?: string }) {
 
 function BoardsPageInner() {
   const searchParams = useSearchParams()
-  const yearParam = searchParams.get("year")
+  const router = useRouter()
+  const pathname = usePathname()
 
-  const [level, setLevel] = useState<"brands" | "all">("brands")
-  const [selectedBrand, setSelectedBrand] = useState<string | null>(null)
-  const [selectedYear, setSelectedYear] = useState<number | null>(null)
-  const [search, setSearch] = useState(yearParam ?? "")
+  // Navigation state lives in the URL so (1) the nav-bar "Boards" link — which
+  // points at the bare /boards path — resets a drilled-in brand / active search
+  // / chosen view back to default, and (2) a board page can deep-link straight
+  // to its brand list (/boards?brand=Burton). view: "all" | "featured" | brands.
+  const viewParam = searchParams.get("view")
+  const brandParam = searchParams.get("brand")
+  const yearParam = searchParams.get("year")
+  const qParam = searchParams.get("q") ?? ""
+  const level: "brands" | "all" | "featured" =
+    viewParam === "all" ? "all" : viewParam === "featured" ? "featured" : "brands"
+  const selectedBrand = brandParam
+  const selectedYear = yearParam ? Number(yearParam) : null
+
+  // Search box: local for instant typing, mirrored to ?q= so it shares the same
+  // reset path as the rest of the navigation state (so "Boards" in the nav also
+  // clears an active search even when the URL was otherwise bare).
+  const [search, setSearch] = useState(qParam)
+  useEffect(() => { setSearch(qParam) }, [qParam])
+
   const [myOnly, setMyOnly] = useState(false)
   const [brandSort, setBrandSort] = useState<BrandSort>("count")
   const [boardSort, setBoardSort] = useState<BoardSort>("newest")
@@ -57,10 +73,23 @@ function BoardsPageInner() {
   const { catalog, activePersonId, communities, activeCommunitySlug } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
 
+  // Merge URL param changes into a single replace(), preserving scroll position.
+  const updateParams = (updates: Record<string, string | null>) => {
+    const params = new URLSearchParams(searchParams.toString())
+    for (const [k, v] of Object.entries(updates)) {
+      if (v == null || v === "") params.delete(k)
+      else params.set(k, v)
+    }
+    const qs = params.toString()
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+  }
+  const updateSearch = (v: string) => { setSearch(v); updateParams({ q: v || null }) }
+
   // Fresh map of board_id -> community-added image URL, loaded once per page
   // mount (not localStorage-cached), so an image added on a board page surfaces
   // here on the next load and is never masked by a stale "no image" probe cache.
   const [communityBoardImages, setCommunityBoardImages] = useState<Map<string, string>>(new Map())
+  const [communityImagesLoaded, setCommunityImagesLoaded] = useState(false)
   useEffect(() => {
     let cancelled = false
     fetch("/api/board-image/list")
@@ -72,6 +101,7 @@ function BoardsPageInner() {
         setCommunityBoardImages(m)
       })
       .catch(() => {})
+      .finally(() => { if (!cancelled) setCommunityImagesLoaded(true) })
     return () => {
       cancelled = true
     }
@@ -196,11 +226,29 @@ function BoardsPageInner() {
     return sortBoards(bs, boardSort, counts)
   }, [scopedBoards, selectedBrand, selectedYear, boardSort, counts])
 
-  // Navigation. Level clicks clear search so the chosen level is authoritative.
-  const goBrands = () => { setLevel("brands"); setSelectedBrand(null); setSelectedYear(null); setSearch("") }
-  const goAll = () => { setLevel("all"); setSelectedBrand(null); setSelectedYear(null); setSearch("") }
-  const openBrand = (brand: string) => { setLevel("brands"); setSelectedBrand(brand); setSelectedYear(null) }
-  const backToBrands = () => { setSelectedBrand(null); setSelectedYear(null) }
+  // Featured = boards that carry a real, community-curated photo: a stored
+  // image_url (set at creation) or a community-suggested image. Auto-guessed
+  // Serper covers are decoration, not curated, so they are excluded.
+  const featuredBoards = useMemo(
+    () => sortBoards(scopedBoards.filter((b) => !!b.image_url || communityBoardImages.has(b.id)), boardSort, counts),
+    [scopedBoards, communityBoardImages, boardSort, counts]
+  )
+
+  // Most recently added boards. A just-added board has no server created_at yet,
+  // so it sorts ahead of everything (sentinel "9999" beats any ISO date).
+  const recentlyAdded = useMemo(
+    () => [...scopedBoards].sort((a, b) => (b.created_at ?? "9999").localeCompare(a.created_at ?? "9999")).slice(0, 8),
+    [scopedBoards]
+  )
+
+  // Navigation writes to the URL. Level/brand changes clear search so the chosen
+  // view is authoritative.
+  const goBrands = () => { setSearch(""); updateParams({ view: null, brand: null, year: null, q: null }) }
+  const goAll = () => { setSearch(""); updateParams({ view: "all", brand: null, year: null, q: null }) }
+  const goFeatured = () => { setSearch(""); updateParams({ view: "featured", brand: null, year: null, q: null }) }
+  const openBrand = (brand: string) => { setSearch(""); updateParams({ brand, view: null, year: null, q: null }) }
+  const backToBrands = () => updateParams({ brand: null, year: null })
+  const setSelectedYear = (y: number | null) => updateParams({ year: y != null ? String(y) : null })
 
   const selectedOrg = selectedBrand ? orgByBrand.get(selectedBrand) : undefined
   const catalogEmpty = catalog.boards.length === 0
@@ -310,12 +358,13 @@ function BoardsPageInner() {
             {([
               ["brands", "Brands"],
               ["all", "All boards"],
+              ["featured", "Featured"],
             ] as const).map(([v, label]) => {
               const active = !searchActive && level === v
               return (
                 <button
                   key={v}
-                  onClick={() => (v === "brands" ? goBrands() : goAll())}
+                  onClick={() => (v === "brands" ? goBrands() : v === "all" ? goAll() : goFeatured())}
                   className={cn(
                     "px-3.5 py-1.5 rounded-md text-sm font-medium transition-all whitespace-nowrap",
                     active ? "bg-surface-active text-foreground" : "text-muted hover:text-foreground"
@@ -347,13 +396,13 @@ function BoardsPageInner() {
           <input
             type="text"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => updateSearch(e.target.value)}
             placeholder="Search by brand, model, or year"
             className="w-full bg-surface border border-border-default rounded-xl pl-9 pr-9 py-2.5 text-sm text-foreground placeholder-muted focus:outline-none focus:border-accent transition-colors"
           />
           {search && (
             <button
-              onClick={() => setSearch("")}
+              onClick={() => updateSearch("")}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-foreground text-lg leading-none"
               aria-label="Clear search"
             >
@@ -361,6 +410,25 @@ function BoardsPageInner() {
             </button>
           )}
         </div>
+
+        {/* Recently added rail — newest contributions surface here, so a board
+            you just added shows at the very top. Hidden during search and inside
+            a single brand. */}
+        {!catalogEmpty && !searchActive && !selectedBrand && recentlyAdded.length > 0 && (
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="text-xs font-semibold text-muted uppercase tracking-widest shrink-0">Recently added</span>
+              <div className="flex-1 h-px bg-surface-active" />
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-none">
+              {recentlyAdded.map((b) => (
+                <div key={b.id} className="w-32 sm:w-36 shrink-0">
+                  <BoardTile {...boardProps(b)} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Body */}
         {catalogEmpty ? (
@@ -485,6 +553,27 @@ function BoardsPageInner() {
               </div>
             )}
           </div>
+        ) : level === "featured" ? (
+          /* ── Featured (boards that carry a curated photo) ── */
+          <div>
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <span className="text-sm text-muted">
+                {featuredBoards.length} board{featuredBoards.length !== 1 ? "s" : ""} with a photo
+              </span>
+              {listingControls(featuredBoards.length)}
+            </div>
+            {featuredBoards.length === 0 ? (
+              <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
+                {!communityImagesLoaded
+                  ? "Loading featured boards…"
+                  : myOnly
+                    ? "None of your boards have a photo yet."
+                    : "No boards have a photo yet. Add one when you add a board, or from any board page."}
+              </div>
+            ) : (
+              renderBoards(featuredBoards, true)
+            )}
+          </div>
         ) : (
           /* ── All boards (flat) ── */
           <div>
@@ -506,7 +595,14 @@ function BoardsPageInner() {
       </div>
 
       {addOpen && (
-        <AddEntityModal entityType="board" onClose={() => setAddOpen(false)} onAdded={() => setAddOpen(false)} />
+        <AddEntityModal
+          entityType="board"
+          // Default the brand to the one being viewed (requirement 6); the modal
+          // seeds its brand field from initialName.
+          initialName={selectedBrand ?? ""}
+          onClose={() => setAddOpen(false)}
+          onAdded={() => setAddOpen(false)}
+        />
       )}
       {addBrandOpen && (
         <AddEntityModal

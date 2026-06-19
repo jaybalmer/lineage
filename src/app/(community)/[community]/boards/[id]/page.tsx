@@ -202,7 +202,9 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
   // Row from the current user that has an image suggestion (enables delete)
   const myImageVoteRow = imageVoteRows.find((r) => r.user_id === activePersonId && r.suggested_image_url)
 
-  const displayImageUrl = suggestedImageUrl ?? boardImageUrl
+  // Priority: an explicit community suggestion, then the board's stored cover
+  // (set when the board was added to the catalog), then the auto-fetched guess.
+  const displayImageUrl = suggestedImageUrl ?? board.image_url ?? boardImageUrl
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [removingPhoto, setRemovingPhoto] = useState(false)
 
@@ -448,18 +450,14 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
       )}
       <div className="max-w-5xl mx-auto px-4 py-8">
 
-        {/* Breadcrumb */}
+        {/* Breadcrumb. The brand crumb returns to the brand's board list on the
+            catalog (requirement 3), not the brand org page — that page is still
+            reachable from the "Brand" sidebar card below. */}
         <div className="text-xs text-muted mb-6">
           <CommunityLink href="/boards" className="hover:text-foreground">Boards</CommunityLink>
           <span className="mx-2">/</span>
-          {brandOrg ? (
-            <>
-              <CommunityLink href={`/brands/${orgSlug(brandOrg)}`} className="hover:text-foreground">{boardBrand}</CommunityLink>
-              <span className="mx-2">/</span>
-            </>
-          ) : (
-            <><span className="text-muted">{boardBrand}</span><span className="mx-2">/</span></>
-          )}
+          <CommunityLink href={`/boards?brand=${encodeURIComponent(boardBrand)}`} className="hover:text-foreground">{boardBrand}</CommunityLink>
+          <span className="mx-2">/</span>
           <span className="text-muted">{boardModel}</span>
         </div>
 
