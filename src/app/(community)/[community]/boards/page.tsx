@@ -79,6 +79,7 @@ function BoardsPageInner() {
   const counts: BoardCounts = useMemo(() => {
     const rode = new Map<string, Set<string>>()
     const own = new Map<string, Set<string>>()
+    const any = new Map<string, Set<string>>()
     const bump = (m: Map<string, Set<string>>, k: string, v: string) => {
       let s = m.get(k)
       if (!s) {
@@ -90,6 +91,7 @@ function BoardsPageInner() {
     for (const c of catalog.claims) {
       if (c.predicate !== "owned_board") continue
       const f = boardRelationshipFlags(c.board_relationship)
+      bump(any, c.object_id, c.subject_id)
       if (f.rode) bump(rode, c.object_id, c.subject_id)
       if (f.own) bump(own, c.object_id, c.subject_id)
     }
@@ -98,7 +100,7 @@ function BoardsPageInner() {
       for (const [k, v] of m) r.set(k, v.size)
       return r
     }
-    return { rode: toCount(rode), own: toCount(own) }
+    return { rode: toCount(rode), own: toCount(own), any: toCount(any) }
   }, [catalog.claims])
 
   // Display name lookup for unverified "Added by" attribution.
@@ -454,6 +456,7 @@ function BoardsPageInner() {
                     brand={brand}
                     boards={boards}
                     orgLogoUrl={orgByBrand.get(brand)?.logo_url}
+                    riderCounts={counts.any}
                     onOpen={() => openBrand(brand)}
                   />
                 ))}

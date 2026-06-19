@@ -5,7 +5,7 @@
 // pieces here are pure-ish: they take data via props and read only leaf concerns
 // (useBoardImage for a cover, the store for the claim affordance).
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useMemo, useCallback } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { useBoardImage } from "@/hooks/use-board-image"
 import { BrandMark } from "@/components/ui/brand-mark"
@@ -28,7 +28,7 @@ export type BoardSort =
 export type ViewMode = "card" | "list"
 export type BrandSort = "count" | "az"
 
-export type BoardCounts = { rode: Map<string, number>; own: Map<string, number> }
+export type BoardCounts = { rode: Map<string, number>; own: Map<string, number>; any: Map<string, number> }
 
 // ─── Sorting + decade grouping ───────────────────────────────────────────────
 
@@ -107,16 +107,31 @@ export function BoardCover({
   orgLogoUrl,
   className,
   markSize = 44,
+  onResolve,
 }: {
   board: Board
   orgLogoUrl?: string
   className?: string
   markSize?: number
+  /** Fires once the cover settles, reporting whether it has a real photo (board
+   * image_url or an auto cover). Used by the brand index to pick imageful boards. */
+  onResolve?: (hasImage: boolean) => void
 }) {
   const manualImage = board.image_url
   const autoImage = useBoardImage(board.brand, board.model, board.model_year, board.id)
   const imageUrl = manualImage ?? (autoImage || undefined)
   const loading = !manualImage && autoImage === undefined
+
+  // Report image availability once known. null = still loading (auto pending).
+  const resolvedHas = manualImage ? true : autoImage === undefined ? null : autoImage !== null
+  const onResolveRef = useRef(onResolve)
+  useEffect(() => {
+    onResolveRef.current = onResolve
+  }, [onResolve])
+  useEffect(() => {
+    if (resolvedHas === null) return
+    onResolveRef.current?.(resolvedHas)
+  }, [resolvedHas])
 
   if (imageUrl) {
     return (
@@ -383,14 +398,49 @@ export function BrandIndexCard({
   brand,
   boards,
   orgLogoUrl,
+  riderCounts,
   onOpen,
 }: {
   brand: string
-  boards: Board[] // newest model year first
+  boards: Board[]
   orgLogoUrl?: string
+  riderCounts: Map<string, number>
   onOpen: () => void
 }) {
-  const thumbs = boards.slice(0, 3)
+  // Candidate pool, most riders first then newest. Capped so a big-catalog brand
+  // does not probe every board for a cover image (matches the old 3-cover cost
+  // for small brands, bounds the large ones).
+  const pool = useMemo(() => {
+    const rc = (b: Board) => riderCounts.get(b.id) ?? 0
+    return [...boards].sort((a, b) => rc(b) - rc(a) || b.model_year - a.model_year).slice(0, 8)
+  }, [boards, riderCounts])
+
+  // hasImage per probed board: true / false once settled, absent while loading.
+  const [status, setStatus] = useState<Record<string, boolean>>({})
+  const report = useCallback((id: string, has: boolean) => {
+    setStatus((s) => (s[id] === has ? s : { ...s, [id]: has }))
+  }, [])
+
+  // Show up to 3, preferring boards that have an image (highest riders first).
+  // Still-loading candidates hold a slot as placeholders; a board that settles
+  // with no image is skipped. If the whole pool resolves imageless, fall back to
+  // the top 3 so the strip is never empty.
+  const visibleIds = useMemo(() => {
+    const out = new Set<string>()
+    const allResolved = pool.every((b) => b.id in status)
+    const anyHas = pool.some((b) => status[b.id] === true)
+    if (allResolved && !anyHas) {
+      pool.slice(0, 3).forEach((b) => out.add(b.id))
+      return out
+    }
+    for (const b of pool) {
+      if (status[b.id] === false) continue
+      out.add(b.id)
+      if (out.size === 3) break
+    }
+    return out
+  }, [pool, status])
+
   return (
     <button
       onClick={onOpen}
@@ -403,8 +453,16 @@ export function BrandIndexCard({
         </span>
       </div>
       <div className="flex gap-1.5">
-        {thumbs.map((b) => (
-          <BoardCover key={b.id} board={b} orgLogoUrl={orgLogoUrl} className="w-12 h-16 rounded-lg border border-border-default shrink-0" markSize={18} />
+        {pool.map((b) => (
+          <div key={b.id} className={cn(!visibleIds.has(b.id) && "hidden")}>
+            <BoardCover
+              board={b}
+              orgLogoUrl={orgLogoUrl}
+              onResolve={(has) => report(b.id, has)}
+              className="w-12 h-16 rounded-lg border border-border-default shrink-0"
+              markSize={18}
+            />
+          </div>
         ))}
       </div>
     </button>
