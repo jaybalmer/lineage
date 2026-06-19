@@ -107,23 +107,35 @@ export function BoardCover({
   orgLogoUrl,
   className,
   markSize = 44,
+  overrideUrl,
   onResolve,
 }: {
   board: Board
   orgLogoUrl?: string
   className?: string
   markSize?: number
-  /** Fires once the cover settles, reporting whether it has a real photo (board
-   * image_url or an auto cover). Used by the brand index to pick imageful boards. */
+  /** A known image URL (e.g. a fresh community suggestion) that takes precedence
+   * over board.image_url and the auto lookup, and skips the (cached) auto probe. */
+  overrideUrl?: string
+  /** Fires once the cover settles, reporting whether it has a real photo. Used by
+   * the brand index to pick imageful boards. */
   onResolve?: (hasImage: boolean) => void
 }) {
-  const manualImage = board.image_url
-  const autoImage = useBoardImage(board.brand, board.model, board.model_year, board.id)
-  const imageUrl = manualImage ?? (autoImage || undefined)
-  const loading = !manualImage && autoImage === undefined
+  // A directly-known image (override or stored column) wins and skips the auto
+  // lookup entirely (passing undefined brand/model short-circuits the hook), so a
+  // freshly added community image is never masked by a stale "no image" cache.
+  const directImage = overrideUrl ?? board.image_url
+  const autoImage = useBoardImage(
+    directImage ? undefined : board.brand,
+    directImage ? undefined : board.model,
+    board.model_year,
+    board.id,
+  )
+  const imageUrl = directImage ?? (autoImage || undefined)
+  const loading = !directImage && autoImage === undefined
 
   // Report image availability once known. null = still loading (auto pending).
-  const resolvedHas = manualImage ? true : autoImage === undefined ? null : autoImage !== null
+  const resolvedHas = directImage ? true : autoImage === undefined ? null : autoImage !== null
   const onResolveRef = useRef(onResolve)
   useEffect(() => {
     onResolveRef.current = onResolve
@@ -298,12 +310,14 @@ export function BoardActionsMenu({ board, align = "right" }: { board: Board; ali
 export function BoardTile({
   board,
   orgLogoUrl,
+  imageOverride,
   rodeCount,
   ownCount,
   addedByName,
 }: {
   board: Board
   orgLogoUrl?: string
+  imageOverride?: string
   rodeCount: number
   ownCount: number
   addedByName?: string
@@ -317,7 +331,7 @@ export function BoardTile({
     <div>
       <div className="relative">
         <CommunityLink href={href} className="block">
-          <BoardCover board={board} orgLogoUrl={orgLogoUrl} className="aspect-[3/4] rounded-xl border border-border-default" markSize={48} />
+          <BoardCover board={board} orgLogoUrl={orgLogoUrl} overrideUrl={imageOverride} className="aspect-[3/4] rounded-xl border border-border-default" markSize={48} />
         </CommunityLink>
         {isUnverified && (
           <span className="absolute top-2 left-2 text-[10px] text-amber-600 bg-background/80 backdrop-blur-sm border border-amber-500/40 rounded px-1.5 py-0.5 pointer-events-none">
@@ -351,12 +365,14 @@ export function BoardTile({
 export function BoardListRow({
   board,
   orgLogoUrl,
+  imageOverride,
   rodeCount,
   ownCount,
   addedByName,
 }: {
   board: Board
   orgLogoUrl?: string
+  imageOverride?: string
   rodeCount: number
   ownCount: number
   addedByName?: string
@@ -369,7 +385,7 @@ export function BoardListRow({
   return (
     <div className="flex items-center gap-3 py-2.5">
       <CommunityLink href={href} className="flex items-center gap-3 min-w-0 flex-1 group">
-        <BoardCover board={board} orgLogoUrl={orgLogoUrl} className="w-11 h-14 rounded-lg border border-border-default shrink-0" markSize={18} />
+        <BoardCover board={board} orgLogoUrl={orgLogoUrl} overrideUrl={imageOverride} className="w-11 h-14 rounded-lg border border-border-default shrink-0" markSize={18} />
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium text-foreground truncate group-hover:text-accent-strong transition-colors">
@@ -398,24 +414,34 @@ export function BrandIndexCard({
   brand,
   boards,
   orgLogoUrl,
+  communityImages,
   riderCounts,
   onOpen,
 }: {
   brand: string
   boards: Board[]
   orgLogoUrl?: string
+  /** board_id -> community-added image URL (known up front, no probe needed). */
+  communityImages: Map<string, string>
   riderCounts: Map<string, number>
   onOpen: () => void
 }) {
-  // Candidate pool, most riders first then newest. Capped so a big-catalog brand
-  // does not probe every board for a cover image (matches the old 3-cover cost
-  // for small brands, bounds the large ones).
+  // Two candidate groups, each most-riders-first then newest. Curated images
+  // (a community suggestion or a stored column) come first as a tier, so a board
+  // someone took the trouble to add an image to always surfaces, ahead of the
+  // auto-guessed Serper covers. The auto group is capped and probed via the
+  // (cached) auto lookup to fill any remaining slots.
   const pool = useMemo(() => {
     const rc = (b: Board) => riderCounts.get(b.id) ?? 0
-    return [...boards].sort((a, b) => rc(b) - rc(a) || b.model_year - a.model_year).slice(0, 8)
-  }, [boards, riderCounts])
+    const byPriority = (a: Board, b: Board) => rc(b) - rc(a) || b.model_year - a.model_year
+    const hasKnownImage = (b: Board) => communityImages.has(b.id) || !!b.image_url
+    const known = boards.filter(hasKnownImage).sort(byPriority).slice(0, 8)
+    const auto = boards.filter((b) => !hasKnownImage(b)).sort(byPriority).slice(0, 8)
+    return [...known, ...auto]
+  }, [boards, communityImages, riderCounts])
 
-  // hasImage per probed board: true / false once settled, absent while loading.
+  // hasImage per board: true / false once settled, absent while loading. Boards
+  // with a known image report true immediately (BoardCover, override path).
   const [status, setStatus] = useState<Record<string, boolean>>({})
   const report = useCallback((id: string, has: boolean) => {
     setStatus((s) => (s[id] === has ? s : { ...s, [id]: has }))
@@ -458,6 +484,7 @@ export function BrandIndexCard({
             <BoardCover
               board={b}
               orgLogoUrl={orgLogoUrl}
+              overrideUrl={communityImages.get(b.id)}
               onResolve={(has) => report(b.id, has)}
               className="w-12 h-16 rounded-lg border border-border-default shrink-0"
               markSize={18}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, Suspense } from "react"
+import { useState, useMemo, useEffect, Suspense } from "react"
 import { useSearchParams } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { orgSlug } from "@/lib/mock-data"
@@ -56,6 +56,26 @@ function BoardsPageInner() {
 
   const { catalog, activePersonId, communities, activeCommunitySlug } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
+
+  // Fresh map of board_id -> community-added image URL, loaded once per page
+  // mount (not localStorage-cached), so an image added on a board page surfaces
+  // here on the next load and is never masked by a stale "no image" probe cache.
+  const [communityBoardImages, setCommunityBoardImages] = useState<Map<string, string>>(new Map())
+  useEffect(() => {
+    let cancelled = false
+    fetch("/api/board-image/list")
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return
+        const m = new Map<string, string>()
+        for (const [id, url] of Object.entries((d?.images ?? {}) as Record<string, string>)) m.set(id, url)
+        setCommunityBoardImages(m)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const community = communities.find((c) => c.slug === activeCommunitySlug)
   const bannerUrl = community?.boards_banner_url
@@ -189,6 +209,7 @@ function BoardsPageInner() {
   const boardProps = (board: Board) => ({
     board,
     orgLogoUrl: orgByBrand.get(board.brand)?.logo_url,
+    imageOverride: communityBoardImages.get(board.id),
     rodeCount: counts.rode.get(board.id) ?? 0,
     ownCount: counts.own.get(board.id) ?? 0,
     addedByName: board.added_by ? nameById.get(board.added_by) : undefined,
@@ -456,6 +477,7 @@ function BoardsPageInner() {
                     brand={brand}
                     boards={boards}
                     orgLogoUrl={orgByBrand.get(brand)?.logo_url}
+                    communityImages={communityBoardImages}
                     riderCounts={counts.any}
                     onOpen={() => openBrand(brand)}
                   />
