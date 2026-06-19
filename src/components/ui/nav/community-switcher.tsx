@@ -38,7 +38,13 @@ export function CommunitySwitcher({ activeCommunitySlug, communities }: Communit
   const inCommunity =
     path === `/${activeCommunitySlug}` || path.startsWith(`/${activeCommunitySlug}/`)
 
-  useEffect(() => { setOpen(false) }, [path])
+  // Close on route change. Tracked during render rather than with a synchronous
+  // setState in an effect (react-hooks/set-state-in-effect).
+  const [prevPath, setPrevPath] = useState(path)
+  if (path !== prevPath) {
+    setPrevPath(path)
+    setOpen(false)
+  }
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {

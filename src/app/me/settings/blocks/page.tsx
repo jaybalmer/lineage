@@ -15,9 +15,12 @@ export default function MeBlocksSettingsPage() {
   const [data, setData] = useState<ListResponse | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // No leading setLoading(true): the initial load uses the `true` initial state,
+  // and refetch callers (unblock) set it themselves. Keeping refresh() free of a
+  // synchronous setState lets the effect below call it without tripping
+  // react-hooks/set-state-in-effect.
   const refresh = useCallback(() => {
     if (!isAuthUser(activePersonId)) return
-    setLoading(true)
     fetch("/api/me/blocks")
       .then((r) => r.json())
       .then((r: ListResponse) => setData(r))
@@ -27,15 +30,25 @@ export default function MeBlocksSettingsPage() {
 
   useEffect(() => {
     if (!authReady) return
-    if (!isAuthUser(activePersonId)) { setLoading(false); return }
+    if (!isAuthUser(activePersonId)) return
     refresh()
   }, [authReady, activePersonId, refresh])
+
+  // A signed-out visitor has nothing to load; clear the loading state during
+  // render rather than with a synchronous setState in the effect above.
+  const settledNonAuth = authReady && !isAuthUser(activePersonId)
+  const [prevSettledNonAuth, setPrevSettledNonAuth] = useState(false)
+  if (settledNonAuth !== prevSettledNonAuth) {
+    setPrevSettledNonAuth(settledNonAuth)
+    if (settledNonAuth) setLoading(false)
+  }
 
   const unblock = (blockId: string) => {
     fetch(`/api/me/blocks/${blockId}`, { method: "DELETE" })
       .then((r) => {
         if (!r.ok) return addToast("Could not unblock.", "error")
         addToast("Unblocked.")
+        setLoading(true)
         refresh()
       })
       .catch(() => addToast("Could not unblock.", "error"))

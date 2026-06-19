@@ -42,30 +42,28 @@ export function usePlaceImage(placeId: string | undefined): string | null | unde
   const [imageUrl, setImageUrl] = useState<string | null | undefined>(undefined)
 
   useEffect(() => {
-    if (!placeId) {
-      setImageUrl(null)
-      return
-    }
-
-    const cached = getCached(placeId)
-    if (cached !== undefined) {
-      setImageUrl(cached)
-      return
-    }
-
     let cancelled = false
 
-    fetch(`/api/place-image?place_id=${encodeURIComponent(placeId)}`)
-      .then((r) => r.json())
-      .then(({ url }) => {
-        if (cancelled) return
-        const result = (url as string | null) ?? null
-        setCached(placeId, result)
-        setImageUrl(result)
-      })
-      .catch(() => {
-        if (!cancelled) setImageUrl(null)
-      })
+    // The effect only does async work: resolve the photo (cache hit or network)
+    // and set state from the promise callback. A synchronous setState here would
+    // cascade-render (react-hooks/set-state-in-effect). The localStorage read
+    // stays in the effect so the first paint matches the SSR output.
+    async function resolve(): Promise<string | null> {
+      if (!placeId) return null
+
+      const cached = getCached(placeId)
+      if (cached !== undefined) return cached
+
+      const res = await fetch(`/api/place-image?place_id=${encodeURIComponent(placeId)}`)
+      const { url } = await res.json()
+      const result = (url as string | null) ?? null
+      setCached(placeId, result)
+      return result
+    }
+
+    resolve()
+      .then((result) => { if (!cancelled) setImageUrl(result) })
+      .catch(() => { if (!cancelled) setImageUrl(null) })
 
     return () => { cancelled = true }
   }, [placeId])

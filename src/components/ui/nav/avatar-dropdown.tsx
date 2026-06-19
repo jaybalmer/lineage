@@ -48,8 +48,14 @@ export function AvatarDropdown({ displayName, tier, totalTokens, pendingTagCount
     router.push("/")
   }
 
-  // Close when the route changes (navigation completed)
-  useEffect(() => { setOpen(false) }, [path])
+  // Close when the route changes (navigation completed). Tracked during render on
+  // a path change rather than with a synchronous setState in an effect
+  // (react-hooks/set-state-in-effect).
+  const [prevPath, setPrevPath] = useState(path)
+  if (path !== prevPath) {
+    setPrevPath(path)
+    setOpen(false)
+  }
 
   // Close on outside mousedown
   useEffect(() => {

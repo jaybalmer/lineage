@@ -239,7 +239,6 @@ export function OwnerTimelinePanel() {
   // not played yet, then we persist timeline_animated so it never replays.
   // FeedView owns the bake-off that ends the reveal, so we keep passing the
   // latched value rather than flipping the prop back off.
-  const entranceLatchedRef = useRef(false)
   const [animateEntrance, setAnimateEntrance] = useState(false)
 
   // Loaded flags for the async profile fetches. The celebration effects gate
@@ -305,18 +304,25 @@ export function OwnerTimelinePanel() {
   }, [authReady, activePersonId, triggerPrefs.welcome_pending, triggerPrefs.welcome_celebration_shown, setShowWelcomeCelebration])
 
   // Latch the first-visit timeline entrance once the welcome explosion has been
-  // shown. We persist timeline_animated immediately so an interrupted session
-  // can't replay it; the latched animateEntrance keeps FeedView animating to
-  // completion regardless of the prefs flip.
+  // shown. animateEntrance is its own one-way latch (it never resets to false), so
+  // it keeps FeedView animating to completion regardless of the prefs flip. The
+  // latch is set during render rather than with a synchronous setState in an effect
+  // (react-hooks/set-state-in-effect); the follow-up effect persists the flag so an
+  // interrupted session can't replay it.
+  if (
+    !animateEntrance &&
+    isAuthUser(activePersonId) &&
+    triggerPrefs.welcome_celebration_shown &&
+    !triggerPrefs.timeline_animated
+  ) {
+    setAnimateEntrance(true)
+  }
+
   useEffect(() => {
-    if (entranceLatchedRef.current) return
-    if (!isAuthUser(activePersonId)) return
-    if (triggerPrefs.welcome_celebration_shown && !triggerPrefs.timeline_animated) {
-      entranceLatchedRef.current = true
-      setAnimateEntrance(true)
+    if (animateEntrance && !triggerPrefs.timeline_animated) {
       setTriggerPrefs({ timeline_animated: true })
     }
-  }, [activePersonId, triggerPrefs.welcome_celebration_shown, triggerPrefs.timeline_animated, setTriggerPrefs])
+  }, [animateEntrance, triggerPrefs.timeline_animated, setTriggerPrefs])
 
   const basePerson = getPersonById(activePersonId)
   const person = basePerson

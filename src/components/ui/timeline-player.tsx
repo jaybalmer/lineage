@@ -354,12 +354,39 @@ function Particles({ color = "white", count = 22 }: { color?: string; count?: nu
   )
 }
 
-// ─── Count-up animation ────────────────────────────────────────────────────────
+// ─── Slide animation hooks ───────────────────────────────────────────────────────
+
+// Replays a slide's entrance transition: `show` starts false and flips true after
+// `delay`ms so the CSS transition runs. The reset on (de)activation happens during
+// render, not via a synchronous setState in the effect (react-hooks/set-state-in-effect);
+// the effect only schedules the delayed reveal.
+function useSlideEntrance(active: boolean, delay: number): boolean {
+  const [show, setShow] = useState(false)
+  const [wasActive, setWasActive] = useState(active)
+  if (active !== wasActive) {
+    setWasActive(active)
+    setShow(false)
+  }
+  useEffect(() => {
+    if (!active) return
+    const t = setTimeout(() => setShow(true), delay)
+    return () => clearTimeout(t)
+  }, [active, delay])
+  return show
+}
 
 function useCountUp(target: number, active: boolean, duration = 1100): number {
   const [val, setVal] = useState(0)
+  const [wasActive, setWasActive] = useState(active)
+  // Reset to zero on (de)activation during render rather than with a synchronous
+  // setState in the effect (react-hooks/set-state-in-effect). The rAF tick below
+  // sets state from an async callback, which is allowed.
+  if (active !== wasActive) {
+    setWasActive(active)
+    setVal(0)
+  }
   useEffect(() => {
-    if (!active) { setVal(0); return }
+    if (!active) return
     const start = Date.now()
     const tick = () => {
       const elapsed = Date.now() - start
@@ -376,11 +403,7 @@ function useCountUp(target: number, active: boolean, duration = 1100): number {
 // ─── Slide renderers ───────────────────────────────────────────────────────────
 
 function IntroSlideView({ slide, active }: { slide: IntroSlide; active: boolean }) {
-  const [show, setShow] = useState(false)
-  useEffect(() => {
-    if (active) { setShow(false); const t = setTimeout(() => setShow(true), 60); return () => clearTimeout(t) }
-    else setShow(false)
-  }, [active])
+  const show = useSlideEntrance(active, 60)
 
   return (
     <div className="relative flex flex-col items-center justify-center h-full text-center px-8 overflow-hidden">
@@ -419,11 +442,7 @@ function IntroSlideView({ slide, active }: { slide: IntroSlide; active: boolean 
 function StatSlideView({ slide, active }: { slide: StatSlide; active: boolean }) {
   const count = useCountUp(slide.count, active)
   const done = count === slide.count
-  const [show, setShow] = useState(false)
-  useEffect(() => {
-    if (active) { setShow(false); const t = setTimeout(() => setShow(true), 60); return () => clearTimeout(t) }
-    else setShow(false)
-  }, [active])
+  const show = useSlideEntrance(active, 60)
 
   return (
     <div className="relative flex flex-col items-center justify-center h-full text-center px-8 overflow-hidden">
@@ -486,11 +505,7 @@ function StatSlideView({ slide, active }: { slide: StatSlide; active: boolean })
 }
 
 function ClaimSlideView({ slide, active }: { slide: ClaimSlide; active: boolean }) {
-  const [show, setShow] = useState(false)
-  useEffect(() => {
-    if (active) { setShow(false); const t = setTimeout(() => setShow(true), 60); return () => clearTimeout(t) }
-    else setShow(false)
-  }, [active])
+  const show = useSlideEntrance(active, 60)
 
   return (
     <div className="relative flex flex-col items-center justify-center h-full text-center px-10 overflow-hidden">
@@ -542,11 +557,7 @@ function ClaimSlideView({ slide, active }: { slide: ClaimSlide; active: boolean 
 }
 
 function OutroSlideView({ slide, active, onClose }: { slide: OutroSlide; active: boolean; onClose: () => void }) {
-  const [show, setShow] = useState(false)
-  useEffect(() => {
-    if (active) { setShow(false); const t = setTimeout(() => setShow(true), 100); return () => clearTimeout(t) }
-    else setShow(false)
-  }, [active])
+  const show = useSlideEntrance(active, 100)
 
   return (
     <div className="relative flex flex-col items-center justify-center h-full text-center px-8 overflow-hidden">
@@ -663,6 +674,16 @@ export function TimelinePlayerShell({ slides, header, onClose }: TimelinePlayerS
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const isOutro = slides[index]?.kind === "outro"
 
+  // Reset the active slide's progress bar to 0 when the slide or play state
+  // changes, during render rather than with a synchronous setState in the effect
+  // below (react-hooks/set-state-in-effect). The interval then fills it.
+  const progressKey = `${index}|${paused}|${isOutro}`
+  const [prevProgressKey, setPrevProgressKey] = useState(progressKey)
+  if (progressKey !== prevProgressKey) {
+    setPrevProgressKey(progressKey)
+    if (!paused && !isOutro) setProgress(0)
+  }
+
   useAmbientAudio(audioOn)
 
   const goTo = useCallback((i: number) => {
@@ -686,7 +707,6 @@ export function TimelinePlayerShell({ slides, header, onClose }: TimelinePlayerS
 
   useEffect(() => {
     if (paused || isOutro) return
-    setProgress(0)
     const start = Date.now()
     progressRef.current = setInterval(() => {
       setProgress(Math.min((Date.now() - start) / SLIDE_DURATION, 1))

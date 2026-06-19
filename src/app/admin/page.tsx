@@ -1405,11 +1405,17 @@ function MembersTable() {
 
   const [loadError, setLoadError] = useState<string | null>(null)
 
-  const load = useCallback(async () => {
-    setLoading(true)
-    setLoadError(null)
+  // The loader only fetches (no setState); callers apply the result from a .then
+  // callback so the mount effect performs no synchronous setState
+  // (react-hooks/set-state-in-effect). load() adds the loading/error reset for
+  // manual refetches (event handlers); the mount path relies on the initial
+  // loading=true / loadError=null state.
+  const fetchMembers = useCallback(async (): Promise<{ error?: string; members?: MemberRow[] }> => {
     const res = await fetch("/api/admin/memberships")
-    const data = await res.json()
+    return res.json()
+  }, [])
+
+  const applyMembers = useCallback((data: { error?: string; members?: MemberRow[] }) => {
     if (data.error) {
       setLoadError(data.error)
       setLoading(false)
@@ -1419,7 +1425,17 @@ function MembersTable() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { load() }, [load])
+  const load = useCallback(() => {
+    setLoading(true)
+    setLoadError(null)
+    return fetchMembers().then(applyMembers)
+  }, [fetchMembers, applyMembers])
+
+  useEffect(() => {
+    let cancelled = false
+    fetchMembers().then((data) => { if (!cancelled) applyMembers(data) })
+    return () => { cancelled = true }
+  }, [fetchMembers, applyMembers])
 
   function startEdit(m: MemberRow) {
     setEditId(m.id)

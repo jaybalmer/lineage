@@ -160,7 +160,13 @@ export default function ConnectionsPage() {
     activeCommunitySlug,
   } = useLineageStore()
 
-  const [connectionCtaDismissed, setConnectionCtaDismissed] = useState(false)
+  // Lazy-init from localStorage so it is correct on first render without a
+  // synchronous setState in an effect (react-hooks/set-state-in-effect). The CTA
+  // only renders once connections (client-loaded) are present, so it is never in
+  // the SSR/hydration output and there is no mismatch.
+  const [connectionCtaDismissed, setConnectionCtaDismissed] = useState(
+    () => typeof window !== "undefined" && localStorage.getItem("lineage_connection_cta_dismissed") === "1",
+  )
   const [invitePerson, setInvitePerson] = useState<Person | null>(null)
 
   // BUG-014 symmetric/derived inputs: claims where I am the OBJECT (incoming
@@ -168,13 +174,6 @@ export default function ConnectionsPage() {
   // dbClaims so the rest of the app's reads stay subject-only.
   const [incomingClaims, setIncomingClaims] = useState<Claim[]>([])
   const [storyCandidates, setStoryCandidates] = useState<string[]>([])
-
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    if (localStorage.getItem("lineage_connection_cta_dismissed") === "1") {
-      setConnectionCtaDismissed(true)
-    }
-  }, [])
 
   const dismissConnectionCta = () => {
     setConnectionCtaDismissed(true)
@@ -188,14 +187,23 @@ export default function ConnectionsPage() {
   // dbClaims, so landing here first showed an empty page until a later visit.
   const [claimsLoaded, setClaimsLoaded] = useState(false)
 
-  useEffect(() => {
-    if (!authReady) return
-    if (!isAuthUser(activePersonId)) {
+  // A signed-out (or mock) viewer has no claims to load; mark loaded with empty
+  // derived sets during render rather than with a synchronous setState in the
+  // effect below (react-hooks/set-state-in-effect).
+  const settledNonAuth = authReady && !isAuthUser(activePersonId)
+  const [prevConnSettledNonAuth, setPrevConnSettledNonAuth] = useState(false)
+  if (settledNonAuth !== prevConnSettledNonAuth) {
+    setPrevConnSettledNonAuth(settledNonAuth)
+    if (settledNonAuth) {
       setClaimsLoaded(true)
       setIncomingClaims([])
       setStoryCandidates([])
-      return
     }
+  }
+
+  useEffect(() => {
+    if (!authReady) return
+    if (!isAuthUser(activePersonId)) return
     let cancelled = false
     supabase
       .from("claims_public")

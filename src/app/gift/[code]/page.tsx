@@ -20,21 +20,24 @@ export default function GiftRedemptionPage() {
   const isAuth = isAuthUser(activePersonId)
 
   useEffect(() => {
-    if (!code) { setStatus("invalid"); return }
+    let cancelled = false
 
-    fetch(`/api/gift/validate?code=${encodeURIComponent(code)}`)
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.status === "valid") {
-          setStatus("valid")
-          setGiftedBy(data.giftedByName ?? "a community member")
-        } else if (data.status === "already_redeemed") {
-          setStatus("already_redeemed")
-        } else {
-          setStatus("invalid")
-        }
-      })
-      .catch(() => setStatus("invalid"))
+    // The effect only does async work: resolve the code's status and set state in
+    // the promise callback. A synchronous setState in the effect body (the !code
+    // branch) would cascade-render (react-hooks/set-state-in-effect).
+    async function validate(): Promise<{ status: CodeStatus; giftedBy: string | null }> {
+      if (!code) return { status: "invalid", giftedBy: null }
+      const data = await fetch(`/api/gift/validate?code=${encodeURIComponent(code)}`).then((r) => r.json())
+      if (data.status === "valid") return { status: "valid", giftedBy: data.giftedByName ?? "a community member" }
+      if (data.status === "already_redeemed") return { status: "already_redeemed", giftedBy: null }
+      return { status: "invalid", giftedBy: null }
+    }
+
+    validate()
+      .then((r) => { if (cancelled) return; setStatus(r.status); if (r.giftedBy) setGiftedBy(r.giftedBy) })
+      .catch(() => { if (!cancelled) setStatus("invalid") })
+
+    return () => { cancelled = true }
   }, [code])
 
   const handleRedeem = async () => {

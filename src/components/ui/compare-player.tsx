@@ -205,12 +205,39 @@ function buildCompareSlides(
   return slides
 }
 
-// ─── Count-up hook ────────────────────────────────────────────────────────────
+// ─── Slide animation hooks ──────────────────────────────────────────────────────
+
+// Replays a slide's entrance transition: `show` starts false and flips true after
+// `delay`ms so the CSS transition runs. The reset on (de)activation happens during
+// render, not via a synchronous setState in the effect (react-hooks/set-state-in-effect);
+// the effect only schedules the delayed reveal.
+function useSlideEntrance(active: boolean, delay: number): boolean {
+  const [show, setShow] = useState(false)
+  const [wasActive, setWasActive] = useState(active)
+  if (active !== wasActive) {
+    setWasActive(active)
+    setShow(false)
+  }
+  useEffect(() => {
+    if (!active) return
+    const t = setTimeout(() => setShow(true), delay)
+    return () => clearTimeout(t)
+  }, [active, delay])
+  return show
+}
 
 function useCountUp(target: number, active: boolean, duration = 1000): number {
   const [val, setVal] = useState(0)
+  const [wasActive, setWasActive] = useState(active)
+  // Reset to zero on (de)activation during render rather than with a synchronous
+  // setState in the effect (react-hooks/set-state-in-effect). The rAF tick below
+  // sets state from an async callback, which is allowed.
+  if (active !== wasActive) {
+    setWasActive(active)
+    setVal(0)
+  }
   useEffect(() => {
-    if (!active) { setVal(0); return }
+    if (!active) return
     const start = Date.now()
     const tick = () => {
       const elapsed = Date.now() - start
@@ -227,10 +254,7 @@ function useCountUp(target: number, active: boolean, duration = 1000): number {
 // ─── Slide renderers ──────────────────────────────────────────────────────────
 
 function CompareIntroView({ slide, active }: { slide: CompareIntroSlide; active: boolean }) {
-  const [show, setShow] = useState(false)
-  useEffect(() => {
-    if (active) { setShow(false); setTimeout(() => setShow(true), 80) } else { setShow(false) }
-  }, [active])
+  const show = useSlideEntrance(active, 80)
 
   const initials = (name: string) =>
     name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
@@ -269,10 +293,7 @@ function CompareIntroView({ slide, active }: { slide: CompareIntroSlide; active:
 }
 
 function CompareStrengthView({ slide, active }: { slide: CompareStrengthSlide; active: boolean }) {
-  const [show, setShow] = useState(false)
-  useEffect(() => {
-    if (active) { setShow(false); setTimeout(() => setShow(true), 80) } else { setShow(false) }
-  }, [active])
+  const show = useSlideEntrance(active, 80)
 
   const strengthColors: Record<string, string> = {
     strong: "#10b981", medium: "#3b82f6", light: "#f59e0b", none: "#6b7280",
@@ -309,10 +330,7 @@ function CompareStrengthView({ slide, active }: { slide: CompareStrengthSlide; a
 
 function CompareSharedStatView({ slide, active }: { slide: CompareSharedStatSlide; active: boolean }) {
   const count = useCountUp(slide.count, active)
-  const [show, setShow] = useState(false)
-  useEffect(() => {
-    if (active) { setShow(false); setTimeout(() => setShow(true), 80) } else { setShow(false) }
-  }, [active])
+  const show = useSlideEntrance(active, 80)
 
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-8">
@@ -342,10 +360,7 @@ function CompareSharedStatView({ slide, active }: { slide: CompareSharedStatSlid
 }
 
 function CompareFactView({ slide, active }: { slide: CompareFactSlide; active: boolean }) {
-  const [show, setShow] = useState(false)
-  useEffect(() => {
-    if (active) { setShow(false); setTimeout(() => setShow(true), 80) } else { setShow(false) }
-  }, [active])
+  const show = useSlideEntrance(active, 80)
 
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-8">
@@ -369,10 +384,7 @@ function CompareFactView({ slide, active }: { slide: CompareFactSlide; active: b
 function CompareVsView({ slide, active }: { slide: CompareVsSlide; active: boolean }) {
   const countA = useCountUp(slide.countA, active)
   const countB = useCountUp(slide.countB, active)
-  const [show, setShow] = useState(false)
-  useEffect(() => {
-    if (active) { setShow(false); setTimeout(() => setShow(true), 80) } else { setShow(false) }
-  }, [active])
+  const show = useSlideEntrance(active, 80)
 
   return (
     <div className="flex flex-col items-center justify-center h-full text-center px-8">
@@ -395,10 +407,7 @@ function CompareVsView({ slide, active }: { slide: CompareVsSlide; active: boole
 }
 
 function CompareOutroView({ slide, active, onClose }: { slide: CompareOutroSlide; active: boolean; onClose: () => void }) {
-  const [show, setShow] = useState(false)
-  useEffect(() => {
-    if (active) { setShow(false); setTimeout(() => setShow(true), 100) } else { setShow(false) }
-  }, [active])
+  const show = useSlideEntrance(active, 100)
 
   const strengthMsg: Record<string, string> = {
     strong: "A strong connection.",
@@ -450,6 +459,16 @@ export function ComparePlayer({ personA, personB, claimsA, claimsB, onClose }: C
   const progressRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const isOutro = slides[index]?.kind === "compare-outro"
 
+  // Reset the active slide's progress bar to 0 when the slide or play state
+  // changes, during render rather than with a synchronous setState in the effect
+  // below (react-hooks/set-state-in-effect). The interval then fills it.
+  const progressKey = `${index}|${paused}|${isOutro}`
+  const [prevProgressKey, setPrevProgressKey] = useState(progressKey)
+  if (progressKey !== prevProgressKey) {
+    setPrevProgressKey(progressKey)
+    if (!paused && !isOutro) setProgress(0)
+  }
+
   const goTo = useCallback((i: number) => {
     setIndex(Math.max(0, Math.min(i, slides.length - 1)))
     setProgress(0)
@@ -471,7 +490,6 @@ export function ComparePlayer({ personA, personB, claimsA, claimsB, onClose }: C
 
   useEffect(() => {
     if (paused || isOutro) return
-    setProgress(0)
     const start = Date.now()
     progressRef.current = setInterval(() => {
       setProgress(Math.min((Date.now() - start) / SLIDE_DURATION, 1))
