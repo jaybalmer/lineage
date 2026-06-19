@@ -89,6 +89,7 @@ export default function MePublicViewPage() {
   const [isStarter, setIsStarter] = useState(false)
   const [editingUid, setEditingUid] = useState<string | null>(null)
   const [copied, setCopied] = useState(false)
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
   const seededRef = useRef(false)
 
   useEffect(() => { if (typeof window !== "undefined") setOrigin(window.location.origin) }, [])
@@ -290,13 +291,18 @@ export default function MePublicViewPage() {
 
   const sortByYear = useCallback(() => {
     setIsStarter(false)
-    setSelection((prev) => [...prev].sort((a, b) => {
-      // Summaries (no year) sink to the end; otherwise chronological.
-      if (a.year === null && b.year === null) return 0
-      if (a.year === null) return 1
-      if (b.year === null) return -1
-      return a.year - b.year
-    }))
+    // Flip direction on each click; null-year summaries stay pinned at the end
+    // in BOTH directions (do not let desc float them to the top).
+    setSortDir((prevDir) => {
+      const dir = prevDir === "asc" ? "desc" : "asc"
+      setSelection((prev) => [...prev].sort((a, b) => {
+        if (a.year === null && b.year === null) return 0
+        if (a.year === null) return 1
+        if (b.year === null) return -1
+        return dir === "asc" ? a.year - b.year : b.year - a.year
+      }))
+      return dir
+    })
   }, [])
 
   const save = async () => {
@@ -387,7 +393,7 @@ export default function MePublicViewPage() {
               <div className="flex items-center gap-2">
                 {count > 1 && (
                   <button onClick={sortByYear} className="text-xs text-muted hover:text-foreground border border-border-default rounded-lg px-2 py-1 transition-colors">
-                    Sort by year
+                    {sortDir === "asc" ? "Year, oldest first" : "Year, newest first"}
                   </button>
                 )}
                 {count > 0 && (
