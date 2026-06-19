@@ -192,6 +192,10 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
   const [links, setLinks] = useState<BoardLink[]>([])
   const [imageVotes, setImageVotes] = useState<ImageVoteState>({ up: 0, flag: 0, userVote: null, userVoteId: null })
   const [boardImageUrl, setBoardImageUrl] = useState<string | null>(null)
+  // Attribution for the auto-fetched (Serper / Google Images) cover, credited
+  // under the image when that is what is being shown.
+  const [boardImageSource, setBoardImageSource] = useState<string | null>(null)
+  const [boardImageLink, setBoardImageLink] = useState<string | null>(null)
 
   // All vote rows that carry a suggested_image_url — used to find next image after deletion
   type VoteRow = { id: string; vote: string; user_id: string; suggested_image_url?: string | null }
@@ -205,6 +209,16 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
   // Priority: an explicit community suggestion, then the board's stored cover
   // (set when the board was added to the catalog), then the auto-fetched guess.
   const displayImageUrl = suggestedImageUrl ?? board.image_url ?? boardImageUrl
+
+  // Credit only the auto-fetched (Serper) cover, and only when it is the one on
+  // screen (community uploads and the stored column are not third-party sources).
+  const showingAutoImage = !suggestedImageUrl && !board.image_url && !!boardImageUrl
+  const imageCreditName = (() => {
+    if (boardImageLink) {
+      try { return new URL(boardImageLink).hostname.replace(/^www\./, "") } catch { /* fall back */ }
+    }
+    return boardImageSource
+  })()
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [removingPhoto, setRemovingPhoto] = useState(false)
 
@@ -257,7 +271,12 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
 
     fetch(`/api/board-image?brand=${encodeURIComponent(boardBrand)}&model=${encodeURIComponent(boardModel)}&year=${boardYear}`)
       .then((r) => r.json())
-      .then(({ url }) => url && setBoardImageUrl(url))
+      .then(({ url, source, link }) => {
+        if (!url) return
+        setBoardImageUrl(url)
+        setBoardImageSource(source ?? null)
+        setBoardImageLink(link ?? null)
+      })
       .catch(() => {})
 
     fetch(`/api/stories?board_id=${boardId}&limit=50`)
@@ -516,6 +535,24 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
                   >
                     {removingPhoto ? "removing…" : "remove my photo"}
                   </button>
+                </div>
+              )}
+              {/* Source credit for the auto-fetched cover (Google Images result) */}
+              {showingAutoImage && imageCreditName && (
+                <div className="mt-1.5 w-24 text-center leading-tight">
+                  {boardImageLink ? (
+                    <a
+                      href={boardImageLink}
+                      target="_blank"
+                      rel="noopener noreferrer nofollow"
+                      title="Image source — opens the page this cover was found on"
+                      className="text-[10px] text-muted hover:text-foreground transition-colors break-words"
+                    >
+                      Image via {imageCreditName}
+                    </a>
+                  ) : (
+                    <span className="text-[10px] text-muted break-words">Image via {imageCreditName}</span>
+                  )}
                 </div>
               )}
             </div>

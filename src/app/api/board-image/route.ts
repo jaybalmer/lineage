@@ -65,10 +65,17 @@ export async function GET(req: NextRequest) {
         next: { revalidate: 86400 }, // cache 24h on server
       })
       const data = await res.json()
-      const url = (data.images?.[0]?.imageUrl as string) ?? null
+      const img = data.images?.[0]
+      const url = (img?.imageUrl as string) ?? null
       if (url) {
         console.log(`[board-image] found via "${query}"`)
-        return NextResponse.json({ url })
+        // Pass through Serper's attribution so the board page can credit the
+        // source (these are Google Image Search results, not owned assets).
+        return NextResponse.json({
+          url,
+          source: (img?.source as string) ?? (img?.domain as string) ?? null,
+          link: (img?.link as string) ?? null,
+        })
       }
     }
     return NextResponse.json({ url: null })
