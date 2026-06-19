@@ -32,6 +32,27 @@ function setCached(key: string, url: string | null) {
   } catch { /* storage full or SSR */ }
 }
 
+/**
+ * Drop every cached entry for a board (all keys begin with `${boardId}|`). Call
+ * after a community image is added or removed on the board page so other
+ * surfaces (brand index, catalog tiles, board shelf) re-fetch the current image
+ * on their next mount instead of serving the 7-day-cached old URL.
+ */
+export function clearBoardImageCache(boardId: string) {
+  if (!boardId) return
+  try {
+    const cache = readCache()
+    let changed = false
+    for (const key of Object.keys(cache)) {
+      if (key.startsWith(`${boardId}|`)) {
+        delete cache[key]
+        changed = true
+      }
+    }
+    if (changed) localStorage.setItem(CACHE_KEY, JSON.stringify(cache))
+  } catch { /* storage error or SSR */ }
+}
+
 // ─── Hook ──────────────────────────────────────────────────────────────────────
 
 /**

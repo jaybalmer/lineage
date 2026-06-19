@@ -13,6 +13,7 @@ import { useCanonicalPath } from "@/lib/use-canonical-path"
 import { boardSlug, orgSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
+import { clearBoardImageCache } from "@/hooks/use-board-image"
 import { StoryCard as RichStoryCard } from "@/components/feed/story-card"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import type { Story } from "@/types"
@@ -340,6 +341,9 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
         const without = prev.filter((r) => r.user_id !== activePersonId)
         return [data as VoteRow, ...without]
       })
+      // Drop the stale localStorage cover cache so the brand index and catalog
+      // tiles pick up the new image on their next mount.
+      clearBoardImageCache(boardId)
     }
   }
 
@@ -354,6 +358,11 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
       setImageVoteRows((prev) =>
         prev.map((r) => r.id === myImageVoteRow.id ? { ...r, suggested_image_url: null } : r)
       )
+      // Bust the stale cover cache so the brand index and catalog tiles stop
+      // showing the removed image on their next mount (the board page itself
+      // already falls back to displayImageUrl). board_image_votes no longer
+      // carries the URL, so the bulk /api/board-image/list map omits it too.
+      clearBoardImageCache(boardId)
     }
     setRemovingPhoto(false)
   }
