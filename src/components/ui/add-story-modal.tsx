@@ -5,6 +5,7 @@ import { useLineageStore } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 import { cn, parseYouTubeId } from "@/lib/utils"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
+import { DateSelect } from "@/components/ui/date-select"
 import { SearchPicker } from "@/components/ui/search-picker"
 import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 import type { Story, PrivacyLevel } from "@/types"
@@ -148,7 +149,7 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
   // ── Save ───────────────────────────────────────────────────────────────────
 
   async function handleSave() {
-    if (!date) { setError("Please pick a date for this story."); return }
+    if (!date) { setError("Please set the story date: year, month, and day."); return }
     const keptCount = existingPhotos.filter((p) => keepPhotoIds.has(p.id)).length
     if (!body.trim() && uploads.length === 0 && keptCount === 0) {
       setError("Add some text or at least one photo."); return
@@ -293,15 +294,12 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
 
           {activeTab === "details" && (
             <>
-              {/* Date */}
+              {/* Date — three scroll-friendly selects instead of a native date
+                  input, so picking a date from decades ago is a quick scroll
+                  on mobile rather than tapping a calendar back year by year. */}
               <div>
-                <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">Date *</label>
-                <input
-                  type="date"
-                  value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className={inputCls}
-                />
+                <label htmlFor="story-date-year" className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">Date *</label>
+                <DateSelect id="story-date-year" value={date} onChange={(v) => setDate(v)} />
               </div>
 
               {/* Title */}
