@@ -16,6 +16,7 @@ import { supabase } from "@/lib/supabase"
 import { clearBoardImageCache } from "@/hooks/use-board-image"
 import { StoryCard as RichStoryCard } from "@/components/feed/story-card"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
+import { BrandMark } from "@/components/ui/brand-mark"
 import type { Story } from "@/types"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -484,7 +485,9 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
                   </div>
                 </button>
               ) : (
-                <div className="w-24 h-24 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-4xl">🏂</div>
+                <div className="w-24 h-24 rounded-lg bg-surface-2 border border-border-default flex items-center justify-center">
+                  <BrandMark size={44} color="var(--muted)" dotColor="var(--muted)" className="opacity-30" />
+                </div>
               )}
               {/* Image vote buttons */}
               {isAuth && (

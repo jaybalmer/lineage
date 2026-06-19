@@ -465,7 +465,7 @@ function BoardsTable() {
     const b = catalog.boards.find((b) => b.id === id)
     if (!b) return
     setEditId(id)
-    setDraft({ brand: b.brand, model: b.model, year: String(b.model_year), shape: b.shape ?? "" })
+    setDraft({ brand: b.brand, model: b.model, year: String(b.model_year), shape: b.shape ?? "", image: b.image_url ?? "" })
   }
 
   const saveEdit = () => {
@@ -475,6 +475,9 @@ function BoardsTable() {
       model: draft.model.trim(),
       model_year: parseInt(draft.year) || new Date().getFullYear(),
       shape: draft.shape.trim() || undefined,
+      // null clears the stored cover; a URL sets it. board.image_url is read by
+      // the board page and the catalog covers (after any community suggestion).
+      image_url: draft.image.trim() || null,
     })
     setEditId(null)
   }
@@ -533,11 +536,12 @@ function BoardsTable() {
         <table className="w-full">
           <thead>
             <tr className="bg-surface border-b border-border-default">
-              <SortTh col="brand" label="Brand" sortState={sortState} onSort={handleSort} className="w-[26%]" />
-              <SortTh col="model" label="Model" sortState={sortState} onSort={handleSort} className="w-[26%]" />
-              <SortTh col="year" label="Year" sortState={sortState} onSort={handleSort} className="w-[12%]" />
-              <SortTh col="shape" label="Shape" sortState={sortState} onSort={handleSort} className="w-[24%]" />
-              <th className="w-[12%]" />
+              <SortTh col="brand" label="Brand" sortState={sortState} onSort={handleSort} className="w-[22%]" />
+              <SortTh col="model" label="Model" sortState={sortState} onSort={handleSort} className="w-[24%]" />
+              <SortTh col="year" label="Year" sortState={sortState} onSort={handleSort} className="w-[9%]" />
+              <SortTh col="shape" label="Shape" sortState={sortState} onSort={handleSort} className="w-[18%]" />
+              <th className={cn(thCls, "w-[17%]")}>Image</th>
+              <th className="w-[10%]" />
             </tr>
           </thead>
           <tbody>
@@ -566,7 +570,16 @@ function BoardsTable() {
                       <input type="number" value={draft.year} onChange={(e) => setDraft({ ...draft, year: e.target.value })} className={inputCls} />
                     </td>
                     <td className="py-1 px-1">
-                      <input value={draft.shape} onChange={(e) => setDraft({ ...draft, shape: e.target.value })} placeholder="twin / directional…" className={inputCls} onKeyDown={(e) => e.key === "Enter" && saveEdit()} />
+                      <input value={draft.shape} onChange={(e) => setDraft({ ...draft, shape: e.target.value })} placeholder="twin / directional…" className={inputCls} />
+                    </td>
+                    <td className="py-1 px-1">
+                      <div className="flex items-center gap-1.5">
+                        {draft.image.trim() ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={draft.image.trim()} alt="" className="w-6 h-8 object-cover rounded border border-border-default shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }} />
+                        ) : null}
+                        <input value={draft.image} onChange={(e) => setDraft({ ...draft, image: e.target.value })} placeholder="image URL (blank clears)" className={inputCls} onKeyDown={(e) => e.key === "Enter" && saveEdit()} />
+                      </div>
                     </td>
                     <td className="py-1 px-2">
                       <div className="flex gap-1">
@@ -581,6 +594,14 @@ function BoardsTable() {
                     <td className={cn(cellCls, "text-foreground")}>{b.model}</td>
                     <td className={cn(cellCls, "text-muted")}>{b.model_year}</td>
                     <td className={cn(cellCls, "text-muted")}>{b.shape ?? "—"}</td>
+                    <td className="px-3 py-1.5">
+                      {b.image_url ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={b.image_url} alt="" className="w-7 h-9 object-cover rounded border border-border-default" onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }} />
+                      ) : (
+                        <span className="text-muted/40 text-xs">—</span>
+                      )}
+                    </td>
                     <td className="px-3 py-2 text-right">
                       <button
                         onClick={(e) => { e.stopPropagation(); removeCatalogEntity("boards", b.id) }}
@@ -606,6 +627,7 @@ function BoardsTable() {
               <td className="py-1.5 px-1">
                 <input value={newRow.shape} onChange={(e) => setNewRow({ ...newRow, shape: e.target.value })} placeholder="twin / dir…" className={inputCls} onKeyDown={(e) => e.key === "Enter" && addRow()} />
               </td>
+              <td className="py-1.5 px-1 text-[11px] text-muted/50">add, then edit for image</td>
               <td className="px-2 py-1.5">
                 <button
                   onClick={addRow}
