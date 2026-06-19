@@ -572,7 +572,10 @@ export const useLineageStore = create<LineageStore>()(
         }
       },
       addUserBoard: async (board) => {
-        const entity = { ...board, community_status: "unverified" as const }
+        // Stamp created_at locally so the optimistic row sorts to the top of the
+        // "Recently added" rail immediately; the server sets its own default on
+        // insert, which wins on the next catalog reload.
+        const entity = { ...board, community_status: "unverified" as const, created_at: board.created_at ?? new Date().toISOString() }
         set((s) => ({
           userEntities: { ...s.userEntities, boards: [...s.userEntities.boards, entity] },
           catalog: { ...s.catalog, boards: [...s.catalog.boards, entity] },
@@ -583,6 +586,7 @@ export const useLineageStore = create<LineageStore>()(
             body: JSON.stringify({ type: "board", data: {
               id: board.id, brand: board.brand, model: board.model, model_year: board.model_year,
               shape: board.shape ?? null, external_ref: board.external_ref ?? null,
+              image_url: board.image_url ?? null,
             }})
           })
           const d = await r.json()

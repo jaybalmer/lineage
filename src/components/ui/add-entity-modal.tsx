@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
-import { useLineageStore } from "@/store/lineage-store"
+import { useState, useMemo, useRef } from "react"
+import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import { PLACES, EVENT_SERIES, getPersonById } from "@/lib/mock-data"
 import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
+import { supabase } from "@/lib/supabase"
 import type { PlaceType, OrgType, EventType, EventSeries } from "@/types"
 
 type AddEntityType = "place" | "board" | "org" | "event" | "person"
@@ -71,6 +72,30 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
   const [brand, setBrand] = useState(initialName)
   const [model, setModel] = useState("")
   const [modelYear, setModelYear] = useState<number>(new Date().getFullYear())
+  // Stable id generated once on open so the optional cover image can be uploaded
+  // to boards/{id}/… before the row is inserted, and the insert reuses the id.
+  const [boardId] = useState(() => generateId("board"))
+  const [boardImageUrl, setBoardImageUrl] = useState("")
+
+  // Existing brand names for the board "Brand" picker: canonical brand orgs
+  // first, plus any brand already attached to a board, deduped case-insensitively.
+  const brandOptions = useMemo(() => {
+    const seen = new Set<string>()
+    const out: string[] = []
+    const add = (name?: string) => {
+      const t = (name ?? "").trim()
+      if (!t) return
+      const k = t.toLowerCase()
+      if (seen.has(k)) return
+      seen.add(k)
+      out.push(t)
+    }
+    catalog.orgs.filter((o) => o.org_type === "brand").forEach((o) => add(o.name))
+    catalog.boards.forEach((b) => add(b.brand))
+    return out.sort((a, b) => a.localeCompare(b))
+  }, [catalog.orgs, catalog.boards])
+
+  const isAuth = isAuthUser(activePersonId)
 
   // Org fields
   const [orgType, setOrgType] = useState<OrgType>(initialOrgType ?? "shop")
@@ -136,12 +161,13 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
           added_by: activePersonId,
         })
       } else if (entityType === "board") {
-        id = generateId("board")
+        id = boardId
         ok = await addUserBoard({
           id,
           brand: brand.trim(),
           model: model.trim(),
           model_year: modelYear,
+          image_url: boardImageUrl || undefined,
           community_status: "unverified",
           added_by: activePersonId,
         })
@@ -318,17 +344,11 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
           {entityType === "board" && (
             <>
               <Field label="Brand" required>
-                <input
-                  autoFocus
-                  type="text"
-                  value={brand}
-                  onChange={(e) => setBrand(e.target.value)}
-                  placeholder="e.g. Burton"
-                  className={inputCls}
-                />
+                <BrandCombobox brands={brandOptions} value={brand} onChange={setBrand} />
               </Field>
               <Field label="Model" required>
                 <input
+                  autoFocus={!!brand}
                   type="text"
                   value={model}
                   onChange={(e) => setModel(e.target.value)}
@@ -346,6 +366,16 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
                   className={inputCls}
                 />
               </Field>
+              {isAuth && (
+                <Field label="Photo">
+                  <BoardImagePicker
+                    boardId={boardId}
+                    userId={activePersonId}
+                    value={boardImageUrl}
+                    onChange={setBoardImageUrl}
+                  />
+                </Field>
+              )}
             </>
           )}
 
@@ -698,6 +728,181 @@ function Field({ label, required, children }: { label: string; required?: boolea
         {label}{required && <span className="text-blue-500 ml-0.5">*</span>}
       </label>
       {children}
+    </div>
+  )
+}
+
+// Brand picker: select from existing brands rather than free text, so board
+// brands stay consistent (no "Burton" / "burton " / "Burtin" drift). Typing
+// filters the known list; if nothing matches, an explicit escape hatch lets the
+// member use the typed value as a new brand (boards store brand as text, so a
+// brand with no org row is allowed — the dedicated "Add a brand" flow creates
+// the org). Mirrors the inline series picker pattern in this modal.
+function BrandCombobox({ brands, value, onChange }: { brands: string[]; value: string; onChange: (v: string) => void }) {
+  const [query, setQuery] = useState("")
+  const q = query.trim().toLowerCase()
+  const matches = q ? brands.filter((b) => b.toLowerCase().includes(q)).slice(0, 8) : []
+  const hasExact = brands.some((b) => b.toLowerCase() === q)
+
+  if (value) {
+    return (
+      <div className="flex items-center justify-between bg-surface-hover border border-border-default rounded-lg px-3 py-2.5">
+        <span className="text-sm text-foreground truncate">{value}</span>
+        <button
+          type="button"
+          onClick={() => { onChange(""); setQuery("") }}
+          className="text-xs text-muted hover:text-foreground ml-2 shrink-0"
+        >
+          Change
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="relative">
+      <input
+        autoFocus
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search brands…"
+        className={inputCls}
+      />
+      {query.trim().length > 0 && (
+        <div className="absolute z-10 w-full mt-1 bg-surface border border-border-default rounded-lg shadow-xl max-h-44 overflow-y-auto">
+          {matches.map((b) => (
+            <button
+              key={b}
+              type="button"
+              onClick={() => { onChange(b); setQuery("") }}
+              className="w-full text-left px-3 py-2 text-sm text-muted hover:bg-surface-hover hover:text-foreground transition-colors"
+            >
+              {b}
+            </button>
+          ))}
+          {!hasExact && (
+            <button
+              type="button"
+              onClick={() => { onChange(query.trim()); setQuery("") }}
+              className="w-full text-left px-3 py-2 text-sm text-accent-strong hover:bg-surface-hover transition-colors flex items-center gap-2"
+            >
+              <span className="font-bold">+</span> Use &ldquo;{query.trim()}&rdquo; as a new brand
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Optional board cover at creation time. File uploads go straight to the
+// board-images bucket; pasted URLs are archived server-side so they never
+// expire. Either way the result is a permanent Storage URL stored in
+// boards.image_url. Authenticated-only (storage insert requires auth).
+function BoardImagePicker({ boardId, userId, value, onChange }: {
+  boardId: string
+  userId: string | null
+  value: string
+  onChange: (url: string) => void
+}) {
+  const [uploading, setUploading] = useState(false)
+  const [savingUrl, setSavingUrl] = useState(false)
+  const [urlInput, setUrlInput] = useState("")
+  const [error, setError] = useState<string | null>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 10 * 1024 * 1024) { setError("File too large — max 10 MB"); return }
+    if (!file.type.startsWith("image/")) { setError("Please select an image file"); return }
+    setUploading(true); setError(null)
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg"
+      const path = `boards/${boardId}/${userId}-${Date.now()}.${ext}`
+      const { data, error: upErr } = await supabase.storage
+        .from("board-images")
+        .upload(path, file, { contentType: file.type, upsert: false })
+      if (upErr || !data) throw new Error(upErr?.message ?? "Upload failed")
+      const { data: { publicUrl } } = supabase.storage.from("board-images").getPublicUrl(data.path)
+      onChange(publicUrl)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed")
+    } finally {
+      setUploading(false)
+      if (fileRef.current) fileRef.current.value = ""
+    }
+  }
+
+  async function handleUrl() {
+    if (!urlInput.trim() || savingUrl) return
+    setSavingUrl(true); setError(null)
+    try {
+      const res = await fetch("/api/boards/archive-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: urlInput.trim(), board_id: boardId }),
+      })
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? "Could not save image")
+      onChange(json.url)
+      setUrlInput("")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save image")
+    } finally {
+      setSavingUrl(false)
+    }
+  }
+
+  if (value) {
+    return (
+      <div className="flex items-center gap-3">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={value} alt="" className="w-14 h-14 rounded-lg object-cover border border-border-default bg-surface-hover shrink-0" />
+        <button type="button" onClick={() => onChange("")} className="text-xs text-muted hover:text-red-400 transition-colors">
+          Remove photo
+        </button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-2">
+      <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={handleFile} />
+      <button
+        type="button"
+        onClick={() => fileRef.current?.click()}
+        disabled={uploading || savingUrl}
+        className="flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-border-default text-xs text-muted hover:text-foreground hover:border-blue-500 disabled:opacity-50 transition-colors w-full justify-center"
+      >
+        {uploading ? <span className="animate-pulse">Uploading…</span> : <>Upload a photo from your device</>}
+      </button>
+      <div className="flex items-center gap-2 text-[10px] text-muted">
+        <div className="flex-1 h-px bg-border-default" />
+        <span>or paste an image URL</span>
+        <div className="flex-1 h-px bg-border-default" />
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="url"
+          value={urlInput}
+          onChange={(e) => setUrlInput(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleUrl() } }}
+          placeholder="https://…"
+          className={inputCls}
+        />
+        <button
+          type="button"
+          onClick={handleUrl}
+          disabled={savingUrl || uploading || !urlInput.trim()}
+          className="px-3 py-2 rounded-lg bg-[#1C1917] text-white text-xs font-medium hover:bg-[#292524] disabled:opacity-50 transition-colors shrink-0"
+        >
+          {savingUrl ? "Saving…" : "Add"}
+        </button>
+      </div>
+      <p className="text-[11px] text-muted">Optional — helps the community recognize the board.</p>
+      {error && <p className="text-xs text-red-400">{error}</p>}
     </div>
   )
 }

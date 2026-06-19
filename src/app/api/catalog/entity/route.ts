@@ -115,6 +115,9 @@ export async function POST(req: NextRequest) {
       id, brand, model, model_year: modelYear,
       shape: optStr(data.shape, 60),
       external_ref: optStr(data.external_ref, 300),
+      // Optional cover image captured at creation time. Already a permanent
+      // Supabase Storage URL (uploaded / archived client-side before submit).
+      image_url: optStr(data.image_url, 2048),
       community_status: "unverified",
       added_by: user.id,
     }

@@ -315,6 +315,10 @@ export interface Board {
   image_url?: string
   community_status?: CommunityStatus
   added_by?: string
+  /** Set by the DB default; used to surface a "Recently added" rail on the
+   * boards catalog. Optimistic adds stamp it client-side so a just-added board
+   * sorts to the top before the server round-trip lands. */
+  created_at?: string
   /** Community slugs this board belongs to (populated from junction table) */
   community_slugs?: string[]
 }
