@@ -44,8 +44,14 @@ interface QuickClaimPopoverProps {
 
 export function QuickClaimPopover({ entityId, entityType, entityName, entityYear }: QuickClaimPopoverProps) {
   const { activePersonId, addClaim, catalog, sessionClaims, dbClaims, addToast } = useLineageStore()
+  const options = ENTITY_PREDICATES[entityType] ?? []
+  const isSingle = options.length === 1
+
   const [open, setOpen] = useState(false)
-  const [predicate, setPredicate] = useState<Predicate | null>(null)
+  // Single-predicate types auto-select their only option; lazy-init so it is set
+  // from the first render rather than via a synchronous setState in an effect
+  // (react-hooks/set-state-in-effect).
+  const [predicate, setPredicate] = useState<Predicate | null>(isSingle ? options[0].value : null)
   const [year, setYear] = useState("")
   const [added, setAdded] = useState(false)
   // BUG-023: a rode_with tag against another person lands 'pending' (member
@@ -54,13 +60,13 @@ export function QuickClaimPopover({ entityId, entityType, entityName, entityYear
   const [requested, setRequested] = useState(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
 
-  const options = ENTITY_PREDICATES[entityType] ?? []
-  const isSingle = options.length === 1
-
-  // Auto-select the only predicate for single-predicate types
-  useEffect(() => {
+  // Re-select the only option if the entity type changes to a single-predicate
+  // type. Done during render, not via a synchronous setState in an effect.
+  const [prevEntityType, setPrevEntityType] = useState(entityType)
+  if (entityType !== prevEntityType) {
+    setPrevEntityType(entityType)
     if (isSingle) setPredicate(options[0].value)
-  }, [isSingle, entityType])
+  }
 
   // Check if the user already has ANY claim for this entity
   const allClaims = [...catalog.claims, ...sessionClaims, ...dbClaims]

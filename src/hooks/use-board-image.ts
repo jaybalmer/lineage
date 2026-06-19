@@ -74,43 +74,43 @@ export function useBoardImage(
   const [imageUrl, setImageUrl] = useState<string | null | undefined>(undefined)
 
   useEffect(() => {
-    if (!brand || !model) {
-      setImageUrl(null)
-      return
-    }
-
-    // Include boardId in cache key so community suggestions are fetched separately
-    const cacheKey = boardId
-      ? `${boardId}|${brand}|${model}|${year ?? ""}`
-      : `${brand}|${model}|${year ?? ""}`
-
-    // Serve from cache immediately if available
-    const cached = getCached(cacheKey)
-    if (cached !== undefined) {
-      setImageUrl(cached)
-      return
-    }
-
-    // Fetch from API route
-    const params = new URLSearchParams({ brand, model, year: String(year ?? "") })
-    if (boardId) params.set("board_id", boardId)
     let cancelled = false
 
-    fetch(`/api/board-image?${params}`)
-      .then((r) => r.json())
-      .then(({ url, unconfigured }) => {
-        if (cancelled) return
-        const result = (url as string | null) ?? null
-        // Don't cache when API isn't configured — retry on next load once keys are set
-        if (!unconfigured) setCached(cacheKey, result)
-        setImageUrl(result)
-      })
-      .catch(() => {
-        if (!cancelled) setImageUrl(null)
-      })
+    // The effect only does async work: resolve the cover (cache hit or network)
+    // and set state from the promise callback. Setting state synchronously in the
+    // effect body would cascade-render (react-hooks/set-state-in-effect). The
+    // localStorage read stays in the effect, not in render, so the first paint
+    // matches the SSR output (the server has no localStorage).
+    async function resolve(): Promise<string | null> {
+      if (!brand || !model) return null
+
+      // Include boardId in the cache key so community suggestions are fetched
+      // separately from the generic brand/model/year guess.
+      const cacheKey = boardId
+        ? `${boardId}|${brand}|${model}|${year ?? ""}`
+        : `${brand}|${model}|${year ?? ""}`
+
+      // Serve from cache immediately if available
+      const cached = getCached(cacheKey)
+      if (cached !== undefined) return cached
+
+      // Fetch from API route
+      const params = new URLSearchParams({ brand, model, year: String(year ?? "") })
+      if (boardId) params.set("board_id", boardId)
+      const res = await fetch(`/api/board-image?${params}`)
+      const { url, unconfigured } = await res.json()
+      const result = (url as string | null) ?? null
+      // Don't cache when API isn't configured — retry on next load once keys are set
+      if (!unconfigured) setCached(cacheKey, result)
+      return result
+    }
+
+    resolve()
+      .then((result) => { if (!cancelled) setImageUrl(result) })
+      .catch(() => { if (!cancelled) setImageUrl(null) })
 
     return () => { cancelled = true }
-  }, [brand, model, year])
+  }, [brand, model, year, boardId])
 
   return imageUrl
 }

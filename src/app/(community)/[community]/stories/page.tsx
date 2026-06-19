@@ -36,12 +36,20 @@ function StoriesPageBody() {
   const [focusStory, setFocusStory] = useState<Story | null>(null)
   const [focusMissing, setFocusMissing] = useState(false)
 
-  useEffect(() => {
+  // Clear the focused story when the permalink is removed. Done during render on a
+  // focusId change rather than with a synchronous setState in the effect below
+  // (react-hooks/set-state-in-effect).
+  const [prevFocusId, setPrevFocusId] = useState(focusId)
+  if (focusId !== prevFocusId) {
+    setPrevFocusId(focusId)
     if (!focusId) {
       setFocusStory(null)
       setFocusMissing(false)
-      return
     }
+  }
+
+  useEffect(() => {
+    if (!focusId) return
     let cancelled = false
     fetch(`/api/stories?id=${encodeURIComponent(focusId)}`)
       .then((r) => r.json())
@@ -64,28 +72,43 @@ function StoriesPageBody() {
   const [hasMore, setHasMore]   = useState(true)
   const [addOpen, setAddOpen]   = useState(false)
 
-  const fetchPage = useCallback(async (off: number, replace: boolean) => {
-    if (replace) setLoading(true)
-    else setLoadingMore(true)
-
+  // Fetch a page and return the rows; callers apply the result from a .then
+  // callback so the mount/refetch effect performs no synchronous setState
+  // (react-hooks/set-state-in-effect). Loading flags are set by the callers (the
+  // render-time reset for a filter change, the Load more handler for append).
+  const fetchPage = useCallback(async (off: number) => {
     const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(off) })
     if (filter === "mine" && activePersonId) params.set("author_id", activePersonId)
 
     const data = await fetch(`/api/stories?${params}`).then((r) => r.json()).catch(() => [])
     const rows: Story[] = Array.isArray(data) ? data : []
-
-    setStories((prev) => replace ? rows : [...prev, ...rows])
-    setOffset(off + rows.length)
-    setHasMore(rows.length === PAGE_SIZE)
-    if (replace) setLoading(false)
-    else setLoadingMore(false)
+    return { rows, off }
   }, [filter, activePersonId])
 
-  useEffect(() => {
+  const applyPage = useCallback((r: { rows: Story[]; off: number }, replace: boolean) => {
+    setStories((prev) => replace ? r.rows : [...prev, ...r.rows])
+    setOffset(r.off + r.rows.length)
+    setHasMore(r.rows.length === PAGE_SIZE)
+    if (replace) setLoading(false)
+    else setLoadingMore(false)
+  }, [])
+
+  // Reset pagination + show the loading state when the filter changes, during
+  // render rather than with a synchronous setState in the effect below
+  // (react-hooks/set-state-in-effect). The effect then fetches the first page.
+  const [prevFilter, setPrevFilter] = useState(filter)
+  if (filter !== prevFilter) {
+    setPrevFilter(filter)
     setOffset(0)
     setHasMore(true)
-    fetchPage(0, true)
-  }, [filter]) // eslint-disable-line react-hooks/exhaustive-deps
+    setLoading(true)
+  }
+
+  useEffect(() => {
+    let cancelled = false
+    fetchPage(0).then((r) => { if (!cancelled) applyPage(r, true) })
+    return () => { cancelled = true }
+  }, [fetchPage, applyPage])
 
   // Client-side search filter (searches loaded stories)
   const visible = search.trim()
@@ -210,7 +233,7 @@ function StoriesPageBody() {
 
             {hasMore && !search && (
               <button
-                onClick={() => fetchPage(offset, false)}
+                onClick={() => { setLoadingMore(true); fetchPage(offset).then((r) => applyPage(r, false)) }}
                 disabled={loadingMore}
                 className="w-full py-3 text-sm text-muted hover:text-foreground border border-border-default rounded-xl transition-colors disabled:opacity-50"
               >

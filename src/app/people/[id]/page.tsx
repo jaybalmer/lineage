@@ -33,8 +33,16 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   const { activePersonId, profileOverride, membership, catalogLoaded, catalog, userEntities, setShowMemberCard, sessionClaims } = useLineageStore()
   const allPeople = [...catalog.people, ...(userEntities.people ?? [])]
   const [playingTimeline, setPlayingTimeline] = useState(false)
-  const [showWelcomeBanner, setShowWelcomeBanner] = useState(false)
-  const [milestoneDismissed, setMilestoneDismissed] = useState(false)
+  // Lazy-init from localStorage so these are correct on first render without a
+  // synchronous setState in an effect (react-hooks/set-state-in-effect). The
+  // profile only renders once catalogLoaded (client-side), so the banner is never
+  // in the SSR/hydration output and there is no hydration mismatch.
+  const [showWelcomeBanner, setShowWelcomeBanner] = useState(
+    () => typeof window !== "undefined" && localStorage.getItem("lineage_onboarding_banner_pending") === "1",
+  )
+  const [milestoneDismissed, setMilestoneDismissed] = useState(
+    () => typeof window !== "undefined" && localStorage.getItem("lineage_milestone_dismissed") === "1",
+  )
   const [dbClaims, setDbClaims] = useState<Claim[]>([])
   const [stories, setStories] = useState<Story[]>([])
   // Off-timeline stories this person authored (on_timeline=false). Shown in a
@@ -48,16 +56,14 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   // Stack/Timeline toggle. Null until resolved; only shown when enabled.
   const [publicTimeline, setPublicTimeline] = useState<{ enabled: boolean; slug: string | null } | null>(null)
 
-  // Show post-onboarding welcome banner (once, on first profile visit after signup)
+  // Consume the one-time post-onboarding banner flag so the banner shows only on
+  // the first profile visit after signup. The banner/milestone state is lazy-
+  // initialised from localStorage above; this effect only clears the flag (a side
+  // effect), with no synchronous setState (react-hooks/set-state-in-effect).
   useEffect(() => {
-    if (typeof window === "undefined") return
-    const pending = localStorage.getItem("lineage_onboarding_banner_pending")
-    if (pending === "1") {
-      setShowWelcomeBanner(true)
+    if (typeof window !== "undefined" && localStorage.getItem("lineage_onboarding_banner_pending") === "1") {
       localStorage.removeItem("lineage_onboarding_banner_pending")
     }
-    const dismissed = localStorage.getItem("lineage_milestone_dismissed")
-    if (dismissed === "1") setMilestoneDismissed(true)
   }, [])
 
   // ── Resolve person from slug, short-ID, or UUID ─────────────────────────────
@@ -81,6 +87,15 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   // Rewrite the address bar to the name-based slug (/people/jay_balmer) when
   // reached via a UUID or stale slug. Falls back to the id for colliding names.
   useCanonicalPath(resolvedPerson ? personHref(resolvedPerson, allPeople) : null)
+
+  // Reset the public-Stack availability when switching to a different rider, during
+  // render rather than with a synchronous setState in the claims effect below
+  // (react-hooks/set-state-in-effect). The effect's profiles read then repopulates it.
+  const [prevPublicTimelineId, setPrevPublicTimelineId] = useState(resolvedId)
+  if (resolvedId !== prevPublicTimelineId) {
+    setPrevPublicTimelineId(resolvedId)
+    setPublicTimeline(null)
+  }
 
   // Fetch Supabase claims for this rider — fires once resolved ID is known
   useEffect(() => {
@@ -106,7 +121,6 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
     // profiles is the source of truth for public_slug (the catalog `people`
     // table has no such column), so read it directly. Only members (UUID ids)
     // can have one; mock/catalog people never do.
-    setPublicTimeline(null)
     if (isProperUuid) {
       supabase
         .from("profiles")

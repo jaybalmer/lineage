@@ -262,7 +262,11 @@ export function OnboardingFlow() {
         setOnboardingField("start_year", prefill.riding_since)
       }
       if (prefill.inviter_name) {
-        setClaimContext({ inviterName: prefill.inviter_name })
+        const inviterName = prefill.inviter_name
+        // Deferred out of the synchronous effect body (react-hooks/set-state-in-effect).
+        // claimContext drives the invited card, which must stay null on the SSR first
+        // paint (the server has no sessionStorage), so it cannot move to render/init.
+        queueMicrotask(() => setClaimContext({ inviterName }))
       }
     } catch { /* sessionStorage may not be available */ }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps

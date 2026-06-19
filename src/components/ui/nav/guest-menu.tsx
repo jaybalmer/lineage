@@ -18,21 +18,29 @@ export function GuestMenu() {
   const { theme, toggle } = useTheme()
   const [open, setOpen] = useState(false)
   const [bugOpen, setBugOpen] = useState(false)
-  // BUG-054: carry where the visitor is now into Sign in, so login returns them
-  // here instead of always landing on My Timeline. Recomputed on navigation; read
-  // from window so the current search (e.g. ?focus=) and any returnTo a
-  // comment-email link stamped are both captured without forcing dynamic render.
-  const [signInTo, setSignInTo] = useState("/auth/signin")
   const ref = useRef<HTMLDivElement>(null)
 
-  // Close when the route changes (navigation completed)
-  useEffect(() => { setOpen(false) }, [path])
+  // Close when the route changes (navigation completed). Tracked during render
+  // rather than with a synchronous setState in an effect
+  // (react-hooks/set-state-in-effect).
+  const [prevPath, setPrevPath] = useState(path)
+  if (path !== prevPath) {
+    setPrevPath(path)
+    setOpen(false)
+  }
 
-  useEffect(() => {
-    if (typeof window === "undefined") return
-    const existing = new URLSearchParams(window.location.search).get("returnTo")
-    setSignInTo(signInHref(window.location.pathname + window.location.search, existing))
-  }, [path])
+  // BUG-054: carry where the visitor is now into Sign in, so login returns them
+  // here instead of always landing on My Timeline. Read from window so the current
+  // search (?focus=, returnTo) is captured without forcing a dynamic render.
+  // Derived during render rather than stored via a setState effect; signInTo only
+  // appears in the open dropdown (closed at hydration), so the window read is safe.
+  const signInTo =
+    typeof window === "undefined"
+      ? "/auth/signin"
+      : signInHref(
+          window.location.pathname + window.location.search,
+          new URLSearchParams(window.location.search).get("returnTo"),
+        )
 
   // Close on outside mousedown
   useEffect(() => {

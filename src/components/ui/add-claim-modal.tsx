@@ -374,8 +374,12 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
 
   const entityType = predicate ? PREDICATE_ENTITY_TYPE[predicate] : null
 
-  // Reset companion + date + competition state when predicate changes
-  useEffect(() => {
+  // Reset companion + date + competition state when the predicate changes. Done
+  // during render on a predicate change rather than with a synchronous setState in
+  // an effect (react-hooks/set-state-in-effect).
+  const [prevResetPredicate, setPrevResetPredicate] = useState(predicate)
+  if (predicate !== prevResetPredicate) {
+    setPrevResetPredicate(predicate)
     setCompanions([])
     setCompanionQuery("")
     setShowSpecificDates(false)
@@ -383,7 +387,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
     setSpecificEnd("")
     setDivision("")
     setResult("")
-  }, [predicate])
+  }
 
   // The viewer's existing board claims, so re-adding a board they already have
   // updates that one claim (relationship + year) instead of creating a second.
@@ -407,21 +411,29 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
 
   // When a board is picked, prefill the relationship toggles + year from an
   // existing claim for that board (so the user sees and can adjust their current
-  // state), or reset to defaults for a board they have not added yet.
-  useEffect(() => {
-    if (predicate !== "owned_board" || !entityId) return
-    const existing = myBoardClaims.find((c) => c.object_id === entityId)
-    if (existing) {
-      const flags = boardRelationshipFlags(existing.board_relationship)
-      setBoardRode(flags.rode)
-      setBoardOwn(flags.own)
-      setBoardYear(existing.start_date ? existing.start_date.slice(0, 4) : "")
-    } else {
-      setBoardRode(true)
-      setBoardOwn(false)
-      setBoardYear("")
+  // state), or reset to defaults for a board they have not added yet. Computed
+  // during render on an entity/predicate change rather than with a synchronous
+  // setState in an effect (react-hooks/set-state-in-effect).
+  const boardPrefillKey = predicate === "owned_board" && entityId ? `${predicate}|${entityId}` : null
+  // Sentinel null start so an initial owned_board+entity (modal opened with a board
+  // prefilled) still triggers the prefill, matching the old mount-time effect.
+  const [prevBoardPrefillKey, setPrevBoardPrefillKey] = useState<string | null>(null)
+  if (boardPrefillKey !== prevBoardPrefillKey) {
+    setPrevBoardPrefillKey(boardPrefillKey)
+    if (boardPrefillKey) {
+      const existing = myBoardClaims.find((c) => c.object_id === entityId)
+      if (existing) {
+        const flags = boardRelationshipFlags(existing.board_relationship)
+        setBoardRode(flags.rode)
+        setBoardOwn(flags.own)
+        setBoardYear(existing.start_date ? existing.start_date.slice(0, 4) : "")
+      } else {
+        setBoardRode(true)
+        setBoardOwn(false)
+        setBoardYear("")
+      }
     }
-  }, [entityId, predicate]) // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   // Signed-in members must only ever pick real DB entities. The mock-data
   // fallbacks below are for anon/demo users (who cannot persist claims anyway);

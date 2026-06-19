@@ -129,11 +129,11 @@ export default function FeedPage() {
   const [claimsOffset, setClaimsOffset] = useState(0)
   const [hasMore, setHasMore] = useState(true)
 
-  const fetchPage = useCallback(async (sOffset: number, cOffset: number, replace: boolean) => {
-    const isLoadingMore = !replace
-    if (isLoadingMore) setLoadingMore(true)
-    else setLoading(true)
-
+  // Fetch a page and return the merged entries; callers apply the result from a
+  // .then callback so the mount/refetch effect performs no synchronous setState
+  // (react-hooks/set-state-in-effect). Loading flags are set by the callers (the
+  // render-time reset for a filter/sort change, the Load more handler for append).
+  const fetchPage = useCallback(async (sOffset: number, cOffset: number) => {
     const [storiesRes, claimsRes] = await Promise.all([
       filter !== "claims"
         // sort=recent paginates stories by created_at so the "Recently added"
@@ -163,21 +163,40 @@ export default function FeedPage() {
       (a, b) => entrySortKey(b, sort) - entrySortKey(a, sort)
     )
 
-    setEntries((prev) => replace ? merged : [...prev, ...merged])
-    setStoriesOffset(sOffset + storyEntries.length)
-    setClaimsOffset(cOffset + claimEntries.length)
-    setHasMore(storyEntries.length === PAGE_SIZE || claimEntries.length === PAGE_SIZE)
-    if (isLoadingMore) setLoadingMore(false)
-    else setLoading(false)
+    return { merged, sOffset, cOffset, storyLen: storyEntries.length, claimLen: claimEntries.length }
   }, [filter, sort])
 
-  useEffect(() => {
+  const applyPage = useCallback(
+    (r: { merged: FeedEntry[]; sOffset: number; cOffset: number; storyLen: number; claimLen: number }, replace: boolean) => {
+      setEntries((prev) => replace ? r.merged : [...prev, ...r.merged])
+      setStoriesOffset(r.sOffset + r.storyLen)
+      setClaimsOffset(r.cOffset + r.claimLen)
+      setHasMore(r.storyLen === PAGE_SIZE || r.claimLen === PAGE_SIZE)
+      if (replace) setLoading(false)
+      else setLoadingMore(false)
+    },
+    [],
+  )
+
+  // Reset the list + show the loading state when the filter or sort changes,
+  // during render rather than with a synchronous setState in the effect below
+  // (react-hooks/set-state-in-effect). The effect then fetches the first page.
+  const feedKey = `${filter}|${sort}`
+  const [prevFeedKey, setPrevFeedKey] = useState(feedKey)
+  if (feedKey !== prevFeedKey) {
+    setPrevFeedKey(feedKey)
     setEntries([])
     setStoriesOffset(0)
     setClaimsOffset(0)
     setHasMore(true)
-    fetchPage(0, 0, true)
-  }, [filter, sort]) // eslint-disable-line react-hooks/exhaustive-deps
+    setLoading(true)
+  }
+
+  useEffect(() => {
+    let cancelled = false
+    fetchPage(0, 0).then((r) => { if (!cancelled) applyPage(r, true) })
+    return () => { cancelled = true }
+  }, [fetchPage, applyPage])
 
   function authorForClaim(claim: Claim) {
     return catalog.people.find((p) => p.id === claim.subject_id)
@@ -327,7 +346,7 @@ export default function FeedPage() {
 
             {hasMore && (
               <button
-                onClick={() => fetchPage(storiesOffset, claimsOffset, false)}
+                onClick={() => { setLoadingMore(true); fetchPage(storiesOffset, claimsOffset).then((r) => applyPage(r, false)) }}
                 disabled={loadingMore}
                 className="w-full py-3 text-sm text-muted hover:text-foreground border border-border-default rounded-xl transition-colors disabled:opacity-50"
               >
