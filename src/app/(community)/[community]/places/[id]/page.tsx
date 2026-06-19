@@ -80,6 +80,9 @@ function PlacePageInner({ params }: { params: Promise<{ community: string; id: s
   const [addingStory, setAddingStory] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const fetchedForPlace = useRef<string | null>(null)
+  // BUG-078: default to the Stories tab once stories load, but never override a
+  // tab the user explicitly clicked.
+  const userSwitchedTab = useRef(false)
 
   const suggestedImageUrl = imageVoteRows.find((r) => r.suggested_image_url)?.suggested_image_url ?? null
   const myImageVoteRow = imageVoteRows.find((r) => r.user_id === activePersonId && r.suggested_image_url)
@@ -165,7 +168,13 @@ function PlacePageInner({ params }: { params: Promise<{ community: string; id: s
 
     fetch(`/api/stories?place_id=${placeId}&limit=50`)
       .then((r) => r.json())
-      .then((data) => { if (Array.isArray(data)) setPlaceStories(data as Story[]) })
+      .then((data) => {
+        if (!Array.isArray(data)) return
+        setPlaceStories(data as Story[])
+        // BUG-078: a place with stories opens on the Stories tab; an
+        // empty-stories place stays on All. Skip if the user already switched.
+        if (data.length > 0 && !userSwitchedTab.current) setTab("stories")
+      })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [placeId])
 
@@ -487,7 +496,7 @@ function PlacePageInner({ params }: { params: Promise<{ community: string; id: s
           {tabs.map(({ key, label, count }) => (
             <button
               key={key}
-              onClick={() => setTab(key)}
+              onClick={() => { userSwitchedTab.current = true; setTab(key) }}
               className={cn(
                 "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
                 tab === key
