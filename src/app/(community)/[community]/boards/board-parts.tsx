@@ -134,6 +134,15 @@ export function BoardCover({
   const imageUrl = directImage ?? (autoImage || undefined)
   const loading = !directImage && autoImage === undefined
 
+  // The displayed image is an auto (Serper) guess when it came from the lookup,
+  // not a curated override or stored cover. Auto guesses get a small watermark.
+  const isAuto = !directImage && !!autoImage
+  // Remember a broken image by URL so it falls through to the grey mark instead
+  // of a broken-image icon. Comparing by value auto-resets when the board (and
+  // thus imageUrl) changes, so no reset effect is needed.
+  const [erroredUrl, setErroredUrl] = useState<string | null>(null)
+  const isBroken = !!imageUrl && erroredUrl === imageUrl
+
   // Report image availability once known. null = still loading (auto pending).
   const resolvedHas = directImage ? true : autoImage === undefined ? null : autoImage !== null
   const onResolveRef = useRef(onResolve)
@@ -145,11 +154,33 @@ export function BoardCover({
     onResolveRef.current?.(resolvedHas)
   }, [resolvedHas])
 
-  if (imageUrl) {
+  if (imageUrl && !isBroken) {
     return (
-      <div className={cn("bg-surface-2 overflow-hidden", className)}>
+      <div className={cn("relative bg-surface-2 overflow-hidden", className)}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={imageUrl} alt={`${board.brand} ${board.model}`} className="w-full h-full object-cover" />
+        <img
+          src={imageUrl}
+          alt={`${board.brand} ${board.model}`}
+          className="w-full h-full object-cover"
+          onError={() => {
+            setErroredUrl(imageUrl)
+            onResolveRef.current?.(false)
+          }}
+        />
+        {/* Watermark the auto-sourced (unverified) guesses, larger covers only. */}
+        {isAuto && markSize >= 40 && (
+          <span
+            className="absolute bottom-1 right-1 inline-flex items-center justify-center rounded bg-background/75 backdrop-blur-sm p-1 pointer-events-none"
+            title="Auto-sourced image, not yet community-verified"
+          >
+            <BrandMark
+              size={Math.round(markSize * 0.38)}
+              color="var(--muted)"
+              dotColor="var(--muted)"
+              className="opacity-90"
+            />
+          </span>
+        )}
       </div>
     )
   }
