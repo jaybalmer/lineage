@@ -69,6 +69,7 @@ export async function POST(req: NextRequest) {
     founding_badge?: boolean
     membership_status?: string
     is_editor?: boolean
+    display_name?: string
     // If true, auto-set tokens to tier defaults
     apply_tier_tokens?: boolean
   }
@@ -127,6 +128,13 @@ export async function POST(req: NextRequest) {
   if (rest.token_member  !== undefined) updates.token_member  = rest.token_member
   if (rest.membership_status !== undefined) updates.membership_status = rest.membership_status
   if (rest.is_editor !== undefined) updates.is_editor = rest.is_editor
+
+  // Let an editor correct a member's display name independently of any
+  // membership change. Non-empty only — we never blank a name to empty.
+  if (typeof rest.display_name === "string") {
+    const name = rest.display_name.trim()
+    if (name) updates.display_name = name
+  }
 
   // Founding number / badge are owned by the tier block above during any tier
   // change (grant assigns max+1, downgrade clears). Only honor explicit values
