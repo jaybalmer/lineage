@@ -64,6 +64,9 @@ export async function POST(req: NextRequest) {
     }
 
     const { person_id, person_name, inviter_name, predicate, email } = body
+    // Store the invite email lowercased so the verified-email claim lookups
+    // (POST /api/invite/claim and /api/public/claim-complete) match reliably.
+    const normalizedEmail = email?.trim().toLowerCase() || null
 
     if (!person_id) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
@@ -83,7 +86,7 @@ export async function POST(req: NextRequest) {
       id: token,
       person_id,
       invited_by: user.id,
-      email: email ?? null,
+      email: normalizedEmail,
       person_name,
       inviter_name,
       predicate,
@@ -99,7 +102,7 @@ export async function POST(req: NextRequest) {
       const updateFields: Record<string, unknown> = {
         invited_by: user.id,
       }
-      if (email) updateFields.invite_email = email
+      if (normalizedEmail) updateFields.invite_email = normalizedEmail
       // Elevate catalog → unclaimed (being invited means someone knows them)
       updateFields.node_status = "unclaimed"
       await supabase.from("people").update(updateFields).eq("id", person_id)
@@ -109,13 +112,13 @@ export async function POST(req: NextRequest) {
 
     // Send email via Resend (if API key is configured and email provided)
     const resendKey = process.env.RESEND_API_KEY
-    if (email && resendKey) {
+    if (normalizedEmail && resendKey) {
       try {
         const { Resend } = await import("resend")
         const resend = new Resend(resendKey)
         const { error: sendError } = await resend.emails.send({
           from: "Linestry <noreply@linestry.com>",
-          to: email,
+          to: normalizedEmail,
           subject: `${safeInviterName} added you to their snowboard linestry`,
           html: inviteEmailHtml(safeInviterName, safePersonName, link),
         })

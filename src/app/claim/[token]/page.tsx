@@ -69,6 +69,15 @@ export default function ClaimPage() {
 
       if (personData) setPerson(personData)
 
+      // Persist the token to localStorage so the claim survives the magic-link
+      // round-trip even when the link opens in a new tab (sessionStorage is
+      // per-tab and is lost there). /auth/complete forwards it to
+      // POST /api/invite/claim; that route also falls back to the verified
+      // session email, so this is a best-effort signal, not the only binding.
+      try {
+        localStorage.setItem("lineage_invite_token", token)
+      } catch { /* localStorage not available */ }
+
       setStatus("valid")
     }
 

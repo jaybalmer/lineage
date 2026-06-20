@@ -77,7 +77,58 @@ export default function AuthCompletePage() {
         else store.clearSessionClaims()
       }
 
-      // ── 3. Read canonical profile back from DB ────────────────────────────
+      // ── 3. Invite claim (email-invite flow) ───────────────────────────────
+      // Finish an email invite if one is pending. The binding happens
+      // server-side on the verified session email, so it works no matter where
+      // the magic link was opened (a new tab or a different device both wipe the
+      // browser storage the old inline merge depended on). A stored token is
+      // still forwarded for the same-browser / different-signup-email cases. The
+      // route restores the invited name onto the profile, fixing the
+      // email-placeholder bug, and deletes the ghost before claim-complete runs.
+      try {
+        setStatus("Linking your profile…")
+        let inviteToken: string | null = null
+        try {
+          inviteToken = localStorage.getItem("lineage_invite_token")
+          if (!inviteToken) {
+            const prefillRaw = sessionStorage.getItem("lineage_claim_prefill")
+            if (prefillRaw) {
+              const prefill = JSON.parse(prefillRaw) as { invite_token?: string }
+              inviteToken = prefill.invite_token ?? null
+            }
+          }
+        } catch { /* storage not available */ }
+
+        await fetch("/api/invite/claim", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(inviteToken ? { token: inviteToken } : {}),
+        })
+
+        try {
+          localStorage.removeItem("lineage_invite_token")
+          sessionStorage.removeItem("lineage_claim_prefill")
+        } catch { /* storage not available */ }
+      } catch (mergeErr) {
+        console.error("Invite claim error:", mergeErr)
+      }
+
+      // ── 4. Public tag-to-claim completion (PB-010 Phase 4b) ───────────────
+      // If this email was publicly tagged on someone's timeline (a Phase 4a
+      // "I was there" ghost), promote that ghost into this account: repoint its
+      // claims here, flip the paired tags to attributed, and remove the ghost.
+      // The route is keyed server-side on the authenticated email, so it is safe
+      // to call for everyone — it no-ops for a normal signup with no pending tag.
+      try {
+        setStatus("Claiming your spot…")
+        await fetch("/api/public/claim-complete", { method: "POST" })
+      } catch (claimErr) {
+        console.error("Public claim completion error:", claimErr)
+      }
+
+      // ── 5. Read canonical profile back from DB ────────────────────────────
+      // Read AFTER the claims above so a restored invited name lands in the
+      // store on this same load — no refresh needed for the right name to show.
       const { data: savedProfile } = await supabase
         .from("profiles")
         .select("*")
@@ -99,66 +150,6 @@ export default function AuthCompletePage() {
       // same way.
       if (!existingProfile) {
         trackEvent("ftue", "ftue_completed", {}, { actorId: user.id })
-      }
-
-      // ── 4. Invite claim merge ─────────────────────────────────────────────
-      try {
-        let inviteToken: string | null = null
-        try {
-          inviteToken = localStorage.getItem("lineage_invite_token")
-          if (!inviteToken) {
-            const prefillRaw = sessionStorage.getItem("lineage_claim_prefill")
-            if (prefillRaw) {
-              const prefill = JSON.parse(prefillRaw) as { invite_token?: string }
-              inviteToken = prefill.invite_token ?? null
-            }
-          }
-        } catch { /* storage not available */ }
-
-        if (inviteToken) {
-          setStatus("Linking your profile…")
-          const { data: invite } = await supabase
-            .from("invites").select("*").eq("id", inviteToken).single()
-
-          if (invite && !invite.claimed_at) {
-            const oldId = invite.person_id as string
-            await supabase.from("claims").update({ subject_id: user.id }).eq("subject_id", oldId)
-            await supabase.from("claims").update({ object_id: user.id }).eq("object_id", oldId)
-            await supabase.from("story_riders").update({ rider_id: user.id }).eq("rider_id", oldId)
-            await supabase.from("invites")
-              .update({ claimed_at: new Date().toISOString(), claimed_by: user.id })
-              .eq("id", inviteToken)
-            // Set the profile as claimed with timestamp
-            await supabase.from("profiles")
-              .update({ node_status: "claimed", claimed_at: new Date().toISOString() })
-              .eq("id", user.id)
-            // Store the old ID for URL redirects, then remove the old node
-            await supabase.from("profiles")
-              .update({ merged_from_id: oldId })
-              .eq("id", user.id)
-            await supabase.from("people").delete().eq("id", oldId)
-          }
-
-          try {
-            localStorage.removeItem("lineage_invite_token")
-            sessionStorage.removeItem("lineage_claim_prefill")
-          } catch { /* storage not available */ }
-        }
-      } catch (mergeErr) {
-        console.error("Invite merge error:", mergeErr)
-      }
-
-      // ── 5. Public tag-to-claim completion (PB-010 Phase 4b) ───────────────
-      // If this email was publicly tagged on someone's timeline (a Phase 4a
-      // "I was there" ghost), promote that ghost into this account: repoint its
-      // claims here, flip the paired tags to attributed, and remove the ghost.
-      // The route is keyed server-side on the authenticated email, so it is safe
-      // to call for everyone — it no-ops for a normal signup with no pending tag.
-      try {
-        setStatus("Claiming your spot…")
-        await fetch("/api/public/claim-complete", { method: "POST" })
-      } catch (claimErr) {
-        console.error("Public claim completion error:", claimErr)
       }
 
       // Mark welcome explosion as pending — profile page picks this up and fires it
