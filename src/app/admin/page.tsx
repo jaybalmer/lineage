@@ -1399,6 +1399,11 @@ function MembersTable() {
   const [editId, setEditId] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState<{ id: string; text: string; ok: boolean } | null>(null)
+  // Display-name editing is decoupled from the membership edit form so renaming
+  // a member never re-applies their tier (which would, e.g., reset an annual
+  // expiry). Its own inline editor + single-field save.
+  const [nameEditId, setNameEditId] = useState<string | null>(null)
+  const [nameDraft, setNameDraft] = useState("")
   const [draft, setDraft] = useState<{
     tier: string; tokenFounder: string; tokenMember: string; memberNumber: string; status: string
   }>({ tier: "free", tokenFounder: "0", tokenMember: "0", memberNumber: "", status: "active" })
@@ -1468,6 +1473,31 @@ function MembersTable() {
     if (data.ok) {
       setMsg({ id: userId, text: "✓ Saved", ok: true })
       setEditId(null)
+      await load()
+    } else {
+      setMsg({ id: userId, text: data.error ?? "Error", ok: false })
+    }
+    setTimeout(() => setMsg(null), 3000)
+  }
+
+  async function saveName(userId: string) {
+    const name = nameDraft.trim()
+    if (!name) {
+      setMsg({ id: userId, text: "Name required", ok: false })
+      setTimeout(() => setMsg(null), 3000)
+      return
+    }
+    setSaving(true)
+    const res = await fetch("/api/admin/memberships", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ user_id: userId, display_name: name }),
+    })
+    const data = await res.json()
+    setSaving(false)
+    if (data.ok) {
+      setMsg({ id: userId, text: "✓ Name saved", ok: true })
+      setNameEditId(null)
       await load()
     } else {
       setMsg({ id: userId, text: data.error ?? "Error", ok: false })
@@ -1633,10 +1663,37 @@ function MembersTable() {
                     <>
                       {/* Read row */}
                       <td className={cn(cellCls)}>
-                        <div className="flex items-center gap-1.5">
-                          <span className="font-medium text-foreground">{m.display_name ?? "—"}</span>
-                          {isMe && <span className="text-[9px] text-blue-400 font-semibold">(you)</span>}
-                        </div>
+                        {nameEditId === m.id ? (
+                          <div className="flex items-center gap-1">
+                            <input
+                              autoFocus
+                              type="text"
+                              value={nameDraft}
+                              onChange={(e) => setNameDraft(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" && !saving) saveName(m.id)
+                                if (e.key === "Escape") setNameEditId(null)
+                              }}
+                              placeholder="Display name"
+                              className={cn(inputCls, "w-36")}
+                            />
+                            <button onClick={() => saveName(m.id)} disabled={saving}
+                              className="px-2 py-1 bg-[#1C1917] text-white text-[10px] rounded hover:bg-[#292524] disabled:opacity-50 transition-colors">
+                              {saving ? "…" : "Save"}
+                            </button>
+                            <button onClick={() => setNameEditId(null)}
+                              className="px-1 text-[10px] text-muted hover:text-foreground transition-colors">×</button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-medium text-foreground">{m.display_name ?? "—"}</span>
+                            {isMe && <span className="text-[9px] text-blue-400 font-semibold">(you)</span>}
+                            <button
+                              onClick={() => { setNameEditId(m.id); setNameDraft(m.display_name ?? "") }}
+                              title="Edit display name"
+                              className="text-[10px] text-muted hover:text-foreground transition-colors">✎</button>
+                          </div>
+                        )}
                         <div className="text-[10px] text-muted">{m.id.slice(0, 12)}…</div>
                       </td>
                       <td className={cellCls}>
