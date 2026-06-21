@@ -381,7 +381,7 @@ function BoardsPageInner() {
               className={cn(
                 "px-3 py-2 rounded-lg text-xs font-medium transition-colors border shrink-0 whitespace-nowrap",
                 myOnly
-                  ? "bg-[#1C1917]/15 border-[#1C1917]/30 text-foreground"
+                  ? "bg-surface-active border-border-default text-foreground"
                   : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
               )}
             >
