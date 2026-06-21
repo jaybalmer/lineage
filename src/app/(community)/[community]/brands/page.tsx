@@ -76,8 +76,11 @@ function OrgCard({ org, conn }: { org: Org; conn: ConnCounts }) {
             </div>
             {conn.total > 0 && (
               <div className="shrink-0 text-right">
-                <div className="text-sm font-semibold text-foreground">{conn.total}</div>
-                <div className="text-[10px] text-muted">connection{conn.total !== 1 ? "s" : ""}</div>
+                {/* Headline number = `rel` (people + events + places), the value the
+                    "Most connections" sort uses, so the count reads monotonically down
+                    the list; boards stay in the breakdown line below (BUG-081). */}
+                <div className="text-sm font-semibold text-foreground">{conn.rel}</div>
+                <div className="text-[10px] text-muted">connection{conn.rel !== 1 ? "s" : ""}</div>
                 {parts.length > 0 && (
                   <div className="text-[10px] text-muted mt-0.5">{parts.join(" · ")}</div>
                 )}
@@ -226,7 +229,7 @@ function BrandsPageInner() {
                 className={cn(
                   "px-3 py-2 rounded-lg text-xs font-medium transition-colors border",
                   myOnly
-                    ? "bg-[#1C1917]/15 border-[#1C1917]/30 text-foreground"
+                    ? "bg-surface-active border-border-default text-foreground"
                     : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
                 )}
               >
