@@ -339,18 +339,19 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
       {photos.length > 0 && (
         <div className={cn(
           "grid gap-1.5 mb-3 rounded-lg overflow-hidden",
+          // Balanced grids per count (BUG-080): 3 photos sit on one equal row,
+          // 4 photos form a 2x2, 5+ stay on the 3-col grid with the +N overflow.
           photos.length === 1 ? "grid-cols-1" :
           photos.length === 2 ? "grid-cols-2" :
-          photos.length >= 3 ? "grid-cols-3" : "grid-cols-2"
+          photos.length === 3 ? "grid-cols-3" :
+          photos.length === 4 ? "grid-cols-2" : "grid-cols-3"
         )}>
           {photos.slice(0, 6).map((photo, i) => (
             <div
               key={photo.id}
               className={cn(
                 "relative cursor-pointer overflow-hidden bg-surface-hover",
-                photos.length === 1 ? "aspect-[16/9]" : "aspect-square",
-                // First photo spans 2 cols when there are 3+ photos
-                i === 0 && photos.length === 3 ? "col-span-2 row-span-1" : ""
+                photos.length === 1 ? "aspect-[16/9]" : "aspect-square"
               )}
               onClick={() => setLightboxIdx(i)}
             >

@@ -68,7 +68,7 @@ function PlaceSelect({
   if (value && selectedItem) {
     return (
       <div className="flex items-center gap-2">
-        <div className="flex-1 bg-blue-950/30 border border-blue-900/40 rounded-lg px-4 py-3 text-sm text-blue-200">
+        <div className="flex-1 bg-accent-tint border border-accent/40 rounded-lg px-4 py-3 text-sm text-accent-strong">
           {selectedItem.name}
         </div>
         <button
@@ -151,7 +151,7 @@ function BrandSelect({
   if (value && selectedItem) {
     return (
       <div className="flex items-center gap-2">
-        <div className="flex-1 bg-blue-950/30 border border-blue-900/40 rounded-lg px-4 py-3 text-sm text-blue-200">
+        <div className="flex-1 bg-accent-tint border border-accent/40 rounded-lg px-4 py-3 text-sm text-accent-strong">
           {selectedItem.name}
         </div>
         <button

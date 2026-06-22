@@ -34,12 +34,18 @@ function AppNav({ path, isAuth, dropdownProps, communitySlug, communities }: {
   const onPeopleRoute = path === "/people" || path.startsWith("/people/")
   const showCommunityRule = inCommunity || onPeopleRoute
 
+  // The /me/* routes (settings, tags) carry the active community in
+  // communitySlug but are neither in-community nor /people, so without this they
+  // fall back to the global "People" label on the category row (BUG-091). Resolve
+  // the active community here too so the riders tab reads "Riders" there as well.
+  const onMeRoute = path === "/me" || path.startsWith("/me/")
+
   // Resolve the active community for the category row on the top-level /people
   // route too, so the People tab keeps its community label ("Riders") instead of
   // flipping to the global "People" fallback when selected (BUG-016). At true
-  // global scope (neither in-community nor /people) it stays undefined and the
-  // category labels fall back to the global defaults.
-  const activeCommunity = (inCommunity || onPeopleRoute) ? getCommunityBySlug(communitySlug, communities) : undefined
+  // global scope (neither in-community nor /people nor /me) it stays undefined and
+  // the category labels fall back to the global defaults.
+  const activeCommunity = (inCommunity || onPeopleRoute || onMeRoute) ? getCommunityBySlug(communitySlug, communities) : undefined
 
   return (
     <div>
