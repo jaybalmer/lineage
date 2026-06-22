@@ -90,6 +90,16 @@ const TIERS = [
   },
 ] as const
 
+// Tier ordering for the re-purchase / downgrade guard (BUG-077). A purchase CTA
+// is only offered for a tier strictly above the one the viewer already holds, so
+// the page never offers to re-buy or downgrade a membership. free is the floor.
+const TIER_RANK: Record<string, number> = {
+  free: 0,
+  annual: 1,
+  lifetime: 2,
+  founding: 3,
+}
+
 const FAQ = [
   {
     q: "What does verification mean?",
@@ -137,6 +147,13 @@ export default function MembershipPage() {
   // gets a Sign in CTA instead of "Your current plan". Gate on authReady so a
   // signed-in member's real tier is not flashed as logged-out mid-hydration.
   const isLoggedIn = authReady && isAuthUser(activePersonId)
+  // Re-purchase guard (BUG-077). Derive from membership.tier directly (it is
+  // restored from storage before authReady resolves), so a paid/founding member
+  // never sees a charge-again CTA, not even in the pre-hydration flash. The
+  // affirmative "YOUR TIER" / "Active" badge below still gates on isLoggedIn, so
+  // we never claim a tier is active for a logged-out visitor.
+  const heldRank = TIER_RANK[membership.tier] ?? 0
+  const hasPaidTier = heldRank > 0
   const [openFaq, setOpenFaq] = useState<number | null>(null)
   const [loading, setLoading] = useState<string | null>(null)
   const [foundingFilled, setFoundingFilled] = useState(0)
@@ -155,6 +172,10 @@ export default function MembershipPage() {
 
   const handleCta = async (tierId: string) => {
     if (tierId === "free") return
+    // Never start checkout for a tier the viewer already holds or a downgrade
+    // (BUG-077: a founding member could re-trigger founding checkout). The
+    // tier-aware upgrade / gift matrix is a separate session; this is the guard.
+    if ((TIER_RANK[tierId] ?? 0) <= heldRank) return
     const tier = tierId as "annual" | "lifetime" | "founding"
     setLoading(tier)
     await startCheckout(tier)
@@ -215,23 +236,25 @@ export default function MembershipPage() {
                     {foundingFilled} / {FOUNDING_TOTAL} founding spots filled
                   </div>
                 </div>
-                <button
-                  onClick={() => handleCta("founding")}
-                  disabled={loading === "founding"}
-                  className="shrink-0 px-5 py-2.5 rounded-full font-bold transition-all"
-                  style={{
-                    background: "#f59e0b",
-                    color: "#000",
-                    fontSize: 11,
-                    letterSpacing: 1,
-                    fontFamily: "var(--font-body)",
-                    opacity: loading === "founding" ? 0.7 : 1,
-                    cursor: loading === "founding" ? "wait" : "pointer",
-                    border: "none",
-                  }}
-                >
-                  {loading === "founding" ? "…" : "Claim founding membership →"}
-                </button>
+                {!hasPaidTier && (
+                  <button
+                    onClick={() => handleCta("founding")}
+                    disabled={loading === "founding"}
+                    className="shrink-0 px-5 py-2.5 rounded-full font-bold transition-all"
+                    style={{
+                      background: "#f59e0b",
+                      color: "#000",
+                      fontSize: 11,
+                      letterSpacing: 1,
+                      fontFamily: "var(--font-body)",
+                      opacity: loading === "founding" ? 0.7 : 1,
+                      cursor: loading === "founding" ? "wait" : "pointer",
+                      border: "none",
+                    }}
+                  >
+                    {loading === "founding" ? "…" : "Claim founding membership →"}
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -298,7 +321,7 @@ export default function MembershipPage() {
                   </ul>
 
                   {/* CTA */}
-                  {tier.cta && !isCurrentTier && (
+                  {tier.cta && !isCurrentTier && (TIER_RANK[tier.id] ?? 0) > heldRank && (
                     <button
                       onClick={() => handleCta(tier.id)}
                       disabled={!!loading}
@@ -325,10 +348,18 @@ export default function MembershipPage() {
                   )}
                   {!tier.cta && !isCurrentTier && (
                     isLoggedIn ? (
-                      <div className="w-full py-2.5 rounded-full text-center border border-border-default text-muted"
-                        style={{ fontSize: 10, letterSpacing: 1 }}>
-                        Your current plan
-                      </div>
+                      // Only a genuine free member labels the free card as their
+                      // plan. A paid/founding member reaches here too (their tier
+                      // !== "free", so isCurrentTier is false on this card); show
+                      // nothing for them (BUG-077: was mislabelling it "Your
+                      // current plan"). A free member normally hits the "Active"
+                      // branch above; this stays correct if hydration races.
+                      membership.tier === "free" ? (
+                        <div className="w-full py-2.5 rounded-full text-center border border-border-default text-muted"
+                          style={{ fontSize: 10, letterSpacing: 1 }}>
+                          Your current plan
+                        </div>
+                      ) : null
                     ) : (
                       <Link href="/auth/signin"
                         className="w-full block py-2.5 rounded-full text-center font-bold transition-all"
