@@ -210,10 +210,12 @@ function ShareCard({
         {/* Logo row */}
         <div className="flex items-center gap-2 mb-4">
           <BrandMark size={20} color={color} />
+          {/* Wordmark stays mixed-case in the Calendula wordmark font, never
+              all-caps, per the brand rule in CLAUDE.md (BUG-087). */}
           <span style={{
-            fontFamily: "var(--font-display)",
-            fontSize: 11, fontWeight: 700, letterSpacing: 4, color: "#71717a",
-          }}>LINESTRY</span>
+            fontFamily: "var(--font-wordmark)",
+            fontSize: 15, fontWeight: 700, color: "#a1a1aa",
+          }}>Linestry</span>
         </div>
 
         {/* Symbol + tier */}
