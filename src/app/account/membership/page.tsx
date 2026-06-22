@@ -5,6 +5,7 @@ import { CommunityLink } from "@/components/ui/community-link"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { BrandMark } from "@/components/ui/brand-mark"
+import { DailyTokenChip } from "@/components/ui/daily-token-chip"
 import { supabase } from "@/lib/supabase"
 import { useEffect, useState, useCallback, Suspense } from "react"
 import { useSearchParams, useRouter } from "next/navigation"
@@ -572,6 +573,10 @@ function MembershipDashboard() {
             </div>
           </div>
 
+          {/* Earned today (token-game-feel brief D2/D3). Not tier-gated: a free
+              rider sees their daily progress here just like a member. */}
+          <DailyTokenChip />
+
           {/* Equity launch offer */}
           <div className="bg-surface border border-border-default rounded-2xl p-5">
             <div className="md-heading text-foreground mb-3" style={{ fontSize: 16, fontWeight: 700, letterSpacing: 1 }}>
@@ -641,15 +646,25 @@ function MembershipDashboard() {
             </div>
           )}
 
-          {/* Contribution tokens note (free tier) */}
-          {tier === "free" && token_balance.contribution > 0 && (
+          {/* Contribution tokens note (free tier). Shown even at a zero balance
+              so a brand-new free rider can tell they are already earning
+              (token-game-feel brief D3). */}
+          {tier === "free" && (
             <div className="p-4 rounded-xl border" style={{ borderColor: "#10b98130", background: "#10b98108" }}>
               <p style={{ fontSize: 10, lineHeight: 1.7, color: "var(--foreground)" }}>
-                <span style={{ color: "#10b981", fontWeight: 700 }}>
-                  {token_balance.contribution} contribution token{token_balance.contribution !== 1 ? "s" : ""} earned.
-                </span>{" "}
-                These tokens already count in the equity pool, and becoming a member adds
-                weight on top.
+                {token_balance.contribution > 0 ? (
+                  <>
+                    <span style={{ color: "#10b981", fontWeight: 700 }}>
+                      {token_balance.contribution} contribution token{token_balance.contribution !== 1 ? "s" : ""} earned.
+                    </span>{" "}
+                    These already count in the equity pool, and becoming a member adds weight on top.
+                  </>
+                ) : (
+                  <>
+                    <span style={{ color: "#10b981", fontWeight: 700 }}>You earn on the free tier too.</span>{" "}
+                    Add entries, post stories, and show up daily for your +1. Every contribution token counts in the equity pool from the very first one.
+                  </>
+                )}
               </p>
             </div>
           )}

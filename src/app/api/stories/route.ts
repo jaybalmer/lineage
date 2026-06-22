@@ -345,12 +345,12 @@ export async function POST(req: NextRequest) {
     // Token earning (brief §5.1): entry +1; media +1 when the story carries
     // at least one photo (one per story, not per photo); source +2 when it
     // links out (YouTube or article URL). Best-effort, never blocks the save.
-    await awardContributionTokens(supabase, user.id, 1, "contribution_entry")
+    let tokensAwarded = await awardContributionTokens(supabase, user.id, 1, "contribution_entry")
     if ((photos as unknown[]).length > 0) {
-      await awardContributionTokens(supabase, user.id, 1, "contribution_media")
+      tokensAwarded += await awardContributionTokens(supabase, user.id, 1, "contribution_media")
     }
     if (youtube_url || url) {
-      await awardContributionTokens(supabase, user.id, 2, "contribution_source")
+      tokensAwarded += await awardContributionTokens(supabase, user.id, 2, "contribution_source")
     }
 
     await captureServerEvent({
@@ -368,7 +368,7 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    return NextResponse.json({ id: storyId }, { status: 201 })
+    return NextResponse.json({ id: storyId, tokens_awarded: tokensAwarded }, { status: 201 })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : (err as { message?: string })?.message ?? String(err)
     return NextResponse.json({ error: msg }, { status: 500 })

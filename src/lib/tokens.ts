@@ -26,7 +26,7 @@ export type ContributionSource =
  * daily-visit reward sit outside the cap. Soft: two concurrent awards can
  * race past the line by a token or two, which is acceptable.
  */
-const CAPPED_SOURCES = [
+export const CAPPED_SOURCES = [
   "contribution_entry",
   "contribution_media",
   "contribution_source",

@@ -144,6 +144,15 @@ interface LineageStore {
   addToast: (message: string, type?: "error" | "info") => void
   dismissToast: (id: string) => void
 
+  // Token earning feedback (token-game-feel brief D1/D2). awardFeedback surfaces
+  // the reward (or daily-cap) toast at the moment an award lands and bumps
+  // tokenEarnTick, which <DailyTokenChip/> watches to re-fetch today's progress
+  // live. Every caller is a capped content action, so a 0 grant means the cap
+  // is spent. Pass { toast: false } to bump the tick without a toast (a surface
+  // that already shows its own success toast and just wants the chip to refresh).
+  tokenEarnTick: number
+  awardFeedback: (tokensAwarded: number | undefined, opts?: { toast?: boolean }) => void
+
   // Celebration queue — ephemeral, not persisted
   celebrationQueue: CelebrationPayload[]
   queueCelebration: (c: CelebrationPayload) => void
@@ -382,7 +391,7 @@ export const useLineageStore = create<LineageStore>()(
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ ...claim, asserted_by: activePersonId }),
             })
-            const result = await res.json().catch(() => null) as { error?: string; reason?: string } | null
+            const result = await res.json().catch(() => null) as { error?: string; reason?: string; tokens_awarded?: number } | null
             if (!res.ok) {
               console.error("[addClaim] insert failed:", res.status, result?.error ?? result)
               set((s) => ({ sessionClaims: s.sessionClaims.filter((c) => c.id !== claim.id) }))
@@ -397,6 +406,10 @@ export const useLineageStore = create<LineageStore>()(
               sessionClaims: s.sessionClaims.filter((c) => c.id !== claim.id),
               dbClaims: [...s.dbClaims, claim],
             }))
+
+            // Reward moment (token-game-feel brief D1): show the grant the route
+            // recorded, or the daily-cap nudge when it came back 0.
+            get().awardFeedback(result?.tokens_awarded)
 
             trackEvent("content", "claim_created", {
               predicate: claim.predicate,
@@ -565,6 +578,7 @@ export const useLineageStore = create<LineageStore>()(
             get().addToast(d.error ?? "Failed to save place. Please try again.")
             return false
           }
+          get().awardFeedback(d.tokens_awarded)
           return true
         } catch {
           get().addToast("Failed to save place. Please try again.")
@@ -598,6 +612,7 @@ export const useLineageStore = create<LineageStore>()(
             get().addToast(d.error ?? "Failed to save board. Please try again.")
             return false
           }
+          get().awardFeedback(d.tokens_awarded)
           return true
         } catch {
           get().addToast("Failed to save board. Please try again.")
@@ -633,6 +648,7 @@ export const useLineageStore = create<LineageStore>()(
             get().addToast(d.error ?? "Failed to save brand. Please try again.")
             return false
           }
+          get().awardFeedback(d.tokens_awarded)
           return true
         } catch {
           get().addToast("Failed to save brand. Please try again.")
@@ -694,6 +710,7 @@ export const useLineageStore = create<LineageStore>()(
             get().addToast(d.error ?? "Failed to save event. Please try again.")
             return false
           }
+          get().awardFeedback(d.tokens_awarded)
           return true
         } catch {
           get().addToast("Failed to save event. Please try again.")
@@ -996,6 +1013,19 @@ export const useLineageStore = create<LineageStore>()(
       dismissToast: (id) =>
         set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) })),
 
+      tokenEarnTick: 0,
+      awardFeedback: (tokensAwarded, opts) => {
+        if (typeof tokensAwarded !== "number") return
+        if (opts?.toast !== false) {
+          if (tokensAwarded > 0) {
+            get().addToast(`+${tokensAwarded} token${tokensAwarded === 1 ? "" : "s"} earned`, "info")
+          } else {
+            get().addToast("Daily earning maxed out. Come back tomorrow for more.", "info")
+          }
+        }
+        set((s) => ({ tokenEarnTick: s.tokenEarnTick + 1 }))
+      },
+
       celebrationQueue: [],
       queueCelebration: (c) =>
         set((s) => ({ celebrationQueue: [...s.celebrationQueue, c] })),
@@ -1010,7 +1040,7 @@ export const useLineageStore = create<LineageStore>()(
       // Don't persist catalog or dbClaims — catalog always starts from mock data
       // and gets overwritten by loadCatalog(); dbClaims are always reloaded from DB
       partialize: (s) => {
-        const { dbClaims: _db, catalog: _cat, catalogLoaded: _cl, showMemberCard: _smc, authReady: _ar, communities: _comm, catalogError: _ce, toasts: _t, celebrationQueue: _cq, showWelcomeCelebration: _swc, pendingTagCount: _ptc, ...rest } = s
+        const { dbClaims: _db, catalog: _cat, catalogLoaded: _cl, showMemberCard: _smc, authReady: _ar, communities: _comm, catalogError: _ce, toasts: _t, tokenEarnTick: _tet, celebrationQueue: _cq, showWelcomeCelebration: _swc, pendingTagCount: _ptc, ...rest } = s
         return rest
       },
     }
