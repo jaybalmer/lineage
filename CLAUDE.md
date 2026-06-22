@@ -386,9 +386,10 @@ Bug tracking lives in `bugs/` (local-only, gitignored: it holds reporter emails 
 
 **Standing rules for bug-fix sessions:**
 - `npx tsc --noEmit` clean before commit.
-- One PR per session: push a branch, open the PR, let the user merge.
+- One PR per session: push a branch, open the PR.
+- **Run the full Ship sequence** (see "Session Workflow" below) before wrapping: surface every migration as copy-paste SQL, wait for Jay to apply it, prompt and wait for the merge, then log the ship. Do not treat PR-open as the end of the session.
 - Do NOT edit the **Shipped** section of `bugs/bug-triage.md`. Cowork reconciles that after the PR lands so the daily dedupe stays clean.
-- **Log the ship.** Before ending the session, append one entry to `bugs/SHIP-LOG.md` using the schema at the top of that file (type, pr, branch, ids, `status: pending`, tsc). This applies to bug-fix AND feature sessions, and it is what lets Cowork reconcile features too (bugs reconcile off `BUG-NNN`, features have no other sweep). A `SessionEnd` hook auto-appends a stub if you forget, but writing it yourself gives the richer line and the correct PR number. Leave `status: pending`; Cowork flips it to `merged` after the PR lands. Do NOT edit earlier SHIP-LOG entries.
+- **Log the ship.** As the final wrap step, append one entry to `bugs/SHIP-LOG.md` using the schema at the top of that file (type, pr, branch, ids, migration, status, tsc). This applies to bug-fix AND feature sessions, and it is what lets Cowork reconcile features too (bugs reconcile off `BUG-NNN`, features have no other sweep). Because the merge now happens in-session, write `status: merged` with the real PR number once Jay confirms the merge; only fall back to `status: pending` if he defers it. Record `migration:` so the reconcile knows the gate is closed. A `SessionEnd` hook auto-appends a stub if you forget, but writing it yourself gives the richer line and the correct status. Do NOT edit earlier SHIP-LOG entries.
 - No em dashes anywhere you write.
 
 Historical one-off briefs from before this convention live at the repo root (e.g. `launch-bugfix-session-1-brief.md`); new bug-fix briefs live in `bugs/`.
@@ -397,7 +398,37 @@ Historical one-off briefs from before this convention live at the repo root (e.g
 
 ## Session Workflow (recommended)
 
-- **One session per task** — keep sessions short and focused
-- Start a new session for each feature or fix
-- End the session when you push
-- This file (`CLAUDE.md`) provides persistent context across sessions — update it when significant new patterns or gotchas are introduced
+- **One session per task.** Keep sessions short and focused. Start a new session for each feature or fix.
+- This file (`CLAUDE.md`) provides persistent context across sessions. Update it when significant new patterns or gotchas are introduced.
+
+### Ship sequence (how a session ends)
+
+A session is NOT done when you push. Pushing and opening the PR is the middle of the
+session, not the end. The deploy steps (apply any SQL migration, merge the PR) are
+part of the session and you walk Jay through them live before you wrap. This keeps
+migrations from being left as silent "outstanding" gates and lets the work be
+recorded as complete in the same session it shipped.
+
+Run these steps in order and do not wrap until they are all done:
+
+1. **Push the branch and open the PR.** As before. State the PR number.
+2. **Surface every migration / manual SQL this session needs.** If the session
+   created any `supabase/migrations/*.sql` file, or any one-off SQL Jay must run by
+   hand (e.g. a backfill in `docs/`), print each one to chat inside a fenced
+   ```sql block, in full, ready to copy-paste straight into the Supabase SQL
+   editor. Do not just name the file. If there is genuinely no migration, say
+   "No migration this session" explicitly so the record is unambiguous.
+3. **State the apply/merge ordering.** Default is **migrate first, then merge**.
+   Call out the hard pre-merge gate case (an additive column the write path sends
+   unconditionally; see Group F lesson): for those the migration MUST be applied
+   before the PR merges or every insert 500s in the window between. For a plain
+   additive change with no write-path dependency the order is still safe as
+   migrate-then-merge, so default to that.
+4. **Wait for Jay to confirm the migration is applied** (or that there was none).
+   Do not move on until he confirms.
+5. **Prompt Jay to merge the PR, and wait for him to confirm the merge.**
+6. **Only now wrap.** Write the `bugs/SHIP-LOG.md` entry with the real PR number,
+   `migration:` set to what was applied, and `status: merged` (Jay just merged it
+   in-session). State which BUG-IDs or feature scope shipped. If Jay explicitly
+   defers the migration or merge to later, fall back to `status: pending` and
+   `migration: DEFERRED <file>` and say so plainly so the daily reconcile carries it.
