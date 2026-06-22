@@ -87,6 +87,23 @@ function predicateRank(item: FeedItem): number {
   return 6
 }
 
+// Which predicate-driven filter bucket a claim belongs to (boards live in their
+// own shelf, so owned_board returns null here). Normally keyed on the predicate,
+// but worked_at is ambiguous: a person can work at a resort/shop (a place) or at
+// a brand (an org), so disambiguate worked_at by the object entity type. This
+// keeps a brand worked_at under Brands instead of Places (BUG-092). The filter
+// and the counts both go through this helper so they always agree.
+function claimCategory(claim: Claim): "places" | "people" | "orgs" | "events" | null {
+  if (claim.predicate === "worked_at") {
+    return claim.object_type === "org" ? "orgs" : "places"
+  }
+  if (FILTER_PREDICATES.places.includes(claim.predicate)) return "places"
+  if (FILTER_PREDICATES.people.includes(claim.predicate)) return "people"
+  if (FILTER_PREDICATES.orgs.includes(claim.predicate)) return "orgs"
+  if (FILTER_PREDICATES.events.includes(claim.predicate)) return "events"
+  return null
+}
+
 export function FeedView({
   claims,
   days = [],
@@ -155,11 +172,12 @@ export function FeedView({
     const claimItems: FeedItem[] = (() => {
       // Boards live in their own shelf (the gear branch below), never the timeline.
       if (filter === "stories" || filter === "gear") return []
-      const predicates = filter !== "all" ? FILTER_PREDICATES[filter as Exclude<FilterType, "stories">] : []
       const base = groupedClaims.filter((c) => c.predicate !== "owned_board")
-      const filtered = predicates.length > 0
-        ? base.filter((c) => predicates.includes(c.predicate))
-        : base
+      // Bucket by claimCategory so a worked_at against a brand filters under
+      // Brands, not Places (BUG-092); the counts below use the same helper.
+      const filtered = filter === "all"
+        ? base
+        : base.filter((c) => claimCategory(c) === filter)
       return filtered.map((claim) => ({
         kind: "claim" as const,
         claim,
@@ -215,17 +233,18 @@ export function FeedView({
   // Count per filter tab — uses the grouped claim set so the counts match
   // what the user sees after the rode_with fold.
   const filterCounts = useMemo((): Record<FilterType, number> => {
-    const countFor = (preds: string[]) => groupedClaims.filter((c) => preds.includes(c.predicate)).length
+    const countCat = (cat: "places" | "people" | "orgs" | "events") =>
+      groupedClaims.filter((c) => claimCategory(c) === cat).length
     const boardClaims = groupedClaims.filter((c) => c.predicate === "owned_board")
     return {
       // Boards are excluded from the "all" timeline, so they are excluded from its count.
       all: groupedClaims.length - boardClaims.length + days.length + stories.length,
-      places: countFor(FILTER_PREDICATES.places),
+      places: countCat("places"),
       // gear = distinct boards (one shelf row per board), matching BoardShelf.
       gear: new Set(boardClaims.map((c) => c.object_id)).size,
-      people: countFor(FILTER_PREDICATES.people),
-      orgs: countFor(FILTER_PREDICATES.orgs),
-      events: countFor(FILTER_PREDICATES.events),
+      people: countCat("people"),
+      orgs: countCat("orgs"),
+      events: countCat("events"),
       stories: stories.length,
     }
   }, [groupedClaims, days, stories])

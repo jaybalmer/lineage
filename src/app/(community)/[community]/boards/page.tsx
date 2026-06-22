@@ -73,15 +73,20 @@ function BoardsPageInner() {
   const { catalog, activePersonId, communities, activeCommunitySlug } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
 
-  // Merge URL param changes into a single replace(), preserving scroll position.
-  const updateParams = (updates: Record<string, string | null>) => {
+  // Merge URL param changes into one navigation, preserving scroll position.
+  // Lateral view switches (tabs, search, year) use replace so they do not pile up
+  // history; drilling INTO a brand passes { push: true } so the drill-down is a
+  // distinct history entry and native Back restores it (BUG-082).
+  const updateParams = (updates: Record<string, string | null>, opts?: { push?: boolean }) => {
     const params = new URLSearchParams(searchParams.toString())
     for (const [k, v] of Object.entries(updates)) {
       if (v == null || v === "") params.delete(k)
       else params.set(k, v)
     }
     const qs = params.toString()
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+    const url = qs ? `${pathname}?${qs}` : pathname
+    if (opts?.push) router.push(url, { scroll: false })
+    else router.replace(url, { scroll: false })
   }
   const updateSearch = (v: string) => { setSearch(v); updateParams({ q: v || null }) }
 
@@ -246,7 +251,10 @@ function BoardsPageInner() {
   const goBrands = () => { setSearch(""); updateParams({ view: null, brand: null, year: null, q: null }) }
   const goAll = () => { setSearch(""); updateParams({ view: "all", brand: null, year: null, q: null }) }
   const goFeatured = () => { setSearch(""); updateParams({ view: "featured", brand: null, year: null, q: null }) }
-  const openBrand = (brand: string) => { setSearch(""); updateParams({ brand, view: null, year: null, q: null }) }
+  // Drilling into a brand pushes a history entry (BUG-082): Back from a board
+  // returns to the brand drill-down, and Back from the drill-down returns to the
+  // brand index, instead of replace() collapsing the levels into one entry.
+  const openBrand = (brand: string) => { setSearch(""); updateParams({ brand, view: null, year: null, q: null }, { push: true }) }
   const backToBrands = () => updateParams({ brand: null, year: null })
   const setSelectedYear = (y: number | null) => updateParams({ year: y != null ? String(y) : null })
 
