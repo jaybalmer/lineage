@@ -32,7 +32,7 @@ interface AddStoryModalProps {
 type UploadState = { file: File; preview: string; uploading: boolean; url?: string }
 
 export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStoryModalProps) {
-  const { activePersonId, profileOverride, catalog, loadCatalog } = useLineageStore()
+  const { activePersonId, profileOverride, catalog, loadCatalog, awardFeedback } = useLineageStore()
   const isEditing = !!editStory
 
   // Lock the background page while the modal is open (BUG-048).
@@ -221,7 +221,11 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
         return
       }
 
-      const { id } = await res.json()
+      const { id, tokens_awarded } = await res.json()
+
+      // Reward moment (token-game-feel brief D1): only the POST (create) path
+      // earns; the PATCH branch above never awards, so this lives here.
+      awardFeedback(tokens_awarded)
 
       const story: Story = {
         id,

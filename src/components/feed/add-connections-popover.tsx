@@ -24,7 +24,7 @@ interface AddConnectionsPopoverProps {
 }
 
 export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnectionsPopoverProps) {
-  const { activePersonId, catalog, loadCatalog, addToast } = useLineageStore()
+  const { activePersonId, catalog, loadCatalog, addToast, awardFeedback } = useLineageStore()
   const [posting, setPosting] = useState<string | null>(null)
   // When a search returns no match, the member can create a brand-new entity
   // inline (BUG-059), mirroring the Add Story modal. The AddEntityModal key
@@ -78,7 +78,7 @@ export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnection
         body: JSON.stringify({ type, entity_id: entityId }),
       })
       const j = await r.json().catch(() => ({})) as {
-        ok?: boolean; already?: boolean; reason?: string; error?: string
+        ok?: boolean; already?: boolean; reason?: string; error?: string; tokens_awarded?: number
       }
       if (!r.ok) {
         if (j.reason === "previously_declined") {
@@ -93,12 +93,19 @@ export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnection
         return
       }
       onAdded(type, entityId)
+      // Reward moment (token-game-feel brief D1): augment the existing success
+      // toast with the grant rather than stacking a second toast, then refresh
+      // the daily chip with { toast: false } so it does not fire its own.
+      const earned = typeof j.tokens_awarded === "number" && j.tokens_awarded > 0
+        ? ` +${j.tokens_awarded} token${j.tokens_awarded === 1 ? "" : "s"} earned.`
+        : ""
       if (type === "rider" && entityId === viewerId) {
-        addToast("Added. You're on this story now.")
+        addToast(`Added. You're on this story now.${earned}`, "info")
         onClose()
       } else {
-        addToast("Connected.")
+        addToast(`Connected.${earned}`, "info")
       }
+      awardFeedback(j.tokens_awarded, { toast: false })
     } catch {
       addToast("Could not add the connection.", "error")
     } finally {

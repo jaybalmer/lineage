@@ -250,10 +250,13 @@ export async function POST(req: NextRequest) {
   // Token earning (brief §5.1): a new timeline entry is +1, a claim carrying
   // an authoritative source link is +2 on top. Board re-adds return earlier
   // from the upsert path above and never award. Best-effort, never blocks.
-  await awardContributionTokens(db, user.id, 1, "contribution_entry")
+  let tokensAwarded = await awardContributionTokens(db, user.id, 1, "contribution_entry")
   if (Array.isArray(body.sources) && body.sources.length > 0) {
-    await awardContributionTokens(db, user.id, 2, "contribution_source")
+    tokensAwarded += await awardContributionTokens(db, user.id, 2, "contribution_source")
   }
 
-  return NextResponse.json({ ok: true, paired })
+  // tokens_awarded is the amount the ledger actually recorded (0 when the daily
+  // content cap is exhausted). The client surfaces it as a reward toast at the
+  // point of action (token-game-feel brief D1).
+  return NextResponse.json({ ok: true, paired, tokens_awarded: tokensAwarded })
 }

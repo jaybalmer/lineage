@@ -9,6 +9,7 @@ import { useLineageStore, getAllClaims, isAuthUser } from "@/store/lineage-store
 import { getPersonById, PLACES } from "@/lib/mock-data"
 import { EditProfileModal } from "@/components/ui/edit-profile-modal"
 import { RiderCard } from "@/components/ui/rider-card"
+import { DailyTokenChip } from "@/components/ui/daily-token-chip"
 import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { TimelinePlayer } from "@/components/ui/timeline-player"
@@ -688,6 +689,10 @@ export function OwnerTimelinePanel() {
             )}
           </div>
         )}
+
+        {/* Earned today (token-game-feel brief D2/D3): the owner's daily token
+            progress, shown for every tier including free. */}
+        {isAuthUser(activePersonId) && <DailyTokenChip className="mb-6" />}
 
         {/* Quick-action row — wraps on narrow screens so the action buttons never
             push the row past the viewport and shrink the whole page (BUG-008).

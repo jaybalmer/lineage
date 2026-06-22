@@ -199,7 +199,7 @@ export async function POST(
     // Token earning (brief §5.1): a community connection is +1. Every
     // already-connected or declined case returned earlier, so reaching here
     // always means a new connection landed. Best-effort, never blocks.
-    await awardContributionTokens(db, user.id, 1, "contribution_connection")
+    const tokensAwarded = await awardContributionTokens(db, user.id, 1, "contribution_connection")
 
     await captureServerEvent({
       category: "content",
@@ -213,7 +213,7 @@ export async function POST(
       },
     })
 
-    return NextResponse.json({ ok: true }, { status: 201 })
+    return NextResponse.json({ ok: true, tokens_awarded: tokensAwarded }, { status: 201 })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : (err as { message?: string })?.message ?? String(err)
     return NextResponse.json({ error: msg }, { status: 500 })

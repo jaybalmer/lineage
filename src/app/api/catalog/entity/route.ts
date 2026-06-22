@@ -208,9 +208,10 @@ export async function POST(req: NextRequest) {
 
   // Token earning (brief §5.1): a new reusable catalog node is +2, under the
   // daily content cap. Series earn nothing (they ride along with an event).
+  let tokensAwarded = 0
   if (type !== "event_series") {
-    await awardContributionTokens(db, user.id, 2, "contribution_entity")
+    tokensAwarded = await awardContributionTokens(db, user.id, 2, "contribution_entity")
   }
 
-  return NextResponse.json({ ok: true, id }, { status: 201 })
+  return NextResponse.json({ ok: true, id, tokens_awarded: tokensAwarded }, { status: 201 })
 }
