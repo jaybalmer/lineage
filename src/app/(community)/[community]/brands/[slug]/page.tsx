@@ -382,7 +382,13 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
   const isAuth = isAuthUser(activePersonId)
   const allOrgs = [...catalog.orgs, ...userEntities.orgs]
   const allPeople = [...catalog.people, ...(userEntities.people ?? [])]
-  const org = allOrgs.find((o) => o.id === slug || orgSlug(o) === slug)
+  // Case-insensitive slug match (BUG-083). orgSlug() is case-preserving (e.g.
+  // "Linestry.com" -> "Linestry_com"), so the canonical app link resolves, but a
+  // lowercased, shared, or legacy URL ("linestry_com") would 404. Match on a
+  // lowercased compare; useCanonicalPath below rewrites the bar to the canonical
+  // slug once resolved, so the address still settles on the correct casing.
+  const slugLower = slug.toLowerCase()
+  const org = allOrgs.find((o) => o.id === slug || orgSlug(o).toLowerCase() === slugLower)
   useCanonicalPath(org ? `/${community}/brands/${orgSlug(org)}` : null)
   if (!org) notFound()
 
