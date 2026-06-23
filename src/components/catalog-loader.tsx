@@ -14,7 +14,9 @@ async function loadProfileAndMembership(uid: string) {
   // policies don't permit the anon/user key to read certain columns.
   const res = await fetch("/api/me")
   if (!res.ok) return
-  const { profile } = await res.json() as { uid: string; profile: Record<string, unknown> }
+  const { profile, daily_visit_awarded } = await res.json() as {
+    uid: string; profile: Record<string, unknown>; daily_visit_awarded?: boolean
+  }
   if (!profile) return
 
   const p = profile  // already Record<string, unknown> from /api/me
@@ -59,6 +61,15 @@ async function loadProfileAndMembership(uid: string) {
     })
   } else {
     setMembership({ is_editor: isEditor })
+  }
+
+  // Feedback on showing up (token-game-feel follow-up). award_daily_visit ran
+  // server-side inside /api/me; daily_visit_awarded is true only on the load
+  // that won today's reward, so this toasts at most once per UTC day and bumps
+  // the chip's refetch tick. The visit reward is uncapped, so it sits outside
+  // the EARNED TODAY content bar and is surfaced here + in the chip breakdown.
+  if (daily_visit_awarded) {
+    useLineageStore.getState().notifyDailyVisitAward()
   }
 }
 

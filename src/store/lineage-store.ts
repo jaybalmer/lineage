@@ -139,9 +139,10 @@ interface LineageStore {
   setEditorQueuePendingCount: (n: number) => void
   refreshEditorQueuePendingCount: () => void
 
-  // Toast notifications
-  toasts: { id: string; message: string; type: "error" | "info" }[]
-  addToast: (message: string, type?: "error" | "info") => void
+  // Toast notifications. "reward" is a celebratory variant (token earning) so
+  // the earn moment reads distinctly from a neutral "info" or an "error".
+  toasts: { id: string; message: string; type: "error" | "info" | "reward" }[]
+  addToast: (message: string, type?: "error" | "info" | "reward") => void
   dismissToast: (id: string) => void
 
   // Token earning feedback (token-game-feel brief D1/D2). awardFeedback surfaces
@@ -152,6 +153,9 @@ interface LineageStore {
   // that already shows its own success toast and just wants the chip to refresh).
   tokenEarnTick: number
   awardFeedback: (tokensAwarded: number | undefined, opts?: { toast?: boolean }) => void
+  // Daily-visit reward feedback: one reward toast on the load that won today's
+  // +1 for showing up, plus a chip refetch. Fired from CatalogLoader.
+  notifyDailyVisitAward: () => void
 
   // Celebration queue — ephemeral, not persisted
   celebrationQueue: CelebrationPayload[]
@@ -1018,11 +1022,15 @@ export const useLineageStore = create<LineageStore>()(
         if (typeof tokensAwarded !== "number") return
         if (opts?.toast !== false) {
           if (tokensAwarded > 0) {
-            get().addToast(`+${tokensAwarded} token${tokensAwarded === 1 ? "" : "s"} earned`, "info")
+            get().addToast(`+${tokensAwarded} token${tokensAwarded === 1 ? "" : "s"} earned`, "reward")
           } else {
             get().addToast("Daily earning maxed out. Come back tomorrow for more.", "info")
           }
         }
+        set((s) => ({ tokenEarnTick: s.tokenEarnTick + 1 }))
+      },
+      notifyDailyVisitAward: () => {
+        get().addToast("Welcome back. +1 token for showing up today.", "reward")
         set((s) => ({ tokenEarnTick: s.tokenEarnTick + 1 }))
       },
 

@@ -96,14 +96,14 @@ export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnection
       // Reward moment (token-game-feel brief D1): augment the existing success
       // toast with the grant rather than stacking a second toast, then refresh
       // the daily chip with { toast: false } so it does not fire its own.
-      const earned = typeof j.tokens_awarded === "number" && j.tokens_awarded > 0
-        ? ` +${j.tokens_awarded} token${j.tokens_awarded === 1 ? "" : "s"} earned.`
-        : ""
+      const earnedN = typeof j.tokens_awarded === "number" && j.tokens_awarded > 0 ? j.tokens_awarded : 0
+      const earned = earnedN > 0 ? ` +${earnedN} token${earnedN === 1 ? "" : "s"} earned.` : ""
+      const tType = earnedN > 0 ? "reward" : "info"
       if (type === "rider" && entityId === viewerId) {
-        addToast(`Added. You're on this story now.${earned}`, "info")
+        addToast(`Added. You're on this story now.${earned}`, tType)
         onClose()
       } else {
-        addToast(`Connected.${earned}`, "info")
+        addToast(`Connected.${earned}`, tType)
       }
       awardFeedback(j.tokens_awarded, { toast: false })
     } catch {
