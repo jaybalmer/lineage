@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase"
 import { SearchPicker } from "@/components/ui/search-picker"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { resolveBrandColor } from "@/lib/utils"
+import { orgSlug } from "@/lib/mock-data"
 import type { Org } from "@/types"
 
 // /admin/brand/[id] - editor manage surface for the curated brand page (Brand
@@ -355,7 +356,11 @@ export default function AdminBrandPage({ params }: { params: Promise<{ id: strin
   const { id } = use(params)
   const catalog = useLineageStore((s) => s.catalog)
   const catalogLoaded = useLineageStore((s) => s.catalogLoaded)
-  const org = catalog.orgs.find((o) => o.id === id)
+  // Resolve by id OR slug (the public brand page does the same), so both
+  // /admin/brand/<uuid> and /admin/brand/westbeach work. orgSlug is
+  // case-preserving, so compare lowercased.
+  const idLower = id.toLowerCase()
+  const org = catalog.orgs.find((o) => o.id === id || orgSlug(o).toLowerCase() === idLower)
 
   return (
     <div className="min-h-screen bg-background text-foreground">
