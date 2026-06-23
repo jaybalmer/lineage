@@ -617,7 +617,7 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
           </div>
           {isEditor && (
             <a
-              href={`/admin/brand/${org.id}`}
+              href={`/admin/brand/${orgSlug(org)}`}
               className="shrink-0 text-xs text-accent-strong hover:opacity-80 transition-opacity"
             >
               ⚙ Manage page

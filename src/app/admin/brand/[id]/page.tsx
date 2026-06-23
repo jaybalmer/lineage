@@ -7,7 +7,7 @@ import { useLineageStore } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 import { SearchPicker } from "@/components/ui/search-picker"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
-import { resolveBrandColor } from "@/lib/utils"
+import { resolveBrandColor, cn } from "@/lib/utils"
 import { orgSlug } from "@/lib/mock-data"
 import type { Org } from "@/types"
 
@@ -244,14 +244,14 @@ function BrandEditor({ org }: { org: Org }) {
               {milestones.map((m, i) => (
                 <div key={i} className="flex items-start gap-2">
                   <input
-                    className={inputCls + " w-20 shrink-0"}
+                    className={cn(inputCls, "w-20 shrink-0")}
                     type="number"
                     value={m.year || ""}
                     onChange={(e) => setMilestones((prev) => prev.map((x, k) => k === i ? { ...x, year: parseInt(e.target.value) || 0 } : x))}
                     placeholder="Year"
                   />
                   <input
-                    className={inputCls}
+                    className={cn(inputCls, "flex-1 min-w-0")}
                     value={m.label}
                     onChange={(e) => setMilestones((prev) => prev.map((x, k) => k === i ? { ...x, label: e.target.value } : x))}
                     placeholder="What happened"
@@ -316,8 +316,8 @@ function BrandEditor({ org }: { org: Org }) {
             <div className="space-y-2">
               {linkRows.map((l, i) => (
                 <div key={i} className="flex items-start gap-2">
-                  <input className={inputCls + " sm:max-w-[200px]"} value={l.label} onChange={(e) => setLinkRows((prev) => prev.map((x, k) => k === i ? { ...x, label: e.target.value } : x))} placeholder="Label" />
-                  <input className={inputCls} value={l.url} onChange={(e) => setLinkRows((prev) => prev.map((x, k) => k === i ? { ...x, url: e.target.value } : x))} placeholder="https://…" />
+                  <input className={cn(inputCls, "shrink-0 w-28 sm:w-44")} value={l.label} onChange={(e) => setLinkRows((prev) => prev.map((x, k) => k === i ? { ...x, label: e.target.value } : x))} placeholder="Label" />
+                  <input className={cn(inputCls, "flex-1 min-w-0")} value={l.url} onChange={(e) => setLinkRows((prev) => prev.map((x, k) => k === i ? { ...x, url: e.target.value } : x))} placeholder="https://…" />
                   <RowButton label="✕" danger onClick={() => setLinkRows((prev) => prev.filter((_, k) => k !== i))} />
                 </div>
               ))}
