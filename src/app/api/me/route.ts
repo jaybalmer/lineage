@@ -67,7 +67,10 @@ export async function GET() {
       }
     }
 
-    return NextResponse.json({ uid: user.id, profile })
+    // daily_visit_awarded is true only on the load that won today's daily-visit
+    // reward, so the client can give a one-per-day "showing up" feedback toast
+    // (token-game-feel follow-up: visiting was silent before).
+    return NextResponse.json({ uid: user.id, profile, daily_visit_awarded: dailyVisitAwarded })
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 })
   }

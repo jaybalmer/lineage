@@ -57,6 +57,9 @@ export async function GET() {
     let totalEarned = 0
     let visitAwardedToday = false
     const visitDays = new Set<string>()
+    // Today's earnings broken down by source, so the chip can show what you
+    // actually earned by type (not just the rules). Keyed by token_events.source.
+    const bySource: Record<string, number> = {}
 
     for (const row of rows) {
       const day = row.created_at ? row.created_at.slice(0, 10) : null
@@ -64,6 +67,7 @@ export async function GET() {
       if (day === todayUtc) {
         const amt = row.amount ?? 0
         totalEarned += amt
+        if (row.source) bySource[row.source] = (bySource[row.source] ?? 0) + amt
         if (row.source && CAPPED_SET.has(row.source)) contentEarned += amt
         if (row.source === "daily_visit") visitAwardedToday = true
       }
@@ -95,6 +99,7 @@ export async function GET() {
       visit_awarded_today: visitAwardedToday,
       total_earned_today: totalEarned,
       visit_streak: visitStreak,
+      by_source: bySource,
     })
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 })
