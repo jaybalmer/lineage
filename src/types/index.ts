@@ -305,6 +305,22 @@ export interface Org {
   /** Curated hero image. Standard pages use a brand-color accent bar instead;
    * the curated (Phase 2) hero reads this. Brand Page Redesign Phase 1. */
   banner_url?: string
+  // ── Brand Page Redesign Phase 2 (curated / partner layer) ──
+  /** 'standard' (default) renders the Phase 1 header only; 'curated' and
+   * 'founding' render the curated sections. 'founding' adds the partner ribbon. */
+  curation_tier?: "standard" | "curated" | "founding"
+  /** Brand-authored editorial statement; its first line derives the hero tagline. */
+  heritage_statement?: string
+  /** Ordered, brand-authored timeline milestones. */
+  brand_milestones?: { year: number; label: string }[]
+  /** Owner-ordered person ids for the featured-team rail. */
+  featured_rider_ids?: string[]
+  /** Brand media + artifacts grid. */
+  brand_media?: { kind?: string; title?: string; subtitle?: string; image_url?: string; link_url?: string }[]
+  /** Outbound brand links for the curated sidebar card. */
+  brand_links?: { label: string; url: string }[]
+  /** Founding-tier ribbon text, e.g. 'Founding Brand Partner'. */
+  partner_label?: string
   community_status?: CommunityStatus
   added_by?: string
   /** Community slugs this org belongs to (populated from junction table) */

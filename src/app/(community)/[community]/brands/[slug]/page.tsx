@@ -15,7 +15,7 @@ import { useCanonicalPath } from "@/lib/use-canonical-path"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { StoryCard } from "@/components/feed/story-card"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
-import type { Org, ConfidenceLevel, Predicate, Event, Place, Story } from "@/types"
+import type { Org, ConfidenceLevel, Predicate, Event, Place, Story, Person } from "@/types"
 
 // ─── Label maps ───────────────────────────────────────────────────────────────
 
@@ -58,12 +58,12 @@ const inputCls =
 
 type ClaimMode = "person" | "event" | "place"
 
-function AddBrandClaimModal({ org, onClose }: { org: Org; onClose: () => void }) {
+function AddBrandClaimModal({ org, onClose, initial }: { org: Org; onClose: () => void; initial?: { mode?: ClaimMode; predicate?: Predicate } }) {
   const { addClaim, activePersonId, catalog, userEntities } = useLineageStore()
   const allPeople = [...catalog.people, ...(userEntities.people ?? [])]
 
-  const [mode, setMode] = useState<ClaimMode>("person")
-  const [predicate, setPredicate] = useState<Predicate>("sponsored_by")
+  const [mode, setMode] = useState<ClaimMode>(initial?.mode ?? "person")
+  const [predicate, setPredicate] = useState<Predicate>(initial?.predicate ?? "sponsored_by")
   const [personId, setPersonId] = useState(activePersonId ?? "")
   const [eventId, setEventId] = useState("")
   const [placeId, setPlaceId] = useState("")
@@ -378,7 +378,8 @@ export default function BrandPage(props: { params: Promise<{ community: string; 
 
 function BrandPageInner({ params }: { params: Promise<{ community: string; slug: string }> }) {
   const { community, slug } = use(params)
-  const { catalog, sessionClaims, dbClaims, userEntities, activePersonId } = useLineageStore()
+  const { catalog, sessionClaims, dbClaims, userEntities, activePersonId, membership } = useLineageStore()
+  const isEditor = membership.is_editor || membership.tier === "founding"
   const personLink = usePersonHref()
   const router = useRouter()
   const isAuth = isAuthUser(activePersonId)
@@ -398,6 +399,9 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
   const [addOpen, setAddOpen] = useState(false)
   const [addingStory, setAddingStory] = useState(false)
   const [tab, setTab] = useState<FeedTab>("all")
+  // Curated contribute-module chips can preselect a claim mode/predicate.
+  const [claimPreset, setClaimPreset] = useState<{ mode: ClaimMode; predicate: Predicate } | undefined>(undefined)
+  const openClaim = (preset?: { mode: ClaimMode; predicate: Predicate }) => { setClaimPreset(preset); setAddOpen(true) }
 
   // Brand accent + primary-CTA wiring. brand_color drives the accent bar and the
   // brand-filled buttons; null falls back to the Linestry accent. ctaColor keeps
@@ -535,150 +539,384 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
     { key: "stories", label: "Stories", count: orgStories.length },
   ]
 
+  // ── Curated / partner layer (Phase 2, gated by curation_tier) ──────────────
+  const isCurated = org.curation_tier === "curated" || org.curation_tier === "founding"
+  const isFounding = org.curation_tier === "founding"
+  // Tagline derives from the first non-empty line of the heritage statement.
+  const tagline = org.heritage_statement?.split("\n").map((l) => l.trim()).find(Boolean) ?? null
+  // Validate the editor-authored jsonb defensively; render in stored (editor) order.
+  const milestones = Array.isArray(org.brand_milestones)
+    ? org.brand_milestones.filter((m) => !!m && typeof m.label === "string" && m.label.trim().length > 0)
+    : []
+  const media = Array.isArray(org.brand_media)
+    ? org.brand_media.filter((m) => !!m && (!!m.title || !!m.image_url))
+    : []
+  const brandLinks = Array.isArray(org.brand_links)
+    ? org.brand_links.filter((l) => !!l && typeof l.url === "string" && l.url.trim().length > 0)
+    : []
+  // Featured riders: resolve ids to catalog people; skip unresolved or private
+  // profiles (visibility-safe, do not error). Owner-ordered.
+  const featuredRiders = (org.featured_rider_ids ?? [])
+    .map((rid) => allPeople.find((p) => p.id === rid))
+    .filter((p): p is Person => !!p && p.privacy_level !== "private")
+
+  // Shared CTA buttons + stat blocks, reused by the standard header card and the
+  // curated under-hero strip so the two tiers never drift.
+  const ctaButtons = (
+    <>
+      <button
+        onClick={handleContribute}
+        style={{ background: ctaColor, borderColor: ctaColor }}
+        className="px-4 py-2.5 rounded-lg text-sm font-medium text-white border inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+      >
+        <span aria-hidden>✎</span> Contribute a story
+      </button>
+      <button
+        onClick={() => openClaim()}
+        className="px-4 py-2.5 rounded-lg text-sm font-medium text-foreground border border-border-default bg-background hover:bg-surface-hover transition-colors"
+      >
+        + Add a claim
+      </button>
+      {org.website && (
+        <a
+          href={org.website}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-4 py-2.5 rounded-lg text-sm font-medium text-foreground border border-border-default bg-background hover:bg-surface-hover transition-colors inline-flex items-center gap-1.5"
+        >
+          <span aria-hidden>↗</span> Visit website
+        </a>
+      )}
+    </>
+  )
+
+  const statBlocks = [
+    { n: uniqueRiderIds.length, l: "connected riders" },
+    { n: orgBoards.length, l: "board models" },
+    { n: totalEvents, l: "events" },
+    { n: locatedAtClaims.length, l: "places" },
+    { n: orgStories.length, l: "stories" },
+  ].map(({ n, l }) => (
+    <div key={l}>
+      <div className="text-foreground text-xl leading-none" style={{ fontFamily: "var(--font-wordmark)" }}>{n}</div>
+      <div className="text-muted text-[11px] mt-1.5">{l}</div>
+    </div>
+  ))
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <Nav />
       <div className="max-w-5xl mx-auto px-4 py-8">
 
         {/* Breadcrumb */}
-        <div className="text-xs text-muted mb-6">
-          <CommunityLink href="/brands" className="hover:text-foreground transition-colors">Brands</CommunityLink>
-          <span className="mx-2">/</span>
-          <span className="text-muted">{org.name}</span>
+        <div className="flex items-center justify-between gap-3 mb-6">
+          <div className="text-xs text-muted">
+            <CommunityLink href="/brands" className="hover:text-foreground transition-colors">Brands</CommunityLink>
+            <span className="mx-2">/</span>
+            <span className="text-muted">{org.name}</span>
+          </div>
+          {isEditor && (
+            <a
+              href={`/admin/brand/${org.id}`}
+              className="shrink-0 text-xs text-accent-strong hover:opacity-80 transition-opacity"
+            >
+              ⚙ Manage page
+            </a>
+          )}
         </div>
 
-        {/* Header */}
-        <div className="bg-surface border border-border-default rounded-xl overflow-hidden mb-4">
-          {/* 5px brand-color accent bar (brand_color, fallback --accent) */}
-          <div style={{ height: 5, background: brandColor }} />
-          <div className="p-6">
-            <div className="flex items-start gap-5">
-              {/* Logo (logo_url) or initials block */}
-              {org.logo_url ? (
-                <div className="w-16 h-16 rounded-xl shrink-0 overflow-hidden bg-white border border-border-default flex items-center justify-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={org.logo_url} alt={org.name} className="w-full h-full object-contain p-1.5" />
-                </div>
-              ) : (
-                <div
-                  className="w-16 h-16 rounded-xl shrink-0 flex items-center justify-center text-xl overflow-hidden"
-                  style={{
-                    background: "linear-gradient(145deg, #1c1c1f 0%, #111113 100%)",
-                    border: "1px solid rgba(161,161,170,0.12)",
-                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
-                  }}
-                >
-                  <span style={{ fontFamily: "var(--font-wordmark)", color: "#fff", letterSpacing: ".03em" }}>
-                    {initials}
-                  </span>
-                </div>
-              )}
-
-              {/* Name + meta */}
-              <div className="flex-1 min-w-0">
-                <div className="text-[11px] text-muted uppercase tracking-wider font-medium mb-1">
-                  {[typeLabel, org.founded_year ? `est. ${org.founded_year}` : null, org.country]
-                    .filter(Boolean)
-                    .join("  ·  ")}
-                </div>
-                <h1
-                  className="text-2xl sm:text-3xl text-foreground leading-tight"
-                  style={{ fontFamily: "var(--font-wordmark)" }}
-                >
-                  {org.name}
-                </h1>
-                {org.description && (
-                  <p className="text-sm text-muted mt-2 leading-relaxed max-w-2xl">{org.description}</p>
+        {/* ── Header: curated hero (partner pages) or standard card (every brand) ── */}
+        {isCurated ? (
+          <>
+            {/* Curated hero banner */}
+            <div className="relative rounded-2xl overflow-hidden border border-border-default mb-3.5">
+              <div
+                className="relative h-[260px] sm:h-[300px]"
+                style={org.banner_url ? undefined : {
+                  background: `radial-gradient(120% 140% at 80% 10%, ${brandColor}8c, transparent 55%), radial-gradient(90% 120% at 10% 90%, rgba(20,17,15,.92), rgba(20,17,15,.45) 60%), linear-gradient(135deg, #2a211d 0%, #171311 60%, #0e0c0b 100%)`,
+                }}
+              >
+                {org.banner_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={org.banner_url} alt={`${org.name} banner`} className="absolute inset-0 w-full h-full object-cover" />
                 )}
-                {org.website && (
-                  <a
-                    href={org.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-accent-strong hover:opacity-80 mt-2 inline-block transition-opacity"
+                <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,.07) 1px, transparent 1px)", backgroundSize: "7px 7px", mixBlendMode: "overlay" }} />
+                <div className="absolute inset-x-0 bottom-0 p-5 sm:p-6 flex items-end gap-4" style={{ background: "linear-gradient(to top, rgba(10,8,7,.85), transparent)" }}>
+                  <div
+                    className="w-[68px] h-[68px] sm:w-[78px] sm:h-[78px] rounded-2xl shrink-0 flex items-center justify-center overflow-hidden"
+                    style={{ background: "#0c0a09", border: "1px solid rgba(255,255,255,.14)", boxShadow: "0 8px 24px rgba(0,0,0,.4)" }}
                   >
-                    {org.website.replace(/^https?:\/\//, "").replace(/\/$/, "")} ↗
-                  </a>
-                )}
+                    {org.logo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={org.logo_url} alt={org.name} className="w-full h-full object-contain p-2" />
+                    ) : (
+                      <span className="text-sm" style={{ fontFamily: "var(--font-wordmark)", color: "#fff", letterSpacing: ".04em" }}>{initials}</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 text-white">
+                    <div className="flex items-center gap-2 flex-wrap mb-1.5 text-[11px]">
+                      {isFounding && org.partner_label && (
+                        <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-semibold text-white" style={{ background: ctaColor }}>
+                          ★ {org.partner_label}
+                        </span>
+                      )}
+                      <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium text-white" style={{ background: "rgba(255,255,255,.14)", border: "1px solid rgba(255,255,255,.18)" }}>
+                        ✓ Verified · curated by the brand
+                      </span>
+                      <span className="text-white/75">
+                        {[typeLabel, org.founded_year ? `est. ${org.founded_year}` : null, org.country].filter(Boolean).join("  ·  ")}
+                      </span>
+                    </div>
+                    <h1 className="text-3xl sm:text-4xl leading-none" style={{ fontFamily: "var(--font-wordmark)", color: "#fff" }}>{org.name}</h1>
+                    {tagline && <p className="text-sm text-white/80 mt-2 max-w-xl leading-relaxed">{tagline}</p>}
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* CTA row: Contribute a story is the primary action */}
-            <div className="flex flex-wrap gap-2.5 mt-5">
+            {/* CTA + stats sit directly under the hero (no header card) */}
+            <div className="mb-6">
+              <div className="flex flex-wrap gap-2.5">{ctaButtons}</div>
+              <div className="mt-4 flex gap-7 flex-wrap">{statBlocks}</div>
+            </div>
+          </>
+        ) : (
+          <>
+            {/* Standard header card */}
+            <div className="bg-surface border border-border-default rounded-xl overflow-hidden mb-4">
+              {/* 5px brand-color accent bar (brand_color, fallback --accent) */}
+              <div style={{ height: 5, background: brandColor }} />
+              <div className="p-6">
+                <div className="flex items-start gap-5">
+                  {/* Logo (logo_url) or initials block */}
+                  {org.logo_url ? (
+                    <div className="w-16 h-16 rounded-xl shrink-0 overflow-hidden bg-white border border-border-default flex items-center justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={org.logo_url} alt={org.name} className="w-full h-full object-contain p-1.5" />
+                    </div>
+                  ) : (
+                    <div
+                      className="w-16 h-16 rounded-xl shrink-0 flex items-center justify-center text-xl overflow-hidden"
+                      style={{
+                        background: "linear-gradient(145deg, #1c1c1f 0%, #111113 100%)",
+                        border: "1px solid rgba(161,161,170,0.12)",
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
+                      }}
+                    >
+                      <span style={{ fontFamily: "var(--font-wordmark)", color: "#fff", letterSpacing: ".03em" }}>
+                        {initials}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Name + meta */}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[11px] text-muted uppercase tracking-wider font-medium mb-1">
+                      {[typeLabel, org.founded_year ? `est. ${org.founded_year}` : null, org.country]
+                        .filter(Boolean)
+                        .join("  ·  ")}
+                    </div>
+                    <h1
+                      className="text-2xl sm:text-3xl text-foreground leading-tight"
+                      style={{ fontFamily: "var(--font-wordmark)" }}
+                    >
+                      {org.name}
+                    </h1>
+                    {org.description && (
+                      <p className="text-sm text-muted mt-2 leading-relaxed max-w-2xl">{org.description}</p>
+                    )}
+                    {org.website && (
+                      <a
+                        href={org.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-accent-strong hover:opacity-80 mt-2 inline-block transition-opacity"
+                      >
+                        {org.website.replace(/^https?:\/\//, "").replace(/\/$/, "")} ↗
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* CTA row: Contribute a story is the primary action */}
+                <div className="flex flex-wrap gap-2.5 mt-5">{ctaButtons}</div>
+
+                {/* Stats: connected riders, board models, events, places, stories */}
+                <div className="mt-5 pt-5 border-t border-border-default flex gap-7 flex-wrap">{statBlocks}</div>
+              </div>
+            </div>
+
+            {/* Invite strip: engagement nudge */}
+            <div
+              className="flex items-center gap-3.5 rounded-xl px-4 py-3.5 mb-6 border"
+              style={{
+                background: `linear-gradient(100deg, ${brandColor}14, ${brandColor}05)`,
+                borderColor: `${brandColor}38`,
+              }}
+            >
+              <div
+                className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center text-white text-lg"
+                style={{ background: ctaColor }}
+                aria-hidden
+              >
+                ✎
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-sm text-foreground">Were you part of the {org.name} story?</div>
+                <p className="text-xs text-muted mt-0.5">
+                  Add a story, tag a board you rode, or claim a contest you were at. Every connection grows the brand&apos;s history.
+                </p>
+              </div>
               <button
                 onClick={handleContribute}
                 style={{ background: ctaColor, borderColor: ctaColor }}
-                className="px-4 py-2.5 rounded-lg text-sm font-medium text-white border inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+                className="shrink-0 px-4 py-2 rounded-lg text-sm font-medium text-white border hover:opacity-90 transition-opacity"
               >
-                <span aria-hidden>✎</span> Contribute a story
+                Contribute a story
               </button>
-              <button
-                onClick={() => setAddOpen(true)}
-                className="px-4 py-2.5 rounded-lg text-sm font-medium text-foreground border border-border-default bg-background hover:bg-surface-hover transition-colors"
-              >
-                + Add a claim
-              </button>
-              {org.website && (
-                <a
-                  href={org.website}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="px-4 py-2.5 rounded-lg text-sm font-medium text-foreground border border-border-default bg-background hover:bg-surface-hover transition-colors inline-flex items-center gap-1.5"
-                >
-                  <span aria-hidden>↗</span> Visit website
-                </a>
-              )}
             </div>
+          </>
+        )}
 
-            {/* Stats: connected riders, board models, events, places, stories */}
-            <div className="mt-5 pt-5 border-t border-border-default flex gap-7 flex-wrap">
-              {[
-                { n: uniqueRiderIds.length, l: "connected riders" },
-                { n: orgBoards.length, l: "board models" },
-                { n: totalEvents, l: "events" },
-                { n: locatedAtClaims.length, l: "places" },
-                { n: orgStories.length, l: "stories" },
-              ].map(({ n, l }) => (
-                <div key={l}>
-                  <div className="text-foreground text-xl leading-none" style={{ fontFamily: "var(--font-wordmark)" }}>
-                    {n}
-                  </div>
-                  <div className="text-muted text-[11px] mt-1.5">{l}</div>
+        {/* ── Curated sections (partner pages, above the shared feed) ── */}
+        {isCurated && (
+          <div className="space-y-7 mb-7">
+            {/* Heritage statement */}
+            {org.heritage_statement && (
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">Heritage</h2>
+                  <span className="text-[10px] font-semibold rounded-full px-2 py-0.5" style={{ color: brandColor, background: `${brandColor}1a` }}>Curated by the brand</span>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
+                <div className="relative rounded-2xl overflow-hidden p-6 sm:p-7" style={{ background: "#191613", color: "#f4f1ef" }}>
+                  <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px)", backgroundSize: "8px 8px" }} />
+                  <blockquote className="relative m-0 text-lg leading-relaxed font-light whitespace-pre-line">{org.heritage_statement}</blockquote>
+                  <div className="relative mt-3.5 text-xs text-white/55">Curated by {org.name}, on Linestry</div>
+                </div>
+              </section>
+            )}
 
-        {/* Invite strip: engagement nudge (Phase 1, every brand page) */}
-        <div
-          className="flex items-center gap-3.5 rounded-xl px-4 py-3.5 mb-6 border"
-          style={{
-            background: `linear-gradient(100deg, ${brandColor}14, ${brandColor}05)`,
-            borderColor: `${brandColor}38`,
-          }}
-        >
-          <div
-            className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center text-white text-lg"
-            style={{ background: ctaColor }}
-            aria-hidden
-          >
-            ✎
+            {/* Brand timeline */}
+            {milestones.length > 0 && (
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">Brand timeline</h2>
+                  <span className="text-[10px] font-semibold rounded-full px-2 py-0.5" style={{ color: brandColor, background: `${brandColor}1a` }}>Curated</span>
+                </div>
+                <div className="flex gap-0 overflow-x-auto pb-3">
+                  {milestones.map((m, i) => (
+                    <div key={i} className="relative flex-none w-44 pr-6">
+                      <div className="absolute left-0 right-0 top-[14px] h-0.5" style={{ background: "var(--border)" }} />
+                      <div className="absolute left-0 top-[9px] w-3 h-3 rounded-full" style={{ background: brandColor, border: "3px solid var(--background)" }} />
+                      {Number.isFinite(m.year) && m.year > 0 && (
+                        <div className="mt-7 text-base text-foreground" style={{ fontFamily: "var(--font-wordmark)" }}>{m.year}</div>
+                      )}
+                      <div className="text-xs text-muted font-light leading-snug mt-0.5 pr-2">{m.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* The team */}
+            {featuredRiders.length > 0 && (
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">The team</h2>
+                  <button onClick={() => setTab("people")} className="text-xs text-accent-strong hover:opacity-80 transition-opacity">View all →</button>
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-1.5">
+                  {featuredRiders.map((p) => {
+                    const claim = peopleClaims.find((c) => c.subject_id === p.id)
+                    const role = claim ? PREDICATE_LABEL[claim.predicate] : null
+                    return (
+                      <CommunityLink key={p.id} href={personLink(p)} className="flex-none w-32">
+                        <div className="bg-surface border border-border-default rounded-2xl p-3.5 text-center hover:border-foreground/20 transition-colors h-full">
+                          <div className="flex justify-center mb-2">
+                            <RiderAvatar person={p} size="lg" ring />
+                          </div>
+                          <div className="text-[13px] font-medium text-foreground truncate">{p.display_name}</div>
+                          {claim && (claim.start_date || claim.end_date) && (
+                            <div className="text-[11px] text-muted mt-0.5">{formatDateRange(claim.start_date, claim.end_date)}</div>
+                          )}
+                          {role && (
+                            <div className="text-[10.5px] mt-1.5 inline-block rounded-full px-2 py-0.5 text-violet-700 bg-violet-500/10">{role}</div>
+                          )}
+                        </div>
+                      </CommunityLink>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Media & artifacts */}
+            {media.length > 0 && (
+              <section>
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">Media &amp; artifacts</h2>
+                </div>
+                <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))" }}>
+                  {media.map((m, i) => {
+                    const inner = (
+                      <div className="border border-border-default rounded-2xl overflow-hidden bg-surface h-full">
+                        <div className="flex items-center justify-center text-white/65 text-[11px]" style={{ height: 104, background: m.image_url ? undefined : "linear-gradient(135deg, #2a211d, #171311)" }}>
+                          {m.image_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={m.image_url} alt={m.title ?? "media"} className="w-full h-full object-cover" />
+                          ) : (
+                            <span>{m.kind ?? "Artifact"}</span>
+                          )}
+                        </div>
+                        <div className="px-3 py-2.5">
+                          <div className="text-[12.5px] font-medium text-foreground truncate">{m.title}</div>
+                          {m.subtitle && <div className="text-[11px] text-muted truncate">{m.subtitle}</div>}
+                        </div>
+                      </div>
+                    )
+                    return m.link_url ? (
+                      <a key={i} href={m.link_url} target="_blank" rel="noopener noreferrer" className="block">{inner}</a>
+                    ) : (
+                      <div key={i}>{inner}</div>
+                    )
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* Contribute module */}
+            <section className="rounded-2xl p-5 sm:p-6 bg-surface border" style={{ borderColor: `${brandColor}40` }}>
+              <h2 className="text-xl text-foreground mb-1.5" style={{ fontFamily: "var(--font-wordmark)" }}>Were you part of the {org.name} story?</h2>
+              <p className="text-sm text-muted font-light max-w-xl mb-4 leading-relaxed">
+                Riders, staff, photographers, shop crew, collectors. If you have a connection, add it. Your story becomes a permanent, linked node in the brand&apos;s history.
+              </p>
+              <div className="flex flex-wrap gap-2 mb-4">
+                {[
+                  { label: "✎ Share a story or memory", onClick: handleContribute },
+                  { label: "⛷ I rode for the team", onClick: () => openClaim({ mode: "person", predicate: "sponsored_by" }) },
+                  { label: "🛠 I worked here", onClick: () => openClaim({ mode: "person", predicate: "worked_at" }) },
+                  { label: "🏁 I was at a contest", onClick: handleContribute },
+                  { label: "🛹 I own a classic board", onClick: handleContribute },
+                ].map((chip) => (
+                  <button
+                    key={chip.label}
+                    onClick={chip.onClick}
+                    className="text-[12.5px] rounded-full px-3.5 py-2 border border-border-default bg-background hover:border-foreground/30 transition-colors"
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={handleContribute}
+                style={{ background: ctaColor, borderColor: ctaColor }}
+                className="px-4 py-2.5 rounded-lg text-sm font-medium text-white border hover:opacity-90 transition-opacity"
+              >
+                Contribute a story
+              </button>
+            </section>
           </div>
-          <div className="flex-1 min-w-0">
-            <div className="font-semibold text-sm text-foreground">Were you part of the {org.name} story?</div>
-            <p className="text-xs text-muted mt-0.5">
-              Add a story, tag a board you rode, or claim a contest you were at. Every connection grows the brand&apos;s history.
-            </p>
-          </div>
-          <button
-            onClick={handleContribute}
-            style={{ background: ctaColor, borderColor: ctaColor }}
-            className="shrink-0 px-4 py-2 rounded-lg text-sm font-medium text-white border hover:opacity-90 transition-opacity"
-          >
-            Contribute a story
-          </button>
-        </div>
+        )}
 
         {/* Tabs */}
         <div className="flex items-center mb-5">
@@ -1142,6 +1380,27 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
               </div>
             </div>
 
+            {/* From {brand}: outbound brand links (curated) */}
+            {isCurated && brandLinks.length > 0 && (
+              <div className="bg-surface border border-border-default rounded-xl p-4">
+                <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">From {org.name}</div>
+                <div className="flex flex-col">
+                  {brandLinks.map((l, i) => (
+                    <a
+                      key={i}
+                      href={l.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between gap-2 py-2 text-sm text-foreground border-b border-border-default last:border-0 hover:text-accent-strong transition-colors"
+                    >
+                      <span className="truncate">{l.label || l.url}</span>
+                      <span className="text-xs text-muted shrink-0">↗</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Riders who owned boards */}
             {boardOwnerClaims.length > 0 && (
               <div className="bg-surface border border-border-default rounded-xl p-4">
@@ -1180,9 +1439,18 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
             </div>
           </div>
         </div>
+
+        {/* Provenance line (curated) */}
+        {isCurated && (
+          <div className="text-center text-xs text-muted font-light pt-7">
+            <span className="font-semibold" style={{ color: brandColor }}>Curated by the brand</span>
+            {" · expanded by the community · "}
+            {orgStories.length} stor{orgStories.length === 1 ? "y" : "ies"} and {uniqueRiderIds.length} rider{uniqueRiderIds.length === 1 ? "" : "s"} added by members
+          </div>
+        )}
       </div>
 
-      {addOpen && <AddBrandClaimModal org={org} onClose={() => setAddOpen(false)} />}
+      {addOpen && <AddBrandClaimModal org={org} initial={claimPreset} onClose={() => { setAddOpen(false); setClaimPreset(undefined) }} />}
       {addingStory && (
         <AddStoryModal
           defaults={{ linkedOrgId: org.id }}
