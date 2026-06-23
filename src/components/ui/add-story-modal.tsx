@@ -25,6 +25,12 @@ interface AddStoryModalProps {
     linkedEventId?: string
     linkedOrgId?: string
     boardId?: string
+    // Pre-tag riders (e.g. opening "Add a story about {person}" from a profile).
+    riderIds?: string[]
+    // Explicit author-timeline default. Wins over the startedFromEntity rule
+    // below so a profile-originated story can default OFF the viewer's timeline
+    // while still being a story they authored.
+    onTimeline?: boolean
   }
   editStory?: Story   // if provided, modal is in edit mode
 }
@@ -62,7 +68,7 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
   const startedFromEntity = !!(defaults?.linkedPlaceId || defaults?.linkedEventId
     || defaults?.linkedOrgId || defaults?.boardId)
   const [onTimeline, setOnTimeline] = useState<boolean>(
-    editStory?.on_timeline ?? (isEditing ? true : !startedFromEntity)
+    editStory?.on_timeline ?? defaults?.onTimeline ?? (isEditing ? true : !startedFromEntity)
   )
 
   const [saving, setSaving]     = useState(false)
@@ -98,7 +104,7 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
     editStory?.board_ids ?? (defaults?.boardId ? [defaults.boardId] : [])
   )
   const [selectedRiderIds, setSelectedRiderIds] = useState<string[]>(
-    editStory?.rider_ids ?? []
+    editStory?.rider_ids ?? defaults?.riderIds ?? []
   )
 
   const allPlaces  = catalog.places
