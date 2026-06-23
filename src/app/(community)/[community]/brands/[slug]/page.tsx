@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useRef, use, useMemo } from "react"
 import { CommunityLink } from "@/components/ui/community-link"
-import { notFound } from "next/navigation"
+import { notFound, useRouter } from "next/navigation"
 import { CatalogGate } from "@/components/ui/catalog-gate"
 import { Nav } from "@/components/ui/nav"
 import { boardSlug, orgSlug, eventSlug, seriesSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
-import { cn } from "@/lib/utils"
+import { cn, resolveBrandColor, brandButtonColor } from "@/lib/utils"
+import { signInHref } from "@/lib/safe-redirect"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { usePersonHref } from "@/lib/use-person-href"
 import { useCanonicalPath } from "@/lib/use-canonical-path"
@@ -379,6 +380,7 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
   const { community, slug } = use(params)
   const { catalog, sessionClaims, dbClaims, userEntities, activePersonId } = useLineageStore()
   const personLink = usePersonHref()
+  const router = useRouter()
   const isAuth = isAuthUser(activePersonId)
   const allOrgs = [...catalog.orgs, ...userEntities.orgs]
   const allPeople = [...catalog.people, ...(userEntities.people ?? [])]
@@ -396,6 +398,18 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
   const [addOpen, setAddOpen] = useState(false)
   const [addingStory, setAddingStory] = useState(false)
   const [tab, setTab] = useState<FeedTab>("all")
+
+  // Brand accent + primary-CTA wiring. brand_color drives the accent bar and the
+  // brand-filled buttons; null falls back to the Linestry accent. ctaColor keeps
+  // white text legible (falls back to the accent on a too-light brand color).
+  // Contribute a story is the primary action: members open the story composer
+  // (brand pre-linked), signed-out visitors route to sign in and back.
+  const brandColor = resolveBrandColor(org.brand_color)
+  const ctaColor = brandButtonColor(org.brand_color)
+  const handleContribute = () => {
+    if (isAuth) { setAddingStory(true); return }
+    router.push(signInHref(`/${community}/brands/${orgSlug(org)}`))
+  }
 
   // Stories linked to this org
   const [orgStories, setOrgStories] = useState<Story[]>([])
@@ -534,109 +548,141 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
         </div>
 
         {/* Header */}
-        <div className="bg-surface border border-border-default rounded-xl p-6 mb-6">
-          <div className="flex items-start gap-5">
-            {/* Logo / initials block */}
-            <div
-              className="w-16 h-16 rounded-xl shrink-0 flex items-center justify-center text-2xl font-bold overflow-hidden"
-              style={{
-                background: "linear-gradient(145deg, #1c1c1f 0%, #111113 100%)",
-                border: "1px solid rgba(161,161,170,0.12)",
-                boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
-                position: "relative",
-              }}
-            >
-              <div style={{
-                position: "absolute",
-                inset: 0,
-                backgroundImage: "radial-gradient(circle, rgba(161,161,170,0.15) 1px, transparent 1px)",
-                backgroundSize: "8px 8px",
-              }} />
-              <span style={{
-                position: "relative",
-                background: "linear-gradient(140deg, #f4f4f5 0%, #a1a1aa 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}>
-                {initials}
-              </span>
-            </div>
+        <div className="bg-surface border border-border-default rounded-xl overflow-hidden mb-4">
+          {/* 5px brand-color accent bar (brand_color, fallback --accent) */}
+          <div style={{ height: 5, background: brandColor }} />
+          <div className="p-6">
+            <div className="flex items-start gap-5">
+              {/* Logo (logo_url) or initials block */}
+              {org.logo_url ? (
+                <div className="w-16 h-16 rounded-xl shrink-0 overflow-hidden bg-white border border-border-default flex items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={org.logo_url} alt={org.name} className="w-full h-full object-contain p-1.5" />
+                </div>
+              ) : (
+                <div
+                  className="w-16 h-16 rounded-xl shrink-0 flex items-center justify-center text-xl overflow-hidden"
+                  style={{
+                    background: "linear-gradient(145deg, #1c1c1f 0%, #111113 100%)",
+                    border: "1px solid rgba(161,161,170,0.12)",
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.04)",
+                  }}
+                >
+                  <span style={{ fontFamily: "var(--font-wordmark)", color: "#fff", letterSpacing: ".03em" }}>
+                    {initials}
+                  </span>
+                </div>
+              )}
 
-            {/* Name + meta */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs text-muted uppercase tracking-widest">{typeLabel}</span>
-                {org.founded_year && (
-                  <span className="text-xs text-muted">· est. {org.founded_year}</span>
+              {/* Name + meta */}
+              <div className="flex-1 min-w-0">
+                <div className="text-[11px] text-muted uppercase tracking-wider font-medium mb-1">
+                  {[typeLabel, org.founded_year ? `est. ${org.founded_year}` : null, org.country]
+                    .filter(Boolean)
+                    .join("  ·  ")}
+                </div>
+                <h1
+                  className="text-2xl sm:text-3xl text-foreground leading-tight"
+                  style={{ fontFamily: "var(--font-wordmark)" }}
+                >
+                  {org.name}
+                </h1>
+                {org.description && (
+                  <p className="text-sm text-muted mt-2 leading-relaxed max-w-2xl">{org.description}</p>
                 )}
-                {org.country && (
-                  <span className="text-xs text-muted">· {org.country}</span>
+                {org.website && (
+                  <a
+                    href={org.website}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-accent-strong hover:opacity-80 mt-2 inline-block transition-opacity"
+                  >
+                    {org.website.replace(/^https?:\/\//, "").replace(/\/$/, "")} ↗
+                  </a>
                 )}
               </div>
-              <h1 className="text-2xl font-bold text-foreground">{org.name}</h1>
-              {org.description && (
-                <p className="text-sm text-muted mt-2 leading-relaxed max-w-2xl">{org.description}</p>
-              )}
+            </div>
+
+            {/* CTA row: Contribute a story is the primary action */}
+            <div className="flex flex-wrap gap-2.5 mt-5">
+              <button
+                onClick={handleContribute}
+                style={{ background: ctaColor, borderColor: ctaColor }}
+                className="px-4 py-2.5 rounded-lg text-sm font-medium text-white border inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity"
+              >
+                <span aria-hidden>✎</span> Contribute a story
+              </button>
+              <button
+                onClick={() => setAddOpen(true)}
+                className="px-4 py-2.5 rounded-lg text-sm font-medium text-foreground border border-border-default bg-background hover:bg-surface-hover transition-colors"
+              >
+                + Add a claim
+              </button>
               {org.website && (
                 <a
                   href={org.website}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs text-blue-500 hover:text-blue-400 mt-2 inline-block transition-colors"
+                  className="px-4 py-2.5 rounded-lg text-sm font-medium text-foreground border border-border-default bg-background hover:bg-surface-hover transition-colors inline-flex items-center gap-1.5"
                 >
-                  {org.website.replace(/^https?:\/\//, "")} ↗
+                  <span aria-hidden>↗</span> Visit website
                 </a>
               )}
             </div>
 
-            {/* Edit button (community editable) */}
-            <button className="shrink-0 px-3 py-1.5 rounded-lg text-xs text-muted border border-border-default hover:border-border-default hover:text-foreground transition-all">
-              Edit
-            </button>
-          </div>
-
-          {/* Stats */}
-          <div className="mt-5 flex gap-6 text-sm flex-wrap">
-            {uniqueRiderIds.length > 0 && (
-              <div>
-                <div className="font-bold text-foreground text-xl">{uniqueRiderIds.length}</div>
-                <div className="text-muted text-xs">connected riders</div>
-              </div>
-            )}
-            {orgBoards.length > 0 && (
-              <>
-                <div className="w-px bg-border-default" />
-                <div>
-                  <div className="font-bold text-foreground text-xl">{orgBoards.length}</div>
-                  <div className="text-muted text-xs">board models</div>
+            {/* Stats: connected riders, board models, events, places, stories */}
+            <div className="mt-5 pt-5 border-t border-border-default flex gap-7 flex-wrap">
+              {[
+                { n: uniqueRiderIds.length, l: "connected riders" },
+                { n: orgBoards.length, l: "board models" },
+                { n: totalEvents, l: "events" },
+                { n: locatedAtClaims.length, l: "places" },
+                { n: orgStories.length, l: "stories" },
+              ].map(({ n, l }) => (
+                <div key={l}>
+                  <div className="text-foreground text-xl leading-none" style={{ fontFamily: "var(--font-wordmark)" }}>
+                    {n}
+                  </div>
+                  <div className="text-muted text-[11px] mt-1.5">{l}</div>
                 </div>
-              </>
-            )}
-            {totalEvents > 0 && (
-              <>
-                <div className="w-px bg-border-default" />
-                <div>
-                  <div className="font-bold text-foreground text-xl">{totalEvents}</div>
-                  <div className="text-muted text-xs">events</div>
-                </div>
-              </>
-            )}
-            {locatedAtClaims.length > 0 && (
-              <>
-                <div className="w-px bg-border-default" />
-                <div>
-                  <div className="font-bold text-foreground text-xl">{locatedAtClaims.length}</div>
-                  <div className="text-muted text-xs">locations</div>
-                </div>
-              </>
-            )}
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Tabs + Add claim */}
-        <div className="flex items-center justify-between mb-5">
-          <div className="flex gap-1">
+        {/* Invite strip: engagement nudge (Phase 1, every brand page) */}
+        <div
+          className="flex items-center gap-3.5 rounded-xl px-4 py-3.5 mb-6 border"
+          style={{
+            background: `linear-gradient(100deg, ${brandColor}14, ${brandColor}05)`,
+            borderColor: `${brandColor}38`,
+          }}
+        >
+          <div
+            className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center text-white text-lg"
+            style={{ background: ctaColor }}
+            aria-hidden
+          >
+            ✎
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold text-sm text-foreground">Were you part of the {org.name} story?</div>
+            <p className="text-xs text-muted mt-0.5">
+              Add a story, tag a board you rode, or claim a contest you were at. Every connection grows the brand&apos;s history.
+            </p>
+          </div>
+          <button
+            onClick={handleContribute}
+            style={{ background: ctaColor, borderColor: ctaColor }}
+            className="shrink-0 px-4 py-2 rounded-lg text-sm font-medium text-white border hover:opacity-90 transition-opacity"
+          >
+            Contribute a story
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div className="flex items-center mb-5">
+          <div className="flex gap-1 overflow-x-auto">
             {tabs.map(({ key, label, count }) => (
               <button
                 key={key}
@@ -655,12 +701,6 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
               </button>
             ))}
           </div>
-          <button
-            onClick={() => setAddOpen(true)}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-[#1C1917] text-white hover:bg-[#292524] transition-colors"
-          >
-            + Add claim
-          </button>
         </div>
 
         {/* Main grid */}

@@ -299,6 +299,12 @@ export interface Org {
   region?: string
   website?: string
   logo_url?: string
+  /** Per-brand accent hex (e.g. '#D72638'). Null falls back to --accent
+   * (#3B82F6) on the brand page. Brand Page Redesign Phase 1. */
+  brand_color?: string
+  /** Curated hero image. Standard pages use a brand-color accent bar instead;
+   * the curated (Phase 2) hero reads this. Brand Page Redesign Phase 1. */
+  banner_url?: string
   community_status?: CommunityStatus
   added_by?: string
   /** Community slugs this org belongs to (populated from junction table) */
