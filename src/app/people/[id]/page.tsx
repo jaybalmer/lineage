@@ -5,6 +5,8 @@ import { Nav } from "@/components/ui/nav"
 import { CLAIMS, getPersonById, getSharedContext } from "@/lib/mock-data"
 import { FeedView } from "@/components/feed/feed-view"
 import { StoryCard } from "@/components/feed/story-card"
+import { AddStoryModal } from "@/components/ui/add-story-modal"
+import { AddPersonConnectionsPopover } from "@/components/feed/add-person-connections-popover"
 import { useLineageStore } from "@/store/lineage-store"
 import { getRiderTier } from "@/components/ui/rider-avatar"
 import { RiderCard } from "@/components/ui/rider-card"
@@ -50,6 +52,9 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   // entity pages already, so this just gathers them on the profile.
   const [contributions, setContributions] = useState<Story[]>([])
   const [showInviteModal, setShowInviteModal] = useState(false)
+  // Add-from-profile surfaces (signed-in members, public profile only).
+  const [showConnectionsPopover, setShowConnectionsPopover] = useState(false)
+  const [showAddStory, setShowAddStory] = useState(false)
   const [claimRequests, setClaimRequests] = useState<ClaimRequestWithClaimant[]>([])
   const [showClaimModal, setShowClaimModal] = useState(false)
   // Public Stack (/t/[slug]) availability for this person — drives the
@@ -320,6 +325,27 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
               </div>
             </div>
           )}
+
+          {/* Add-to-their-timeline row — signed-in members on someone else's
+              profile. Adds flow through the PB-009 pending pipeline, so the
+              person keeps control (they can decline from /me/tags). Stacks on
+              mobile, side-by-side on desktop, so neither button overflows. */}
+          {!isCurrentUser && isAuthUser(activePersonId) && (
+            <div className="flex flex-col sm:flex-row gap-2 mt-3">
+              <button
+                onClick={() => setShowConnectionsPopover(true)}
+                className="flex-1 px-3 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 transition-colors"
+              >
+                + Add connection
+              </button>
+              <button
+                onClick={() => setShowAddStory(true)}
+                className="flex-1 px-3 py-2.5 rounded-lg bg-surface-hover border border-border-default text-foreground text-sm font-medium hover:bg-surface-active transition-colors"
+              >
+                Add story about {person.display_name.split(" ")[0]}
+              </button>
+            </div>
+          )}
         </div>
 
         {/* ── Unclaimed profile banner ── */}
@@ -578,6 +604,26 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
               { ...req, claimant: { display_name: "You", avatar_url: null } },
             ])
             setShowClaimModal(false)
+          }}
+        />
+      )}
+
+      {showConnectionsPopover && (
+        <AddPersonConnectionsPopover
+          person={person}
+          onClose={() => setShowConnectionsPopover(false)}
+        />
+      )}
+
+      {showAddStory && (
+        <AddStoryModal
+          defaults={{ riderIds: [resolvedId], onTimeline: false }}
+          onClose={() => setShowAddStory(false)}
+          onSaved={(story) => {
+            setShowAddStory(false)
+            // Surface the new tagged-in story right away; it also shows on the
+            // next load. on_timeline=false keeps it off the viewer's own timeline.
+            setStories((prev) => [story, ...prev.filter((s) => s.id !== story.id)])
           }}
         />
       )}
