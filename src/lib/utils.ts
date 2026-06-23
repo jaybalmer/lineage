@@ -129,6 +129,46 @@ export function parseYouTubeId(url: string): string | null {
   return null
 }
 
+// ── Brand color (Brand Page Redesign) ──────────────────────────────────────
+// A brand's `brand_color` is an editor-set hex used for the accent bar, fills,
+// and tints on its page. Null/malformed falls back to the Linestry accent so
+// untouched pages stay on-brand for Linestry.
+
+/** The Linestry brand accent (--accent / #3B82F6). */
+export const ACCENT = "#3B82F6"
+
+/** Resolve a brand's accent color: a valid 6-digit hex, else the Linestry
+ *  accent. Used for fills, accent bars, and tints (no text legibility concern). */
+export function resolveBrandColor(hex?: string | null): string {
+  if (hex && /^#[0-9a-fA-F]{6}$/.test(hex.trim())) return hex.trim()
+  return ACCENT
+}
+
+/** True when white text is legible on a solid `hex` background (WCAG contrast
+ *  ratio of white vs the color is at least 3:1). Lets brand-colored buttons keep
+ *  white text on saturated colors but fall back when the brand color is too pale. */
+export function whiteReadableOn(hex: string): boolean {
+  const m = /^#?([0-9a-fA-F]{6})$/.exec(hex.trim())
+  if (!m) return true
+  const int = parseInt(m[1], 16)
+  const channel = (c: number) => {
+    const s = c / 255
+    return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4)
+  }
+  const L =
+    0.2126 * channel((int >> 16) & 255) +
+    0.7152 * channel((int >> 8) & 255) +
+    0.0722 * channel(int & 255)
+  return 1.05 / (L + 0.05) >= 3
+}
+
+/** The color to use for a filled, white-text button: the resolved brand color
+ *  when white reads on it, else the Linestry accent. */
+export function brandButtonColor(hex?: string | null): string {
+  const c = resolveBrandColor(hex)
+  return whiteReadableOn(c) ? c : ACCENT
+}
+
 export const PREDICATE_ICONS: Record<Predicate, string> = {
   rode_at: "🏔",
   worked_at: "🏪",
