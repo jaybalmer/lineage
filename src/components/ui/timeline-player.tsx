@@ -69,7 +69,9 @@ function buildSlides(person: Person, claims: Claim[], catalog: ReturnType<typeof
         ? (() => { const b = catalog.boards.find(b => b.id === claim.object_id); return b ? `${b.brand} ${b.model} '${String(b.model_year).slice(2)}` : getEntityName(claim.object_id, claim.object_type) })()
         : claim.object_type === "place"
           ? (catalog.places.find(p => p.id === claim.object_id)?.name ?? getEntityName(claim.object_id, claim.object_type))
-          : (catalog.events.find(e => e.id === claim.object_id)?.name ?? getEntityName(claim.object_id, claim.object_type))
+          : claim.object_type === "org"
+            ? (catalog.orgs.find(o => o.id === claim.object_id)?.name ?? getEntityName(claim.object_id, claim.object_type))
+            : (catalog.events.find(e => e.id === claim.object_id)?.name ?? getEntityName(claim.object_id, claim.object_type))
 
     const icons: Record<string, string> = { owned_board: "🏂", rode_at: "🏔", competed_at: "🏆", worked_at: "🔧" }
     const accents: Record<string, string> = { owned_board: "#10b981", rode_at: "#0D9488", competed_at: "#f59e0b", worked_at: "#a78bfa" }
@@ -568,7 +570,7 @@ function OutroSlideView({ slide, active, onClose }: { slide: OutroSlide; active:
         className="relative z-10"
         style={{ opacity: show ? 1 : 0, transform: show ? "translateY(0)" : "translateY(30px)", transition: "opacity 0.8s ease, transform 0.8s ease" }}
       >
-        <div className="mb-6 flex justify-center" style={{ filter: "drop-shadow(0 0 20px rgba(59,130,246,0.5))" }}><BrandMark size={72} color="#3b82f6" /></div>
+        <div className="mb-6 flex justify-center" style={{ filter: "drop-shadow(0 0 20px rgba(59,130,246,0.5))" }}><BrandMark size={72} color="#3b82f6" dotColor="#F6F6F5" /></div>
         <div className="text-white/35 text-xs uppercase tracking-[0.4em] mb-4">Linestry.com</div>
         {slide.headline ? (
           <h2
@@ -757,8 +759,10 @@ export function TimelinePlayerShell({ slides, header, onClose }: TimelinePlayerS
         className="fixed inset-0 z-50 flex flex-col"
         style={{ background: bg, transition: "background 1s ease" }}
       >
-        {/* Subtle vignette overlay */}
-        <div className="absolute inset-0 pointer-events-none"
+        {/* Subtle vignette overlay. Fixed + inset-0 so it is full-bleed and
+            centered on the viewport itself, not the flex containing block, which
+            keeps the radial symmetric on mobile (BUG-098). */}
+        <div className="fixed inset-0 pointer-events-none"
           style={{ background: "radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0,0,0,0.55) 100%)" }} />
 
         {/* Progress bars */}
