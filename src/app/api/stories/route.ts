@@ -6,7 +6,7 @@ import { captureServerEvent } from "@/lib/analytics-server"
 import { fireTagEvents } from "@/lib/invite-tracking-server"
 import { pairStoryRiderTagEvents, isAsserterGloballyBlocked } from "@/lib/tag-events"
 import { logTagActions } from "@/lib/tag-action-log"
-import { awardContributionTokens } from "@/lib/tokens"
+import { awardContributionTokens, reverseContributionTokens } from "@/lib/tokens"
 import type { StoryReactionType } from "@/types"
 
 function getServiceClient() {
@@ -345,12 +345,15 @@ export async function POST(req: NextRequest) {
     // Token earning (brief §5.1): entry +1; media +1 when the story carries
     // at least one photo (one per story, not per photo); source +2 when it
     // links out (YouTube or article URL). Best-effort, never blocks the save.
-    let tokensAwarded = await awardContributionTokens(supabase, user.id, 1, "contribution_entry")
+    // source_ref ties all three awards to this story so deleting it reverses
+    // exactly what it earned (BUG-103 claw-back; see DELETE below).
+    const storyRef = `story:${storyId}`
+    let tokensAwarded = await awardContributionTokens(supabase, user.id, 1, "contribution_entry", storyRef)
     if ((photos as unknown[]).length > 0) {
-      tokensAwarded += await awardContributionTokens(supabase, user.id, 1, "contribution_media")
+      tokensAwarded += await awardContributionTokens(supabase, user.id, 1, "contribution_media", storyRef)
     }
     if (youtube_url || url) {
-      tokensAwarded += await awardContributionTokens(supabase, user.id, 2, "contribution_source")
+      tokensAwarded += await awardContributionTokens(supabase, user.id, 2, "contribution_source", storyRef)
     }
 
     await captureServerEvent({
@@ -681,6 +684,11 @@ export async function DELETE(req: NextRequest) {
 
   const { error } = await supabase.from("stories").delete().eq("id", id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // BUG-103: claw back the contribution tokens this story earned (entry, media,
+  // source) so add / delete / re-add nets to zero. Only the author reaches here
+  // (ownership checked above), so the award recipient is user.id. Best-effort.
+  await reverseContributionTokens(supabase, user.id, `story:${id}`)
 
   await captureServerEvent({
     category: "content",

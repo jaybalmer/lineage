@@ -4,7 +4,7 @@ import { requireAuth, getServiceClient } from "@/lib/auth"
 import { captureServerEvent } from "@/lib/analytics-server"
 import { fireTagEvents } from "@/lib/invite-tracking-server"
 import { pairStoryRiderTagEvents, isAsserterGloballyBlocked } from "@/lib/tag-events"
-import { awardContributionTokens } from "@/lib/tokens"
+import { awardContributionTokens, reverseContributionTokens } from "@/lib/tokens"
 
 // POST   /api/stories/[id]/connections — any signed-in member connects a
 //        rider, place, or event to a public (or shared) story.
@@ -199,7 +199,11 @@ export async function POST(
     // Token earning (brief §5.1): a community connection is +1. Every
     // already-connected or declined case returned earlier, so reaching here
     // always means a new connection landed. Best-effort, never blocks.
-    const tokensAwarded = await awardContributionTokens(db, user.id, 1, "contribution_connection")
+    // source_ref ties the award to this connection so removing it reverses the
+    // earn (BUG-103 claw-back; see DELETE below). The adder (user.id) is the
+    // recipient. (storyId, type, entityId) is the connection's stable identity.
+    const connRef = `conn:${storyId}:${type}:${entityId}`
+    const tokensAwarded = await awardContributionTokens(db, user.id, 1, "contribution_connection", connRef)
 
     await captureServerEvent({
       category: "content",
@@ -244,6 +248,10 @@ export async function DELETE(
     if (!story) return NextResponse.json({ error: "Story not found" }, { status: 404 })
 
     let removedByRole: "adder" | "author" | "editor" | null = null
+    // The contribution token went to whoever ADDED the connection, who may not
+    // be the caller removing it (author / editor moderation). Reverse against
+    // the adder (BUG-103 claw-back).
+    let connectionAdderId: string | null = null
 
     if (type === "place" || type === "event") {
       const table = type === "place" ? "story_places" : "story_events"
@@ -256,6 +264,7 @@ export async function DELETE(
         .eq(idColumn, entityId)
         .maybeSingle()
       if (!row) return NextResponse.json({ ok: true })
+      connectionAdderId = (row.added_by as string | null) ?? null
 
       if (row.added_by === user.id) removedByRole = "adder"
       else if (story.author_id === user.id) removedByRole = "author"
@@ -296,6 +305,7 @@ export async function DELETE(
           .maybeSingle()
         asserterId = (tagEvent?.asserter_id as string | null) ?? null
       }
+      connectionAdderId = asserterId
 
       if (asserterId && asserterId === user.id) removedByRole = "adder"
       else if (story.author_id === user.id) removedByRole = "author"
@@ -322,6 +332,13 @@ export async function DELETE(
         .eq("story_id", storyId)
         .eq("rider_id", entityId)
       if (error) throw new Error(`story_riders delete failed: ${error.message}`)
+    }
+
+    // BUG-103: reverse the adder's contribution token for this connection.
+    // Grandfathered rider rows (no recorded asserter) have no award to reverse,
+    // so the null guard short-circuits them. Best-effort, never blocks.
+    if (connectionAdderId) {
+      await reverseContributionTokens(db, connectionAdderId, `conn:${storyId}:${type}:${entityId}`)
     }
 
     await captureServerEvent({

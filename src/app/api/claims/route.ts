@@ -250,9 +250,12 @@ export async function POST(req: NextRequest) {
   // Token earning (brief §5.1): a new timeline entry is +1, a claim carrying
   // an authoritative source link is +2 on top. Board re-adds return earlier
   // from the upsert path above and never award. Best-effort, never blocks.
-  let tokensAwarded = await awardContributionTokens(db, user.id, 1, "contribution_entry")
+  // source_ref ties both awards to this claim so deleting it reverses exactly
+  // what it earned (BUG-103 claw-back; see DELETE /api/claims/[id]).
+  const claimRef = `claim:${id}`
+  let tokensAwarded = await awardContributionTokens(db, user.id, 1, "contribution_entry", claimRef)
   if (Array.isArray(body.sources) && body.sources.length > 0) {
-    tokensAwarded += await awardContributionTokens(db, user.id, 2, "contribution_source")
+    tokensAwarded += await awardContributionTokens(db, user.id, 2, "contribution_source", claimRef)
   }
 
   // tokens_awarded is the amount the ledger actually recorded (0 when the daily
