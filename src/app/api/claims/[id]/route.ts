@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { requireAuth, getServiceClient } from "@/lib/auth"
 import { disableClaimTagEventsForDeletion } from "@/lib/tag-events"
+import { reverseContributionTokens } from "@/lib/tokens"
 import { ENTITY_TYPES, CONFIDENCE, VISIBILITY, BOARD_RELATIONSHIPS, str } from "../validation"
 
 // PATCH  /api/claims/[id]  edit a claim you asserted
@@ -194,6 +195,13 @@ export async function DELETE(
   if (error) {
     console.error("[api/claims/[id]] delete failed:", error)
     return NextResponse.json({ error: error.message }, { status: 400 })
+  }
+
+  // BUG-103: claw back any contribution tokens this claim earned so add /
+  // delete / re-add nets to zero. The award went to the asserter, not the
+  // acting editor; reverse against asserted_by. Best-effort, never blocks.
+  if (claim.asserted_by) {
+    await reverseContributionTokens(db, claim.asserted_by, `claim:${id}`)
   }
   return NextResponse.json({ ok: true })
 }

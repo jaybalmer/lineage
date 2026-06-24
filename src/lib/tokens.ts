@@ -42,12 +42,18 @@ const CAPPED_SET: ReadonlySet<string> = new Set(CAPPED_SOURCES)
  * Award contribution tokens to a user. Returns the amount actually granted
  * (0 on failure or when the daily content cap is exhausted). Callers pass the
  * service-role client they already hold; this never throws.
+ *
+ * sourceRef ties the award to the entity that earned it (claim / story /
+ * connection / catalog entity) so the award can be reversed when that entity is
+ * deleted (BUG-103 claw-back). Use a stable, prefixed key:
+ * `claim:<id>`, `story:<id>`, `entity:<id>`, `conn:<story>:<type>:<entity>`.
  */
 export async function awardContributionTokens(
   db: SupabaseClient,
   userId: string,
   amount: number,
   source: ContributionSource,
+  sourceRef: string | null = null,
 ): Promise<number> {
   try {
     let grant = amount
@@ -86,6 +92,7 @@ export async function awardContributionTokens(
       token_type: "contribution",
       amount: grant,
       source,
+      source_ref: sourceRef,
     })
     if (ledgerError) {
       // Balance moved but the ledger row failed; log loudly so the audit
@@ -96,6 +103,85 @@ export async function awardContributionTokens(
     return grant
   } catch (err) {
     console.error(`[tokens] award threw (${source}):`, err)
+    return 0
+  }
+}
+
+/**
+ * Reverse every contribution award tied to one source entity when that entity
+ * is deleted, so add / delete / re-add cannot farm tokens (BUG-103). Returns
+ * the amount actually clawed back (0 when there is nothing to reverse).
+ *
+ * Idempotent: it nets the ledger per source for (user_id, source_ref), so any
+ * source already at net <= 0 (a prior reversal wrote the negative mirror rows)
+ * is skipped and a second call is a no-op. Best-effort, mirroring
+ * awardContributionTokens: every failure logs and returns 0, never throwing
+ * into the delete path that triggered it.
+ *
+ * Ordering: the negative mirror rows are written BEFORE the balance decrement.
+ * If the process dies between the two, the ledger already nets to zero so a
+ * retry will not double-charge; the cost is a balance left slightly high (under-
+ * penalised), which is the safe direction (it never over-claws a real earner).
+ */
+export async function reverseContributionTokens(
+  db: SupabaseClient,
+  userId: string,
+  sourceRef: string,
+): Promise<number> {
+  try {
+    const { data, error } = await db
+      .from("token_events")
+      .select("amount, source")
+      .eq("user_id", userId)
+      .eq("source_ref", sourceRef)
+    if (error) {
+      console.error("[tokens] reverse lookup failed:", error.message)
+      return 0
+    }
+    const rows = (data ?? []) as { amount?: number; source?: string }[]
+    if (rows.length === 0) return 0
+
+    // Net per source: a source whose awards and prior reversals already cancel
+    // out is skipped, which is what makes this safe to call more than once.
+    const netBySource = new Map<string, number>()
+    for (const r of rows) {
+      const src = r.source ?? "contribution_entry"
+      netBySource.set(src, (netBySource.get(src) ?? 0) + (r.amount ?? 0))
+    }
+
+    let total = 0
+    const reversalRows: Record<string, unknown>[] = []
+    for (const [source, net] of netBySource) {
+      if (net <= 0) continue
+      total += net
+      reversalRows.push({
+        user_id: userId,
+        token_type: "contribution",
+        amount: -net,
+        source,
+        source_ref: sourceRef,
+      })
+    }
+    if (total === 0) return 0
+
+    const { error: ledgerError } = await db.from("token_events").insert(reversalRows)
+    if (ledgerError) {
+      // No reversal rows landed: do NOT touch the balance, or a retry (still
+      // seeing positive net) would decrement twice. Leave it for the audit.
+      console.error("[tokens] reversal ledger insert failed:", ledgerError.message)
+      return 0
+    }
+
+    const { error: rpcError } = await db.rpc("decrement_contribution_tokens", {
+      p_user: userId,
+      p_amount: total,
+    })
+    if (rpcError) {
+      console.error("[tokens] decrement_contribution_tokens failed:", rpcError.message)
+    }
+    return total
+  } catch (err) {
+    console.error("[tokens] reverse threw:", err)
     return 0
   }
 }

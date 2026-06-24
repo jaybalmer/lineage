@@ -208,9 +208,13 @@ export async function POST(req: NextRequest) {
 
   // Token earning (brief §5.1): a new reusable catalog node is +2, under the
   // daily content cap. Series earn nothing (they ride along with an event).
+  // source_ref stamps the award with the entity it earned (BUG-103). Catalog
+  // entities have no member-facing delete endpoint (editor-only via /api/admin),
+  // so there is no member add / delete / re-add farm vector to reverse here; the
+  // ref is recorded for ledger completeness and the audit query.
   let tokensAwarded = 0
   if (type !== "event_series") {
-    tokensAwarded = await awardContributionTokens(db, user.id, 2, "contribution_entity")
+    tokensAwarded = await awardContributionTokens(db, user.id, 2, "contribution_entity", `entity:${id}`)
   }
 
   return NextResponse.json({ ok: true, id, tokens_awarded: tokensAwarded }, { status: 201 })
