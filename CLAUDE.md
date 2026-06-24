@@ -396,6 +396,27 @@ Historical one-off briefs from before this convention live at the repo root (e.g
 
 ---
 
+## Feature sessions
+
+Feature work (new product capability, not bug repairs) lives in `features/` (local-only, gitignored, mirroring `bugs/`). Cowork stages build-ready feature briefs there; Drive `Operations/` is the authoring/archive home. This is the feature-side mirror of the bug-fix loop.
+
+**To start a feature session, the user only needs to say "start a feature session" (no file names required). On that cue:**
+
+1. Read `features/NEXT-FEATURE.md` first. It is the single entry point and is always current.
+   - If it points at a lead brief in `features/` (or the user names one), implement that brief. It is self-contained: scope, a "DECISIONS (review before building)" block with recommended defaults, verified facts, acceptance criteria, suggested order, pre-flight SQL.
+   - If it says **NO BUILD-READY BRIEF YET**, do not invent scope. Read `features/feature-queue.md` for the queue and ask the user which feature to take.
+2. Read `features/feature-queue.md` for the fuller queue, the deferred/parked list, and recent ships.
+
+**Standing rules for feature sessions:**
+- `npx tsc --noEmit` clean before commit.
+- One PR per session: push a branch, open the PR.
+- **Run the full Ship sequence** (see "Session Workflow" below) before wrapping: surface every migration as copy-paste SQL, wait for Jay to apply it, prompt and wait for the merge, then log the ship. Do not treat PR-open as the end of the session. Feature briefs that add a column the write path sends unconditionally are a hard pre-merge migration gate (apply before merge or every insert 500s in the window).
+- **Log the ship.** Append one entry to `bugs/SHIP-LOG.md` using the schema at the top of that file. Feature sessions carry no `BUG-NNN`, so use `type: feature`, `ids: none`, and a `scope:` slug. This is the only sweep that records feature ships, so the `scope:` and PR number are what lets Cowork reconcile `features/feature-queue.md`. Write `status: merged` with the real PR number once Jay confirms the merge; fall back to `status: pending` only if he defers it. Record `migration:`.
+- Do NOT edit the **Shipped** section of `features/feature-queue.md`. Cowork reconciles that after the PR lands.
+- No em dashes anywhere you write.
+
+---
+
 ## Session Workflow (recommended)
 
 - **One session per task.** Keep sessions short and focused. Start a new session for each feature or fix.

@@ -44,6 +44,9 @@ next-env.d.ts
 # bug triage docs (local-only: contains reporter emails + session ids)
 /bugs/
 
+# feature session docs (local-only working tracker, mirrors /bugs/)
+/features/
+
 # local-only scratch: personal Claude settings, planning docs, ops SQL (not app code)
 .claude/settings.local.json
 .claude/launch.json
