@@ -398,7 +398,9 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
   const storeClaims = [...sessionClaims, ...dbClaims]
   const [addOpen, setAddOpen] = useState(false)
   const [addingStory, setAddingStory] = useState(false)
-  const [tab, setTab] = useState<FeedTab>("all")
+  // Stories are the richest, most human content on a brand page, so the feed
+  // opens on Stories; the unified "All" decade feed is one tab away.
+  const [tab, setTab] = useState<FeedTab>("stories")
   // Curated contribute-module chips can preselect a claim mode/predicate.
   const [claimPreset, setClaimPreset] = useState<{ mode: ClaimMode; predicate: Predicate } | undefined>(undefined)
   const openClaim = (preset?: { mode: ClaimMode; predicate: Predicate }) => { setClaimPreset(preset); setAddOpen(true) }
@@ -542,8 +544,6 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
   // ── Curated / partner layer (Phase 2, gated by curation_tier) ──────────────
   const isCurated = org.curation_tier === "curated" || org.curation_tier === "founding"
   const isFounding = org.curation_tier === "founding"
-  // Tagline derives from the first non-empty line of the heritage statement.
-  const tagline = org.heritage_statement?.split("\n").map((l) => l.trim()).find(Boolean) ?? null
   // Validate the editor-authored jsonb defensively; render in stored (editor) order.
   const milestones = Array.isArray(org.brand_milestones)
     ? org.brand_milestones.filter((m) => !!m && typeof m.label === "string" && m.label.trim().length > 0)
@@ -590,8 +590,13 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
     </>
   )
 
+  // Connected-rider headline counts both claim-connected riders and curated team
+  // members (featured_rider_ids), so a curated team member who lacks a claim still
+  // counts. For standard brands featuredRiders is empty, so this equals the claim set.
+  const connectedRiderCount = new Set([...uniqueRiderIds, ...featuredRiders.map((p) => p.id)]).size
+
   const statBlocks = [
-    { n: uniqueRiderIds.length, l: "connected riders" },
+    { n: connectedRiderCount, l: "connected riders" },
     { n: orgBoards.length, l: "board models" },
     { n: totalEvents, l: "events" },
     { n: locatedAtClaims.length, l: "places" },
@@ -661,14 +666,13 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
                         </span>
                       )}
                       <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 font-medium text-white" style={{ background: "rgba(255,255,255,.14)", border: "1px solid rgba(255,255,255,.18)" }}>
-                        ✓ Verified · curated by the brand
+                        ✓ Curated
                       </span>
                       <span className="text-white/75">
                         {[typeLabel, org.founded_year ? `est. ${org.founded_year}` : null, org.country].filter(Boolean).join("  ·  ")}
                       </span>
                     </div>
                     <h1 className="text-3xl sm:text-4xl leading-none" style={{ fontFamily: "var(--font-wordmark)", color: "#fff" }}>{org.name}</h1>
-                    {tagline && <p className="text-sm text-white/80 mt-2 max-w-xl leading-relaxed">{tagline}</p>}
                   </div>
                 </div>
               </div>
@@ -786,12 +790,11 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
               <section>
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">Heritage</h2>
-                  <span className="text-[10px] font-semibold rounded-full px-2 py-0.5" style={{ color: brandColor, background: `${brandColor}1a` }}>Curated by the brand</span>
+                  <span className="text-[10px] font-semibold rounded-full px-2 py-0.5" style={{ color: brandColor, background: `${brandColor}1a` }}>Curated</span>
                 </div>
                 <div className="relative rounded-2xl overflow-hidden p-6 sm:p-7" style={{ background: "#191613", color: "#f4f1ef" }}>
                   <div className="absolute inset-0 pointer-events-none" style={{ backgroundImage: "radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px)", backgroundSize: "8px 8px" }} />
                   <blockquote className="relative m-0 text-lg leading-relaxed font-light whitespace-pre-line">{org.heritage_statement}</blockquote>
-                  <div className="relative mt-3.5 text-xs text-white/55">Curated by {org.name}, on Linestry</div>
                 </div>
               </section>
             )}
@@ -1443,7 +1446,7 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
         {/* Provenance line (curated) */}
         {isCurated && (
           <div className="text-center text-xs text-muted font-light pt-7">
-            <span className="font-semibold" style={{ color: brandColor }}>Curated by the brand</span>
+            <span className="font-semibold" style={{ color: brandColor }}>Curated by Linestry</span>
             {" · expanded by the community · "}
             {orgStories.length} stor{orgStories.length === 1 ? "y" : "ies"} and {uniqueRiderIds.length} rider{uniqueRiderIds.length === 1 ? "" : "s"} added by members
           </div>
