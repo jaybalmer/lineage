@@ -183,10 +183,11 @@ async function readOwnerStories(
 
   // rider_ids through the approved-only view; community place/event links from
   // their base junctions (no tag_events on those, so no view needed).
-  const [riderRes, cPlaceRes, cEventRes] = await Promise.all([
+  const [riderRes, cPlaceRes, cEventRes, cOrgRes] = await Promise.all([
     db.from("story_riders_public").select("story_id, rider_id").in("story_id", storyIds),
     db.from("story_places").select("story_id, place_id, added_by").in("story_id", storyIds),
     db.from("story_events").select("story_id, event_id, added_by").in("story_id", storyIds),
+    db.from("story_orgs").select("story_id, org_id, added_by").in("story_id", storyIds),
   ])
 
   const ridersByStory = new Map<string, string[]>()
@@ -207,6 +208,12 @@ async function readOwnerStories(
     arr.push({ event_id: r.event_id, added_by: r.added_by })
     cEventsByStory.set(r.story_id, arr)
   }
+  const cOrgsByStory = new Map<string, { org_id: string; added_by: string | null }[]>()
+  for (const r of (cOrgRes.data ?? []) as { story_id: string; org_id: string; added_by: string | null }[]) {
+    const arr = cOrgsByStory.get(r.story_id) ?? []
+    arr.push({ org_id: r.org_id, added_by: r.added_by })
+    cOrgsByStory.set(r.story_id, arr)
+  }
 
   const stories: Story[] = rows.map((s) => ({
     ...(s as unknown as Story),
@@ -214,6 +221,7 @@ async function readOwnerStories(
     rider_ids: ridersByStory.get(s.id as string) ?? [],
     community_places: cPlacesByStory.get(s.id as string) ?? [],
     community_events: cEventsByStory.get(s.id as string) ?? [],
+    community_orgs: cOrgsByStory.get(s.id as string) ?? [],
     boards: undefined,
   }))
 
@@ -251,6 +259,7 @@ async function resolveEntities(
     for (const r of s.rider_ids ?? []) personIds.add(r)
     for (const cp of s.community_places ?? []) placeIds.add(cp.place_id)
     for (const ce of s.community_events ?? []) eventIds.add(ce.event_id)
+    for (const co of s.community_orgs ?? []) orgIds.add(co.org_id)
   }
 
   const ids = {

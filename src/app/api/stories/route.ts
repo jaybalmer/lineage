@@ -84,13 +84,22 @@ export async function GET(req: NextRequest) {
     if (authorId)  query = query.eq("author_id", authorId)
     if (onTimeline === "true")  query = query.eq("on_timeline", true)
     if (onTimeline === "false") query = query.eq("on_timeline", false)
-    if (orgId)     query = query.eq("linked_org_id", orgId)
 
-    // Story Connections: place and event filters are a union of the author's
-    // primary linked_* column and the community junction, so a community-
-    // connected story surfaces on the place/event pages. Junction errors
-    // (e.g. migration not yet applied) and ids unsafe to embed in a
-    // PostgREST or() filter both degrade to the original plain eq.
+    // Story Connections: place, event, and brand filters are a union of the
+    // author's primary linked_* column and the community junction, so a
+    // community-connected story surfaces on the place/event/brand pages.
+    // Junction errors (e.g. migration not yet applied) and ids unsafe to embed
+    // in a PostgREST or() filter both degrade to the original plain eq.
+    if (orgId) {
+      const { data: coRows, error: coErr } = await supabase
+        .from("story_orgs")
+        .select("story_id")
+        .eq("org_id", orgId)
+      const coIds = coErr ? [] : ((coRows ?? []) as { story_id: string }[]).map((r) => r.story_id)
+      query = coIds.length > 0 && !/[,()'"]/.test(orgId)
+        ? query.or(`linked_org_id.eq.${orgId},id.in.(${coIds.join(",")})`)
+        : query.eq("linked_org_id", orgId)
+    }
     if (placeId) {
       const { data: cpRows, error: cpErr } = await supabase
         .from("story_places")
@@ -159,13 +168,14 @@ export async function GET(req: NextRequest) {
     const reactionsByStory = new Map<string, Partial<Record<StoryReactionType, number>>>()
     const viewerReactionByStory = new Map<string, StoryReactionType>()
     const commentCountByStory = new Map<string, number>()
-    // Story Connections: community-added place/event links per story. Both
-    // junctions read the base table directly — they carry no tag_events, so
-    // PB-009 view discipline does not apply to them.
+    // Story Connections: community-added place/event/brand links per story. All
+    // three junctions read the base table directly — they carry no tag_events,
+    // so PB-009 view discipline does not apply to them.
     const communityPlacesByStory = new Map<string, { place_id: string; added_by: string | null }[]>()
     const communityEventsByStory = new Map<string, { event_id: string; added_by: string | null }[]>()
+    const communityOrgsByStory = new Map<string, { org_id: string; added_by: string | null }[]>()
     if (storyIds.length > 0) {
-      const [reactionRes, commentRes, cPlaceRes, cEventRes] = await Promise.all([
+      const [reactionRes, commentRes, cPlaceRes, cEventRes, cOrgRes] = await Promise.all([
         supabase
           .from("story_reactions")
           .select("story_id, reactor_id, reaction_type")
@@ -181,6 +191,10 @@ export async function GET(req: NextRequest) {
         supabase
           .from("story_events")
           .select("story_id, event_id, added_by")
+          .in("story_id", storyIds),
+        supabase
+          .from("story_orgs")
+          .select("story_id, org_id, added_by")
           .in("story_id", storyIds),
       ])
       if (reactionRes.error) {
@@ -216,6 +230,14 @@ export async function GET(req: NextRequest) {
         arr.push({ event_id: r.event_id, added_by: r.added_by })
         communityEventsByStory.set(r.story_id, arr)
       }
+      if (cOrgRes.error) {
+        console.error("[stories GET] story_orgs fetch failed:", cOrgRes.error.message)
+      }
+      for (const r of (cOrgRes.data ?? []) as { story_id: string; org_id: string; added_by: string | null }[]) {
+        const arr = communityOrgsByStory.get(r.story_id) ?? []
+        arr.push({ org_id: r.org_id, added_by: r.added_by })
+        communityOrgsByStory.set(r.story_id, arr)
+      }
     }
 
     // Normalise joined arrays to flat ID arrays
@@ -225,6 +247,7 @@ export async function GET(req: NextRequest) {
       rider_ids: ridersByStory.get(s.id as string) ?? [],
       community_places: communityPlacesByStory.get(s.id as string) ?? [],
       community_events: communityEventsByStory.get(s.id as string) ?? [],
+      community_orgs: communityOrgsByStory.get(s.id as string) ?? [],
       boards: undefined,
       reaction_summary: reactionsByStory.get(s.id as string) ?? {},
       viewer_reaction: viewerReactionByStory.get(s.id as string) ?? null,

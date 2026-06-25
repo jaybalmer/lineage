@@ -128,6 +128,12 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
       const event = catalog.events.find((e) => e.id === ce.event_id)
       return event ? [{ conn: ce, event }] : []
     })
+  const communityOrgChips = (displayStory.community_orgs ?? [])
+    .filter((co) => co.org_id !== displayStory.linked_org_id)
+    .flatMap((co) => {
+      const org = catalog.orgs.find((o) => o.id === co.org_id)
+      return org ? [{ conn: co, org }] : []
+    })
 
   // Removal rights. Rider chips deliberately skip the adder lookup (the GET
   // payload carries no asserter info in v1): author, editor, and the viewer's
@@ -159,6 +165,14 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
           community_places: [...(prev.community_places ?? []), { place_id: entityId, added_by: activePersonId }],
         }
       }
+      if (type === "org") {
+        if (entityId === prev.linked_org_id) return prev
+        if ((prev.community_orgs ?? []).some((o) => o.org_id === entityId)) return prev
+        return {
+          ...prev,
+          community_orgs: [...(prev.community_orgs ?? []), { org_id: entityId, added_by: activePersonId }],
+        }
+      }
       if (entityId === prev.linked_event_id) return prev
       if ((prev.community_events ?? []).some((e) => e.event_id === entityId)) return prev
       return {
@@ -177,7 +191,9 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
         ? { ...p, rider_ids: (p.rider_ids ?? []).filter((r) => r !== entityId) }
         : type === "place"
           ? { ...p, community_places: (p.community_places ?? []).filter((c) => c.place_id !== entityId) }
-          : { ...p, community_events: (p.community_events ?? []).filter((c) => c.event_id !== entityId) })
+          : type === "event"
+            ? { ...p, community_events: (p.community_events ?? []).filter((c) => c.event_id !== entityId) }
+            : { ...p, community_orgs: (p.community_orgs ?? []).filter((c) => c.org_id !== entityId) })
     try {
       const r = await fetch(
         `/api/stories/${displayStory.id}/connections?type=${type}&entity_id=${encodeURIComponent(entityId)}`,
@@ -204,6 +220,7 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
 
   const hasLinks = linkedPlace || linkedEvent || linkedOrg || linkedBoards.length > 0
     || taggedRiders.length > 0 || communityPlaceChips.length > 0 || communityEventChips.length > 0
+    || communityOrgChips.length > 0
 
   async function handleDelete() {
     setDeleting(true)
@@ -454,11 +471,42 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
           {linkedOrg && (
             <CommunityLink
               href={`/brands/${orgSlug(linkedOrg)}`}
-              className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 transition-colors"
+              className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-colors"
             >
               <div className="w-2 h-2 rounded-full bg-cyan-600 flex-shrink-0" /> {linkedOrg.name}
             </CommunityLink>
           )}
+          {communityOrgChips.map(({ conn, org }) => {
+            const canRemove = canRemoveCommunityLink(conn.added_by)
+            const busy = removingKey === `org:${org.id}`
+            const connectedBy = adderName(conn.added_by)
+            return (
+              <span key={`co-${org.id}`} className="inline-flex items-center">
+                <CommunityLink
+                  href={`/brands/${orgSlug(org)}`}
+                  title={connectedBy ? `Connected by ${connectedBy}` : undefined}
+                  className={cn(
+                    "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-colors",
+                    canRemove && "rounded-r-none",
+                  )}
+                >
+                  <div className="w-2 h-2 rounded-full bg-cyan-600 flex-shrink-0" /> {org.name}
+                </CommunityLink>
+                {canRemove && (
+                  <button
+                    type="button"
+                    onClick={() => removeConnection("org", org.id)}
+                    disabled={busy}
+                    className="inline-flex items-center text-[11px] px-1.5 py-0.5 rounded-full rounded-l-none border-l-0 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-colors"
+                    title={`Remove ${org.name} from this story`}
+                    aria-label={`Remove ${org.name} from this story`}
+                  >
+                    {busy ? "…" : "×"}
+                  </button>
+                )}
+              </span>
+            )
+          })}
           {linkedBoards.map((board) => board && (
             <CommunityLink
               key={board.id}

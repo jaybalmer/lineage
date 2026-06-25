@@ -221,9 +221,13 @@ function PublicStoryCard({ story, entities, owner }: { story: Story; entities: P
   const communityEvents = (story.community_events ?? [])
     .filter((ce) => ce.event_id !== story.linked_event_id)
     .map((ce) => entities.events[ce.event_id]).filter(Boolean)
+  const communityOrgs = (story.community_orgs ?? [])
+    .filter((co) => co.org_id !== story.linked_org_id)
+    .map((co) => entities.orgs[co.org_id]).filter(Boolean)
 
   const hasLinks = linkedPlace || linkedEvent || linkedOrg || linkedBoards.length > 0 ||
-    taggedRiders.length > 0 || communityPlaces.length > 0 || communityEvents.length > 0
+    taggedRiders.length > 0 || communityPlaces.length > 0 || communityEvents.length > 0 ||
+    communityOrgs.length > 0
 
   return (
     <div className="postcard bg-surface border-2 border-violet-700 rounded-xl p-5 mb-4">
@@ -278,6 +282,11 @@ function PublicStoryCard({ story, entities, owner }: { story: Story; entities: P
               <span className="w-2 h-2 rounded-full bg-cyan-600 flex-shrink-0" /> {linkedOrg.name}
             </span>
           )}
+          {communityOrgs.map((o) => o && (
+            <span key={`co-${o.id}`} className={cn(CHIP, "bg-cyan-500/10 border border-cyan-500/20 text-cyan-600")}>
+              <span className="w-2 h-2 rounded-full bg-cyan-600 flex-shrink-0" /> {o.name}
+            </span>
+          ))}
           {linkedBoards.map((b) => b && (
             <span key={b.id} className={cn(CHIP, "bg-emerald-500/10 border border-emerald-500/20 text-emerald-600")}>
               🏂 {b.brand} {b.model} &apos;{String(b.model_year ?? "").slice(2)}

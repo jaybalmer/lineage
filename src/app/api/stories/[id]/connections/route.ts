@@ -7,18 +7,19 @@ import { pairStoryRiderTagEvents, isAsserterGloballyBlocked } from "@/lib/tag-ev
 import { awardContributionTokens, reverseContributionTokens } from "@/lib/tokens"
 
 // POST   /api/stories/[id]/connections — any signed-in member connects a
-//        rider, place, or event to a public (or shared) story.
+//        rider, place, event, or brand to a public (or shared) story.
 // DELETE /api/stories/[id]/connections?type=&entity_id= — the adder, the
 //        story author, or an editor removes a community connection.
 //
 // Riders are person-implicating, so the full PB-009 caller contract applies:
 // caller-level global-block precheck BEFORE the junction insert (the pair
 // helper's internal check is defense-in-depth, not the gate), then insert,
-// pair, and fire the ambient-growth fan-out. Places and events are not
-// person-implicating: plain junction rows, no tag_events, removal rights are
-// the control. See Operations/story-connections-brief.md (June 9, 2026).
+// pair, and fire the ambient-growth fan-out. Places, events, and brands are
+// not person-implicating: plain junction rows, no tag_events, removal rights
+// are the control. See Operations/story-connections-brief.md (June 9, 2026)
+// and features/story-connections-brands-brief.md (June 19, 2026).
 
-type ConnectionType = "rider" | "place" | "event"
+type ConnectionType = "rider" | "place" | "event" | "org"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -28,13 +29,14 @@ interface StoryRow {
   visibility: string
   linked_place_id: string | null
   linked_event_id: string | null
+  linked_org_id: string | null
   community_id: string | null
 }
 
 async function loadStory(db: SupabaseClient, storyId: string): Promise<StoryRow | null> {
   const { data } = await db
     .from("stories")
-    .select("id, author_id, visibility, linked_place_id, linked_event_id, community_id")
+    .select("id, author_id, visibility, linked_place_id, linked_event_id, linked_org_id, community_id")
     .eq("id", storyId)
     .maybeSingle()
   return (data as StoryRow | null) ?? null
@@ -63,9 +65,9 @@ export async function POST(
     const payload = await req.json().catch(() => null)
     const type = payload?.type as ConnectionType | undefined
     const entityId = typeof payload?.entity_id === "string" ? payload.entity_id.trim() : ""
-    if (!type || !["rider", "place", "event"].includes(type) || !entityId) {
+    if (!type || !["rider", "place", "event", "org"].includes(type) || !entityId) {
       return NextResponse.json(
-        { error: "type (rider | place | event) and entity_id are required" },
+        { error: "type (rider | place | event | org) and entity_id are required" },
         { status: 400 },
       )
     }
@@ -84,10 +86,10 @@ export async function POST(
       )
     }
 
-    if (type === "place" || type === "event") {
-      const table = type === "place" ? "story_places" : "story_events"
-      const idColumn = type === "place" ? "place_id" : "event_id"
-      const authorLink = type === "place" ? story.linked_place_id : story.linked_event_id
+    if (type === "place" || type === "event" || type === "org") {
+      const table = type === "place" ? "story_places" : type === "event" ? "story_events" : "story_orgs"
+      const idColumn = type === "place" ? "place_id" : type === "event" ? "event_id" : "org_id"
+      const authorLink = type === "place" ? story.linked_place_id : type === "event" ? story.linked_event_id : story.linked_org_id
 
       // The author's own primary link counts as already-connected so the UI
       // never renders a duplicate chip.
@@ -236,9 +238,9 @@ export async function DELETE(
     const { searchParams } = new URL(req.url)
     const type = searchParams.get("type") as ConnectionType | null
     const entityId = searchParams.get("entity_id")?.trim() ?? ""
-    if (!type || !["rider", "place", "event"].includes(type) || !entityId) {
+    if (!type || !["rider", "place", "event", "org"].includes(type) || !entityId) {
       return NextResponse.json(
-        { error: "type (rider | place | event) and entity_id are required" },
+        { error: "type (rider | place | event | org) and entity_id are required" },
         { status: 400 },
       )
     }
@@ -253,9 +255,9 @@ export async function DELETE(
     // the adder (BUG-103 claw-back).
     let connectionAdderId: string | null = null
 
-    if (type === "place" || type === "event") {
-      const table = type === "place" ? "story_places" : "story_events"
-      const idColumn = type === "place" ? "place_id" : "event_id"
+    if (type === "place" || type === "event" || type === "org") {
+      const table = type === "place" ? "story_places" : type === "event" ? "story_events" : "story_orgs"
+      const idColumn = type === "place" ? "place_id" : type === "event" ? "event_id" : "org_id"
 
       const { data: row } = await db
         .from(table)
