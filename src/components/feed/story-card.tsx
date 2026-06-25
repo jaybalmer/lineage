@@ -50,6 +50,14 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
   const [reportOpening, setReportOpening] = useState<string | null>(null)  // rider id while loading
   const viewerSignedIn = isAuthUser(activePersonId)
 
+  // Moderator takedown: an editor (is_editor) can delete ANY story, not just
+  // their own. Owners keep the full edit + delete menu; a moderator viewing
+  // someone else's story gets a delete-only affordance with clearer confirm
+  // copy. Mirrors the server's requireModerator() boundary (is_editor, not
+  // founding tier) — see DELETE /api/stories.
+  const canModerate = !isOwn && !!membership?.is_editor
+  const showMenu = isOwn || canModerate
+
   async function openReportForRider(riderId: string, riderName: string) {
     setReportOpening(riderId)
     try {
@@ -224,10 +232,14 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
 
   async function handleDelete() {
     setDeleting(true)
-    await fetch(`/api/stories?id=${displayStory.id}`, { method: "DELETE" })
-    onDelete?.(displayStory.id)
+    const r = await fetch(`/api/stories?id=${displayStory.id}`, { method: "DELETE" })
     setDeleting(false)
     setConfirmDelete(false)
+    if (!r.ok) {
+      addToast("Couldn't delete this story.", "error")
+      return
+    }
+    onDelete?.(displayStory.id)
   }
 
   return (
@@ -281,14 +293,14 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
           </span>
           <span className="text-xs text-muted">{formatStoryDate(displayStory.story_date)}</span>
 
-          {isOwn && (
+          {showMenu && (
             <div className="relative">
               <button
                 onClick={() => setMenuOpen((o) => !o)}
                 // BUG-044: hover-reveal only works with a mouse. Touch devices
                 // have no hover, so gate the hidden-until-hover behaviour behind
                 // (hover: hover) and keep the trigger visible (muted) on touch
-                // so owners can reach edit/delete on mobile.
+                // so owners and moderators can reach the menu on mobile.
                 className="[@media(hover:hover)]:opacity-0 [@media(hover:none)]:opacity-100 group-hover:opacity-100 text-muted hover:text-foreground transition-all text-lg leading-none px-1"
                 aria-label="Story menu"
               >
@@ -296,18 +308,22 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
               </button>
               {menuOpen && (
                 <div className="absolute right-0 top-6 z-50 bg-surface border border-border-default rounded-lg shadow-xl min-w-[130px] py-1">
-                  <button
-                    onClick={() => { setMenuOpen(false); setEditing(true) }}
-                    className="w-full text-left px-3 py-2 text-xs text-foreground hover:bg-surface-hover transition-colors"
-                  >
-                    Edit story
-                  </button>
-                  <div className="border-t border-border-default mx-2" />
+                  {isOwn && (
+                    <>
+                      <button
+                        onClick={() => { setMenuOpen(false); setEditing(true) }}
+                        className="w-full text-left px-3 py-2 text-xs text-foreground hover:bg-surface-hover transition-colors"
+                      >
+                        Edit story
+                      </button>
+                      <div className="border-t border-border-default mx-2" />
+                    </>
+                  )}
                   <button
                     onClick={() => { setMenuOpen(false); setConfirmDelete(true) }}
                     className="w-full text-left px-3 py-2 text-xs text-red-400 hover:bg-surface-hover transition-colors"
                   >
-                    Delete story
+                    {canModerate ? "Delete (moderator)" : "Delete story"}
                   </button>
                 </div>
               )}
@@ -601,7 +617,9 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
       {/* ── Delete confirm ── */}
       {confirmDelete && (
         <div className="mt-3 pt-3 border-t border-border-default flex items-center gap-3">
-          <span className="text-xs text-muted flex-1">Delete this story?</span>
+          <span className="text-xs text-muted flex-1">
+            {canModerate ? "Delete this member's story? It will be removed for everyone." : "Delete this story?"}
+          </span>
           <button
             onClick={() => setConfirmDelete(false)}
             className="text-xs text-muted hover:text-foreground transition-colors"
