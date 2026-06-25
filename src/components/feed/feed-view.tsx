@@ -10,7 +10,7 @@ import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { BoardShelf } from "@/components/feed/board-shelf"
 import { cn } from "@/lib/utils"
-import { groupRodeAtCompanions } from "@/lib/companion-grouping"
+import { groupRodeAtCompanions, countTimelineEntries } from "@/lib/companion-grouping"
 import { dateToSortNum, groupByDecade } from "@/lib/timeline-grouping"
 
 // Staggered entrance for the first post-signup timeline reveal (Task 4).
@@ -237,8 +237,9 @@ export function FeedView({
       groupedClaims.filter((c) => claimCategory(c) === cat).length
     const boardClaims = groupedClaims.filter((c) => c.predicate === "owned_board")
     return {
-      // Boards are excluded from the "all" timeline, so they are excluded from its count.
-      all: groupedClaims.length - boardClaims.length + days.length + stories.length,
+      // Boards are excluded from the "all" timeline, so they are excluded from its
+      // count. Shared with the owner panel's "Entry #N" celebration (BUG-104).
+      all: countTimelineEntries(groupedClaims, days.length, stories.length),
       places: countCat("places"),
       // gear = distinct boards (one shelf row per board), matching BoardShelf.
       gear: new Set(boardClaims.map((c) => c.object_id)).size,

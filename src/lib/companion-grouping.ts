@@ -85,3 +85,25 @@ export function groupRodeAtCompanions(claims: Claim[]): GroupedClaims {
     companionMap,
   }
 }
+
+/**
+ * The number of entries the timeline "All" filter surfaces for a person:
+ * companion `rode_with` rows already folded into their `rode_at` parent (pass
+ * the post-fold claim set from `groupRodeAtCompanions`, not the raw claims),
+ * boards excluded (they live in their own shelf, off the timeline), plus riding
+ * days and stories.
+ *
+ * Single source of truth for the FeedView "All N" pill and the owner panel's
+ * post-add "Entry #N on your timeline" celebration so the two can never drift
+ * (BUG-104: the celebration used raw `personClaims.length`, which over-counted
+ * folded companions and shelved boards and so overstated the number after a
+ * delete).
+ */
+export function countTimelineEntries(
+  groupedClaims: Claim[],
+  dayCount: number,
+  storyCount: number,
+): number {
+  const boardCount = groupedClaims.filter((c) => c.predicate === "owned_board").length
+  return groupedClaims.length - boardCount + dayCount + storyCount
+}

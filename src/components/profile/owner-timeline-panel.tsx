@@ -18,6 +18,7 @@ import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { StackTimelineToggle } from "@/components/public-timeline/stack-timeline-toggle"
 import { readSeenIds, writeSeenIds } from "@/lib/seen-celebrations"
+import { groupRodeAtCompanions, countTimelineEntries } from "@/lib/companion-grouping"
 import { estimateShares } from "@/lib/equity-offer"
 import type { Claim, CelebrationPayload, PrivacyLevel, Story } from "@/types"
 
@@ -412,6 +413,15 @@ export function OwnerTimelinePanel() {
   const allClaims    = getAllClaims(sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId)
   const personClaims = allClaims.filter((c) => c.subject_id === activePersonId)
 
+  // BUG-104: the post-add celebration's "Entry #N on your timeline" must match
+  // the timeline "All" pill, which folds companion rode_with rows, drops boards
+  // (they live in their own shelf), and adds days + stories. Compute it through
+  // the same helper FeedView's pill uses so the two can never diverge. Raw
+  // personClaims.length over-counted both folds and boards, so it overstated the
+  // entry number and looked like deletes were being ignored.
+  const { claims: groupedPersonClaims } = groupRodeAtCompanions(personClaims)
+  const timelineEntryCount = countTimelineEntries(groupedPersonClaims, myDays.length, stories.length)
+
   // Detect new claim additions and fire contextual celebration + milestone checks.
   //
   // Bug history: this used to compare personClaims.length against a useRef
@@ -465,7 +475,15 @@ export function OwnerTimelinePanel() {
         // forget; the celebration queue tolerates the short delay.
         void queueBoardMilestoneCelebration(newClaim, activePersonId, catalog.boards, person?.riding_since, queueCelebration)
       } else {
-        queueCelebration(getCelebrationForNewClaim(newClaim, count, catalog))
+        // BUG-104: show the number the user actually sees for this entry, not the
+        // raw claim total. A board reads the distinct-board "Boards" pill (so a
+        // 3rd+ board never reports "Entry #0" when the timeline is otherwise
+        // empty); every timeline claim reads the "All" pill. Both come from the
+        // same helpers the pills use, so the celebration can't overstate.
+        const celebrationCount = newClaim.predicate === "owned_board"
+          ? new Set(personClaims.filter((c) => c.predicate === "owned_board").map((c) => c.object_id)).size
+          : timelineEntryCount
+        queueCelebration(getCelebrationForNewClaim(newClaim, celebrationCount, catalog))
       }
 
       // FTUE step tracking, driven by the newest claim's predicate.
