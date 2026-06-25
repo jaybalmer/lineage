@@ -53,6 +53,7 @@ function storyConnections(story: Story): number {
     (story.board_ids?.length ?? 0) +
     (story.community_places?.length ?? 0) +
     (story.community_events?.length ?? 0) +
+    (story.community_orgs?.length ?? 0) +
     (story.linked_place_id ? 1 : 0) +
     (story.linked_event_id ? 1 : 0) +
     (story.linked_org_id ? 1 : 0)

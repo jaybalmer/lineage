@@ -14,7 +14,7 @@ import type { Story } from "@/types"
 // how reactions feel. Removal lives on the card chips, so this surface is
 // add-only. See Operations/story-connections-brief.md (June 9, 2026).
 
-export type StoryConnectionType = "rider" | "place" | "event"
+export type StoryConnectionType = "rider" | "place" | "event" | "org"
 
 interface AddConnectionsPopoverProps {
   story: Story
@@ -29,7 +29,7 @@ export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnection
   // When a search returns no match, the member can create a brand-new entity
   // inline (BUG-059), mirroring the Add Story modal. The AddEntityModal key
   // uses "person" for riders, matching its entityType prop.
-  const [addingEntity, setAddingEntity] = useState<"person" | "place" | "event" | null>(null)
+  const [addingEntity, setAddingEntity] = useState<"person" | "place" | "event" | "org" | null>(null)
 
   // Lock the background page while the picker is open (BUG-048).
   useBodyScrollLock()
@@ -61,11 +61,15 @@ export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnection
     ...(story.linked_event_id ? [story.linked_event_id] : []),
     ...(story.community_events ?? []).map((e) => e.event_id),
   ])
+  const orgSet = new Set([
+    ...(story.linked_org_id ? [story.linked_org_id] : []),
+    ...(story.community_orgs ?? []).map((o) => o.org_id),
+  ])
   const viewerOnStory = !!viewerId && riderSet.has(viewerId)
 
   async function connect(type: StoryConnectionType, entityId: string) {
     if (posting) return
-    const connectedSet = type === "rider" ? riderSet : type === "place" ? placeSet : eventSet
+    const connectedSet = type === "rider" ? riderSet : type === "place" ? placeSet : type === "event" ? eventSet : orgSet
     if (connectedSet.has(entityId)) {
       addToast("Already connected to this story.", "info")
       return
@@ -117,7 +121,7 @@ export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnection
   // only calls onAdded once the DB write lands), so connecting it now is safe:
   // connect()'s server-side FK checks resolve against a row that exists. Map
   // the modal's "person" key onto the connection's "rider" type.
-  async function handleEntityCreated(kind: "person" | "place" | "event", entityId: string) {
+  async function handleEntityCreated(kind: "person" | "place" | "event" | "org", entityId: string) {
     setAddingEntity(null)
     await connect(kind === "person" ? "rider" : kind, entityId)
   }
@@ -209,6 +213,18 @@ export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnection
                 placeholder="Search events…"
                 onAddNew={() => setAddingEntity("event")}
                 addNewLabel="Add a new event"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">Brands</label>
+              <SearchPicker
+                items={catalog.orgs}
+                selected={[]}
+                onToggle={(id) => connect("org", id)}
+                getLabel={(o) => o.name}
+                placeholder="Search brands…"
+                onAddNew={() => setAddingEntity("org")}
+                addNewLabel="Add a new brand"
               />
             </div>
           </div>

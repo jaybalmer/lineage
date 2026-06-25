@@ -580,6 +580,7 @@ export interface Story {
   // chips render the union.
   community_places?: { place_id: string; added_by: string | null }[]
   community_events?: { event_id: string; added_by: string | null }[]
+  community_orgs?: { org_id: string; added_by: string | null }[]
   // Denormalised author info (joined from profiles)
   author?: { display_name: string; avatar_url?: string }
   youtube_url?: string | null
