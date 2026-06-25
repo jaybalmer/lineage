@@ -632,7 +632,11 @@ export async function DELETE(req: NextRequest) {
   const id = new URL(req.url).searchParams.get("id")
   if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })
 
-  // Verify ownership
+  // Authorize: a story's author can always delete it. An editor (is_editor) can
+  // delete ANY story as a moderation takedown. This mirrors the
+  // requireModerator() boundary (is_editor=true, NOT founding tier) used by the
+  // other moderation surfaces (tag-queue, asserters); founding membership alone
+  // does not grant takedown power.
   const { data: existing } = await supabase
     .from("stories")
     .select("author_id")
@@ -640,7 +644,18 @@ export async function DELETE(req: NextRequest) {
     .single()
 
   if (!existing) return NextResponse.json({ error: "Story not found" }, { status: 404 })
-  if (existing.author_id !== user.id) {
+
+  const isOwner = existing.author_id === user.id
+  let isModerator = false
+  if (!isOwner) {
+    const { data: me } = await supabase
+      .from("profiles")
+      .select("is_editor")
+      .eq("id", user.id)
+      .single()
+    isModerator = !!me?.is_editor
+  }
+  if (!isOwner && !isModerator) {
     return NextResponse.json({ error: "Not authorized to delete this story" }, { status: 403 })
   }
 
@@ -709,15 +724,19 @@ export async function DELETE(req: NextRequest) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   // BUG-103: claw back the contribution tokens this story earned (entry, media,
-  // source) so add / delete / re-add nets to zero. Only the author reaches here
-  // (ownership checked above), so the award recipient is user.id. Best-effort.
-  await reverseContributionTokens(supabase, user.id, `story:${id}`)
+  // source) so add / delete / re-add nets to zero. The tokens were awarded to
+  // the story's AUTHOR, so always reverse from existing.author_id — not user.id,
+  // which on a moderator takedown is a different person who earned nothing here.
+  // Best-effort.
+  await reverseContributionTokens(supabase, existing.author_id, `story:${id}`)
 
   await captureServerEvent({
     category: "content",
     event: "story_deleted",
     actorId: user.id,
-    props: { story_id: id },
+    // moderated=true means an editor removed someone else's story; author_id is
+    // recorded so the takedown is auditable at /admin/activity.
+    props: { story_id: id, moderated: !isOwner, author_id: existing.author_id },
   })
 
   return NextResponse.json({ ok: true })
