@@ -40,6 +40,7 @@ const EMPTY_CONN: ConnCounts = { people: 0, boards: 0, events: 0, places: 0, tot
 function OrgCard({ org, conn }: { org: Org; conn: ConnCounts }) {
   const initial = org.name[0].toUpperCase()
   const isUnverified = org.community_status === "unverified"
+  const isCurated = org.curation_tier === "curated" || org.curation_tier === "founding"
 
   // Breakdown of the connection total (only non-zero parts), e.g. "1 rider · 9 events"
   const parts: string[] = []
@@ -53,14 +54,25 @@ function OrgCard({ org, conn }: { org: Org; conn: ConnCounts }) {
       <CommunityLink href={`/brands/${orgSlug(org)}`} className="flex-1 min-w-0 block">
         <div className="group bg-surface border-2 border-violet-600 rounded-xl p-4 hover:opacity-90 transition-all">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-violet-50 border border-violet-200 flex items-center justify-center text-sm font-bold text-violet-700 shrink-0">
-              {initial}
-            </div>
+            {/* Curated brands show their logo; everyone else gets the initial block. */}
+            {isCurated && org.logo_url ? (
+              <div className="w-9 h-9 rounded-lg bg-white border border-violet-200 flex items-center justify-center overflow-hidden shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={org.logo_url} alt={org.name} className="w-full h-full object-contain p-0.5" />
+              </div>
+            ) : (
+              <div className="w-9 h-9 rounded-lg bg-violet-50 border border-violet-200 flex items-center justify-center text-sm font-bold text-violet-700 shrink-0">
+                {initial}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-sm font-semibold text-foreground truncate">
                   {org.name}
                 </span>
+                {isCurated && (
+                  <span className="text-[10px] font-semibold text-violet-700 bg-violet-500/10 rounded px-1.5 py-0.5 shrink-0">Curated</span>
+                )}
                 {isUnverified && (
                   <span className="text-[10px] text-amber-600 border border-amber-500/40 rounded px-1.5 py-0.5 shrink-0">unverified</span>
                 )}
