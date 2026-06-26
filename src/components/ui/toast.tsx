@@ -1,15 +1,27 @@
 "use client"
 
 import { useLineageStore } from "@/store/lineage-store"
+import { cn } from "@/lib/utils"
 
 export function Toasts() {
   const toasts = useLineageStore((s) => s.toasts)
   const dismissToast = useLineageStore((s) => s.dismissToast)
+  const celebrationQueue = useLineageStore((s) => s.celebrationQueue)
+
+  // BUG-107: the claim/celebration toast (CelebrationOverlay) also anchors
+  // bottom-right at a higher z-index, so when a Tier 1-2 celebration toast is
+  // showing it covers this "+1 token earned" toast. Lift the toast stack above
+  // the celebration card when one is present so both read instead of stacking
+  // on top of each other.
+  const hasCelebrationToast = (celebrationQueue[0]?.tier ?? 0) <= 2 && celebrationQueue.length > 0
 
   if (toasts.length === 0) return null
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2 max-w-sm">
+    <div className={cn(
+      "fixed right-4 z-50 flex flex-col gap-2 max-w-sm transition-all",
+      hasCelebrationToast ? "bottom-36" : "bottom-4",
+    )}>
       {toasts.map((toast) => (
         <div
           key={toast.id}

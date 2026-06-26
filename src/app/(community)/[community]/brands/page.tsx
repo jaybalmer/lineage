@@ -26,7 +26,7 @@ const CATEGORY_ORDER = ["board_brand", "outerwear", "media", "other"]
 type BrandSort = "entries" | "category" | "az"
 
 const SORT_OPTIONS: { key: BrandSort; label: string; title: string }[] = [
-  { key: "entries",  label: "Most connections", title: "Sort by riders, events & locations" },
+  { key: "entries",  label: "Most connections", title: "Sort by riders, events & places" },
   { key: "category", label: "Category",         title: "Group by category" },
   { key: "az",       label: "A-Z",              title: "Sort alphabetically" },
 ]
@@ -47,7 +47,7 @@ function OrgCard({ org, conn }: { org: Org; conn: ConnCounts }) {
   if (conn.people > 0) parts.push(`${conn.people} rider${conn.people !== 1 ? "s" : ""}`)
   if (conn.boards > 0) parts.push(`${conn.boards} board${conn.boards !== 1 ? "s" : ""}`)
   if (conn.events > 0) parts.push(`${conn.events} event${conn.events !== 1 ? "s" : ""}`)
-  if (conn.places > 0) parts.push(`${conn.places} location${conn.places !== 1 ? "s" : ""}`)
+  if (conn.places > 0) parts.push(`${conn.places} place${conn.places !== 1 ? "s" : ""}`)
 
   return (
     <div className="flex items-center gap-2">
