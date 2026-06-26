@@ -514,7 +514,11 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
                   items={allEvents}
                   selected={selectedEventId ? [selectedEventId] : []}
                   onToggle={(id) => setSelectedEventId((prev) => prev === id ? null : id)}
-                  getLabel={(e) => `${e.name} ${e.year ?? ""}`}
+                  getLabel={(e) =>
+                    e.year && !e.name.trim().endsWith(String(e.year))
+                      ? `${e.name} ${e.year}`
+                      : e.name
+                  }
                   placeholder="Search events…"
                   single
                   onAddNew={() => setAddingEntity("event")}

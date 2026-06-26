@@ -596,8 +596,8 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
   const connectedRiderCount = new Set([...uniqueRiderIds, ...featuredRiders.map((p) => p.id)]).size
 
   const statBlocks = [
-    { n: connectedRiderCount, l: "connected riders" },
-    { n: orgBoards.length, l: "board models" },
+    { n: connectedRiderCount, l: "riders" },
+    { n: orgBoards.length, l: "boards" },
     { n: totalEvents, l: "events" },
     { n: locatedAtClaims.length, l: "places" },
     { n: orgStories.length, l: "stories" },
@@ -1034,7 +1034,10 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">{item.event.name}</div>
-                                  <div className="text-xs text-muted capitalize mt-0.5">{item.event.event_type.replace("-", " ")}{item.event.year ? ` · ${item.event.year}` : ""}</div>
+                                  <div className="text-xs text-muted mt-0.5">
+                                    <span className="uppercase tracking-widest mr-2">{item.event.event_type.replace("-", " ")}</span>
+                                    {item.event.year ?? ""}
+                                  </div>
                                 </div>
                                 {item.claim && (
                                   <span className={cn("text-[11px] shrink-0", CONFIDENCE_COLORS[item.claim.confidence] ?? "text-muted")}>
