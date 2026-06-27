@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { CONTRIBUTOR_COMP_THRESHOLD } from "@/lib/equity-offer"
 
 // Contribution-token awards (token-system-equity-offer brief, June 12 2026).
 //
@@ -100,6 +101,12 @@ export async function awardContributionTokens(
       console.error(`[tokens] token_events insert failed (${source}):`, ledgerError.message)
     }
 
+    // A free user who just crossed the contribution-comp threshold earns a
+    // 12-month membership (brief §5.4). Best-effort and one-time-latched; never
+    // blocks the award that triggered it. Only after a real grant moved the
+    // balance, so a no-op award never triggers an extra profile read.
+    if (grant > 0) await maybeGrantContributorComp(db, userId)
+
     return grant
   } catch (err) {
     console.error(`[tokens] award threw (${source}):`, err)
@@ -183,6 +190,77 @@ export async function reverseContributionTokens(
   } catch (err) {
     console.error("[tokens] reverse threw:", err)
     return 0
+  }
+}
+
+// ── Contributor comp (equity-offer-membership-gate brief §5.4) ────────────────
+
+/**
+ * Grant a free user a 12-month membership comp once they reach
+ * CONTRIBUTOR_COMP_THRESHOLD contribution tokens. Called from inside
+ * awardContributionTokens after a successful grant; best-effort, never throws.
+ *
+ * The comp is just an active Annual with membership_source='comp', so it passes
+ * isEquityEligible with no special case. It does NOT mint the 20 member tokens a
+ * paid Annual gets (D-Q2): the comp grants eligibility + benefits only.
+ *
+ * One-time, race-safe: comp_earned_at is a latch that is never cleared (D-Q3).
+ * Token claw-back (BUG-103) can pull token_contribution back below the threshold
+ * after a grant, so the trigger must be this one-way latch, not a re-evaluated
+ * balance. The guarded UPDATE (`comp_earned_at is null`) makes two concurrent
+ * crossings grant exactly one comp.
+ */
+export async function maybeGrantContributorComp(
+  db: SupabaseClient,
+  userId: string,
+): Promise<boolean> {
+  try {
+    const { data: profile, error } = await db
+      .from("profiles")
+      .select("token_contribution, membership_tier, comp_earned_at")
+      .eq("id", userId)
+      .single()
+    if (error || !profile) return false
+    if (profile.comp_earned_at != null) return false          // one-time latch (D-Q3)
+    if (profile.membership_tier !== "free") return false       // already a member
+    if ((profile.token_contribution ?? 0) < CONTRIBUTOR_COMP_THRESHOLD) return false
+
+    const nowIso = new Date().toISOString()
+    const expiresAt = new Date(Date.now() + YEAR_MS).toISOString()
+
+    // Guarded on comp_earned_at IS NULL: a concurrent crossing that already
+    // latched the comp matches zero rows here, so exactly one comp is granted.
+    const { data: updated, error: updateError } = await db
+      .from("profiles")
+      .update({
+        membership_tier:       "annual",
+        membership_status:     "active",
+        membership_expires_at: expiresAt,
+        membership_source:     "comp",
+        comp_earned_at:        nowIso,
+        // D-Q2: deliberately NOT touching token_member.
+      })
+      .eq("id", userId)
+      .is("comp_earned_at", null)
+      .select("id")
+    if (updateError) {
+      console.error("[tokens] contributor comp update failed:", updateError.message)
+      return false
+    }
+    if (!updated || updated.length === 0) return false          // lost the race
+
+    // Audit marker (amount 0 — eligibility/benefit grant, no token minted).
+    await db.from("token_events").insert({
+      user_id:    userId,
+      token_type: "member",
+      amount:     0,
+      source:     "contributor_comp_grant",
+    }).then(() => {/* best-effort */})
+
+    return true
+  } catch (err) {
+    console.error("[tokens] contributor comp threw:", err)
+    return false
   }
 }
 

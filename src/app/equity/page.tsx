@@ -7,6 +7,7 @@ import {
   EQUITY_POOL_SHARES,
   EQUITY_SNAPSHOT_LABEL,
   PROJECTED_TOTAL_WEIGHTED,
+  CONTRIBUTOR_COMP_THRESHOLD,
   estimateShares,
 } from "@/lib/equity-offer"
 
@@ -19,7 +20,7 @@ import {
 const TOKEN_TABLE = [
   { type: "Founder token",      earners: "Founding members",          amount: "100 on purchase",                        weight: "2×" },
   { type: "Member token",       earners: "Annual, Lifetime, Founding", amount: "20 per year (Lifetime: 70 upfront)", weight: "1×" },
-  { type: "Contribution token", earners: "Everyone, including free",   amount: "Earned by activity",                    weight: "1×" },
+  { type: "Contribution token", earners: "All riders earn; members share", amount: "Earned by activity",                weight: "1×" },
 ]
 
 const CONTRIB_TABLE = [
@@ -125,6 +126,42 @@ export default function EquityPage() {
             </div>
           </section>
 
+          {/* ── Section 1b: Who shares the pool ──────────────────────────── */}
+          <section>
+            <div className="eq-heading text-foreground mb-4"
+              style={{ fontSize: 22, fontWeight: 700, letterSpacing: 2 }}>
+              WHO SHARES THE POOL
+            </div>
+            <p className="text-muted mb-5" style={{ fontSize: 11, lineHeight: 1.8 }}>
+              The pool is shared by members, not every account. There are two ways in, and
+              both let your tokens start counting toward your slice.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="bg-surface border rounded-2xl p-5" style={{ borderColor: "#3b82f644" }}>
+                <div className="eq-heading mb-2" style={{ fontSize: 14, fontWeight: 700, color: "#3b82f6", letterSpacing: 1 }}>
+                  PAY
+                </div>
+                <p className="text-foreground" style={{ fontSize: 10, lineHeight: 1.8 }}>
+                  Become a member: Annual, Lifetime, or Founding. Your tokens count in the pool
+                  for as long as your membership is active.
+                </p>
+              </div>
+              <div className="bg-surface border rounded-2xl p-5" style={{ borderColor: "#10b98144" }}>
+                <div className="eq-heading mb-2" style={{ fontSize: 14, fontWeight: 700, color: "#10b981", letterSpacing: 1 }}>
+                  EARN
+                </div>
+                <p className="text-foreground" style={{ fontSize: 10, lineHeight: 1.8 }}>
+                  Earn {CONTRIBUTOR_COMP_THRESHOLD} contribution tokens and we comp you a free year
+                  of membership. Same benefits, no payment.
+                </p>
+              </div>
+            </div>
+            <p className="text-muted mt-4" style={{ fontSize: 10, lineHeight: 1.7 }}>
+              Free riders keep every token they earn. Those tokens start sharing the pool the moment
+              you become a member, by either route.
+            </p>
+          </section>
+
           {/* ── Section 2: Tokens ────────────────────────────────────────── */}
           <section>
             <div className="eq-heading text-foreground mb-2"
@@ -176,7 +213,7 @@ export default function EquityPage() {
                 <div className="eq-heading text-foreground" style={{ fontSize: 14, fontWeight: 700, letterSpacing: 1 }}>
                   EARNING CONTRIBUTION TOKENS
                 </div>
-                <div className="text-muted" style={{ fontSize: 9, marginTop: 2 }}>live for all users, including free riders</div>
+                <div className="text-muted" style={{ fontSize: 9, marginTop: 2 }}>earning is open to all riders, including the free tier</div>
               </div>
               <table className="w-full" style={{ borderCollapse: "collapse" }}>
                 <tbody>

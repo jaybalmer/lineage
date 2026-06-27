@@ -91,6 +91,12 @@ export async function POST(req: NextRequest) {
     updates.membership_tier = tier
     updates.membership_status = rest.membership_status ?? "active"
 
+    // An editor-set membership is a manual grant, not a comp: mark non-free as
+    // 'paid' so the comp revert never touches it, and clear the source on a
+    // downgrade to free so no stale 'comp' latch lingers (comp_earned_at, the
+    // one-time latch, is intentionally left alone).
+    updates.membership_source = tier === "free" ? null : "paid"
+
     if (tier === "founding") {
       updates.founding_badge = true
       // Respect an explicit number (admin manually setting one); otherwise

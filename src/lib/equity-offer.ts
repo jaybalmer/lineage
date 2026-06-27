@@ -29,6 +29,14 @@ export const EQUITY_ESTIMATE_QUALIFIER = "Estimated at a projected end-of-offer 
 /** Distribution weights (D2). Matches the existing totalTokens math. */
 export const TOKEN_WEIGHTS = { founder: 2, member: 1, contribution: 1 } as const
 
+/**
+ * Free users who reach this many contribution tokens earn a 12-month membership
+ * comp (equity-offer-membership-gate brief §5.4). Lives here, the client-safe
+ * constants module, so both the server comp helper and the membership-page
+ * progress UI read one source of truth.
+ */
+export const CONTRIBUTOR_COMP_THRESHOLD = 100
+
 export interface TokenCounts {
   founder: number
   member: number
@@ -41,6 +49,38 @@ export function weightedTokens(b: TokenCounts): number {
     b.member * TOKEN_WEIGHTS.member +
     b.contribution * TOKEN_WEIGHTS.contribution
   )
+}
+
+// ── Pool eligibility (equity-offer-membership-gate brief §5.1) ────────────────
+// The pool counts active, non-free members only; free contributors keep earning
+// but do not share the pool until they qualify (by paying or by the contributor
+// comp). One shared predicate so the pool aggregate (denominator) and the
+// per-member estimate (numerator) can never disagree.
+
+const ELIGIBLE_TIERS: ReadonlySet<string> = new Set(["annual", "lifetime", "founding"])
+
+export interface EligibilityProfile {
+  membership_tier?: string | null
+  membership_status?: string | null
+  membership_expires_at?: string | null
+}
+
+/**
+ * Whether a profile counts toward the equity pool. Eligible = a non-free tier
+ * (annual / lifetime / founding) whose membership has not lapsed: status is not
+ * 'expired' and any expiry is still in the future. A gifted membership
+ * (status 'gifted') counts, since a gift is a real paid membership and the UI
+ * already treats it as active. A comp is just an active Annual, so it passes
+ * here with no special case. membership_source is intentionally not consulted:
+ * it matters only for the comp revert and one-time latch, not for eligibility.
+ */
+export function isEquityEligible(p: EligibilityProfile): boolean {
+  if (!p.membership_tier || !ELIGIBLE_TIERS.has(p.membership_tier)) return false
+  if (p.membership_status === "expired") return false
+  if (p.membership_expires_at && Date.parse(p.membership_expires_at) <= Date.now()) {
+    return false
+  }
+  return true
 }
 
 export interface ShareEstimate {

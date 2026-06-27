@@ -13,7 +13,9 @@ import {
   EQUITY_POOL_SHARES,
   EQUITY_SNAPSHOT_LABEL,
   EQUITY_ESTIMATE_QUALIFIER,
+  CONTRIBUTOR_COMP_THRESHOLD,
   estimateShares,
+  isEquityEligible,
 } from "@/lib/equity-offer"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -453,8 +455,18 @@ function MembershipDashboard() {
   const symbol = TIER_SYMBOLS[tier]
   const label = TIER_LABELS[tier]
   const totalTokens = token_balance.founder * 2 + token_balance.member + token_balance.contribution
-  const shareEst = poolTotal !== null ? estimateShares(totalTokens, poolTotal) : null
   const isLapsed = tier !== "free" && status === "expired"
+  // The pool counts eligible members only (brief §5.3). A free or lapsed rider
+  // keeps earning but is not counted until they qualify, so the live estimate is
+  // gated on eligibility and free users see a locked state + comp progress.
+  const eligible = isEquityEligible({
+    membership_tier: tier,
+    membership_status: status,
+    membership_expires_at,
+  })
+  const shareEst = eligible && poolTotal !== null ? estimateShares(totalTokens, poolTotal) : null
+  const compProgress = Math.min(token_balance.contribution, CONTRIBUTOR_COMP_THRESHOLD)
+  const compPct = Math.round((compProgress / CONTRIBUTOR_COMP_THRESHOLD) * 100)
 
   // Celebration tier (might differ from store if poll not done yet)
   const celebTier = (success && tierParam) ? tierParam : tier
@@ -593,7 +605,7 @@ function MembershipDashboard() {
                 <span className="text-muted" style={{ fontSize: 10 }}>Snapshot</span>
                 <span className="text-foreground" style={{ fontSize: 10 }}>{EQUITY_SNAPSHOT_LABEL}</span>
               </div>
-              {shareEst ? (
+              {eligible && shareEst ? (
                 <>
                   <div className="flex justify-between">
                     <span className="text-muted" style={{ fontSize: 10 }}>Your estimated share</span>
@@ -603,17 +615,45 @@ function MembershipDashboard() {
                   </div>
                   {/* BUG-061: frame the number as a projection, not a promise. */}
                   <p className="text-muted" style={{ fontSize: 9, lineHeight: 1.5 }}>{EQUITY_ESTIMATE_QUALIFIER}</p>
+                  <p className="text-muted" style={{ fontSize: 9, lineHeight: 1.6 }}>
+                    Estimates move with every token the community earns, until balances are
+                    snapshotted on {EQUITY_SNAPSHOT_LABEL}.
+                  </p>
+                </>
+              ) : tier === "free" ? (
+                <>
+                  {/* Free riders are not counted in the pool until they qualify
+                      (brief §5.3). Show the gate honestly plus both ways in and
+                      live progress toward the contributor comp. */}
+                  <div className="rounded-xl border p-3" style={{ borderColor: "#f59e0b44", background: "#f59e0b08" }}>
+                    <div className="text-foreground" style={{ fontSize: 10, lineHeight: 1.7 }}>
+                      The pool is shared by members. Two ways in: become a member, or earn{" "}
+                      {CONTRIBUTOR_COMP_THRESHOLD} contribution tokens and we comp you a free year.
+                    </div>
+                  </div>
+                  <div>
+                    <div className="flex justify-between mb-1">
+                      <span className="text-muted" style={{ fontSize: 9, letterSpacing: 0.5 }}>FREE YEAR PROGRESS</span>
+                      <span className="text-foreground" style={{ fontSize: 9 }}>
+                        {compProgress} / {CONTRIBUTOR_COMP_THRESHOLD} contribution tokens
+                      </span>
+                    </div>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--surface-2)" }}>
+                      <div className="h-full rounded-full transition-all" style={{ width: `${compPct}%`, background: "#10b981" }} />
+                    </div>
+                  </div>
+                  <Link href="/membership"
+                    className="inline-block px-4 py-2 rounded-full font-bold transition-all hover:opacity-80"
+                    style={{ background: "#3b82f6", color: "#fff", fontSize: 9, letterSpacing: 1, fontFamily: "var(--font-body)" }}>
+                    Become a member →
+                  </Link>
                 </>
               ) : (
                 <p className="text-muted" style={{ fontSize: 10, lineHeight: 1.7 }}>
-                  Every token counts in the pool, even on the free tier. Add entries, post
-                  stories, and show up daily to start building your share.
+                  Your membership has lapsed, so you are not currently counted in the pool.
+                  Renew to share in the pool again before the {EQUITY_SNAPSHOT_LABEL} snapshot.
                 </p>
               )}
-              <p className="text-muted" style={{ fontSize: 9, lineHeight: 1.6 }}>
-                Estimates move with every token the community earns, until balances are
-                snapshotted on {EQUITY_SNAPSHOT_LABEL}.
-              </p>
               <Link href="/equity" className="text-muted hover:text-foreground transition-colors underline" style={{ fontSize: 10 }}>
                 How the equity launch offer works →
               </Link>
@@ -650,7 +690,8 @@ function MembershipDashboard() {
 
           {/* Contribution tokens note (free tier). Shown even at a zero balance
               so a brand-new free rider can tell they are already earning
-              (token-game-feel brief D3). */}
+              (token-game-feel brief D3). Copy is gate-truthful: free tokens build
+              toward the comp, and count in the pool once you are a member. */}
           {tier === "free" && (
             <div className="p-4 rounded-xl border" style={{ borderColor: "#10b98130", background: "#10b98108" }}>
               <p style={{ fontSize: 10, lineHeight: 1.7, color: "var(--foreground)" }}>
@@ -659,12 +700,14 @@ function MembershipDashboard() {
                     <span style={{ color: "#10b981", fontWeight: 700 }}>
                       {token_balance.contribution} contribution token{token_balance.contribution !== 1 ? "s" : ""} earned.
                     </span>{" "}
-                    These already count in the equity pool, and becoming a member adds weight on top.
+                    Keep going: at {CONTRIBUTOR_COMP_THRESHOLD} we comp you a free year of membership, and your
+                    tokens count in the equity pool the moment you become a member.
                   </>
                 ) : (
                   <>
                     <span style={{ color: "#10b981", fontWeight: 700 }}>You earn on the free tier too.</span>{" "}
-                    Add entries, post stories, and show up daily for your +1. Every contribution token counts in the equity pool from the very first one.
+                    Add entries, post stories, and show up daily for your +1. Reach {CONTRIBUTOR_COMP_THRESHOLD} contribution
+                    tokens and we comp you a free year of membership, which is when your tokens start sharing the pool.
                   </>
                 )}
               </p>
