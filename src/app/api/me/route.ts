@@ -49,7 +49,7 @@ export async function GET() {
         bio, links, home_resort_id, city, region, country, avatar_url, card_bg_url,
         membership_tier, membership_status, founding_badge, founding_member_number,
         token_founder, token_member, token_contribution,
-        stripe_customer_id, stripe_subscription_id, membership_expires_at, pending_credit,
+        stripe_customer_id, stripe_subscription_id, membership_expires_at, membership_source, pending_credit,
         is_editor
       `)
       .eq("id", user.id)
@@ -57,6 +57,31 @@ export async function GET() {
 
     if (profileErr || !profile) {
       return NextResponse.json({ error: "Profile not found" }, { status: 404 })
+    }
+
+    // Lazy comp revert (brief §5.5): a contributor comp past its term has no
+    // Stripe event to lapse it, so revert it to free here. Guarded on
+    // source='comp' so a paid or gifted membership is never touched;
+    // comp_earned_at is left set so the comp can never be re-earned (D-Q3).
+    // isEquityEligible already treats past-expiry as ineligible, so the estimate
+    // is correct even before this fires; this keeps the stored row honest too.
+    if (
+      profile.membership_source === "comp" &&
+      profile.membership_tier !== "free" &&
+      profile.membership_expires_at &&
+      Date.parse(profile.membership_expires_at as string) < Date.now()
+    ) {
+      const { error: revertErr } = await db
+        .from("profiles")
+        .update({ membership_tier: "free", membership_status: "expired" })
+        .eq("id", user.id)
+        .eq("membership_source", "comp")
+      if (revertErr) {
+        console.error("[api/me] comp revert failed:", revertErr.message)
+      } else {
+        profile.membership_tier = "free"
+        profile.membership_status = "expired"
+      }
     }
 
     if (dailyVisitAwarded && profile.membership_tier === "founding") {

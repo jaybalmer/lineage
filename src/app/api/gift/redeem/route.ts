@@ -52,6 +52,9 @@ export async function POST(req: NextRequest) {
     .update({
       membership_tier:        "annual",
       membership_status:      "gifted",
+      // A gift is a real paid membership: mark it 'paid' so the comp revert
+      // never reverts it and a stale 'comp' source can't linger on the row.
+      membership_source:      "paid",
       token_member:           20,
       membership_expires_at:  expiresAt,
       // Redeeming a gift moves the profile to annual; clear any founding identity

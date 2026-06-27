@@ -78,6 +78,9 @@ export async function POST(req: NextRequest) {
       await db.from("profiles").update({
         membership_tier:         tier,
         membership_status:       "active",
+        // A real purchase is always 'paid' (D-Q4): this makes the comp revert
+        // never touch a contributor who later pays, even if they were on a comp.
+        membership_source:       "paid",
         founding_badge:          tier === "founding",
         founding_member_number:  foundingMemberNumber,
         token_founder:           tokens.founder,
