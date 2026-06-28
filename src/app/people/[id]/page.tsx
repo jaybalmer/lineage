@@ -554,16 +554,45 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
           </div>
         )}
 
-        {/* Feed */}
-        <FeedView
-          claims={personClaims}
-          stories={stories}
-          personName={person.display_name}
-          isOwn={false}
-          hideActionButtons={true}
-          ridingSince={person.riding_since}
-          person={person}
-        />
+        {/* Sparse-ghost empty state (B-2): an unclaimed profile with nothing in
+            the feed body would otherwise show a blank. Reframe it as an
+            invitation to help fill in their history. */}
+        {!isCurrentUser && isInvitableNodeStatus(person.node_status) && personClaims.length === 0 && stories.length === 0 ? (
+          <div className="rounded-xl border border-dashed border-border-default p-6 text-center">
+            <p className="text-sm font-semibold text-foreground mb-1">No entries yet</p>
+            <p className="text-xs text-muted leading-relaxed max-w-sm mx-auto">
+              {person.display_name} is in the graph because another member mentioned them.
+              If you rode with {person.display_name.split(" ")[0]}, add a story or claim to help fill in their history.
+            </p>
+            {isAuth && (
+              <div className="flex items-center justify-center gap-3 mt-4 flex-wrap">
+                <button
+                  onClick={() => setShowAddStory(true)}
+                  className="px-3 py-2 rounded-lg bg-violet-700 text-white text-xs font-medium hover:bg-violet-600 transition-colors"
+                >
+                  ✍ Add a story
+                </button>
+                <Link
+                  href="/people"
+                  className="px-3 py-2 rounded-lg bg-surface-hover border border-border-default text-xs font-medium text-foreground hover:bg-surface-active transition-colors"
+                >
+                  Browse riders
+                </Link>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Feed */
+          <FeedView
+            claims={personClaims}
+            stories={stories}
+            personName={person.display_name}
+            isOwn={false}
+            hideActionButtons={true}
+            ridingSince={person.riding_since}
+            person={person}
+          />
+        )}
 
         {/* Contributions: stories this person authored but kept off their own
             timeline. Read-only here (no edit menu): they are already public on

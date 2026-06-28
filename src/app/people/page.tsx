@@ -11,18 +11,20 @@ import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import { RiderAvatar, getRiderTier, type RiderTier } from "@/components/ui/rider-avatar"
 import { isInvitableNodeStatus, trackInviteEvent } from "@/lib/invite-tracking"
+import { CommunityLink } from "@/components/ui/community-link"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import type { Person } from "@/types"
 
-type SortTab = "all" | "entries" | "origin" | "riders" | "resort"
+type SortTab = "all" | "entries" | "origin" | "riders" | "resort" | "unclaimed"
 
 const SORT_TABS: { id: SortTab; label: string; title: string }[] = [
-  { id: "all",     label: "All",     title: "Group by tier, most claims first" },
-  { id: "entries", label: "Entries", title: "Sort by most entries & connections" },
-  { id: "origin",  label: "Origin",  title: "Group by decade started" },
-  { id: "riders",  label: "Riders",  title: "Sort alphabetically" },
-  { id: "resort",  label: "Resort",  title: "Group by home resort" },
+  { id: "all",       label: "All",       title: "Group by tier, most claims first" },
+  { id: "entries",   label: "Entries",   title: "Sort by most entries & connections" },
+  { id: "origin",    label: "Origin",    title: "Group by decade started" },
+  { id: "riders",    label: "Riders",    title: "Sort alphabetically" },
+  { id: "resort",    label: "Resort",    title: "Group by home resort" },
+  { id: "unclaimed", label: "Unclaimed", title: "Riders not yet on Linestry" },
 ]
 
 // ── Rider type classification (delegates to shared getRiderTier) ─────────────
@@ -55,9 +57,10 @@ const SECTION_LABELS: Record<RiderKind, string> = {
 
 // ── RiderRow ─────────────────────────────────────────────────────────────────
 
-function RiderRow({ person, isMe, onInvite, claims, activeCommunitySlug }: {
+function RiderRow({ person, isMe, connected, onInvite, claims, activeCommunitySlug }: {
   person: Person
   isMe: boolean
+  connected: boolean
   onInvite?: (p: Person) => void
   claims: import("@/types").Claim[]
   activeCommunitySlug: string
@@ -104,6 +107,14 @@ function RiderRow({ person, isMe, onInvite, claims, activeCommunitySlug }: {
               {person.riding_since && (
                 <span className="text-[11px] text-muted">riding since {person.riding_since}</span>
               )}
+              {connected && (
+                <span
+                  className="text-[10px] rounded px-1.5 py-0.5 font-medium"
+                  style={{ color: "#7c3aed", background: "#7c3aed18", border: "1px solid #7c3aed33" }}
+                >
+                  You rode together
+                </span>
+              )}
             </div>
             {person.bio && (
               <p className="text-xs text-muted mt-0.5 truncate">{person.bio}</p>
@@ -135,7 +146,16 @@ function RiderRow({ person, isMe, onInvite, claims, activeCommunitySlug }: {
       </Link>
 
       {!isMe && (
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center justify-end gap-1.5 shrink-0 flex-wrap max-w-[45%]">
+          {connected && (
+            <CommunityLink
+              href={`/connections/${person.id}`}
+              className="px-2.5 py-1.5 rounded-lg border border-border-default text-[11px] text-muted hover:text-foreground hover:bg-surface-hover transition-colors shrink-0"
+              title="See your connection with this rider"
+            >
+              See connection
+            </CommunityLink>
+          )}
           {isInvitableNodeStatus(person.node_status) && onInvite && (
             <button
               onClick={() => {
@@ -180,7 +200,9 @@ function RidersPageInner() {
   const isAuth = isAuthUser(activePersonId)
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState<SortTab>(yearParam ? "origin" : "all")
-  const [myOnly, setMyOnly] = useState(false)
+  // ?mine=1 pre-enables the My Riders filter (the "See all" link from the
+  // "People in your timeline" strip on My Timeline lands here).
+  const [myOnly, setMyOnly] = useState(searchParams.get("mine") === "1")
   const [addOpen, setAddOpen] = useState(false)
   const [invitePerson, setInvitePerson] = useState<Person | null>(null)
   // ?community=all opts out of the community filter and shows the global directory.
@@ -217,10 +239,13 @@ function RidersPageInner() {
     const q = query.trim().toLowerCase()
     return allPeople.filter((p) => {
       if (myOnly && !myRiderIds.has(p.id)) return false
+      // The Unclaimed tab composes with search and My Riders: "Unclaimed" + "My
+      // Riders" yields unclaimed riders you rode with (the connect-job slice).
+      if (sort === "unclaimed" && !isInvitableNodeStatus(p.node_status)) return false
       if (q && !p.display_name.toLowerCase().includes(q) && !p.bio?.toLowerCase().includes(q)) return false
       return true
     })
-  }, [query, myOnly, allPeople, myRiderIds])
+  }, [query, myOnly, sort, allPeople, myRiderIds])
 
   // Sort / group
   const result = useMemo(() => {
@@ -236,6 +261,17 @@ function RidersPageInner() {
         .filter((k) => byKind.get(k)!.length > 0)
         .map((k) => ({ label: SECTION_LABELS[k], kind: k, items: byKind.get(k)! }))
       return { type: "kind-grouped" as const, groups }
+    }
+
+    if (sort === "unclaimed") {
+      // Already filtered to invitable nodes in `searched`. Show them under the
+      // single "Unclaimed Profiles" label, most claims first, reusing the
+      // kind-grouped renderer so the section header keeps the unclaimed blue.
+      copy.sort((a, b) => (claimCounts.get(b.id) ?? 0) - (claimCounts.get(a.id) ?? 0))
+      return {
+        type: "kind-grouped" as const,
+        groups: [{ label: SECTION_LABELS.unclaimed, kind: "unclaimed" as RiderKind, items: copy }],
+      }
     }
 
     if (sort === "entries") {
@@ -383,7 +419,7 @@ function RidersPageInner() {
         ) : result.type === "flat" ? (
           <div className="space-y-2">
             {result.items.map((person) => (
-              <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} claims={allClaims} activeCommunitySlug={activeCommunitySlug} />
+              <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} connected={person.id !== activePersonId && myRiderIds.has(person.id)} onInvite={setInvitePerson} claims={allClaims} activeCommunitySlug={activeCommunitySlug} />
             ))}
           </div>
         ) : result.type === "kind-grouped" ? (
@@ -393,7 +429,7 @@ function RidersPageInner() {
                 <SectionHeader label={label} count={items.length} color={KIND_META[kind].color} />
                 <div className="space-y-2">
                   {items.map((person) => (
-                    <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} claims={allClaims} activeCommunitySlug={activeCommunitySlug} />
+                    <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} connected={person.id !== activePersonId && myRiderIds.has(person.id)} onInvite={setInvitePerson} claims={allClaims} activeCommunitySlug={activeCommunitySlug} />
                   ))}
                 </div>
               </div>
@@ -406,7 +442,7 @@ function RidersPageInner() {
                 <SectionHeader label={label} count={items.length} color="#52525b" />
                 <div className="space-y-2">
                   {items.map((person) => (
-                    <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} onInvite={setInvitePerson} claims={allClaims} activeCommunitySlug={activeCommunitySlug} />
+                    <RiderRow key={person.id} person={person} isMe={person.id === activePersonId} connected={person.id !== activePersonId && myRiderIds.has(person.id)} onInvite={setInvitePerson} claims={allClaims} activeCommunitySlug={activeCommunitySlug} />
                   ))}
                 </div>
               </div>

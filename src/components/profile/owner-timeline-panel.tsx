@@ -14,6 +14,7 @@ import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { TimelinePlayer } from "@/components/ui/timeline-player"
 import { BulkInvitePrompt } from "@/components/ui/bulk-invite-prompt"
+import { PeopleInTimeline } from "@/components/timeline/people-in-timeline"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { StackTimelineToggle } from "@/components/public-timeline/stack-timeline-toggle"
@@ -711,6 +712,16 @@ export function OwnerTimelinePanel() {
         {/* Earned today (token-game-feel brief D2/D3): the owner's daily token
             progress, shown for every tier including free. */}
         {isAuthUser(activePersonId) && <DailyTokenChip className="mb-6" />}
+
+        {/* People in your timeline: the viewer's rode_with partners, always-on,
+            with inline "Help connect" for unclaimed riders (delivers batch B7). */}
+        {catalogLoaded && (
+          <PeopleInTimeline
+            claims={personClaims}
+            people={catalog.people}
+            onStoryAdded={(s) => setStories((prev) => [s, ...prev])}
+          />
+        )}
 
         {/* Quick-action row — wraps on narrow screens so the action buttons never
             push the row past the viewport and shrink the whole page (BUG-008).
