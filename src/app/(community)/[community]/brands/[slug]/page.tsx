@@ -534,7 +534,7 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
 
   const tabs: { key: FeedTab; label: string; count?: number }[] = [
     { key: "all", label: "All" },
-    { key: "people", label: "People", count: uniqueRiderIds.length },
+    { key: "people", label: "Riders", count: uniqueRiderIds.length },
     { key: "boards", label: "Boards", count: orgBoards.length },
     { key: "events", label: "Events", count: totalEvents },
     { key: "places", label: "Places", count: locatedAtClaims.length },

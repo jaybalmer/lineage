@@ -474,7 +474,7 @@ export default function MePublicViewPage() {
                 className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors">
                 {saving ? "Saving…" : "Save stack"}
               </button>
-              {slug && (
+              {slug && enabled && (
                 <a href={`/t/${slug}?view=stack`} target="_blank" rel="noopener noreferrer"
                   className="text-xs text-accent-strong hover:underline">Preview ↗</a>
               )}
