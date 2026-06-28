@@ -71,12 +71,19 @@ export async function GET(req: NextRequest) {
       .range(offset, offset + limit - 1)
 
     // Single-story fetch mirrors the stories RLS rule: public, or the viewer
-    // is the author. The list fetch stays public-only.
+    // is the author. The list fetch stays public-only EXCEPT when an author
+    // requests their own authored list (?author_id === viewer): then include
+    // their non-public stories so an "Only Me" story the author added to their
+    // own timeline survives the refetch (BUG-106). Everyone else's list, and
+    // any list not scoped to the viewer's own author_id, stays public-only.
+    const ownAuthorList = !storyId && !!viewerId && authorId === viewerId
     if (storyId) {
       query = query.eq("id", storyId)
       query = viewerId
         ? query.or(`visibility.eq.public,author_id.eq.${viewerId}`)
         : query.eq("visibility", "public")
+    } else if (ownAuthorList) {
+      query = query.or(`visibility.eq.public,author_id.eq.${viewerId}`)
     } else {
       query = query.eq("visibility", "public")
     }
