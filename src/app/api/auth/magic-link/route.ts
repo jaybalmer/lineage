@@ -62,7 +62,14 @@ function magicLinkEmailHtml(link: string): string {
 // ─── POST /api/auth/magic-link ────────────────────────────────────────────────
 export async function POST(req: NextRequest) {
   try {
-    const { email, intent, returnTo } = await req.json() as { email?: string; intent?: "signin" | "signup"; returnTo?: string }
+    const { email, intent, returnTo, onboarding } = await req.json() as {
+      email?: string
+      intent?: "signin" | "signup"
+      returnTo?: string
+      // BUG-115 / BUG-116: onboarding picks (name + FTUE claims) carried from the
+      // client so they survive a magic link opened in a fresh context.
+      onboarding?: Record<string, unknown>
+    }
 
     if (!email || !email.includes("@")) {
       return NextResponse.json({ error: "Valid email required" }, { status: 400 })
@@ -132,6 +139,21 @@ export async function POST(req: NextRequest) {
     }
 
     const magicLink = data.properties.action_link
+
+    // BUG-115 / BUG-116: stash the onboarding payload on the auth user so
+    // /auth/complete can restore the typed name and the FTUE claims when the
+    // link opens in a context that does not share the originating localStorage
+    // (the iOS Mail default). generateLink creates the user when absent, so
+    // data.user is the freshly provisioned signup account. Only signup carries a
+    // payload; sign-in posts none, so returning users are untouched.
+    const stashUserId = data.user?.id
+    if (stashUserId && onboarding && typeof onboarding === "object") {
+      const { error: metaErr } = await supabaseAdmin.auth.admin.updateUserById(
+        stashUserId,
+        { user_metadata: { pending_onboarding: onboarding } }
+      )
+      if (metaErr) console.error("stash onboarding metadata error:", metaErr)
+    }
 
     // Send via Resend
     const { Resend } = await import("resend")

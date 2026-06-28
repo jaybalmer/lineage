@@ -2,8 +2,26 @@
 
 import { useState } from "react"
 import { supabase } from "@/lib/supabase"
+import { useLineageStore } from "@/store/lineage-store"
 import { trackEvent } from "@/lib/analytics"
 import { cn } from "@/lib/utils"
+
+// BUG-115 / BUG-116: the onboarding picks live only in client localStorage, which
+// does not survive the magic-link round trip when the link opens in a fresh
+// context (the iOS Mail default). Carry the payload to the server so
+// /auth/complete can restore the typed name and the FTUE claims from the auth
+// user's metadata when the local store is empty.
+function buildOnboardingPayload() {
+  const { onboarding, sessionClaims } = useLineageStore.getState()
+  return {
+    display_name: onboarding.display_name?.trim() || undefined,
+    birth_year: onboarding.birth_year ?? undefined,
+    start_year: onboarding.start_year ?? undefined,
+    first_place_id: onboarding.first_place_id ?? undefined,
+    first_board_id: onboarding.first_board_id ?? undefined,
+    sessionClaims,
+  }
+}
 
 const inputCls =
   "w-full bg-surface border border-border-default rounded-lg px-4 py-3 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500 transition-colors"
@@ -47,11 +65,12 @@ export function SaveStep() {
     setSending(true)
     setError(null)
     trackEvent("auth", "signup_started", { method: "magic_link" })
+    const onboardingPayload = buildOnboardingPayload()
     try {
       const res = await fetch("/api/auth/magic-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: e }),
+        body: JSON.stringify({ email: e, onboarding: onboardingPayload }),
       })
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean
@@ -72,6 +91,9 @@ export function SaveStep() {
           options: {
             emailRedirectTo: `${window.location.origin}/auth/complete`,
             shouldCreateUser: true,
+            // Same carry-across as the server path: stash the picks in
+            // user_metadata so /auth/complete can restore them cross-context.
+            data: { pending_onboarding: onboardingPayload },
           },
         })
         if (otpError) {

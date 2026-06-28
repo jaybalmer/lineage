@@ -42,6 +42,27 @@ export default function AuthCompletePage() {
       // live state at the moment we need it.
       const { onboarding, sessionClaims } = useLineageStore.getState()
 
+      // BUG-115 / BUG-116: when the magic link opens in a fresh context the
+      // client store is empty, so fall back to the onboarding payload stashed on
+      // the auth user at magic-link generate time. The client store still wins
+      // when present (it is the freshest); the stash only repairs the
+      // cross-context case. OAuth signup keeps its store in-context and never
+      // reads this.
+      const pending = (user.user_metadata?.pending_onboarding ?? null) as {
+        display_name?: string
+        birth_year?: number
+        start_year?: number
+        first_place_id?: string
+        first_board_id?: string
+        sessionClaims?: typeof sessionClaims
+      } | null
+
+      const effDisplayName = onboarding.display_name?.trim() || pending?.display_name?.trim()
+      const effBirthYear   = onboarding.birth_year    ?? pending?.birth_year    ?? null
+      const effStartYear   = onboarding.start_year    ?? pending?.start_year    ?? null
+      const effPlaceId     = onboarding.first_place_id ?? pending?.first_place_id ?? null
+      const effClaims      = sessionClaims.length > 0 ? sessionClaims : (pending?.sessionClaims ?? [])
+
       // ── 1. Profile upsert (new users only) ────────────────────────────────
       const { data: existingProfile } = await supabase
         .from("profiles")
@@ -53,21 +74,21 @@ export default function AuthCompletePage() {
         const { error: profileError } = await supabase.from("profiles").upsert({
           id: user.id,
           display_name:
-            onboarding.display_name?.trim() ||
+            effDisplayName ||
             user.email?.split("@")[0] ||
             "Rider",
-          birth_year:     onboarding.birth_year    ?? null,
-          riding_since:   onboarding.start_year    ?? null,
+          birth_year:     effBirthYear,
+          riding_since:   effStartYear,
           privacy_level:  "public",
-          home_resort_id: onboarding.first_place_id ?? null,
+          home_resort_id: effPlaceId,
         })
         if (profileError) console.error("Profile save failed:", profileError)
         else trackEvent("auth", "signup_succeeded", {}, { actorId: user.id })
       }
 
       // ── 2. Migrate session claims ─────────────────────────────────────────
-      if (sessionClaims.length > 0) {
-        const migrated = sessionClaims.map((claim) => ({
+      if (effClaims.length > 0) {
+        const migrated = effClaims.map((claim) => ({
           ...claim,
           subject_id:   user.id,
           asserted_by:  user.id,
@@ -75,6 +96,17 @@ export default function AuthCompletePage() {
         const { error } = await supabase.from("claims").insert(migrated)
         if (error) console.error("Migrate session claims failed:", error)
         else store.clearSessionClaims()
+      }
+
+      // Clear the stashed payload so it cannot replay on a later sign-in. The
+      // user is authenticated here, so this updates their own metadata without
+      // the service role.
+      if (pending) {
+        try {
+          await supabase.auth.updateUser({ data: { pending_onboarding: null } })
+        } catch (clearErr) {
+          console.error("Clear pending onboarding metadata failed:", clearErr)
+        }
       }
 
       // ── 3. Invite claim (email-invite flow) ───────────────────────────────
@@ -136,9 +168,9 @@ export default function AuthCompletePage() {
         .single()
 
       store.setProfileOverride({
-        display_name:   savedProfile?.display_name  ?? onboarding.display_name?.trim(),
-        birth_year:     savedProfile?.birth_year    ?? onboarding.birth_year,
-        riding_since:   savedProfile?.riding_since  ?? onboarding.start_year,
+        display_name:   savedProfile?.display_name  ?? effDisplayName,
+        birth_year:     savedProfile?.birth_year    ?? effBirthYear ?? undefined,
+        riding_since:   savedProfile?.riding_since  ?? effStartYear ?? undefined,
         privacy_level: (savedProfile?.privacy_level ?? "public") as "private" | "shared" | "public",
       })
       store.setActivePersonId(user.id)
