@@ -83,7 +83,8 @@ export async function PUT(req: NextRequest) {
       if (seenCategories.has(category_key)) continue
       seenCategories.add(category_key)
       rows.push({
-        owner_profile_id: user.id, entry_type, entry_ref_id: null, category_key,
+        owner_type: "profile", owner_id: user.id, owner_profile_id: user.id,
+        entry_type, entry_ref_id: null, category_key,
         position: rows.length, custom_title, custom_summary,
       })
     } else {
@@ -95,7 +96,8 @@ export async function PUT(req: NextRequest) {
       if (seenRefs.has(dedupeKey)) continue
       seenRefs.add(dedupeKey)
       rows.push({
-        owner_profile_id: user.id, entry_type, entry_ref_id, category_key: null,
+        owner_type: "profile", owner_id: user.id, owner_profile_id: user.id,
+        entry_type, entry_ref_id, category_key: null,
         position: rows.length, custom_title, custom_summary,
       })
     }

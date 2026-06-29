@@ -23,6 +23,7 @@ const ACCENT: Record<EventType, string> = {
   trip: "border-rose-600",
   camp: "border-emerald-600",
   gathering: "border-cyan-600",
+  episode: "border-fuchsia-600",
 }
 
 const EVENT_DOT_COLOR: Record<EventType, string> = {
@@ -31,6 +32,7 @@ const EVENT_DOT_COLOR: Record<EventType, string> = {
   trip: "#E11D48",
   camp: "#059669",
   gathering: "#0891B2",
+  episode: "#C026D3",
 }
 
 const TYPE_LABEL: Record<EventType, string> = {
@@ -39,6 +41,7 @@ const TYPE_LABEL: Record<EventType, string> = {
   trip: "Trip",
   camp: "Camp",
   gathering: "Gathering",
+  episode: "Episode",
 }
 
 const TYPE_FILTERS: { value: EventType; label: string }[] = [

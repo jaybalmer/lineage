@@ -15,6 +15,18 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { nameToSlug } from "./utils"
 
+// FNRad Featured Timelines Phase 1: the /t/{slug} public-link namespace is shared
+// across profiles, orgs (shows), and events (episodes), so one shareable shape
+// (linestry.com/t/{slug}) serves people, shows, and episodes and no two owners
+// can collide. The minter below checks every table in this namespace.
+export type PublicSlugOwnerType = "profile" | "org" | "event"
+
+const OWNER_TABLE: Record<PublicSlugOwnerType, string> = {
+  profile: "profiles",
+  org: "orgs",
+  event: "events",
+}
+
 /** The base public slug for a display name, e.g. "Jay Balmer" -> "jay_balmer".
  *  Returns "" when the name has no slug-able characters (the caller falls back
  *  to an id-derived slug). Thin wrapper over nameToSlug so the slug rule lives
@@ -31,55 +43,72 @@ function shortIdSuffix(profileId: string): string {
   return cleaned.slice(0, 8) || "x"
 }
 
-/** True when `slug` is already used by a different profile. The partial unique
- *  index on profiles.public_slug guarantees at most one row, so maybeSingle is
- *  safe. */
+/** True when `slug` is already used by any owner in the shared namespace
+ *  (profiles, orgs, events), excluding the owner being minted for. Each table's
+ *  partial unique index on public_slug guarantees at most one row per table, so
+ *  maybeSingle is safe per table. */
 async function slugTaken(
   client: SupabaseClient,
   slug: string,
-  exceptProfileId: string,
+  ownerType: PublicSlugOwnerType,
+  ownerId: string,
 ): Promise<boolean> {
-  const { data } = await client
-    .from("profiles")
-    .select("id")
-    .eq("public_slug", slug)
-    .neq("id", exceptProfileId)
-    .maybeSingle()
-  return data !== null
+  for (const type of Object.keys(OWNER_TABLE) as PublicSlugOwnerType[]) {
+    let query = client.from(OWNER_TABLE[type]).select("id").eq("public_slug", slug)
+    // Only the same-table same-id row is "self"; a row in another table with the
+    // same id (ids are not unique across tables) is still a real collision.
+    if (type === ownerType) query = query.neq("id", ownerId)
+    const { data } = await query.maybeSingle()
+    if (data !== null) return true
+  }
+  return false
 }
 
-/** Derive a unique public_slug for a profile, collision-safe against the live
- *  profiles table. Returns the slug to store; does NOT write it (the caller
- *  decides when to persist, so this is reusable by the backfill and by Phase 2).
+/** The fallback slug prefix when a name has no slug-able characters, per owner
+ *  type, so an id-derived URL still reads sensibly. */
+const FALLBACK_PREFIX: Record<PublicSlugOwnerType, string> = {
+  profile: "rider",
+  org: "show",
+  event: "episode",
+}
+
+/** Derive a unique public_slug for an owner (profile, org, or event),
+ *  collision-safe across the entire shared /t/{slug} namespace. Returns the slug
+ *  to store; does NOT write it (the caller decides when to persist, so this is
+ *  reusable by the profile backfill and by the Phase 2/3 "enable public link"
+ *  toggles). `ownerType` defaults to 'profile' so existing profile callers are
+ *  unchanged.
  *
  *  Order: the bare name slug when free; else name slug + short id suffix; else
  *  (vanishingly rare) progressively longer id suffixes; else the id suffix
  *  alone when the name has no slug-able characters. */
 export async function ensureUniquePublicSlug(
   displayName: string | null | undefined,
-  profileId: string,
+  ownerId: string,
   client: SupabaseClient,
+  ownerType: PublicSlugOwnerType = "profile",
 ): Promise<string> {
   const base = basePublicSlug(displayName)
-  const suffix = shortIdSuffix(profileId)
+  const suffix = shortIdSuffix(ownerId)
+  const fallback = FALLBACK_PREFIX[ownerType]
 
   // Candidates in preference order. An empty base (name had no slug-able
   // characters) skips straight to the id-derived forms.
   const candidates = base
     ? [base, `${base}_${suffix}`]
-    : [`rider_${suffix}`]
+    : [`${fallback}_${suffix}`]
 
   for (const candidate of candidates) {
-    if (!(await slugTaken(client, candidate, profileId))) return candidate
+    if (!(await slugTaken(client, candidate, ownerType, ownerId))) return candidate
   }
 
-  // Extremely unlikely fall-through (two profiles share both a name slug and
-  // the same 8-char id prefix). Widen the suffix until unique.
-  const wideBase = base || "rider"
-  const fullId = (profileId ?? "").replace(/[^a-z0-9]/gi, "").toLowerCase() || "x"
+  // Extremely unlikely fall-through (two owners share both a name slug and the
+  // same 8-char id prefix). Widen the suffix until unique.
+  const wideBase = base || fallback
+  const fullId = (ownerId ?? "").replace(/[^a-z0-9]/gi, "").toLowerCase() || "x"
   for (let len = 9; len <= fullId.length; len++) {
     const candidate = `${wideBase}_${fullId.slice(0, len)}`
-    if (!(await slugTaken(client, candidate, profileId))) return candidate
+    if (!(await slugTaken(client, candidate, ownerType, ownerId))) return candidate
   }
 
   // Last resort: the whole sanitized id. Guaranteed unique by construction.
