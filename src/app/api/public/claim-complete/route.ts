@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireAuth, getServiceClient } from "@/lib/auth"
+import { promoteGhostToAccount } from "@/lib/promote-ghost"
 
 // POST /api/public/claim-complete — PB-010 Phase 4b. The authenticated tail of
 // the public tag-to-claim growth loop.
@@ -31,14 +32,6 @@ import { requireAuth, getServiceClient } from "@/lib/auth"
 // Idempotent + graceful: a second click (ghost already gone), an expired hold,
 // or a normal signup with no pending tag all resolve to `{ claimed: false }`
 // with a 200, never a 500.
-
-interface GhostIdentity {
-  display_name: string | null
-  birth_year: number | null
-  riding_since: number | null
-  bio: string | null
-  avatar_url: string | null
-}
 
 export async function POST() {
   const { user, response: authResponse } = await requireAuth()
@@ -119,65 +112,15 @@ export async function POST() {
     if (!live) continue // expired hold for this ghost — leave it owner-moderatable
     sawLiveGhost = true
 
-    // Read the visitor's identity off the ghost before we delete it. The public
-    // "I was there" form stored the name they typed as people.display_name (POST
-    // /api/public/tag); a cross-device signup loses onboarding.display_name, so
-    // this ghost is the only place that typed name still survives.
-    const { data: ghostRow } = await db
-      .from("people")
-      .select("display_name, birth_year, riding_since, bio, avatar_url")
-      .eq("id", ghostId)
-      .maybeSingle()
-    const ghostIdentity = (ghostRow as GhostIdentity | null) ?? null
-
-    // ── Repoint the ghost's data onto the real account (invite-claim parity) ──
-    await db
-      .from("claims")
-      .update({ subject_id: user.id })
-      .eq("subject_id", ghostId)
-      .eq("subject_type", "person")
-    await db
-      .from("claims")
-      .update({ object_id: user.id })
-      .eq("object_id", ghostId)
-      .eq("object_type", "person")
-    await db.from("claims").update({ asserted_by: user.id }).eq("asserted_by", ghostId)
-    await db.from("story_riders").update({ rider_id: user.id }).eq("rider_id", ghostId)
-
-    // ── Restore the visitor's identity onto the profile (invite-claim parity) ──
-    // Name: overwrite only a blank or email-placeholder name, never a real name
-    // the user typed during onboarding. Other fields: fill only when the
-    // profile's is empty, so we never clobber values the member set themselves.
-    // Redirect breadcrumb: profiles.merged_from_id feeds the proxy's alias map
-    // (person-redirects.ts). Only set it if the account hasn't already absorbed
-    // another record, so we never clobber an existing alias.
-    const { data: profRow } = await db
-      .from("profiles")
-      .select("display_name, birth_year, riding_since, bio, avatar_url, merged_from_id")
-      .eq("id", user.id)
-      .maybeSingle()
-    const profile = profRow as (GhostIdentity & { merged_from_id: string | null }) | null
-
-    const profUpdate: Record<string, unknown> = {
-      node_status: "claimed",
-      claimed_at: nowIso,
-    }
-    if (!profile?.merged_from_id) profUpdate.merged_from_id = ghostId
-
-    const nameIsPlaceholder =
-      !profile?.display_name || profile.display_name === placeholder
-    if (nameIsPlaceholder && ghostIdentity?.display_name) profUpdate.display_name = ghostIdentity.display_name
-    if (!profile?.birth_year && ghostIdentity?.birth_year) profUpdate.birth_year = ghostIdentity.birth_year
-    if (!profile?.riding_since && ghostIdentity?.riding_since) profUpdate.riding_since = ghostIdentity.riding_since
-    if (!profile?.bio && ghostIdentity?.bio) profUpdate.bio = ghostIdentity.bio
-    if (!profile?.avatar_url && ghostIdentity?.avatar_url) profUpdate.avatar_url = ghostIdentity.avatar_url
-
-    await db.from("profiles").update(profUpdate).eq("id", user.id)
-
-    // The ghost has served its purpose — remove it so it no longer shows as a
-    // separate unclaimed node.
-    await db.from("people").delete().eq("id", ghostId)
-    claimedAny = true
+    // Fold the ghost into the real account. The caller (this route) owns the
+    // 7-day-hold gate above; promoteGhostToAccount only performs the repoint,
+    // identity restore, merged_from_id breadcrumb, and ghost delete.
+    const { claimed } = await promoteGhostToAccount(db, {
+      ghostId,
+      userId: user.id,
+      placeholderName: placeholder,
+    })
+    if (claimed) claimedAny = true
   }
 
   return NextResponse.json({

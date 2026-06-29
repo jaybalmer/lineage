@@ -5,6 +5,7 @@ import { nameToSlug } from "@/lib/utils"
 import {
   claimApprovedHtml,
   claimDeniedHtml,
+  claimInviteHtml,
   sendClaimEmail,
 } from "@/lib/emails/claim-emails"
 import { awardContributionTokens } from "@/lib/tokens"
@@ -142,6 +143,92 @@ export async function PATCH(
     )
   }
 
+  // ── APPROVE (public_invite): email-first claim ───────────────────────────
+  // node-claim-by-admin-invite. NO merge_person (the claimant has no account
+  // yet, so the RPC's claimed_by lookup is the wrong tool — see the route
+  // header in /api/public/claim-complete). Instead: stamp the node's
+  // invite_email + flip catalog -> unclaimed, mark the claim approved, and send
+  // an account-creating invite magic link. The fold-in happens at signup via
+  // promoteGhostToAccount (see /api/public/admin-invite-complete). Idempotent:
+  // re-approve is blocked by the status guard above.
+  if (action.action === "approve" && current.claim_kind === "public_invite") {
+    const email = current.claimant_email
+    if (!email) {
+      return NextResponse.json({ error: "Claim has no email to invite" }, { status: 400 })
+    }
+    const { data: node } = await db
+      .from("people")
+      .select("id, display_name, node_status")
+      .eq("id", current.node_id)
+      .maybeSingle()
+    if (!node) {
+      return NextResponse.json({ error: "Node not found" }, { status: 404 })
+    }
+    const personName = (node as { display_name: string | null }).display_name ?? "your profile"
+
+    // Stamp invite_email so the completion can bind on the verified email, and
+    // flip catalog -> unclaimed (completion + claim-complete match unclaimed).
+    const nodeUpdate: Record<string, unknown> = { invite_email: email }
+    if ((node as { node_status: string | null }).node_status === "catalog") {
+      nodeUpdate.node_status = "unclaimed"
+    }
+    await db.from("people").update(nodeUpdate).eq("id", current.node_id)
+
+    const { data: updated, error: updErr } = await db
+      .from("claim_requests")
+      .update({
+        status: "approved",
+        status_reason: "admin_approved",
+        resolved_at: nowIso,
+        resolved_by: user.id,
+        updated_at: nowIso,
+      })
+      .eq("id", id)
+      .eq("status", current.status) // race guard against another editor
+      .select("*")
+      .single()
+    if (updErr || !updated) {
+      console.error("[admin claim PATCH approve invite]", updErr)
+      return NextResponse.json(
+        { error: "Status changed in another session; please refresh" },
+        { status: 409 },
+      )
+    }
+
+    // Account-creating invite magic link (best-effort send). magiclink creates
+    // the user on first use, so this is the invite-into-account step.
+    try {
+      const { data: linkData, error: linkErr } = await db.auth.admin.generateLink({
+        type: "magiclink",
+        email,
+        options: { redirectTo: `${origin}/auth/complete` },
+      })
+      const link = linkData?.properties?.action_link
+      if (!linkErr && link) {
+        void sendClaimEmail({
+          to: email,
+          subject: `Your claim on ${personName} was approved`,
+          html: claimInviteHtml({ personName, link }),
+        })
+      } else {
+        console.error(
+          "[admin claim PATCH approve invite] generateLink failed:",
+          linkErr?.message ?? linkErr,
+        )
+      }
+    } catch (err) {
+      console.error("[admin claim PATCH approve invite email]", err)
+    }
+
+    trackEvent(origin, "claim_node_approved", {
+      claim_request_id: id,
+      node_id: current.node_id,
+      verification_tier: current.verification_tier,
+    })
+
+    return NextResponse.json(updated)
+  }
+
   // ── APPROVE path: route everything through public.merge_person() ─────────
   // The RPC handles status flip, FK repoint, ghost delete, merge_log write,
   // alias inserts, and competing-claim auto-deny — all in one transaction.
@@ -245,8 +332,11 @@ export async function PATCH(
     // Email claimant — skipped on noop replays so we don't double-send.
     if (!result.noop) {
       try {
+        // Reached only for member claims (public_invite returns earlier), so
+        // claimant_id is always set here; the ?? "" keeps TS happy on the now
+        // nullable column and getUserById("") would just resolve to no email.
         const [{ data: claimantUser }, { data: person }] = await Promise.all([
-          db.auth.admin.getUserById(current.claimant_id),
+          db.auth.admin.getUserById(current.claimant_id ?? ""),
           db.from("people").select("display_name").eq("id", result.canonical_id).maybeSingle(),
         ])
         const email = claimantUser.user?.email
@@ -298,12 +388,21 @@ export async function PATCH(
   })
 
   try {
-    const [{ data: claimantUser }, { data: person }] = await Promise.all([
-      db.auth.admin.getUserById(current.claimant_id),
-      db.from("people").select("display_name").eq("id", current.node_id).maybeSingle(),
-    ])
-    const email = claimantUser.user?.email
+    const { data: person } = await db
+      .from("people")
+      .select("display_name")
+      .eq("id", current.node_id)
+      .maybeSingle()
     const personName = person?.display_name ?? "your profile"
+    // public_invite claims have no claimant_id; email the submitted address.
+    // member claims look the email up off the account.
+    let email: string | null | undefined
+    if (current.claim_kind === "public_invite") {
+      email = current.claimant_email ?? null
+    } else if (current.claimant_id) {
+      const { data: claimantUser } = await db.auth.admin.getUserById(current.claimant_id)
+      email = claimantUser.user?.email
+    }
     if (email) {
       void sendClaimEmail({
         to: email,

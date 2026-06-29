@@ -98,6 +98,51 @@ export function claimYourSpotHtml(args: {
   )
 }
 
+// Node-claim-by-admin-invite — sent to the claimant when an admin approves their
+// email-first claim. Distinct from claimApprovedHtml: that one assumes an
+// existing logged-in member and links to a profile; this one is the
+// account-creating invite (the magic link both creates the account and folds the
+// existing node into it). No em dashes in the copy (standing rule).
+export function claimInviteHtml(args: { personName: string; link: string }): string {
+  const safeName = escapeHtml(args.personName)
+  return shell(
+    `Your claim on ${safeName} was approved`,
+    `<p style="margin:0 0 14px;">Good news. Your request to claim <strong style="color:#e5e5e5;">${safeName}</strong> on Linestry was approved.</p>
+     <p style="margin:0;">Finish setting up your profile and the existing history folds into your account, ready to build on.</p>`,
+    { label: "Finish setting up →", href: args.link },
+  )
+}
+
+// Node-claim-by-admin-invite — the admin notification. Sent to ADMIN_NOTIFY_EMAIL
+// the moment an email-first claim becomes queue-ready, so an approval never sits
+// silently. Calls out protected nodes prominently. No em dashes.
+export function claimRequestAdminHtml(args: {
+  personName: string
+  claimantEmail: string
+  tier: string
+  note: string | null
+  reviewLink: string
+}): string {
+  const safeName = escapeHtml(args.personName)
+  const safeEmail = escapeHtml(args.claimantEmail)
+  const safeTier = escapeHtml(args.tier)
+  const tierBlock =
+    args.tier === "protected"
+      ? `<p style="margin:0 0 14px;color:#f87171;"><strong>PROTECTED node.</strong> Verify identity out of band before approving.</p>`
+      : `<p style="margin:0 0 14px;">Tier: <strong style="color:#e5e5e5;">${safeTier}</strong></p>`
+  const noteBlock = args.note
+    ? `<p style="margin:0 0 14px;">Note: ${escapeHtml(args.note)}</p>`
+    : ""
+  return shell(
+    `New claim on ${safeName} to review`,
+    `<p style="margin:0 0 14px;">A visitor submitted an email claim on <strong style="color:#e5e5e5;">${safeName}</strong>.</p>
+     <p style="margin:0 0 14px;">Email: <strong style="color:#e5e5e5;">${safeEmail}</strong></p>
+     ${tierBlock}
+     ${noteBlock}`,
+    { label: "Review in admin →", href: args.reviewLink },
+  )
+}
+
 interface SendArgs {
   to: string
   subject: string

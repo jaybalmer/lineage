@@ -26,6 +26,7 @@ import { isInvitableNodeStatus, trackInviteEvent } from "@/lib/invite-tracking"
 import { isAuthUser } from "@/store/lineage-store"
 import { notFound } from "next/navigation"
 import { ClaimRequestModal } from "@/components/ui/claim-request-modal"
+import { ClaimNodeSheet } from "@/components/ui/claim-node-sheet"
 import { VouchCard, type ClaimRequestWithClaimant } from "@/components/ui/vouch-card"
 import { isClaimRequestOpen, userHasOpenClaim, pluralize } from "@/lib/claim-request-helpers"
 import type { Claim, ClaimRequestStatus, MembershipState, Story } from "@/types"
@@ -57,6 +58,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   const [showAddStory, setShowAddStory] = useState(false)
   const [claimRequests, setClaimRequests] = useState<ClaimRequestWithClaimant[]>([])
   const [showClaimModal, setShowClaimModal] = useState(false)
+  const [showClaimNodeSheet, setShowClaimNodeSheet] = useState(false)
   // Public Stack (/t/[slug]) availability for this person — drives the
   // Stack/Timeline toggle. Null until resolved; only shown when enabled.
   const [publicTimeline, setPublicTimeline] = useState<{ enabled: boolean; slug: string | null } | null>(null)
@@ -240,6 +242,9 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
     nodeIsClaimable &&
     !userHasOpenClaim(openClaimRequests, activePersonId)
   const showVouchSurface = isAuth && openClaimRequests.length > 0
+  // node-claim-by-admin-invite: a NOT-logged-in visitor on a claimable node gets
+  // the email-first claim path (the logged-in path keeps ClaimRequestModal).
+  const showThatsMeAnon = !isAuth && !isCurrentUser && nodeIsClaimable
 
   return (
     <div className="min-h-screen bg-background">
@@ -411,6 +416,30 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                 className="text-xs font-semibold text-blue-700 hover:text-blue-900 transition-colors mt-2"
               >
                 This is me →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Anonymous "That's me" entry (node-claim-by-admin-invite) ──────
+            Not-logged-in visitors get the email-first claim path: submit an
+            email, it queues for admin review, approval emails an invite that
+            creates the account and folds this node in. Covers both unclaimed
+            (shown under the banner) and catalog tiers. */}
+        {showThatsMeAnon && (
+          <div className="mb-6 rounded-xl p-4 flex items-start gap-3 border border-blue-200 bg-blue-50">
+            <span className="text-base shrink-0 text-blue-600">👤</span>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-gray-900 mb-0.5">Is this you?</p>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                Claim this profile with your email. Once we confirm it, you get a link to finish
+                setting up, with the existing history already attached.
+              </p>
+              <button
+                onClick={() => setShowClaimNodeSheet(true)}
+                className="text-xs font-semibold text-blue-700 hover:text-blue-900 transition-colors mt-2"
+              >
+                That&rsquo;s me →
               </button>
             </div>
           </div>
@@ -634,6 +663,15 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
             ])
             setShowClaimModal(false)
           }}
+        />
+      )}
+
+      {showClaimNodeSheet && (
+        <ClaimNodeSheet
+          nodeId={resolvedId}
+          personName={person.display_name}
+          source="person_page"
+          onClose={() => setShowClaimNodeSheet(false)}
         />
       )}
 

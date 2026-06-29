@@ -23,6 +23,8 @@ import { groupRodeAtCompanions } from "@/lib/companion-grouping"
 import { dateToSortNum, groupByDecade } from "@/lib/timeline-grouping"
 import { EntityGraphic } from "@/components/public-timeline/entity-graphic"
 import { IWasThere } from "@/components/public-timeline/i-was-there"
+import { ClaimNodeSheet } from "@/components/ui/claim-node-sheet"
+import { useState } from "react"
 import { StoryMedia } from "@/components/public-timeline/story-media"
 
 type FeedItem =
@@ -209,6 +211,56 @@ function PublicClaimCard({
 
 const CHIP = "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full"
 
+// node-claim-by-admin-invite: a tagged-rider chip. When the rider node is still
+// claimable (catalog/unclaimed), an anonymous visitor who IS that rider can tap
+// it to open the email-first claim sheet ("that's me"). A claimed rider renders
+// as a plain chip.
+function ThatsMeChip({
+  person,
+  ownerSlug,
+}: {
+  person: { id: string; display_name: string; node_status: string | null }
+  ownerSlug: string
+}) {
+  const claimable = person.node_status === "catalog" || person.node_status === "unclaimed"
+  const [open, setOpen] = useState(false)
+  if (!claimable) {
+    return (
+      <span className={cn(CHIP, "bg-violet-500/10 border border-violet-500/20 text-violet-600")}>
+        👤 {person.display_name}
+      </span>
+    )
+  }
+  return (
+    <>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation()
+          setOpen(true)
+        }}
+        title="Is this you? Claim this profile"
+        className={cn(
+          CHIP,
+          "bg-violet-500/10 border border-violet-500/30 text-violet-700 hover:bg-violet-500/20 transition-colors",
+        )}
+      >
+        👤 {person.display_name}
+        <span className="ml-0.5 font-semibold text-[10px]">that&rsquo;s me</span>
+      </button>
+      {open && (
+        <ClaimNodeSheet
+          nodeId={person.id}
+          personName={person.display_name}
+          source="public_timeline"
+          slug={ownerSlug}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
+  )
+}
+
 function PublicStoryCard({ story, entities, owner }: { story: Story; entities: PublicTimelineEntities; owner: PublicTimelineOwner }) {
   const linkedPlace = story.linked_place_id ? entities.places[story.linked_place_id] : undefined
   const linkedEvent = story.linked_event_id ? entities.events[story.linked_event_id] : undefined
@@ -293,9 +345,7 @@ function PublicStoryCard({ story, entities, owner }: { story: Story; entities: P
             </span>
           ))}
           {taggedRiders.map((r) => r && (
-            <span key={r.id} className={cn(CHIP, "bg-violet-500/10 border border-violet-500/20 text-violet-600")}>
-              👤 {r.display_name}
-            </span>
+            <ThatsMeChip key={r.id} person={r} ownerSlug={owner.slug} />
           ))}
         </div>
       )}

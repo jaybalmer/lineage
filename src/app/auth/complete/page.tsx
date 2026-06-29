@@ -145,7 +145,20 @@ export default function AuthCompletePage() {
         console.error("Invite claim error:", mergeErr)
       }
 
-      // ── 4. Public tag-to-claim completion (PB-010 Phase 4b) ───────────────
+      // ── 4. Admin-invite node-claim completion ─────────────────────────────
+      // If an admin approved an email-first claim on a node for this email, fold
+      // that node into this account (no 7-day hold; the admin already approved).
+      // Runs BEFORE claim-complete so the node is promoted+removed before the
+      // public tag-to-claim path looks for it. Keyed server-side on the verified
+      // session email, so it no-ops for everyone without an approved claim.
+      try {
+        setStatus("Claiming your profile…")
+        await fetch("/api/public/admin-invite-complete", { method: "POST" })
+      } catch (inviteErr) {
+        console.error("Admin-invite completion error:", inviteErr)
+      }
+
+      // ── 5. Public tag-to-claim completion (PB-010 Phase 4b) ───────────────
       // If this email was publicly tagged on someone's timeline (a Phase 4a
       // "I was there" ghost), promote that ghost into this account: repoint its
       // claims here, flip the paired tags to attributed, and remove the ghost.
@@ -158,7 +171,7 @@ export default function AuthCompletePage() {
         console.error("Public claim completion error:", claimErr)
       }
 
-      // ── 5. Read canonical profile back from DB ────────────────────────────
+      // ── 6. Read canonical profile back from DB ────────────────────────────
       // Read AFTER the claims above so a restored invited name lands in the
       // store on this same load — no refresh needed for the right name to show.
       const { data: savedProfile } = await supabase
