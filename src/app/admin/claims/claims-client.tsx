@@ -8,9 +8,12 @@ import { pluralize } from "@/lib/claim-request-helpers"
 import type { ClaimRequest } from "@/types"
 
 export interface ClaimRequestWithContext extends ClaimRequest {
-  claimant: { id: string; display_name: string; avatar_url: string | null }
+  // Null on email-first (public_invite) claims, which have no claimant account.
+  claimant: { id: string; display_name: string; avatar_url: string | null } | null
   person:   { id: string; display_name: string; node_status: string }
   voucher_names: string[]
+  added_by_name?: string | null
+  node_claim_count?: number
 }
 
 const RELATIONSHIP_LABEL: Record<string, string> = {
@@ -113,6 +116,8 @@ export function ClaimsAdminClient({ initialRequests }: { initialRequests: ClaimR
             {requests.map((r) => {
               const vouchCount = (r.vouches_received ?? []).length
               const ready = r.status === "vouched"
+              const isPublicInvite = r.claim_kind === "public_invite"
+              const isProtected = r.verification_tier === "protected"
               const personSlug = nameToSlug(r.person.display_name) || r.person.id
               return (
                 <div
@@ -141,16 +146,40 @@ export function ClaimsAdminClient({ initialRequests }: { initialRequests: ClaimR
                         <span className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">
                           tier: {r.verification_tier}
                         </span>
+                        {isPublicInvite && (
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-blue-100 text-blue-800">
+                            Email claim
+                          </span>
+                        )}
                       </div>
-                      <p className="text-xs text-gray-600 mt-1">
-                        Claimed by{" "}
-                        <span className="font-semibold text-gray-900">{r.claimant.display_name}</span>{" "}
-                        · requested {formatSmartDate(r.created_at)} ·{" "}
-                        <span className="font-semibold text-gray-900">{vouchCount}/{r.vouches_required}</span>{" "}
-                        {pluralize(r.vouches_required, "vouch", "vouches")}
-                      </p>
+                      {isPublicInvite ? (
+                        <p className="text-xs text-gray-600 mt-1">
+                          From{" "}
+                          <span className="font-semibold text-gray-900">{r.claimant_email}</span>{" "}
+                          · requested {formatSmartDate(r.created_at)}
+                          {r.added_by_name ? <> · node added by {r.added_by_name}</> : null}
+                          {" "}· <span className="font-semibold text-gray-900">{r.node_claim_count ?? 0}</span>{" "}
+                          {pluralize(r.node_claim_count ?? 0, "claim", "claims")} on node
+                        </p>
+                      ) : (
+                        <p className="text-xs text-gray-600 mt-1">
+                          Claimed by{" "}
+                          <span className="font-semibold text-gray-900">{r.claimant?.display_name ?? "Unknown"}</span>{" "}
+                          · requested {formatSmartDate(r.created_at)} ·{" "}
+                          <span className="font-semibold text-gray-900">{vouchCount}/{r.vouches_required}</span>{" "}
+                          {pluralize(r.vouches_required, "vouch", "vouches")}
+                        </p>
+                      )}
                     </div>
                   </div>
+
+                  {isPublicInvite && isProtected && (
+                    <div className="mb-3 rounded-lg border border-red-300 bg-red-50 px-3 py-2">
+                      <p className="text-xs font-semibold text-red-700">
+                        PROTECTED node. Verify identity out of band before approving.
+                      </p>
+                    </div>
+                  )}
 
                   {r.evidence_notes && (
                     <div className="mb-3">

@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 
   try {
     const db = getServiceClient()
-    const { data: requests, error } = await db
+    const { data: rawRequests, error } = await db
       .from("claim_requests")
       .select("*")
       .eq("node_id", nodeId)
@@ -41,7 +41,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Failed to load" }, { status: 500 })
     }
 
-    const claimantIds = Array.from(new Set((requests ?? []).map((r) => r.claimant_id)))
+    // D5: the public vouch surface is member-to-member. Email-first
+    // (public_invite) claims have no claimant profile to vouch for, so exclude
+    // any row without a claimant_id — they live only in the admin queue.
+    const requests = (rawRequests ?? []).filter(
+      (r) => r.claim_kind !== "public_invite" && r.claimant_id,
+    )
+
+    const claimantIds = Array.from(
+      new Set(requests.map((r) => r.claimant_id as string)),
+    )
     const profileMap = new Map<string, { display_name: string; avatar_url: string | null }>()
     if (claimantIds.length) {
       const { data: profiles } = await db
@@ -53,9 +62,9 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const enriched = (requests ?? []).map((r) => ({
+    const enriched = requests.map((r) => ({
       ...r,
-      claimant: profileMap.get(r.claimant_id) ?? { display_name: "Unknown", avatar_url: null },
+      claimant: profileMap.get(r.claimant_id as string) ?? { display_name: "Unknown", avatar_url: null },
     }))
 
     return NextResponse.json(enriched)

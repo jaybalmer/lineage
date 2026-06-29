@@ -617,9 +617,19 @@ export interface Vouch {
   created_at: string
 }
 
+// "member" = the existing auth flow (claimant has an account, merged via
+// merge_person). "public_invite" = the email-first admin-invite flow (anonymous
+// claimant, no account at submit; folded in at signup via promoteGhostToAccount).
+export type ClaimKind = "member" | "public_invite"
+
 export interface ClaimRequest {
   id: string
-  claimant_id: string
+  // Null for email-first (public_invite) claims, which have no account yet.
+  claimant_id: string | null
+  // Set only on public_invite claims (the anonymous claimant's email).
+  claimant_email?: string | null
+  email_verified_at?: string | null
+  claim_kind?: ClaimKind
   node_id: string
   verification_tier: VerificationTier
   status: ClaimRequestStatus

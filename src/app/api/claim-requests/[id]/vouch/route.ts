@@ -168,8 +168,11 @@ export async function POST(
       reason: "vouch_threshold_met",
     })
 
+    // Vouches only apply to member claims (public_invite never reaches the vouch
+    // surface, D5), so claimant_id is set here; ?? "" keeps TS happy on the now
+    // nullable column.
     const [{ data: claimantUser }, { data: person }] = await Promise.all([
-      db.auth.admin.getUserById(current.claimant_id),
+      db.auth.admin.getUserById(current.claimant_id ?? ""),
       db.from("people").select("display_name").eq("id", current.node_id).maybeSingle(),
     ])
     const email = claimantUser.user?.email
