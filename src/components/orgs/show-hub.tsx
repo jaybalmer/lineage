@@ -7,15 +7,19 @@
 // contribution CTA. Editors get a curate modal, a publish toggle, and a copy-link.
 
 import { useEffect, useState } from "react"
+import { useParams } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { CommunityLink } from "@/components/ui/community-link"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { StackView } from "@/components/public-timeline/stack-view"
 import { StackCurateModal } from "@/components/ui/stack-curate-modal"
+import { EpisodeCreateModal } from "@/components/events/episode-create-modal"
 import type { Org } from "@/types"
 import type { PublicShowPayload } from "@/lib/public-timeline-read"
 
 export function ShowHubView({ org }: { org: Org }) {
+  const params = useParams<{ community: string }>()
+  const community = params?.community ?? "snowboarding"
   const { activePersonId, membership } = useLineageStore()
   const isEditor = membership.is_editor || membership.tier === "founding"
   const isAuth = isAuthUser(activePersonId)
@@ -23,6 +27,7 @@ export function ShowHubView({ org }: { org: Org }) {
   const [payload, setPayload] = useState<PublicShowPayload | null>(null)
   const [loading, setLoading] = useState(true)
   const [curating, setCurating] = useState(false)
+  const [addingEpisode, setAddingEpisode] = useState(false)
   const [link, setLink] = useState<{ enabled: boolean; slug: string | null }>({ enabled: false, slug: null })
   const [copied, setCopied] = useState(false)
   const [origin, setOrigin] = useState("")
@@ -72,6 +77,17 @@ export function ShowHubView({ org }: { org: Org }) {
           initialEntries={payload.entries}
           onClose={() => setCurating(false)}
           onSaved={loadStack}
+        />
+      )}
+
+      {addingEpisode && (
+        <EpisodeCreateModal
+          showOrgId={org.id}
+          communitySlug={community}
+          onClose={() => setAddingEpisode(false)}
+          // Full nav so the freshly bootstrapped catalog resolves the new episode
+          // page (events/[id] -> EpisodeView), landing the editor on it to curate.
+          onCreated={(id) => { window.location.href = `/${community}/events/${id}` }}
         />
       )}
 
@@ -144,9 +160,17 @@ export function ShowHubView({ org }: { org: Org }) {
 
         {/* Episodes */}
         <section className="mb-8">
-          <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Episodes</h2>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">Episodes</h2>
+            {isEditor && (
+              <button onClick={() => setAddingEpisode(true)} className="text-xs text-accent-strong hover:underline">+ Add episode</button>
+            )}
+          </div>
           {episodes.length === 0 ? (
-            <div className="text-sm text-muted py-6 text-center border border-dashed border-border-default rounded-xl">No episodes yet.</div>
+            <div className="text-sm text-muted py-6 text-center border border-dashed border-border-default rounded-xl">
+              No episodes yet.
+              {isEditor && <> <button onClick={() => setAddingEpisode(true)} className="text-blue-400 hover:text-blue-300">Add the first one →</button></>}
+            </div>
           ) : (
             <div className="space-y-2">
               {episodes.map((e) => (
