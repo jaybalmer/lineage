@@ -1,11 +1,12 @@
 "use client"
 
 import { useState, useMemo, Suspense } from "react"
-import { useSearchParams } from "next/navigation"
+import { useSearchParams, useParams } from "next/navigation"
 import { CommunityLink } from "@/components/ui/community-link"
 import { Nav } from "@/components/ui/nav"
 import { orgSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
+import { CreateShowModal } from "@/components/orgs/create-show-modal"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
@@ -115,12 +116,16 @@ const BRAND_PREDICATES = ["sponsored_by", "worked_at", "part_of_team"] as const
 function BrandsPageInner() {
   const searchParams = useSearchParams()
   const yearParam = searchParams.get("year")
+  const params = useParams<{ community: string }>()
+  const community = params?.community ?? "snowboarding"
   const [addOpen, setAddOpen] = useState(false)
+  const [showCreateOpen, setShowCreateOpen] = useState(false)
   const [myOnly, setMyOnly] = useState(false)
   const [search, setSearch] = useState(yearParam ?? "")
   const [sort, setSort] = useState<BrandSort>("entries")
-  const { catalog, activePersonId } = useLineageStore()
+  const { catalog, activePersonId, membership } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
+  const isEditor = membership.is_editor || membership.tier === "founding"
 
   // Connection counts per org, mirroring the brand detail page:
   //  people  = unique subjects of sponsored_by / worked_at / part_of_team claims (org is object)
@@ -216,6 +221,9 @@ function BrandsPageInner() {
   const sortedBrands = [...brandOrgs].sort(cmp)
   const sortedTeams = [...teams].sort(cmp)
   const sortedShops = [...shops].sort(cmp)
+  // Media shows (FNRad authoring): a separate browsable section; each card links
+  // to its show hub (the brand detail page branches to ShowHubView for media).
+  const sortedShows = allOrgs.filter((o) => o.org_type === "media").sort(cmp)
 
   // Count the displayed set (brands + teams + shops), not allOrgs, so the
   // header number matches the cards on screen (BUG-027 / cf. BUG-019).
@@ -246,6 +254,14 @@ function BrandsPageInner() {
                 )}
               >
                 My Brands{myOnly && myOrgIds.size > 0 ? ` · ${myOrgIds.size}` : ""}
+              </button>
+            )}
+            {isEditor && (
+              <button
+                onClick={() => setShowCreateOpen(true)}
+                className="px-4 py-2 rounded-lg border border-border-default text-sm font-medium text-muted hover:text-foreground hover:bg-surface-hover transition-all"
+              >
+                + New show
               </button>
             )}
             <button
@@ -315,6 +331,19 @@ function BrandsPageInner() {
             </div>
           )}
 
+          {sortedShows.length > 0 && (
+            <section>
+              <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-4">
+                Shows & Media
+              </h2>
+              <div className="space-y-2">
+                {sortedShows.map((org) => (
+                  <OrgCard key={org.id} org={org} conn={conn(org.id)} />
+                ))}
+              </div>
+            </section>
+          )}
+
           {sortedTeams.length > 0 && (
             <section>
               <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-4">
@@ -348,6 +377,16 @@ function BrandsPageInner() {
           entityType="org"
           onClose={() => setAddOpen(false)}
           onAdded={() => setAddOpen(false)}
+        />
+      )}
+
+      {showCreateOpen && (
+        <CreateShowModal
+          communitySlug={community}
+          onClose={() => setShowCreateOpen(false)}
+          // Full nav so the freshly bootstrapped catalog includes the new show
+          // and its hub (brands/[slug] -> ShowHubView) resolves.
+          onCreated={(id) => { window.location.href = `/${community}/brands/${id}` }}
         />
       )}
     </div>
