@@ -8,12 +8,7 @@ import { useLineageStore } from "@/store/lineage-store"
 import { useTheme } from "@/lib/theme"
 import { supabase } from "@/lib/supabase"
 import { ReportBugModal } from "@/components/ui/report-bug-modal"
-
-const TIER_BADGE: Record<string, { label: string; color: string; symbol: string }> = {
-  annual:   { label: "MEMBER",      color: "#f59e0b", symbol: "◈" },
-  lifetime: { label: "LIFETIME",    color: "#8b5cf6", symbol: "◆" },
-  founding: { label: "FOUNDING ✦",  color: "#f59e0b", symbol: "✦" },
-}
+import { memberBadgeFor } from "@/components/ui/member-badge"
 
 export interface AvatarDropdownProps {
   displayName:     string
@@ -37,7 +32,7 @@ export function AvatarDropdown({ displayName, tier, totalTokens, pendingTagCount
   const [open, setOpen] = useState(false)
   const [bugOpen, setBugOpen] = useState(false)
   const ref       = useRef<HTMLDivElement>(null)
-  const tierBadge = TIER_BADGE[tier] ?? null
+  const tierBadge = memberBadgeFor(tier)
 
   async function handleSignOut() {
     setOpen(false)

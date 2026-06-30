@@ -524,6 +524,19 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
       }))
   }, [peopleClaims, orgBoards, organizedClaims, extraBrandEvents, brandSeries, locatedAtClaims, orgStories])
 
+  // Events tab: organized claims + brand-linked events merged into one list,
+  // sorted chronologically ascending by event year (BUG-094). Events without a
+  // usable year sort last so the dated run stays fully ordered.
+  const sortedBrandEvents = useMemo(() => {
+    const entries: { event: Event; claim?: typeof organizedClaims[0] }[] = []
+    organizedClaims.forEach((claim) => {
+      const event = catalog.events.find((e) => e.id === claim.object_id)
+      if (event) entries.push({ event, claim })
+    })
+    extraBrandEvents.forEach((event) => entries.push({ event }))
+    return entries.sort((a, b) => (a.event.year ?? Infinity) - (b.event.year ?? Infinity))
+  }, [organizedClaims, extraBrandEvents, catalog.events])
+
   const typeLabel = org.brand_category
     ? BRAND_CAT_LABEL[org.brand_category]
     : ORG_TYPE_LABEL[org.org_type]
@@ -1197,13 +1210,11 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
                   </div>
                 ) : (
                   <>
-                    {organizedClaims.map((claim) => {
-                      const event = catalog.events.find((e) => e.id === claim.object_id)
-                      if (!event) return null
+                    {sortedBrandEvents.map(({ event, claim }) => {
                       const accentColor = EVENT_TYPE_COLOR[event.event_type] ?? "border-l-zinc-600"
-                      const confColor = CONFIDENCE_COLORS[claim.confidence] ?? "text-muted"
+                      const confColor = claim ? (CONFIDENCE_COLORS[claim.confidence] ?? "text-muted") : ""
                       return (
-                        <CommunityLink key={claim.id} href={`/events/${eventSlug(event)}`}>
+                        <CommunityLink key={claim?.id ?? event.id} href={`/events/${eventSlug(event)}`}>
                           <div className={cn(
                             "flex items-start gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 rounded-xl hover:border-border-default transition-all group",
                             accentColor
@@ -1217,33 +1228,13 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
                                 <span className="text-xs text-muted capitalize">{event.event_type.replace("-", " ")}</span>
                                 {event.year && <span className="text-xs text-muted">· {event.year}</span>}
                               </div>
-                              {claim.note && <div className="text-[11px] text-muted mt-1 truncate">{claim.note}</div>}
+                              {claim?.note && <div className="text-[11px] text-muted mt-1 truncate">{claim.note}</div>}
                             </div>
-                            <span className={cn("text-[11px] shrink-0", confColor)}>
-                              {claim.confidence === "self-reported" ? "unverified" : claim.confidence}
-                            </span>
-                          </div>
-                        </CommunityLink>
-                      )
-                    })}
-                    {extraBrandEvents.map((event) => {
-                      const accentColor = EVENT_TYPE_COLOR[event.event_type] ?? "border-l-zinc-600"
-                      return (
-                        <CommunityLink key={event.id} href={`/events/${eventSlug(event)}`}>
-                          <div className={cn(
-                            "flex items-start gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 rounded-xl hover:border-border-default transition-all group",
-                            accentColor
-                          )}>
-                            <div className="shrink-0 w-9 h-9 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-base">
-                              {event.event_type === "contest" ? "🏆" : event.event_type === "film-shoot" ? "🎬" : event.event_type === "trip" ? "🏔" : "📅"}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">{event.name}</div>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-xs text-muted capitalize">{event.event_type.replace("-", " ")}</span>
-                                {event.year && <span className="text-xs text-muted">· {event.year}</span>}
-                              </div>
-                            </div>
+                            {claim && (
+                              <span className={cn("text-[11px] shrink-0", confColor)}>
+                                {claim.confidence === "self-reported" ? "unverified" : claim.confidence}
+                              </span>
+                            )}
                           </div>
                         </CommunityLink>
                       )

@@ -38,7 +38,7 @@ function BrandHome({ variant }: { variant: "light" | "dark" }) {
         : "inline-flex items-center gap-2 text-foreground/80 hover:text-foreground transition-colors"}
     >
       <BrandMark size={22} color={dark ? "#ffffff" : "#3b82f6"} />
-      <span className="text-sm font-bold" style={{ fontFamily: "var(--font-display)" }}>
+      <span className="text-sm font-bold" style={{ fontFamily: "var(--font-wordmark)" }}>
         Linestry
       </span>
     </Link>
