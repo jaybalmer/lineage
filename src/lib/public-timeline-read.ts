@@ -176,7 +176,31 @@ async function readOwnerStories(
   const byId = new Map<string, Record<string, unknown>>()
   for (const s of (authoredRes.data ?? []) as Record<string, unknown>[]) byId.set(s.id as string, s)
   for (const s of (taggedRes.data ?? []) as Record<string, unknown>[]) byId.set(s.id as string, s)
-  const rows = Array.from(byId.values())
+  return enrichStories(db, Array.from(byId.values()))
+}
+
+/** Load specific public stories by id, enriched the same way readOwnerStories
+ *  enriches. Used by the event-owner stack read, whose curated story entries
+ *  point at arbitrary stories rather than an owner's authored/tagged set. */
+async function readStoriesByIds(
+  db: ReturnType<typeof getServiceClient>,
+  ids: string[],
+): Promise<Story[]> {
+  if (ids.length === 0) return []
+  const { data } = await db
+    .from("stories")
+    .select(STORY_JOIN)
+    .eq("visibility", "public")
+    .in("id", ids)
+  return enrichStories(db, (data ?? []) as Record<string, unknown>[])
+}
+
+/** Shared enrichment: resolve board ids, approved rider tags, and the community
+ *  place/event/org junctions onto raw story rows, returning newest-first. */
+async function enrichStories(
+  db: ReturnType<typeof getServiceClient>,
+  rows: Record<string, unknown>[],
+): Promise<Story[]> {
   if (rows.length === 0) return []
 
   const storyIds = rows.map((s) => s.id as string)
@@ -236,12 +260,20 @@ async function resolveEntities(
   db: ReturnType<typeof getServiceClient>,
   claims: Claim[],
   stories: Story[],
+  seed?: { person?: string[]; place?: string[]; event?: string[]; org?: string[]; board?: string[] },
 ): Promise<PublicTimelineEntities> {
   const personIds = new Set<string>()
   const placeIds = new Set<string>()
   const eventIds = new Set<string>()
   const orgIds = new Set<string>()
   const boardIds = new Set<string>()
+
+  // Seed ids (e.g. curated event-stack refs that are not derived from claims).
+  for (const id of seed?.person ?? []) personIds.add(id)
+  for (const id of seed?.place ?? []) placeIds.add(id)
+  for (const id of seed?.event ?? []) eventIds.add(id)
+  for (const id of seed?.org ?? []) orgIds.add(id)
+  for (const id of seed?.board ?? []) boardIds.add(id)
 
   for (const c of claims) {
     if (!c.object_id) continue
@@ -793,4 +825,259 @@ const PREDICATE_RESULT_LABEL: Partial<Record<Predicate, string>> = {
   spectated_at: "Spectated",
   organized_at: "Organized",
   organized: "Organized",
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// FNRad Featured Timelines Phase 2: event-owner (episode) curated stack read
+//
+// An episode (Event) owns a curated stack the same way a profile does, but it
+// has NO owner claim set, so this path is isolated from the profile resolver
+// above (zero regression risk): it resolves the curated entries directly against
+// the catalog and the referenced public stories. The same store-free StackView /
+// StackEntryCard render the result. Category-summary entries have no meaning for
+// an episode (no claim set to summarize) and are dropped.
+// ════════════════════════════════════════════════════════════════════════════
+
+const EVENT_STACK_COLS =
+  "id, name, description, event_type, year, start_date, image_url, episode_number, media_url, show_org_id, public_slug, public_enabled"
+
+type EventStackRow = {
+  id: string
+  name: string | null
+  description: string | null
+  event_type: string | null
+  year: number | null
+  start_date: string | null
+  image_url: string | null
+  episode_number: number | null
+  media_url: string | null
+  show_org_id: string | null
+  public_slug: string | null
+  public_enabled: boolean | null
+}
+
+export interface PublicEpisodeShow {
+  id: string
+  name: string
+  /** Public slug when the show has published its own chromeless page (Phase 3). */
+  slug: string | null
+}
+
+export interface PublicEpisodeMeta {
+  episode_number: number | null
+  media_url: string | null
+  date: string | null
+  show: PublicEpisodeShow | null
+  guests: PublicPersonLite[]
+}
+
+export interface PublicEpisodePayload {
+  owner: PublicTimelineOwner
+  meta: PublicEpisodeMeta
+  entries: ResolvedStackEntry[]
+  /** Carried so the story stack cards can expand to the rich story in StackView. */
+  stories: Story[]
+  entities: PublicTimelineEntities
+}
+
+/** Map an episode event row to the shared owner header shape (display_name =
+ *  episode title, era = its year, avatar = its image). */
+function eventOwnerHeader(row: EventStackRow): PublicTimelineOwner {
+  return {
+    id: row.id,
+    display_name: row.name ?? "Episode",
+    slug: row.public_slug ?? row.id,
+    avatar_url: row.image_url ?? null,
+    bio: row.description ?? null,
+    region: null,
+    country: null,
+    riding_since: null,
+    era_start: row.year ?? yearOf(row.start_date),
+  }
+}
+
+function resolveEventRow(
+  row: PublicStackEntry,
+  entities: PublicTimelineEntities,
+  storiesById: Map<string, Story>,
+): ResolvedStackEntry | null {
+  const base = { id: row.id, position: row.position, refId: row.entry_ref_id ?? null }
+
+  // Category summaries summarize an owner's claim set; an episode has none.
+  if (row.entry_type === "category_summary") return null
+
+  const ref = row.entry_ref_id
+  if (!ref) return null
+  const accent = ACCENT_BY_TYPE[row.entry_type]
+
+  if (row.entry_type === "story") {
+    const story = storiesById.get(ref)
+    if (!story) return null
+    const linkedPlace = story.linked_place_id ? entities.places[story.linked_place_id] : undefined
+    const linkedImg =
+      (story.linked_place_id && entities.places[story.linked_place_id]?.image_url) ||
+      (story.linked_event_id && entities.events[story.linked_event_id]?.image_url) ||
+      (story.board_ids ?? []).map((b) => entities.boards[b]?.image_url).find(Boolean) || null
+    return {
+      ...base, entry_type: "story", accent: "violet", kicker: "Story",
+      kickerMeta: joinMeta([yearOf(story.story_date)?.toString(), linkedPlace?.name]),
+      title: row.custom_title ?? story.title ?? (story.body ?? "").split("\n")[0].slice(0, 80) ?? "Story",
+      summary: row.custom_summary ?? story.body ?? null,
+      thumbPhotoUrl: firstPhotoUrl(story) ?? linkedImg, thumbEntity: null, thumbName: "", thumbYear: null, board: null,
+      categoryKey: null, count: null, items: [],
+    }
+  }
+
+  if (row.entry_type === "place") {
+    const place = entities.places[ref]
+    if (!place) return null
+    return {
+      ...base, entry_type: "place", accent, kicker: "Place",
+      kickerMeta: joinMeta([place.region, place.country]),
+      title: row.custom_title ?? place.name, summary: row.custom_summary ?? null,
+      thumbPhotoUrl: place.image_url ?? null, thumbEntity: "place", thumbName: place.name, thumbYear: null, board: null,
+      categoryKey: null, count: null, items: [],
+    }
+  }
+
+  if (row.entry_type === "event") {
+    const event = entities.events[ref]
+    if (!event) return null
+    const yr = event.year ?? yearOf(event.start_date)
+    return {
+      ...base, entry_type: "event", accent, kicker: "Event",
+      kickerMeta: joinMeta([yr?.toString(), event.event_type?.replace(/-/g, " ")]),
+      title: row.custom_title ?? event.name, summary: row.custom_summary ?? null,
+      thumbPhotoUrl: event.image_url ?? null, thumbEntity: "event", thumbName: event.name, thumbYear: yr ?? null, board: null,
+      categoryKey: null, count: null, items: [],
+    }
+  }
+
+  if (row.entry_type === "board") {
+    const board = entities.boards[ref]
+    if (!board) return null
+    return {
+      ...base, entry_type: "board", accent, kicker: "Board",
+      kickerMeta: joinMeta([board.model_year?.toString(), board.shape?.replace(/-/g, " ")]),
+      title: row.custom_title ?? `${board.brand} ${board.model}`, summary: row.custom_summary ?? null,
+      thumbPhotoUrl: board.image_url ?? null, thumbEntity: "board",
+      thumbName: `${board.brand} ${board.model}`, thumbYear: null,
+      board: { brand: board.brand, model: board.model, year: board.model_year ?? null },
+      categoryKey: null, count: null, items: [],
+    }
+  }
+
+  // rider — on an episode a tagged rider is a guest/mention, so the card leads
+  // with the name (not the profile's "Rode with X").
+  const person = entities.people[ref]
+  if (!person) return null
+  return {
+    ...base, entry_type: "rider", accent: "violet", kicker: "Rider", kickerMeta: null,
+    title: row.custom_title ?? person.display_name, summary: row.custom_summary ?? null,
+    thumbPhotoUrl: person.avatar_url ?? null, thumbEntity: "person",
+    thumbName: person.display_name, thumbYear: null, board: null,
+    categoryKey: null, count: null, items: [],
+  }
+}
+
+/** Resolve an episode's curated stack. Pass `slug` for the public chromeless
+ *  page (requires public_enabled), or `eventId` for the in-app episode page
+ *  (no enabled gate, since the in-app page is already community-visible).
+ *  Returns null when the event is missing, or disabled in slug+requireEnabled
+ *  mode (caller 404s). */
+export async function readEventStack(
+  opts: { slug?: string; eventId?: string; requireEnabled?: boolean },
+): Promise<PublicEpisodePayload | null> {
+  const db = getServiceClient()
+
+  let query = db.from("events").select(EVENT_STACK_COLS)
+  if (opts.slug) query = query.eq("public_slug", opts.slug)
+  else if (opts.eventId) query = query.eq("id", opts.eventId)
+  else return null
+  const { data } = await query.maybeSingle()
+  const event = data as EventStackRow | null
+  if (!event) return null
+  if (opts.requireEnabled && event.public_enabled !== true) return null
+
+  const { data: rowData } = await db
+    .from("public_stack_entries")
+    .select("*")
+    .eq("owner_type", "event")
+    .eq("owner_id", event.id)
+    .order("position", { ascending: true })
+  const rows = (rowData ?? []) as PublicStackEntry[]
+
+  // Collect curated refs by type, plus guests + the show org id, so a single
+  // entity resolution covers everything the cards + header name.
+  const seed = { person: [] as string[], place: [] as string[], event: [] as string[], board: [] as string[] }
+  const storyIds: string[] = []
+  for (const r of rows) {
+    if (!r.entry_ref_id) continue
+    if (r.entry_type === "rider") seed.person.push(r.entry_ref_id)
+    else if (r.entry_type === "place") seed.place.push(r.entry_ref_id)
+    else if (r.entry_type === "event") seed.event.push(r.entry_ref_id)
+    else if (r.entry_type === "board") seed.board.push(r.entry_ref_id)
+    else if (r.entry_type === "story") storyIds.push(r.entry_ref_id)
+  }
+
+  const { data: guestRows } = await db
+    .from("event_guests")
+    .select("person_id, position")
+    .eq("event_id", event.id)
+    .order("position", { ascending: true })
+  const guestIds = ((guestRows ?? []) as { person_id: string }[]).map((g) => g.person_id)
+  for (const id of guestIds) seed.person.push(id)
+
+  const stories = await readStoriesByIds(db, storyIds)
+  const entities = await resolveEntities(db, [], stories, seed)
+
+  // Show header (Phase 3 gives the show its own public page; until then slug is
+  // whatever the org has, possibly null).
+  let show: PublicEpisodeShow | null = null
+  if (event.show_org_id) {
+    const { data: orgRow } = await db
+      .from("orgs")
+      .select("id, name, public_slug")
+      .eq("id", event.show_org_id)
+      .maybeSingle()
+    const o = orgRow as { id: string; name: string | null; public_slug: string | null } | null
+    if (o) show = { id: o.id, name: o.name ?? "Show", slug: o.public_slug ?? null }
+  }
+
+  const guests = guestIds
+    .map((id) => entities.people[id])
+    .filter((p): p is PublicPersonLite => !!p)
+
+  const storiesById = new Map(stories.map((s) => [s.id, s]))
+  const entries = rows
+    .map((r) => resolveEventRow(r, entities, storiesById))
+    .filter((e): e is ResolvedStackEntry => e !== null)
+
+  return {
+    owner: eventOwnerHeader(event),
+    meta: {
+      episode_number: event.episode_number ?? null,
+      media_url: event.media_url ?? null,
+      date: event.start_date ?? null,
+      show,
+      guests,
+    },
+    entries,
+    stories,
+    entities,
+  }
+}
+
+/** Owner-only header for the episode OG image (no stack resolution). */
+export async function readEventOwner(slug: string): Promise<PublicTimelineOwner | null> {
+  if (!slug) return null
+  const db = getServiceClient()
+  const { data } = await db
+    .from("events")
+    .select(EVENT_STACK_COLS)
+    .eq("public_slug", slug)
+    .maybeSingle()
+  const event = data as EventStackRow | null
+  if (!event || event.public_enabled !== true) return null
+  return eventOwnerHeader(event)
 }
