@@ -896,14 +896,17 @@ function eventOwnerHeader(row: EventStackRow): PublicTimelineOwner {
   }
 }
 
-function resolveEventRow(
+// Resolve one curated row for a non-profile owner (episode or show). Generic:
+// the row resolves against the catalog/story entities the same way regardless of
+// owner. Category summaries summarize an owner CLAIM set, which neither an
+// episode nor a show has, so they are dropped.
+function resolveCuratedRow(
   row: PublicStackEntry,
   entities: PublicTimelineEntities,
   storiesById: Map<string, Story>,
 ): ResolvedStackEntry | null {
   const base = { id: row.id, position: row.position, refId: row.entry_ref_id ?? null }
 
-  // Category summaries summarize an owner's claim set; an episode has none.
   if (row.entry_type === "category_summary") return null
 
   const ref = row.entry_ref_id
@@ -967,8 +970,8 @@ function resolveEventRow(
     }
   }
 
-  // rider — on an episode a tagged rider is a guest/mention, so the card leads
-  // with the name (not the profile's "Rode with X").
+  // rider — on an episode/show a featured rider is a guest/mention, so the card
+  // leads with the name (not the profile's "Rode with X").
   const person = entities.people[ref]
   if (!person) return null
   return {
@@ -978,6 +981,46 @@ function resolveEventRow(
     thumbName: person.display_name, thumbYear: null, board: null,
     categoryKey: null, count: null, items: [],
   }
+}
+
+/** Load + resolve a non-profile owner's curated stack: the rows, their resolved
+ *  cards, and the referenced stories + entities (so StackView can expand story
+ *  cards). `extraPersonIds` seeds extra people the header needs (e.g. an
+ *  episode's guests) into the single entity resolution. Shared by the event
+ *  (episode) and org (show) reads. */
+async function loadOwnerStack(
+  db: ReturnType<typeof getServiceClient>,
+  ownerType: "event" | "org",
+  ownerId: string,
+  extraPersonIds: string[] = [],
+): Promise<{ entries: ResolvedStackEntry[]; stories: Story[]; entities: PublicTimelineEntities }> {
+  const { data: rowData } = await db
+    .from("public_stack_entries")
+    .select("*")
+    .eq("owner_type", ownerType)
+    .eq("owner_id", ownerId)
+    .order("position", { ascending: true })
+  const rows = (rowData ?? []) as PublicStackEntry[]
+
+  const seed = { person: [...extraPersonIds] as string[], place: [] as string[], event: [] as string[], board: [] as string[] }
+  const storyIds: string[] = []
+  for (const r of rows) {
+    if (!r.entry_ref_id) continue
+    if (r.entry_type === "rider") seed.person.push(r.entry_ref_id)
+    else if (r.entry_type === "place") seed.place.push(r.entry_ref_id)
+    else if (r.entry_type === "event") seed.event.push(r.entry_ref_id)
+    else if (r.entry_type === "board") seed.board.push(r.entry_ref_id)
+    else if (r.entry_type === "story") storyIds.push(r.entry_ref_id)
+  }
+
+  const stories = await readStoriesByIds(db, storyIds)
+  const entities = await resolveEntities(db, [], stories, seed)
+  const storiesById = new Map(stories.map((s) => [s.id, s]))
+  const entries = rows
+    .map((r) => resolveCuratedRow(r, entities, storiesById))
+    .filter((e): e is ResolvedStackEntry => e !== null)
+
+  return { entries, stories, entities }
 }
 
 /** Resolve an episode's curated stack. Pass `slug` for the public chromeless
@@ -999,37 +1042,15 @@ export async function readEventStack(
   if (!event) return null
   if (opts.requireEnabled && event.public_enabled !== true) return null
 
-  const { data: rowData } = await db
-    .from("public_stack_entries")
-    .select("*")
-    .eq("owner_type", "event")
-    .eq("owner_id", event.id)
-    .order("position", { ascending: true })
-  const rows = (rowData ?? []) as PublicStackEntry[]
-
-  // Collect curated refs by type, plus guests + the show org id, so a single
-  // entity resolution covers everything the cards + header name.
-  const seed = { person: [] as string[], place: [] as string[], event: [] as string[], board: [] as string[] }
-  const storyIds: string[] = []
-  for (const r of rows) {
-    if (!r.entry_ref_id) continue
-    if (r.entry_type === "rider") seed.person.push(r.entry_ref_id)
-    else if (r.entry_type === "place") seed.place.push(r.entry_ref_id)
-    else if (r.entry_type === "event") seed.event.push(r.entry_ref_id)
-    else if (r.entry_type === "board") seed.board.push(r.entry_ref_id)
-    else if (r.entry_type === "story") storyIds.push(r.entry_ref_id)
-  }
-
+  // Guests seed the header (and the shared entity resolution) before the stack.
   const { data: guestRows } = await db
     .from("event_guests")
     .select("person_id, position")
     .eq("event_id", event.id)
     .order("position", { ascending: true })
   const guestIds = ((guestRows ?? []) as { person_id: string }[]).map((g) => g.person_id)
-  for (const id of guestIds) seed.person.push(id)
 
-  const stories = await readStoriesByIds(db, storyIds)
-  const entities = await resolveEntities(db, [], stories, seed)
+  const { entries, stories, entities } = await loadOwnerStack(db, "event", event.id, guestIds)
 
   // Show header (Phase 3 gives the show its own public page; until then slug is
   // whatever the org has, possibly null).
@@ -1047,11 +1068,6 @@ export async function readEventStack(
   const guests = guestIds
     .map((id) => entities.people[id])
     .filter((p): p is PublicPersonLite => !!p)
-
-  const storiesById = new Map(stories.map((s) => [s.id, s]))
-  const entries = rows
-    .map((r) => resolveEventRow(r, entities, storiesById))
-    .filter((e): e is ResolvedStackEntry => e !== null)
 
   return {
     owner: eventOwnerHeader(event),
@@ -1080,4 +1096,122 @@ export async function readEventOwner(slug: string): Promise<PublicTimelineOwner 
   const event = data as EventStackRow | null
   if (!event || event.public_enabled !== true) return null
   return eventOwnerHeader(event)
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// FNRad Featured Timelines Phase 3: org-owner (media show) curated canon read
+//
+// A media show (org with org_type='media') owns a curated "canon" stack the same
+// way an episode does, plus an episode list (every event with show_org_id = the
+// org). Reuses loadOwnerStack; the org header + episode list are the only extras.
+// ════════════════════════════════════════════════════════════════════════════
+
+const ORG_STACK_COLS =
+  "id, name, org_type, description, logo_url, founded_year, country, region, public_slug, public_enabled"
+
+type OrgStackRow = {
+  id: string
+  name: string | null
+  org_type: string | null
+  description: string | null
+  logo_url: string | null
+  founded_year: number | null
+  country: string | null
+  region: string | null
+  public_slug: string | null
+  public_enabled: boolean | null
+}
+
+/** One episode in a show's episode list. `slug` is non-null only when the
+ *  episode has published its own public page (so the public show page links only
+ *  to published episodes). */
+export interface PublicShowEpisode {
+  id: string
+  title: string
+  episode_number: number | null
+  year: number | null
+  slug: string | null
+  public_enabled: boolean
+}
+
+export interface PublicShowPayload {
+  owner: PublicTimelineOwner
+  entries: ResolvedStackEntry[]
+  episodes: PublicShowEpisode[]
+  stories: Story[]
+  entities: PublicTimelineEntities
+}
+
+function orgOwnerHeader(row: OrgStackRow): PublicTimelineOwner {
+  return {
+    id: row.id,
+    display_name: row.name ?? "Show",
+    slug: row.public_slug ?? row.id,
+    avatar_url: row.logo_url ?? null,
+    bio: row.description ?? null,
+    region: row.region ?? null,
+    country: row.country ?? null,
+    riding_since: null,
+    era_start: row.founded_year ?? null,
+  }
+}
+
+/** Resolve a show's curated canon + episode list. Pass `slug` for the public
+ *  chromeless page (requires public_enabled), or `orgId` for the in-app hub
+ *  (no enabled gate). Returns null when the org is missing, or disabled in
+ *  slug+requireEnabled mode (caller 404s). */
+export async function readOrgStack(
+  opts: { slug?: string; orgId?: string; requireEnabled?: boolean },
+): Promise<PublicShowPayload | null> {
+  const db = getServiceClient()
+
+  let query = db.from("orgs").select(ORG_STACK_COLS)
+  if (opts.slug) query = query.eq("public_slug", opts.slug)
+  else if (opts.orgId) query = query.eq("id", opts.orgId)
+  else return null
+  const { data } = await query.maybeSingle()
+  const org = data as OrgStackRow | null
+  if (!org) return null
+  if (opts.requireEnabled && org.public_enabled !== true) return null
+
+  const { entries, stories, entities } = await loadOwnerStack(db, "org", org.id)
+
+  // Episode list: every event linked to this show, newest first.
+  const { data: epRows } = await db
+    .from("events")
+    .select("id, name, episode_number, year, start_date, public_slug, public_enabled")
+    .eq("show_org_id", org.id)
+  const episodes: PublicShowEpisode[] = ((epRows ?? []) as {
+    id: string; name: string | null; episode_number: number | null
+    year: number | null; start_date: string | null; public_slug: string | null; public_enabled: boolean | null
+  }[])
+    .map((e) => ({
+      id: e.id,
+      title: e.name ?? "Episode",
+      episode_number: e.episode_number ?? null,
+      year: e.year ?? yearOf(e.start_date),
+      slug: e.public_slug ?? null,
+      public_enabled: e.public_enabled === true,
+    }))
+    .sort((a, b) => {
+      // Newest first: episode_number desc when both present, else year desc.
+      if (a.episode_number != null && b.episode_number != null) return b.episode_number - a.episode_number
+      return (b.year ?? 0) - (a.year ?? 0)
+    })
+
+  return { owner: orgOwnerHeader(org), entries, episodes, stories, entities }
+}
+
+/** Owner-only header for the show OG image (no stack resolution). */
+export async function readOrgOwner(slug: string): Promise<PublicTimelineOwner | null> {
+  if (!slug) return null
+  const db = getServiceClient()
+  const { data } = await db
+    .from("orgs")
+    .select(ORG_STACK_COLS)
+    .eq("public_slug", slug)
+    .maybeSingle()
+  const org = data as OrgStackRow | null
+  if (!org || org.public_enabled !== true) return null
+  return orgOwnerHeader(org)
 }
