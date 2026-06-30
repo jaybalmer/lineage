@@ -15,7 +15,7 @@ import { useCanonicalPath } from "@/lib/use-canonical-path"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { StoryCard } from "@/components/feed/story-card"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
-import { ShowHubView } from "@/components/orgs/show-hub"
+import { ShowModule } from "@/components/orgs/show-module"
 import type { Org, ConfidenceLevel, Predicate, Event, Place, Story, Person } from "@/types"
 
 // ─── Label maps ───────────────────────────────────────────────────────────────
@@ -623,12 +623,10 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
     </div>
   ))
 
-  // FNRad Featured Timelines Phase 3: a media-company org (e.g. a podcast show)
-  // renders as a curated hub, not the standard brand layout. Branch here, after
-  // every hook above has run, so the rules-of-hooks count stays stable.
-  if (org.org_type === "media") {
-    return <ShowHubView org={org} />
-  }
+  // FNRad: a media-company org (e.g. a podcast show) renders the FULL brand page
+  // (stories + connections + feed) PLUS a Show block on top (episodes + canon +
+  // publish), injected below the header. No early return, so nothing on the
+  // brand page is lost.
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -803,6 +801,9 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
             </div>
           </>
         )}
+
+        {/* ── Show block (media orgs only): episodes + canon + publish, on top ── */}
+        {org.org_type === "media" && <ShowModule org={org} />}
 
         {/* ── Curated sections (partner pages, above the shared feed) ── */}
         {isCurated && (

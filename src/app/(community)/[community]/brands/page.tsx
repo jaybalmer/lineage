@@ -222,7 +222,7 @@ function BrandsPageInner() {
   const sortedTeams = [...teams].sort(cmp)
   const sortedShops = [...shops].sort(cmp)
   // Media shows (FNRad authoring): a separate browsable section; each card links
-  // to its show hub (the brand detail page branches to ShowHubView for media).
+  // to its show hub (the brand detail page renders a Show block for media orgs).
   const sortedShows = allOrgs.filter((o) => o.org_type === "media").sort(cmp)
 
   // Count the displayed set (brands + teams + shops), not allOrgs, so the
@@ -385,7 +385,7 @@ function BrandsPageInner() {
           communitySlug={community}
           onClose={() => setShowCreateOpen(false)}
           // Full nav so the freshly bootstrapped catalog includes the new show
-          // and its hub (brands/[slug] -> ShowHubView) resolves.
+          // and its hub (brands/[slug] renders the Show block) resolves.
           onCreated={(id) => { window.location.href = `/${community}/brands/${id}` }}
         />
       )}
