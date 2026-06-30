@@ -78,9 +78,13 @@ create index if not exists public_stack_entries_owner
 -- ── §5.3 Event: episode linkage + metadata ──────────────────────────────────
 -- event_type='episode' is TS-only (events.event_type is text). These columns
 -- are additive and nullable, so non-episode events are unaffected.
+--
+-- show_org_id is text (NOT uuid): orgs.id and events.id are text columns
+-- (mixed-type catalog ids, same family as public_stack_entries.entry_ref_id), so
+-- the FK reference columns must be text to match.
 
 alter table public.events
-  add column if not exists show_org_id uuid references public.orgs(id) on delete set null,
+  add column if not exists show_org_id text references public.orgs(id) on delete set null,
   add column if not exists media_url text,
   add column if not exists episode_number int;
 
@@ -91,7 +95,8 @@ create index if not exists events_show_org_id
 -- Editor-managed header guest(s) for an episode. Separate from attendance claims
 -- and from the curated stack so the guest header is unambiguous (§5.3).
 create table if not exists public.event_guests (
-  event_id uuid not null references public.events(id) on delete cascade,
+  -- text to match events.id (mixed-type catalog ids).
+  event_id text not null references public.events(id) on delete cascade,
   -- person_id is text, not uuid: catalog person ids are mixed-type (roughly 29
   -- people.id values are still non-uuid), matching entry_ref_id in the stack
   -- table. No FK for the same reason (people live across people + profiles).
