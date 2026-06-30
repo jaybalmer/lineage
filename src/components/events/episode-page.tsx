@@ -16,6 +16,7 @@ import { entityHref } from "@/lib/entity-links"
 import { parseYouTubeId, formatEventDateRange } from "@/lib/utils"
 import { StackView } from "@/components/public-timeline/stack-view"
 import { StackCurateModal } from "@/components/ui/stack-curate-modal"
+import { EpisodeConnections } from "@/components/events/episode-connections"
 import type { Event } from "@/types"
 import type { PublicEpisodePayload } from "@/lib/public-timeline-read"
 
@@ -205,6 +206,9 @@ export function EpisodeView({ instance }: { instance: Event }) {
             </div>
           )}
         </section>
+
+        {/* Community connections (member-added) */}
+        <EpisodeConnections eventId={instance.id} />
 
         {!isAuth && (
           <p className="text-xs text-muted text-center">
