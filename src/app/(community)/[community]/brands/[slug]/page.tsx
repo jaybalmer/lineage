@@ -35,6 +35,7 @@ const ORG_TYPE_LABEL: Record<string, string> = {
   team: "Team / Collective",
   magazine: "Media / Magazine",
   "event-series": "Event Series",
+  media: "Show / Media",
 }
 
 const PEOPLE_PREDICATES: { value: Predicate; label: string; desc: string }[] = [

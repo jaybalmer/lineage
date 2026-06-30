@@ -126,13 +126,24 @@ export type PublicStackEntryType =
 
 export type PublicStackCategoryKey = "places" | "boards" | "events" | "riders" | "stories"
 
+/** Whose curated stack this is. FNRad Featured Timelines Phase 1 generalized the
+ *  owner from profile-only to any of {profile, event, org}: an episode (event)
+ *  and a show (org) each own a curated stack the same way a profile does. */
+export type PublicStackOwnerType = "profile" | "event" | "org"
+
 /** One owner-curated entry in a public Stack View, ordered by `position`.
  *  A `category_summary` row carries `category_key` and no `entry_ref_id`; every
  *  other type carries an `entry_ref_id` (text, because catalog ids are mixed-type)
- *  and no `category_key`. Enforced by the public_stack_entry_shape DB constraint. */
+ *  and no `category_key`. Enforced by the public_stack_entry_shape DB constraint.
+ *  `owner_type`/`owner_id` address the entry generically; `owner_profile_id` is
+ *  retained (and populated for owner_type='profile') for the profile cascade. */
 export interface PublicStackEntry {
   id: string
-  owner_profile_id: string
+  owner_type: PublicStackOwnerType
+  owner_id: string
+  /** Set only when owner_type='profile' (FK to profiles for cascade-on-delete);
+   *  null for event/org owners. Prefer owner_id for generic reads. */
+  owner_profile_id: string | null
   entry_type: PublicStackEntryType
   entry_ref_id: string | null
   category_key: PublicStackCategoryKey | null
@@ -141,6 +152,18 @@ export interface PublicStackEntry {
   custom_summary: string | null
   created_at: string
   updated_at: string
+}
+
+/** FNRad Featured Timelines Phase 1: editor-managed header guest(s) for an
+ *  episode (event_type='episode'). Kept separate from attendance claims and the
+ *  curated stack so the guest header is unambiguous. person_id is text to match
+ *  the mixed-type catalog person ids. */
+export interface EventGuest {
+  event_id: string
+  person_id: string
+  position: number
+  added_by: string | null
+  created_at: string
 }
 
 // ─── Person redirects (PB-008 Phase 2 Session 1) ────────────────────────────
@@ -189,8 +212,14 @@ export interface Community {
   boards_banner_url?: string
 }
 export type PlaceType = "resort" | "shop" | "zone" | "city" | "venue"
-export type OrgType = "brand" | "shop" | "team" | "magazine" | "event-series"
-export type EventType = "contest" | "film-shoot" | "trip" | "camp" | "gathering"
+// "media" (FNRad Featured Timelines Phase 1): a media-company org (e.g. a podcast
+// show) whose detail page doubles as a curated hub. orgs.org_type is text, so
+// this value needs no DB enum change.
+export type OrgType = "brand" | "shop" | "team" | "magazine" | "event-series" | "media"
+// "episode" (FNRad Featured Timelines Phase 1): one episode of a media show,
+// linked to its show org via events.show_org_id. events.event_type is text, so
+// this value needs no DB enum change.
+export type EventType = "contest" | "film-shoot" | "trip" | "camp" | "gathering" | "episode"
 export type Predicate =
   | "rode_at"
   | "worked_at"
@@ -325,6 +354,12 @@ export interface Org {
   added_by?: string
   /** Community slugs this org belongs to (populated from junction table) */
   community_slugs?: string[]
+  // ── FNRad Featured Timelines Phase 1 (public chromeless show link, §5.5) ──
+  /** Collision-safe slug in the shared /t/{slug} namespace (profiles+orgs+events).
+   *  Minted on first enable; null until then. */
+  public_slug?: string | null
+  /** Opt-in gate for the public, login-free chromeless show page. Default false. */
+  public_enabled?: boolean
 }
 
 export interface Board {
@@ -377,6 +412,17 @@ export interface Event {
   community_slugs?: string[]
   /** PB-009 Phase 1: per-moment override for visitor-tag display (Phase 6 renders). */
   visitor_display_override?: VisitorDisplaySetting | null
+  // ── FNRad Featured Timelines Phase 1 (episode linkage + public link) ──
+  /** The media show (org) this episode belongs to, when event_type='episode'. */
+  show_org_id?: string | null
+  /** Podcast audio/video link for an episode (YouTube parsed via parseYouTubeId). */
+  media_url?: string | null
+  /** Episode number within the show. */
+  episode_number?: number | null
+  /** Collision-safe slug in the shared /t/{slug} namespace; minted on first enable. */
+  public_slug?: string | null
+  /** Opt-in gate for the public, login-free chromeless episode page. Default false. */
+  public_enabled?: boolean
 }
 
 export type EntityType = "person" | "place" | "org" | "board" | "event"

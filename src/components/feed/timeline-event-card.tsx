@@ -16,6 +16,7 @@ const TYPE_LABEL: Record<EventType, string> = {
   trip: "Trip",
   camp: "Camp",
   gathering: "Gathering",
+  episode: "Episode",
 }
 
 function EventAvatarStack({ riderIds }: { riderIds: string[] }) {
