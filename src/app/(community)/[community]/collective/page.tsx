@@ -426,7 +426,7 @@ export default function CollectivePage() {
               COLLECTIVE<span className="inline-block rounded-full" style={{ width: "0.3em", height: "0.3em", verticalAlign: "baseline", marginLeft: "0.04em", background: accentColor }} />
             </div>
             <div style={{ fontSize: 10, letterSpacing: 2, color: "#78716C" }}>
-              // snowboarding · 1983–present
+              // snowboarding · 1979-present
             </div>
           </div>
 

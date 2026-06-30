@@ -10,6 +10,7 @@ import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import { RiderAvatar, getRiderTier, type RiderTier } from "@/components/ui/rider-avatar"
+import { MemberBadge } from "@/components/ui/member-badge"
 import { isInvitableNodeStatus, trackInviteEvent } from "@/lib/invite-tracking"
 import { CommunityLink } from "@/components/ui/community-link"
 import Link from "next/link"
@@ -96,13 +97,15 @@ function RiderRow({ person, isMe, connected, onInvite, claims, activeCommunitySl
               {isMe && (
                 <span className="text-[10px] text-muted border border-border-default rounded px-1.5 py-0.5">you</span>
               )}
-              {meta.badge && (
+              {kind === "verified" && meta.badge ? (
                 <span
                   className="text-[10px] rounded px-1.5 py-0.5 font-medium"
                   style={{ color: meta.color, background: `${meta.color}18`, border: `1px solid ${meta.color}33` }}
                 >
                   {meta.badge}
                 </span>
+              ) : (
+                <MemberBadge tier={person.membership_tier} className="text-[10px]" />
               )}
               {person.riding_since && (
                 <span className="text-[11px] text-muted">riding since {person.riding_since}</span>
