@@ -15,7 +15,7 @@ import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { entityHref } from "@/lib/entity-links"
 import { parseYouTubeId, formatEventDateRange } from "@/lib/utils"
 import { StackView } from "@/components/public-timeline/stack-view"
-import { EpisodeCurateModal } from "@/components/events/episode-curate-modal"
+import { StackCurateModal } from "@/components/ui/stack-curate-modal"
 import type { Event } from "@/types"
 import type { PublicEpisodePayload } from "@/lib/public-timeline-read"
 
@@ -76,8 +76,10 @@ export function EpisodeView({ instance }: { instance: Event }) {
       <Nav />
 
       {curating && payload && (
-        <EpisodeCurateModal
-          eventId={instance.id}
+        <StackCurateModal
+          title="Curate featured set"
+          stackUrl={`/api/events/${instance.id}/stack`}
+          guestsUrl={`/api/events/${instance.id}/guests`}
           initialEntries={payload.entries}
           initialGuestIds={guestIds}
           onClose={() => setCurating(false)}

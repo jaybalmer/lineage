@@ -1,13 +1,14 @@
 "use client"
 
-// FNRad Featured Timelines Phase 2: the editor curation surface for an episode.
+// FNRad Featured Timelines: the editor curation surface for a non-profile owner
+// (an episode's featured set or a show's canon). Unlike the profile Stack picker
+// (which draws candidates from the owner's own claims), these sets are hand-built
+// from the WHOLE catalog: the riders, boards, places, and events discussed. So
+// the candidate source is a live catalog search, not an owner timeline.
 //
-// Unlike the profile Stack picker (which draws candidates from the owner's own
-// claims), an episode's featured set is hand-built from the WHOLE catalog: the
-// riders, boards, places, and events discussed in the episode. So the candidate
-// source here is a live catalog search, not an owner timeline. Two sections:
-// the ordered featured set (saved to /api/events/[id]/stack) and the header
-// guests (saved to /api/events/[id]/guests). Editor-gated by the caller.
+// Owner-agnostic: `stackUrl` is the PUT endpoint for the ordered featured set;
+// pass `guestsUrl` to also manage header guests (episodes only — a show has no
+// guests). Editor-gated by the caller.
 
 import { useMemo, useState } from "react"
 import { useLineageStore } from "@/store/lineage-store"
@@ -19,13 +20,7 @@ const HARD_MAX = 20
 
 type RefType = Extract<PublicStackEntryType, "rider" | "place" | "event" | "board">
 
-type Candidate = {
-  uid: string            // `${type}:${id}`
-  type: RefType
-  id: string
-  label: string
-  sublabel: string | null
-}
+type Candidate = { uid: string; type: RefType; id: string; label: string; sublabel: string | null }
 
 type SelEntry = {
   uid: string
@@ -44,12 +39,17 @@ const TYPE_CHIP: Record<RefType, { label: string; cls: string }> = {
   board: { label: "Board", cls: "text-emerald-700 bg-emerald-500/10" },
 }
 
-export function EpisodeCurateModal({
-  eventId, initialEntries, initialGuestIds, onClose, onSaved,
+export function StackCurateModal({
+  title = "Curate featured set",
+  stackUrl, guestsUrl,
+  initialEntries, initialGuestIds = [],
+  onClose, onSaved,
 }: {
-  eventId: string
+  title?: string
+  stackUrl: string
+  guestsUrl?: string
   initialEntries: ResolvedStackEntry[]
-  initialGuestIds: string[]
+  initialGuestIds?: string[]
   onClose: () => void
   onSaved: () => void
 }) {
@@ -58,49 +58,34 @@ export function EpisodeCurateModal({
   const [saving, setSaving] = useState(false)
   const [editingUid, setEditingUid] = useState<string | null>(null)
 
-  // Seed the featured set from the saved, server-resolved entries (drop any
-  // category_summary, which is not curatable for an episode).
   const [selection, setSelection] = useState<SelEntry[]>(() =>
     initialEntries
       .filter((e): e is ResolvedStackEntry & { entry_type: RefType } =>
         e.entry_type === "rider" || e.entry_type === "place" || e.entry_type === "event" || e.entry_type === "board")
       .filter((e) => e.refId)
       .map((e) => ({
-        uid: `${e.entry_type}:${e.refId}`,
-        entry_type: e.entry_type,
-        entry_ref_id: e.refId as string,
-        custom_title: "", custom_summary: "",
-        label: e.title, sublabel: e.kickerMeta,
+        uid: `${e.entry_type}:${e.refId}`, entry_type: e.entry_type, entry_ref_id: e.refId as string,
+        custom_title: "", custom_summary: "", label: e.title, sublabel: e.kickerMeta,
       })),
   )
-
   const [guestIds, setGuestIds] = useState<string[]>(initialGuestIds)
 
-  // ── Catalog search candidates (riders, places, events, boards) ──
   const candidates = useMemo<Candidate[]>(() => {
     const q = query.trim().toLowerCase()
     if (q.length < 2) return []
     const out: Candidate[] = []
     for (const p of catalog.people) {
-      if (p.display_name?.toLowerCase().includes(q)) {
-        out.push({ uid: `rider:${p.id}`, type: "rider", id: p.id, label: p.display_name, sublabel: "Rider" })
-      }
+      if (p.display_name?.toLowerCase().includes(q)) out.push({ uid: `rider:${p.id}`, type: "rider", id: p.id, label: p.display_name, sublabel: "Rider" })
     }
     for (const pl of catalog.places) {
-      if (pl.name?.toLowerCase().includes(q)) {
-        out.push({ uid: `place:${pl.id}`, type: "place", id: pl.id, label: pl.name, sublabel: [pl.region, pl.country].filter(Boolean).join(", ") || "Place" })
-      }
+      if (pl.name?.toLowerCase().includes(q)) out.push({ uid: `place:${pl.id}`, type: "place", id: pl.id, label: pl.name, sublabel: [pl.region, pl.country].filter(Boolean).join(", ") || "Place" })
     }
     for (const e of catalog.events) {
-      if (e.name?.toLowerCase().includes(q)) {
-        out.push({ uid: `event:${e.id}`, type: "event", id: e.id, label: e.name, sublabel: e.year ? String(e.year) : "Event" })
-      }
+      if (e.name?.toLowerCase().includes(q)) out.push({ uid: `event:${e.id}`, type: "event", id: e.id, label: e.name, sublabel: e.year ? String(e.year) : "Event" })
     }
     for (const b of catalog.boards) {
       const name = `${b.brand} ${b.model}`
-      if (name.toLowerCase().includes(q)) {
-        out.push({ uid: `board:${b.id}`, type: "board", id: b.id, label: name, sublabel: b.model_year ? String(b.model_year) : "Board" })
-      }
+      if (name.toLowerCase().includes(q)) out.push({ uid: `board:${b.id}`, type: "board", id: b.id, label: name, sublabel: b.model_year ? String(b.model_year) : "Board" })
     }
     return out.slice(0, 30)
   }, [query, catalog])
@@ -110,10 +95,7 @@ export function EpisodeCurateModal({
   function addCandidate(c: Candidate) {
     setSelection((prev) => {
       if (prev.some((s) => s.uid === c.uid) || prev.length >= HARD_MAX) return prev
-      return [...prev, {
-        uid: c.uid, entry_type: c.type, entry_ref_id: c.id,
-        custom_title: "", custom_summary: "", label: c.label, sublabel: c.sublabel,
-      }]
+      return [...prev, { uid: c.uid, entry_type: c.type, entry_ref_id: c.id, custom_title: "", custom_summary: "", label: c.label, sublabel: c.sublabel }]
     })
   }
   function removeUid(uid: string) { setSelection((prev) => prev.filter((s) => s.uid !== uid)) }
@@ -129,7 +111,6 @@ export function EpisodeCurateModal({
     setSelection((prev) => prev.map((s) => (s.uid === uid ? { ...s, ...patch } : s)))
   }
 
-  // Guests: a rider is added as a guest from the same search; the chip toggles.
   const guestPeople = useMemo(
     () => guestIds.map((id) => catalog.people.find((p) => p.id === id)).filter(Boolean) as { id: string; display_name: string }[],
     [guestIds, catalog.people],
@@ -141,8 +122,8 @@ export function EpisodeCurateModal({
   async function save() {
     setSaving(true)
     try {
-      const [stackRes, guestRes] = await Promise.all([
-        fetch(`/api/events/${eventId}/stack`, {
+      const reqs: Promise<Response>[] = [
+        fetch(stackUrl, {
           method: "PUT", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             entries: selection.map((s) => ({
@@ -151,13 +132,17 @@ export function EpisodeCurateModal({
             })),
           }),
         }),
-        fetch(`/api/events/${eventId}/guests`, {
+      ]
+      if (guestsUrl) {
+        reqs.push(fetch(guestsUrl, {
           method: "PUT", headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ person_ids: guestIds }),
-        }),
-      ])
-      if (!stackRes.ok || !guestRes.ok) {
-        const j = await (stackRes.ok ? guestRes : stackRes).json().catch(() => ({}))
+        }))
+      }
+      const results = await Promise.all(reqs)
+      const failed = results.find((r) => !r.ok)
+      if (failed) {
+        const j = await failed.json().catch(() => ({}))
         addToast(j?.error ?? "Could not save the featured set.", "error")
         return
       }
@@ -175,12 +160,9 @@ export function EpisodeCurateModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 overflow-y-auto" onClick={onClose}>
-      <div
-        className="bg-background border border-border-default rounded-2xl w-full max-w-2xl my-8 shadow-2xl"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <div className="bg-background border border-border-default rounded-2xl w-full max-w-2xl my-8 shadow-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-border-default">
-          <h2 className="text-lg font-semibold text-foreground">Curate featured set</h2>
+          <h2 className="text-lg font-semibold text-foreground">{title}</h2>
           <button onClick={onClose} className="text-muted hover:text-foreground text-xl leading-none">×</button>
         </div>
 
@@ -189,8 +171,7 @@ export function EpisodeCurateModal({
           <div>
             <label className="text-[10px] font-semibold text-muted uppercase tracking-widest">Add what was discussed</label>
             <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              value={query} onChange={(e) => setQuery(e.target.value)}
               placeholder="Search riders, boards, places, events…"
               className="mt-1.5 w-full bg-surface border border-border-default rounded-lg px-3 py-2 text-sm text-foreground placeholder-zinc-500 focus:outline-none focus:border-blue-500"
               autoFocus
@@ -202,31 +183,24 @@ export function EpisodeCurateModal({
                   const isGuest = c.type === "rider" && guestIds.includes(c.id)
                   return (
                     <div key={c.uid} className="flex items-center gap-2 rounded-lg border border-border-default bg-surface px-3 py-2">
-                      <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0", TYPE_CHIP[c.type].cls)}>
-                        {TYPE_CHIP[c.type].label}
-                      </span>
+                      <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded shrink-0", TYPE_CHIP[c.type].cls)}>{TYPE_CHIP[c.type].label}</span>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm text-foreground truncate">{c.label}</p>
                         {c.sublabel && <p className="text-[11px] text-muted truncate">{c.sublabel}</p>}
                       </div>
-                      {c.type === "rider" && (
-                        <button
-                          onClick={() => toggleGuest(c.id)}
+                      {guestsUrl && c.type === "rider" && (
+                        <button onClick={() => toggleGuest(c.id)}
                           className={cn("text-[11px] rounded-lg px-2 py-1 border transition-colors shrink-0",
                             isGuest ? "border-violet-600 text-violet-700 bg-violet-500/10" : "border-border-default text-muted hover:text-foreground")}
-                          title="Mark as a header guest"
-                        >
+                          title="Mark as a header guest">
                           {isGuest ? "Guest ✓" : "Guest"}
                         </button>
                       )}
-                      <button
-                        onClick={() => (added ? removeUid(c.uid) : addCandidate(c))}
-                        disabled={!added && count >= HARD_MAX}
+                      <button onClick={() => (added ? removeUid(c.uid) : addCandidate(c))} disabled={!added && count >= HARD_MAX}
                         className={cn("text-xs font-medium rounded-lg px-2.5 py-1 border transition-colors shrink-0",
                           added ? "border-blue-600 text-blue-700 bg-blue-500/10"
                             : count >= HARD_MAX ? "border-border-default text-muted opacity-50 cursor-not-allowed"
-                              : "border-border-default text-muted hover:text-foreground")}
-                      >
+                              : "border-border-default text-muted hover:text-foreground")}>
                         {added ? "Added ✓" : "Add"}
                       </button>
                     </div>
@@ -239,8 +213,8 @@ export function EpisodeCurateModal({
             )}
           </div>
 
-          {/* Guests summary */}
-          {guestPeople.length > 0 && (
+          {/* Guests summary (episodes only) */}
+          {guestsUrl && guestPeople.length > 0 && (
             <div>
               <div className="text-[10px] font-semibold text-muted uppercase tracking-widest mb-2">Header guests</div>
               <div className="flex flex-wrap gap-1.5">
@@ -256,12 +230,10 @@ export function EpisodeCurateModal({
 
           {/* Featured set */}
           <div>
-            <div className="text-[10px] font-semibold text-muted uppercase tracking-widest mb-2">
-              Featured set ({count})
-            </div>
+            <div className="text-[10px] font-semibold text-muted uppercase tracking-widest mb-2">Featured set ({count})</div>
             {count === 0 ? (
               <p className="text-sm text-muted border border-dashed border-border-default rounded-xl p-5 text-center">
-                Search above to add the people and gear discussed in this episode.
+                Search above to add the people and gear discussed.
               </p>
             ) : (
               <div className="space-y-2">
@@ -274,9 +246,7 @@ export function EpisodeCurateModal({
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 mb-0.5">
-                          <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded", TYPE_CHIP[s.entry_type].cls)}>
-                            {TYPE_CHIP[s.entry_type].label}
-                          </span>
+                          <span className={cn("text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded", TYPE_CHIP[s.entry_type].cls)}>{TYPE_CHIP[s.entry_type].label}</span>
                         </div>
                         <p className="text-sm font-medium text-foreground truncate">{s.custom_title || s.label}</p>
                         {(s.custom_summary || s.sublabel) && <p className="text-xs text-muted truncate">{s.custom_summary || s.sublabel}</p>}
@@ -305,8 +275,7 @@ export function EpisodeCurateModal({
 
         <div className="flex items-center justify-end gap-3 px-5 py-4 border-t border-border-default">
           <button onClick={onClose} className="text-sm text-muted hover:text-foreground transition-colors">Cancel</button>
-          <button onClick={save} disabled={saving}
-            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors">
+          <button onClick={save} disabled={saving} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors">
             {saving ? "Saving…" : "Save featured set"}
           </button>
         </div>

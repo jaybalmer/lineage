@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og"
 import { readFile } from "node:fs/promises"
 import { join } from "node:path"
 import { brandMarkSvgString } from "@/components/ui/brand-mark"
-import { readPublicTimelineOwner, readEventOwner } from "@/lib/public-timeline-read"
+import { readPublicTimelineOwner, readEventOwner, readOrgOwner } from "@/lib/public-timeline-read"
 
 // PB-010 Phase 2: dynamic share card for /t/[slug]. Dark brand-guide treatment,
 // person-first: a small Linestry lockup masthead, then the owner as the hero,
@@ -48,11 +48,11 @@ export default async function OpengraphImage(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params
-  // Shared /t/{slug} namespace: a profile owner first, else an episode (event)
-  // owner. The card shape is identical; only the sub-line copy differs (a profile
-  // reads "Snowboarding since YYYY", an episode reads its year).
+  // Shared /t/{slug} namespace: a profile owner first, else an episode (event),
+  // else a show (org) owner. The card shape is identical; only the sub-line copy
+  // differs (a profile reads "Snowboarding since YYYY", others read their year).
   const profileOwner = await readPublicTimelineOwner(slug)
-  const owner = profileOwner ?? (await readEventOwner(slug))
+  const owner = profileOwner ?? (await readEventOwner(slug)) ?? (await readOrgOwner(slug))
   const isProfile = profileOwner !== null
 
   const era = owner?.era_start

@@ -3,7 +3,8 @@ import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { PublicProfileView } from "@/components/public-timeline/public-profile-view"
 import { PublicEpisodeView } from "@/components/public-timeline/public-episode-view"
-import { readPublicTimeline, readPublicStack, readEventStack } from "@/lib/public-timeline-read"
+import { PublicShowView } from "@/components/public-timeline/public-show-view"
+import { readPublicTimeline, readPublicStack, readEventStack, readOrgStack } from "@/lib/public-timeline-read"
 
 // PB-010 Phase 2: the chromeless public timeline at /t/[slug].
 //
@@ -13,11 +14,12 @@ import { readPublicTimeline, readPublicStack, readEventStack } from "@/lib/publi
 // API and the OG route; cache() dedupes the read across generateMetadata + the
 // page body within a single request.
 //
-// The /t/{slug} namespace is shared (FNRad Phase 2): resolve a profile first,
-// then an episode (event) owner. Phase 3 adds the show (org) owner.
+// The /t/{slug} namespace is shared (FNRad): resolve a profile first, then an
+// episode (event) owner, then a show (org) owner.
 
 const getPayload = cache((slug: string) => readPublicTimeline(slug))
 const getEpisode = cache((slug: string) => readEventStack({ slug, requireEnabled: true }))
+const getShow = cache((slug: string) => readOrgStack({ slug, requireEnabled: true }))
 
 function locationLine(region: string | null, country: string | null): string {
   return [region, country].filter(Boolean).join(", ")
@@ -29,10 +31,28 @@ export async function generateMetadata(
   const { slug } = await params
   const payload = await getPayload(slug)
   if (!payload) {
-    // Not a profile slug: try an episode owner before giving up.
+    // Not a profile slug: try an episode owner, then a show (org) owner.
     const episode = await getEpisode(slug)
     if (!episode) {
-      return { title: "Timeline not found · Linestry", robots: { index: false, follow: false } }
+      const show = await getShow(slug)
+      if (!show) {
+        return { title: "Timeline not found · Linestry", robots: { index: false, follow: false } }
+      }
+      const { owner } = show
+      const bits = [
+        `${owner.display_name} on Linestry`,
+        owner.bio ? owner.bio.split("\n")[0].slice(0, 100) : null,
+        show.episodes.length ? `${show.episodes.length} episode${show.episodes.length === 1 ? "" : "s"}` : null,
+      ].filter(Boolean)
+      const description = bits.join(". ") + "."
+      const canonical = `/t/${owner.slug}`
+      return {
+        title: `${owner.display_name} · Linestry`,
+        description,
+        alternates: { canonical },
+        openGraph: { type: "website", url: canonical, siteName: "Linestry", title: `${owner.display_name} · Linestry`, description },
+        twitter: { card: "summary_large_image", title: `${owner.display_name} · Linestry`, description },
+      }
     }
     const { owner, meta } = episode
     const bits = [
@@ -90,10 +110,12 @@ export default async function PublicTimelinePage(
   const { slug } = await params
   const timeline = await getPayload(slug)
   if (!timeline) {
-    // Not a profile slug: try an episode owner (read-only public episode page).
+    // Not a profile slug: try an episode owner, then a show (org) owner.
     const episode = await getEpisode(slug)
-    if (!episode) notFound()
-    return <PublicEpisodeView payload={episode} />
+    if (episode) return <PublicEpisodeView payload={episode} />
+    const show = await getShow(slug)
+    if (!show) notFound()
+    return <PublicShowView payload={show} />
   }
 
   // Reuse the already-read timeline so the stack read only fetches the curated
