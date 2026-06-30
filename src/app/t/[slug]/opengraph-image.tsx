@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og"
 import { readFile } from "node:fs/promises"
 import { join } from "node:path"
 import { brandMarkSvgString } from "@/components/ui/brand-mark"
-import { readPublicTimelineOwner } from "@/lib/public-timeline-read"
+import { readPublicTimelineOwner, readEventOwner } from "@/lib/public-timeline-read"
 
 // PB-010 Phase 2: dynamic share card for /t/[slug]. Dark brand-guide treatment,
 // person-first: a small Linestry lockup masthead, then the owner as the hero,
@@ -48,9 +48,16 @@ export default async function OpengraphImage(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params
-  const owner = await readPublicTimelineOwner(slug)
+  // Shared /t/{slug} namespace: a profile owner first, else an episode (event)
+  // owner. The card shape is identical; only the sub-line copy differs (a profile
+  // reads "Snowboarding since YYYY", an episode reads its year).
+  const profileOwner = await readPublicTimelineOwner(slug)
+  const owner = profileOwner ?? (await readEventOwner(slug))
+  const isProfile = profileOwner !== null
 
-  const era = owner?.era_start ? `Snowboarding since ${owner.era_start}` : null
+  const era = owner?.era_start
+    ? (isProfile ? `Snowboarding since ${owner.era_start}` : String(owner.era_start))
+    : null
   const loc = [owner?.region, owner?.country].filter(Boolean).join(", ")
   const name = owner?.display_name ?? "Linestry"
   const sub = [era, loc || null].filter(Boolean).join("  ·  ")

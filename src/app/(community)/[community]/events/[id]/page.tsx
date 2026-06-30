@@ -17,6 +17,7 @@ import type { Event, Story, Claim } from "@/types"
 import { StoryCard } from "@/components/feed/story-card"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { EditEventModal } from "@/components/ui/edit-event-modal"
+import { EpisodeView } from "@/components/events/episode-page"
 import { parseYouTubeId, formatEventDateRange } from "@/lib/utils"
 
 const EVENT_PREDICATES = ["competed_at", "spectated_at", "organized_at"] as const
@@ -704,6 +705,13 @@ function EventPageInner({ params }: { params: Promise<{ community: string; id: s
   )
 
   if (!series && !instance) notFound()
+
+  // ── Episode view (FNRad Featured Timelines Phase 2) ───────────────────────
+  // An episode is an Event with its own curated featured set + media + guests,
+  // rendered by a dedicated surface rather than the contest-style instance view.
+  if (instance && !series && instance.event_type === "episode") {
+    return <EpisodeView instance={instance} />
+  }
 
   // ── Instance view ────────────────────────────────────────────────────────
   if (instance && !series) {
