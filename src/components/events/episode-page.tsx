@@ -183,8 +183,8 @@ export function EpisodeView({ instance }: { instance: Event }) {
         )}
         {!ytId && instance.media_url && (
           <a href={instance.media_url} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 mb-6 px-4 py-2 rounded-lg bg-surface border border-border-default text-sm font-medium text-foreground hover:border-blue-500/40 transition-colors">
-            ▶ Listen to the episode
+            className="flex items-center justify-center gap-2.5 w-full mb-6 px-6 py-4 rounded-xl bg-blue-600 text-white text-base font-semibold hover:bg-blue-500 transition-colors shadow-sm">
+            <span className="text-lg" aria-hidden>▶</span> Listen to the episode
           </a>
         )}
 
