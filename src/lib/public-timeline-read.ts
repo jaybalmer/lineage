@@ -324,7 +324,9 @@ async function resolveEntities(
     ? db.from("places").select("id, name, region, country, place_type, image_url").in("id", ids.place)
     : Promise.resolve({ data: [] })
   const eventsP = ids.event.length
-    ? db.from("events").select("id, name, event_type, year, start_date, image_url").in("id", ids.event)
+    // events has no image_url column (photos live in event_image_votes); selecting
+    // it silently failed this query, so event entities never resolved in stacks.
+    ? db.from("events").select("id, name, event_type, year, start_date").in("id", ids.event)
     : Promise.resolve({ data: [] })
   const orgsP = ids.org.length
     ? db.from("orgs").select("id, name, org_type, brand_category, founded_year, logo_url").in("id", ids.org)
@@ -838,8 +840,11 @@ const PREDICATE_RESULT_LABEL: Partial<Record<Predicate, string>> = {
 // an episode (no claim set to summarize) and are dropped.
 // ════════════════════════════════════════════════════════════════════════════
 
+// NOTE: the events table has no `image_url` column (event photos live in
+// event_image_votes), so it is intentionally absent here — selecting it 404s the
+// whole read.
 const EVENT_STACK_COLS =
-  "id, name, description, event_type, year, start_date, image_url, episode_number, media_url, show_org_id, public_slug, public_enabled"
+  "id, name, description, event_type, year, start_date, episode_number, media_url, show_org_id, public_slug, public_enabled"
 
 type EventStackRow = {
   id: string
@@ -848,7 +853,6 @@ type EventStackRow = {
   event_type: string | null
   year: number | null
   start_date: string | null
-  image_url: string | null
   episode_number: number | null
   media_url: string | null
   show_org_id: string | null
@@ -887,7 +891,7 @@ function eventOwnerHeader(row: EventStackRow): PublicTimelineOwner {
     id: row.id,
     display_name: row.name ?? "Episode",
     slug: row.public_slug ?? row.id,
-    avatar_url: row.image_url ?? null,
+    avatar_url: null,
     bio: row.description ?? null,
     region: null,
     country: null,
@@ -1106,8 +1110,10 @@ export async function readEventOwner(slug: string): Promise<PublicTimelineOwner 
 // org). Reuses loadOwnerStack; the org header + episode list are the only extras.
 // ════════════════════════════════════════════════════════════════════════════
 
+// NOTE: the orgs table has no `region` column (region lives on profiles/places
+// only), so it is intentionally absent here — selecting it 404s the whole read.
 const ORG_STACK_COLS =
-  "id, name, org_type, description, logo_url, founded_year, country, region, public_slug, public_enabled"
+  "id, name, org_type, description, logo_url, founded_year, country, public_slug, public_enabled"
 
 type OrgStackRow = {
   id: string
@@ -1117,7 +1123,6 @@ type OrgStackRow = {
   logo_url: string | null
   founded_year: number | null
   country: string | null
-  region: string | null
   public_slug: string | null
   public_enabled: boolean | null
 }
@@ -1149,7 +1154,7 @@ function orgOwnerHeader(row: OrgStackRow): PublicTimelineOwner {
     slug: row.public_slug ?? row.id,
     avatar_url: row.logo_url ?? null,
     bio: row.description ?? null,
-    region: row.region ?? null,
+    region: null,
     country: row.country ?? null,
     riding_since: null,
     era_start: row.founded_year ?? null,
