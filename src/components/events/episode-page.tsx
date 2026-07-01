@@ -76,12 +76,13 @@ export function EpisodeView({ instance }: { instance: Event }) {
     <div className="min-h-screen bg-background text-foreground">
       <Nav />
 
-      {curating && payload && (
+      {curating && (
         <StackCurateModal
           title="Curate featured set"
           stackUrl={`/api/events/${instance.id}/stack`}
           guestsUrl={`/api/events/${instance.id}/guests`}
-          initialEntries={payload.entries}
+          connectionsUrl={`/api/events/${instance.id}/connections`}
+          initialEntries={payload?.entries ?? []}
           initialGuestIds={guestIds}
           onClose={() => setCurating(false)}
           onSaved={() => {
@@ -146,7 +147,7 @@ export function EpisodeView({ instance }: { instance: Event }) {
           {/* Editor controls */}
           {isEditor && (
             <div className="mt-5 pt-4 border-t border-border-default flex flex-wrap items-center gap-3">
-              <button onClick={() => setCurating(true)} disabled={!payload}
+              <button onClick={() => setCurating(true)} disabled={loading}
                 className="text-xs px-3 py-1.5 bg-[#1C1917] text-white rounded-lg hover:bg-[#292524] disabled:opacity-50 transition-colors font-medium">
                 Curate featured set
               </button>
@@ -199,7 +200,7 @@ export function EpisodeView({ instance }: { instance: Event }) {
           ) : (
             <div className="text-sm text-muted py-8 text-center border border-dashed border-border-default rounded-xl">
               {isEditor ? (
-                <>Nothing featured yet. <button onClick={() => setCurating(true)} disabled={!payload} className="text-blue-400 hover:text-blue-300 disabled:opacity-50">Curate the featured set →</button></>
+                <>Nothing featured yet. <button onClick={() => setCurating(true)} disabled={loading} className="text-blue-400 hover:text-blue-300 disabled:opacity-50">Curate the featured set →</button></>
               ) : (
                 <>The featured set for this episode is coming soon.</>
               )}
