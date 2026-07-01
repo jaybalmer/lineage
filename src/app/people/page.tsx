@@ -79,7 +79,7 @@ function RiderRow({ person, isMe, connected, onInvite, claims, activeCommunitySl
     <div className="flex items-center gap-2">
       <Link href={href} className="flex-1 min-w-0 block group">
         <div
-          className="flex items-center gap-4 px-4 py-3.5 bg-surface rounded-xl hover:bg-surface-hover transition-all border"
+          className="flex items-center gap-4 p-4 bg-surface rounded-xl hover:bg-surface-hover transition-all border"
           style={{ borderColor: `${meta.color}30` }}
         >
           {/* Avatar */}
@@ -386,10 +386,10 @@ function RidersPageInner() {
                 onClick={() => setSort(tab.id)}
                 title={tab.title}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border",
+                  "px-3 py-1.5 rounded-full text-xs font-medium transition-colors border",
                   sort === tab.id
                     ? "bg-surface-active border-border-default text-foreground"
-                    : "border-transparent text-muted hover:text-foreground hover:bg-surface-hover"
+                    : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
                 )}
               >
                 {tab.label}
@@ -400,7 +400,7 @@ function RidersPageInner() {
             <button
               onClick={() => setMyOnly(!myOnly)}
               className={cn(
-                "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors border shrink-0",
+                "px-3 py-1.5 rounded-full text-xs font-medium transition-colors border shrink-0",
                 myOnly
                   ? "bg-[#1C1917]/15 border-[#1C1917]/30 text-foreground"
                   : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"

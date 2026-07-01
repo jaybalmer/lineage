@@ -98,10 +98,10 @@ export function ConnectionThread({ personA, personB, claimsA, claimsB }: Connect
                 className="flex items-center justify-between px-4 py-3 bg-blue-950/20 border border-blue-900/40 rounded-xl"
               >
                 <div>
-                  <div className="text-sm text-blue-200">{fact.label}</div>
-                  <div className="text-xs text-blue-400/70 mt-0.5">{fact.detail}</div>
+                  <div className="text-sm font-medium text-accent-strong">{fact.label}</div>
+                  <div className="text-xs text-muted mt-0.5">{fact.detail}</div>
                 </div>
-                <div className="text-xs text-blue-600 font-semibold">+{fact.score}</div>
+                <div className="text-xs text-accent-strong font-semibold">+{fact.score}</div>
               </div>
             ))}
           </div>
