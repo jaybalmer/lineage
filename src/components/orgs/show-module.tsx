@@ -137,7 +137,7 @@ export function ShowModule({ org }: { org: Org }) {
         ) : (
           <div className="space-y-2">
             {episodes.map((e) => (
-              <CommunityLink key={e.id} href={`/events/${e.slug ?? e.id}`}>
+              <CommunityLink key={e.id} href={`/events/${e.id}`}>
                 <div className="flex items-center justify-between gap-3 px-4 py-3 bg-background border border-border-default rounded-xl hover:border-blue-500/40 transition-all">
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-foreground truncate">{e.title}</div>
