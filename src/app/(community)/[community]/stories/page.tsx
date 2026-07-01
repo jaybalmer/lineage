@@ -136,7 +136,7 @@ function StoriesPageBody() {
           {isAuth && (
             <button
               onClick={() => setAddOpen(true)}
-              className="px-4 py-2 rounded-lg bg-violet-700 text-sm font-medium text-foreground hover:bg-violet-600 transition-all"
+              className="px-4 py-2 rounded-lg bg-violet-700 text-sm font-medium text-white hover:bg-violet-600 transition-all"
             >
               ✍ Add story
             </button>
@@ -173,8 +173,8 @@ function StoriesPageBody() {
               className={cn(
                 "px-3 py-1 rounded-full text-xs font-medium border transition-all capitalize disabled:opacity-40",
                 filter === f
-                  ? "bg-violet-700 border-violet-700 text-foreground"
-                  : "border-border-default text-muted hover:text-foreground"
+                  ? "bg-violet-700 border-violet-700 text-white"
+                  : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
               )}
             >
               {f === "mine" ? "My Stories" : "All Stories"}

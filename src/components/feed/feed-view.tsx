@@ -43,14 +43,17 @@ const FILTER_PREDICATES: Record<Exclude<FilterType, "stories">, string[]> = {
   events: ["competed_at", "spectated_at", "organized_at"],
 }
 
+// Chip order mirrors the nav Row 3 category order (Riders, Events, Boards,
+// Brands, Places) with Stories pulled to the front per the reporter (BUG-051),
+// after the leading "All" tab. The chip row renders in this key order.
 const FILTER_LABELS: Record<FilterType, string> = {
   all: "All",
-  places: "Places",
-  gear: "Boards",
-  people: "Riders",
-  orgs: "Brands",
-  events: "Events",
   stories: "Stories",
+  people: "Riders",
+  events: "Events",
+  gear: "Boards",
+  orgs: "Brands",
+  places: "Places",
 }
 
 type FeedItem =
@@ -301,7 +304,7 @@ export function FeedView({
               className={`px-3 py-1 rounded-full text-xs font-medium border transition-all flex items-center gap-1.5 ${
                 active
                   ? isStoriesChip
-                    ? "bg-violet-700 border-violet-700 text-foreground"
+                    ? "bg-violet-700 border-violet-700 text-white"
                     : "bg-[#1C1917] border-[#1C1917] text-white"
                   : "border-border-default text-muted hover:border-border-default hover:text-foreground"
               }`}

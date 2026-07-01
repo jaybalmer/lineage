@@ -237,7 +237,7 @@ function BrandsPageInner() {
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-foreground mb-1">Brands & Orgs</h1>
+            <h1 className="text-xl font-bold text-foreground mb-1">Brands & Orgs</h1>
             <p className="text-sm text-muted">
               {totalBrands} brands, media outlets, and collectives in the community
             </p>
@@ -288,25 +288,23 @@ function BrandsPageInner() {
           )}
         </div>
 
-        {/* Sort control */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1">
-            {SORT_OPTIONS.map(({ key, label, title }) => (
-              <button
-                key={key}
-                onClick={() => setSort(key)}
-                title={title}
-                className={cn(
-                  "px-4 py-1.5 rounded-md text-sm font-medium transition-all",
-                  sort === key
-                    ? "bg-surface-active text-foreground"
-                    : "text-muted hover:text-foreground"
-                )}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        {/* Sort control — outlined-pill treatment shared with the other list pages (BUG-018) */}
+        <div className="flex items-center gap-2 flex-wrap mb-6">
+          {SORT_OPTIONS.map(({ key, label, title }) => (
+            <button
+              key={key}
+              onClick={() => setSort(key)}
+              title={title}
+              className={cn(
+                "px-3 py-1.5 rounded-full text-xs font-medium transition-colors border",
+                sort === key
+                  ? "bg-surface-active border-border-default text-foreground"
+                  : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
+              )}
+            >
+              {label}
+            </button>
+          ))}
         </div>
 
         <div className="space-y-10">

@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useLineageStore } from "@/store/lineage-store"
 import { getBoardById, getPlaceById, boardSlug, placeSlug } from "@/lib/mock-data"
 import { cn } from "@/lib/utils"
+import { ConfidenceBadge } from "@/components/ui/badge"
 import type { Person, Claim, Board, Place } from "@/types"
 
 interface StartCardProps {
@@ -423,9 +424,7 @@ export function StartCard({ person, claims, isOwn = false }: StartCardProps) {
           {person.riding_since && (
             <span className="text-xs text-muted">{person.riding_since}</span>
           )}
-          <span className="text-[10px] uppercase tracking-widest text-zinc-700 bg-surface-hover border border-border-default rounded px-1.5 py-0.5">
-            self-reported
-          </span>
+          <ConfidenceBadge level="self-reported" />
         </div>
         {isOwn && !editing && (
           <button
