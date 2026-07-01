@@ -357,12 +357,18 @@ export function StackCurateModal({
                               className="w-full bg-background border border-border-default rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-blue-500" />
                           </div>
                         )}
-                        <div className="flex items-center gap-3 mt-1.5">
-                          <button onClick={() => setEditingUid(editingUid === s.uid ? null : s.uid)} className="text-[11px] text-muted hover:text-foreground transition-colors">
-                            {editingUid === s.uid ? "Done" : "Edit text"}
-                          </button>
-                          <button onClick={() => removeUid(s.uid)} className="text-[11px] text-red-500 hover:text-red-400 transition-colors">Remove</button>
-                        </div>
+                      </div>
+                      {/* Actions: pill buttons matching the Guest/Add style on the candidate rows */}
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        <button onClick={() => setEditingUid(editingUid === s.uid ? null : s.uid)}
+                          className={cn("text-xs font-medium rounded-lg px-2.5 py-1 border transition-colors",
+                            editingUid === s.uid ? "border-blue-600 text-blue-700 bg-blue-500/10" : "border-border-default text-muted hover:text-foreground")}>
+                          {editingUid === s.uid ? "Done" : "Edit"}
+                        </button>
+                        <button onClick={() => removeUid(s.uid)}
+                          className="text-xs font-medium rounded-lg px-2.5 py-1 border border-red-500/30 text-red-500 hover:text-red-400 hover:border-red-500/50 transition-colors">
+                          Remove
+                        </button>
                       </div>
                     </div>
                   </div>
