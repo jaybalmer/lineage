@@ -73,11 +73,11 @@ export function ShowModule({ org }: { org: Org }) {
 
   return (
     <section className="mb-8 rounded-2xl border border-border-default bg-surface p-5 sm:p-6">
-      {curating && payload && (
+      {curating && (
         <StackCurateModal
           title="Curate the canon"
           stackUrl={`/api/orgs/${org.id}/stack`}
-          initialEntries={payload.entries}
+          initialEntries={payload?.entries ?? []}
           onClose={() => setCurating(false)}
           onSaved={loadStack}
         />
@@ -104,7 +104,7 @@ export function ShowModule({ org }: { org: Org }) {
               className="text-xs px-3 py-1.5 bg-[#1C1917] text-white rounded-lg hover:bg-[#292524] transition-colors font-medium">
               + Add episode
             </button>
-            <button onClick={() => setCurating(true)} disabled={!payload}
+            <button onClick={() => setCurating(true)} disabled={loading}
               className="text-xs px-3 py-1.5 rounded-lg border border-border-default text-muted hover:text-foreground disabled:opacity-50 transition-colors">
               Curate canon
             </button>
@@ -168,7 +168,7 @@ export function ShowModule({ org }: { org: Org }) {
           ) : (
             <div className="text-sm text-muted py-6 text-center border border-dashed border-border-default rounded-xl">
               No canon yet.{" "}
-              <button onClick={() => setCurating(true)} disabled={!payload} className="text-blue-400 hover:text-blue-300 disabled:opacity-50">Curate it →</button>
+              <button onClick={() => setCurating(true)} disabled={loading} className="text-blue-400 hover:text-blue-300 disabled:opacity-50">Curate it →</button>
             </div>
           )}
         </div>
