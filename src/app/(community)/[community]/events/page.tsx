@@ -205,7 +205,10 @@ function EventsPageInner() {
   const { catalog, activePersonId } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
 
-  const allEvents = catalog.events
+  // Episodes (FNRad) are a media type, not a contest/trip/gathering, so they do
+  // not belong in the general Events index; they live on their show hub + their
+  // own episode page. Exclude them here (and thus from the decade groups + filters).
+  const allEvents = catalog.events.filter((e) => e.event_type !== "episode")
 
   // IDs of events the active user has a claim for
   const myEventIds = useMemo(() => {
