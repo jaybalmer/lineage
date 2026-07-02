@@ -26,6 +26,20 @@ function buildOnboardingPayload() {
 const inputCls =
   "w-full bg-surface border border-border-default rounded-lg px-4 py-3 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500 transition-colors"
 
+// Coarse, PII-free bucket for a signup failure, so the auth-gate cliff can be
+// diagnosed in PostHog without logging raw error strings (D6). Auth error
+// messages carry no email/PII, but bucketing keeps the funnel property clean.
+function signupErrorClass(msg?: string | null): string {
+  const m = (msg ?? "").toLowerCase()
+  if (!m) return "unknown"
+  if (m.includes("network") || m.includes("fetch") || m.includes("failed to")) return "network"
+  if (m.includes("rate") || m.includes("too many")) return "rate_limited"
+  if (m.includes("no account") || m.includes("not found")) return "no_account"
+  if (m.includes("popup") || m.includes("cancel") || m.includes("closed")) return "cancelled"
+  if (m.includes("provider") || m.includes("oauth")) return "provider_error"
+  return "other"
+}
+
 function GoogleGlyph() {
   return (
     <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
@@ -49,11 +63,21 @@ export function SaveStep() {
   const continueWithGoogle = async () => {
     setError(null)
     trackEvent("auth", "signup_started", { method: "google" })
-    const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    })
-    if (oauthError) setError(oauthError.message)
+    try {
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
+      })
+      if (oauthError) {
+        trackEvent("auth", "signup_failed", { method: "google", error_class: signupErrorClass(oauthError.message) })
+        setError(oauthError.message)
+      }
+    } catch {
+      // The OAuth dispatch itself threw (e.g. redirect blocked) before Supabase
+      // returned an error object; still record the drop-off.
+      trackEvent("auth", "signup_failed", { method: "google", error_class: "dispatch_threw" })
+      setError("Could not start Google sign-in. Please try again.")
+    }
   }
 
   const sendMagicLink = async () => {
@@ -79,6 +103,7 @@ export function SaveStep() {
       }
 
       if (data.error) {
+        trackEvent("auth", "signup_failed", { method: "magic_link", error_class: signupErrorClass(data.error) })
         setError(data.error)
         return
       }
@@ -97,6 +122,7 @@ export function SaveStep() {
           },
         })
         if (otpError) {
+          trackEvent("auth", "signup_failed", { method: "magic_link", error_class: signupErrorClass(otpError.message) })
           setError(otpError.message)
           return
         }
@@ -104,6 +130,7 @@ export function SaveStep() {
 
       setSent(true)
     } catch {
+      trackEvent("auth", "signup_failed", { method: "magic_link", error_class: "network" })
       setError("Something went wrong. Please try again.")
     } finally {
       setSending(false)

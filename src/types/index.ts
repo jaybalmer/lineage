@@ -549,6 +549,13 @@ export interface TriggerPrefs {
   welcome_pending?:                  boolean  // set by auth/complete, consumed by profile
   welcome_celebration_shown?:        boolean
   timeline_animated?:                boolean  // first-visit timeline entrance animation has played (gated on welcome_celebration_shown)
+  // node-claim-by-admin-invite arrival moment. Set by auth/complete when the
+  // signup folded in an admin-invited node (replaces the generic welcome_pending
+  // for those users); consumed once by the owner-timeline ClaimWelcomeOverlay.
+  claim_welcome_pending?:            boolean
+  claim_welcome_shown?:              boolean
+  // First-3-stories loop: the 3/3 celebration has fired once for this user.
+  first_three_stories_shown?:        boolean
   // First-session step tracking.
   // Retained for the post-launch floating FTUE bar (P0 plan Task 6); the inline
   // FtueGuide that set these was removed at launch. Do not delete as dead.

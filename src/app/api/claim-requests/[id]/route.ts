@@ -5,9 +5,9 @@ import { nameToSlug } from "@/lib/utils"
 import {
   claimApprovedHtml,
   claimDeniedHtml,
-  claimInviteHtml,
   sendClaimEmail,
 } from "@/lib/emails/claim-emails"
+import { applyNodeInvite } from "@/lib/node-invite"
 import { awardContributionTokens } from "@/lib/tokens"
 import type { ClaimRequest, MergePersonResult } from "@/types"
 
@@ -146,33 +146,18 @@ export async function PATCH(
   // ── APPROVE (public_invite): email-first claim ───────────────────────────
   // node-claim-by-admin-invite. NO merge_person (the claimant has no account
   // yet, so the RPC's claimed_by lookup is the wrong tool — see the route
-  // header in /api/public/claim-complete). Instead: stamp the node's
-  // invite_email + flip catalog -> unclaimed, mark the claim approved, and send
-  // an account-creating invite magic link. The fold-in happens at signup via
-  // promoteGhostToAccount (see /api/public/admin-invite-complete). Idempotent:
-  // re-approve is blocked by the status guard above.
+  // header in /api/public/claim-complete). Instead: mark the claim approved,
+  // then run the shared applyNodeInvite steps (stamp invite_email, flip
+  // catalog -> unclaimed, send the account-creating invite magic link). The
+  // fold-in happens at signup via promoteGhostToAccount (see
+  // /api/public/admin-invite-complete). Idempotent: re-approve is blocked by the
+  // status guard above. The claim-update runs FIRST so a racing second approver
+  // loses on the status race guard and never re-stamps or double-emails.
   if (action.action === "approve" && current.claim_kind === "public_invite") {
     const email = current.claimant_email
     if (!email) {
       return NextResponse.json({ error: "Claim has no email to invite" }, { status: 400 })
     }
-    const { data: node } = await db
-      .from("people")
-      .select("id, display_name, node_status")
-      .eq("id", current.node_id)
-      .maybeSingle()
-    if (!node) {
-      return NextResponse.json({ error: "Node not found" }, { status: 404 })
-    }
-    const personName = (node as { display_name: string | null }).display_name ?? "your profile"
-
-    // Stamp invite_email so the completion can bind on the verified email, and
-    // flip catalog -> unclaimed (completion + claim-complete match unclaimed).
-    const nodeUpdate: Record<string, unknown> = { invite_email: email }
-    if ((node as { node_status: string | null }).node_status === "catalog") {
-      nodeUpdate.node_status = "unclaimed"
-    }
-    await db.from("people").update(nodeUpdate).eq("id", current.node_id)
 
     const { data: updated, error: updErr } = await db
       .from("claim_requests")
@@ -195,29 +180,12 @@ export async function PATCH(
       )
     }
 
-    // Account-creating invite magic link (best-effort send). magiclink creates
-    // the user on first use, so this is the invite-into-account step.
-    try {
-      const { data: linkData, error: linkErr } = await db.auth.admin.generateLink({
-        type: "magiclink",
-        email,
-        options: { redirectTo: `${origin}/auth/complete` },
-      })
-      const link = linkData?.properties?.action_link
-      if (!linkErr && link) {
-        void sendClaimEmail({
-          to: email,
-          subject: `Your claim on ${personName} was approved`,
-          html: claimInviteHtml({ personName, link }),
-        })
-      } else {
-        console.error(
-          "[admin claim PATCH approve invite] generateLink failed:",
-          linkErr?.message ?? linkErr,
-        )
-      }
-    } catch (err) {
-      console.error("[admin claim PATCH approve invite email]", err)
+    const invite = await applyNodeInvite(db, { nodeId: current.node_id, email, origin })
+    if (!invite.ok) {
+      // The claim is approved; a missing node only means the invite email/stamp
+      // could not run. Log rather than 500 on this edge (a real visitor claim
+      // always has its node).
+      console.error("[admin claim PATCH approve invite] node missing:", current.node_id)
     }
 
     trackEvent(origin, "claim_node_approved", {
