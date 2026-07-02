@@ -15,6 +15,7 @@ import { deriveStoryFactsForPair } from "@/lib/connection-derived"
 import { PREDICATE_ICONS, PREDICATE_LABELS, formatDateRange } from "@/lib/utils"
 import { cn } from "@/lib/utils"
 import { ComparePlayer } from "@/components/ui/compare-player"
+import { RiderAvatar } from "@/components/ui/rider-avatar"
 import type { Person, Claim, OverlapFact } from "@/types"
 
 // ─── Person Picker ────────────────────────────────────────────────────────────
@@ -49,14 +50,6 @@ function PersonPicker({
     if (open) setTimeout(() => inputRef.current?.focus(), 50)
   }, [open])
 
-  const initials = (name: string) =>
-    name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase()
-
   return (
     <div className="relative flex-1 min-w-0">
       <div className="text-[10px] text-muted uppercase tracking-wider mb-1">{label}</div>
@@ -65,9 +58,7 @@ function PersonPicker({
           onClick={() => setOpen(true)}
           className="w-full flex items-center gap-2.5 px-3 py-2.5 bg-surface border border-border-default rounded-xl text-left hover:border-border-default transition-colors group"
         >
-          <div className="w-8 h-8 rounded-full bg-[#1C1917] flex items-center justify-center text-xs font-bold text-foreground shrink-0">
-            {initials(value.display_name)}
-          </div>
+          <RiderAvatar person={value} size="md" />
           <div className="min-w-0">
             <div className="text-sm font-medium text-foreground truncate">{value.display_name}</div>
             {value.birth_year && (
@@ -114,9 +105,7 @@ function PersonPicker({
                     }}
                     className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-surface-hover transition-colors text-left"
                   >
-                    <div className="w-7 h-7 rounded-full bg-[#1C1917] flex items-center justify-center text-xs font-bold text-foreground shrink-0">
-                      {initials(p.display_name)}
-                    </div>
+                    <RiderAvatar person={p} size="md" />
                     <div>
                       <div className="text-sm text-foreground">{p.display_name}</div>
                       <div className="text-[11px] text-muted">
@@ -234,23 +223,13 @@ function SideBySideTimeline({
     new Set([...groupA.keys(), ...groupB.keys()])
   ).sort((a, b) => b - a)
 
-  const initials = (name: string) =>
-    name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .slice(0, 2)
-      .toUpperCase()
-
   return (
     <div>
       {/* Column headers */}
       <div className="grid grid-cols-2 gap-4 mb-4">
         {[personA, personB].map((p) => (
           <div key={p.id} className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-full bg-[#1C1917] flex items-center justify-center text-[10px] font-bold text-foreground shrink-0">
-              {initials(p.display_name)}
-            </div>
+            <RiderAvatar person={p} size="sm" />
             <CommunityLink
               href={personLink(p)}
               className="text-sm font-semibold text-foreground hover:text-blue-300 transition-colors truncate"
@@ -400,8 +379,19 @@ function ComparePageInner() {
         const e = catalog.events.find((x) => x.id === id)
         return e?.name ?? getEntityName(id, type)
       }
-      default:
-        return getEntityName(id, type)
+      case "person": {
+        // BUG-067: ghost / catalog / duplicate person nodes (e.g. `cy_2`) are in
+        // the loaded catalog but not in `profiles` or mock-data, so getEntityName
+        // returns "Unknown". Resolve from catalog.people first, matching how the
+        // timeline and /people render names.
+        const person = catalog.people.find((x) => x.id === id)
+        return person?.display_name ?? getEntityName(id, type)
+      }
+      default: {
+        // Fall back to catalog.people for untyped person ids before "Unknown".
+        const person = catalog.people.find((x) => x.id === id)
+        return person?.display_name ?? getEntityName(id, type)
+      }
     }
   }
 
