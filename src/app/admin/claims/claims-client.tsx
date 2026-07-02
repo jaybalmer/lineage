@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
+import { AdminInvitePanel } from "@/components/ui/admin-invite-panel"
 import { formatSmartDate, nameToSlug } from "@/lib/utils"
 import { pluralize } from "@/lib/claim-request-helpers"
 import type { ClaimRequest } from "@/types"
@@ -106,6 +107,8 @@ export function ClaimsAdminClient({ initialRequests }: { initialRequests: ClaimR
             ← Back to admin
           </Link>
         </div>
+
+        <AdminInvitePanel />
 
         {requests.length === 0 ? (
           <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">

@@ -27,9 +27,10 @@ import { isAuthUser } from "@/store/lineage-store"
 import { notFound } from "next/navigation"
 import { ClaimRequestModal } from "@/components/ui/claim-request-modal"
 import { ClaimNodeSheet } from "@/components/ui/claim-node-sheet"
+import { InviteToClaimSheet } from "@/components/ui/invite-to-claim-sheet"
 import { VouchCard, type ClaimRequestWithClaimant } from "@/components/ui/vouch-card"
 import { isClaimRequestOpen, userHasOpenClaim, pluralize } from "@/lib/claim-request-helpers"
-import type { Claim, ClaimRequestStatus, MembershipState, Story } from "@/types"
+import type { Claim, ClaimRequestStatus, MembershipState, Person, Story } from "@/types"
 
 export default function RiderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -59,6 +60,11 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   const [claimRequests, setClaimRequests] = useState<ClaimRequestWithClaimant[]>([])
   const [showClaimModal, setShowClaimModal] = useState(false)
   const [showClaimNodeSheet, setShowClaimNodeSheet] = useState(false)
+  // Editor-only proactive invite-to-claim (node-claim-by-admin-invite). Once a
+  // send succeeds this session, invitedEmailOverride reflects it immediately; on
+  // a fresh load the invited state derives from person.invite_email.
+  const [showInviteToClaim, setShowInviteToClaim] = useState(false)
+  const [invitedEmailOverride, setInvitedEmailOverride] = useState<string | null>(null)
   // Public Stack (/t/[slug]) availability for this person — drives the
   // Stack/Timeline toggle. Null until resolved; only shown when enabled.
   const [publicTimeline, setPublicTimeline] = useState<{ enabled: boolean; slug: string | null } | null>(null)
@@ -245,6 +251,10 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   // node-claim-by-admin-invite: a NOT-logged-in visitor on a claimable node gets
   // the email-first claim path (the logged-in path keeps ClaimRequestModal).
   const showThatsMeAnon = !isAuth && !isCurrentUser && nodeIsClaimable
+  // Editor-only proactive invite: send this node's rider an account-creating
+  // claim link by email. Editors are the identity gate, so no review queue.
+  const canEditorInvite = isAuth && membership.is_editor === true && !isCurrentUser && nodeIsClaimable
+  const invitedEmail = invitedEmailOverride ?? (person as Person).invite_email ?? null
 
   return (
     <div className="min-h-screen bg-background">
@@ -328,6 +338,34 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                   </button>
                 </CommunityLink>
               </div>
+            </div>
+          )}
+
+          {/* Editor-only proactive invite (node-claim-by-admin-invite). Jay's
+              first-wave workflow: look the rider up, paste their email, send an
+              account-creating claim link with their history already attached. */}
+          {canEditorInvite && (
+            <div className="mt-3">
+              {invitedEmail ? (
+                <div className="flex items-center justify-between gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
+                  <span className="min-w-0 truncate text-xs text-blue-800">
+                    Invite sent to <span className="font-semibold">{invitedEmail}</span>
+                  </span>
+                  <button
+                    onClick={() => setShowInviteToClaim(true)}
+                    className="shrink-0 text-xs font-semibold text-blue-700 transition-colors hover:text-blue-900"
+                  >
+                    Re-send
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setShowInviteToClaim(true)}
+                  className="w-full rounded-lg border border-blue-300 bg-white px-3 py-2.5 text-sm font-medium text-blue-700 transition-colors hover:bg-blue-50"
+                >
+                  ✉ Invite {person.display_name.split(" ")[0]} to claim
+                </button>
+              )}
             </div>
           )}
 
@@ -672,6 +710,16 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
           personName={person.display_name}
           source="person_page"
           onClose={() => setShowClaimNodeSheet(false)}
+        />
+      )}
+
+      {showInviteToClaim && (
+        <InviteToClaimSheet
+          nodeId={resolvedId}
+          personName={person.display_name}
+          initialEmail={invitedEmail}
+          onClose={() => setShowInviteToClaim(false)}
+          onInvited={(em) => setInvitedEmailOverride(em)}
         />
       )}
 

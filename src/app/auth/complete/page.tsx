@@ -151,9 +151,13 @@ export default function AuthCompletePage() {
       // Runs BEFORE claim-complete so the node is promoted+removed before the
       // public tag-to-claim path looks for it. Keyed server-side on the verified
       // session email, so it no-ops for everyone without an approved claim.
+      // Capture { claimed } to drive the invited-arrival welcome moment below.
+      let adminInviteClaimed = false
       try {
         setStatus("Claiming your profile…")
-        await fetch("/api/public/admin-invite-complete", { method: "POST" })
+        const res = await fetch("/api/public/admin-invite-complete", { method: "POST" })
+        const data = (await res.json().catch(() => ({}))) as { claimed?: boolean }
+        adminInviteClaimed = data?.claimed === true
       } catch (inviteErr) {
         console.error("Admin-invite completion error:", inviteErr)
       }
@@ -197,9 +201,14 @@ export default function AuthCompletePage() {
         trackEvent("ftue", "ftue_completed", {}, { actorId: user.id })
       }
 
-      // Mark welcome explosion as pending — profile page picks this up and fires it
+      // Mark the arrival celebration as pending — the owner timeline picks it up.
+      // An admin-invite claimant gets the invite-specific "your history is
+      // already here" moment (claim_welcome_pending) instead of the generic
+      // welcome explosion, so they see one arrival moment, not two.
       if (!existingProfile) {
-        store.setTriggerPrefs({ welcome_pending: true })
+        store.setTriggerPrefs(
+          adminInviteClaimed ? { claim_welcome_pending: true } : { welcome_pending: true },
+        )
       }
 
       setStatus("Done! Opening your linestry…")

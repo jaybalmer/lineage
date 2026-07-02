@@ -401,7 +401,7 @@ export function OnboardingFlow() {
 
   const primaryLabel =
     currentStepId === "land"
-      ? "Get started"
+      ? "Start now →"
       : currentStepId === "timeline_aha"
       ? "Save my linestry"
       : currentStepId === "last_place"
@@ -444,13 +444,13 @@ export function OnboardingFlow() {
               ) : (
                 <>
                   <h1 className="text-2xl font-bold text-foreground leading-snug">
-                    Linestry is a living record of snowboarding.
+                    Two minutes. Your snowboarding history starts saving.
                   </h1>
                   <p className="text-muted leading-relaxed text-sm">
-                    Claim a couple of real moments. They land on your personal timeline and become part of the community&apos;s collective history.
+                    Claim a couple of real moments. They land on your own timeline and join 40 years of the sport&apos;s collective history.
                   </p>
                   <p className="text-muted leading-relaxed text-sm">
-                    Two quick claims, then it&apos;s yours to save. Takes about a minute.
+                    No account needed to start. Two quick picks, then it&apos;s yours to save.
                   </p>
                 </>
               )}
@@ -577,9 +577,14 @@ export function OnboardingFlow() {
               onClick={next}
               disabled={!canContinue()}
               className={cn(
-                "px-6 py-2.5 rounded-lg text-sm font-medium transition-all",
+                "rounded-lg font-medium transition-all",
+                // Land-step CTA is dominant (brand blue, larger) to lift the
+                // land-to-first-step conversion; later steps keep the quieter ink button.
+                currentStepId === "land" ? "px-7 py-3 text-base" : "px-6 py-2.5 text-sm",
                 canContinue()
-                  ? "bg-[#1C1917] text-white hover:bg-[#292524]"
+                  ? currentStepId === "land"
+                    ? "bg-blue-600 text-white hover:bg-blue-500"
+                    : "bg-[#1C1917] text-white hover:bg-[#292524]"
                   : "bg-surface-active text-muted cursor-not-allowed"
               )}
             >

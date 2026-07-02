@@ -14,6 +14,8 @@ import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { TimelinePlayer } from "@/components/ui/timeline-player"
 import { BulkInvitePrompt } from "@/components/ui/bulk-invite-prompt"
+import { ClaimWelcomeOverlay } from "@/components/ui/claim-welcome-overlay"
+import { trackEvent } from "@/lib/analytics"
 import { PeopleInTimeline } from "@/components/timeline/people-in-timeline"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
@@ -252,6 +254,10 @@ export function OwnerTimelinePanel() {
   // keep the celebration logic permanently disabled.
   const [claimsLoaded,  setClaimsLoaded]  = useState(false)
   const [storiesLoaded, setStoriesLoaded] = useState(false)
+  // Gates the first-3-stories celebration seed so it waits for BOTH the
+  // authored fetch and the off-timeline contributions fetch before deciding the
+  // baseline count (a user with 3 off-timeline stories must not false-fire).
+  const [contributionsLoaded, setContributionsLoaded] = useState(false)
 
   // Platform-wide weighted token total for the equity share estimate (A3).
   // Mirrors the fetch on /account/membership; a pending or failed fetch leaves
@@ -409,6 +415,7 @@ export function OwnerTimelinePanel() {
       .then((r) => r.json())
       .then((rows) => setContributions(Array.isArray(rows) ? (rows as Story[]) : []))
       .catch(() => setContributions([]))
+      .finally(() => setContributionsLoaded(true))
   }, [activePersonId]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const allClaims    = getAllClaims(sessionClaims, dbClaims, deletedClaimIds, claimOverrides, activePersonId)
@@ -422,6 +429,23 @@ export function OwnerTimelinePanel() {
   // entry number and looked like deletes were being ignored.
   const { claims: groupedPersonClaims } = groupRodeAtCompanions(personClaims)
   const timelineEntryCount = countTimelineEntries(groupedPersonClaims, myDays.length, stories.length)
+
+  // node-claim-by-admin-invite arrival moment: shown once when this signup
+  // folded in an admin-invited node. Gated on both fetches so the moment count
+  // is settled before the overlay reads it (same reason the celebrations wait).
+  const showClaimWelcome =
+    !!triggerPrefs.claim_welcome_pending &&
+    !triggerPrefs.claim_welcome_shown &&
+    claimsLoaded &&
+    storiesLoaded
+
+  // First-3-stories loop: count stories THIS user authored (on- or off-timeline),
+  // deduped by id, excluding tagged-in stories that also live in `stories`.
+  const authoredStoryCount = new Set(
+    [...stories, ...contributions]
+      .filter((s) => s.author_id === activePersonId)
+      .map((s) => s.id),
+  ).size
 
   // Detect new claim additions and fire contextual celebration + milestone checks.
   //
@@ -577,6 +601,39 @@ export function OwnerTimelinePanel() {
     prevStoriesCountRef.current = count
   }, [stories.length, activePersonId, storiesLoaded]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // First-3-stories loop (FTUE conversion). Fires the 3/3 celebration once, when
+  // the authored count crosses from below 3 to 3+ during a session. The seed is
+  // gated on both story fetches so a member who already has 3+ authored stories
+  // never false-fires on load; the persisted flag prevents any replay.
+  const prevAuthoredStoriesRef = useRef<number | null>(null)
+  useEffect(() => {
+    if (!isAuthUser(activePersonId)) return
+    if (!storiesLoaded || !contributionsLoaded) return
+
+    const count = authoredStoryCount
+    const prev = prevAuthoredStoriesRef.current
+    if (prev === null) {
+      prevAuthoredStoriesRef.current = count
+      return
+    }
+    if (prev < 3 && count >= 3 && !triggerPrefs.first_three_stories_shown) {
+      setTriggerPrefs({ first_three_stories_shown: true })
+      trackEvent("ftue", "first_three_stories_completed", {}, { actorId: activePersonId })
+      setTimeout(() => {
+        queueCelebration({
+          tier: 3,
+          icon: "🔥",
+          title: "Three stories in. Your timeline has a voice.",
+          body: "Three is where a timeline stops being a list and starts being yours. Stories are what bring the history to life.",
+          nextThread: "Keep going, or tag people and places to connect them to the collective.",
+          accentColor: "#f59e0b",
+          contentType: "milestone",
+        })
+      }, 800)
+    }
+    prevAuthoredStoriesRef.current = count
+  }, [authoredStoryCount, storiesLoaded, contributionsLoaded, activePersonId]) // eslint-disable-line react-hooks/exhaustive-deps
+
   const homeResort = person?.home_resort_id
     ? PLACES.find((p) => p.id === (person as { home_resort_id?: string }).home_resort_id)
     : null
@@ -623,6 +680,17 @@ export function OwnerTimelinePanel() {
         <AddStoryModal
           onClose={() => setAddingStory(false)}
           onSaved={(s) => { setStories((prev) => [s, ...prev]); setAddingStory(false) }}
+        />
+      )}
+      {showClaimWelcome && (
+        <ClaimWelcomeOverlay
+          name={person?.display_name ?? "rider"}
+          momentCount={timelineEntryCount}
+          onAddStory={() => {
+            setTriggerPrefs({ claim_welcome_shown: true, claim_welcome_pending: false })
+            setAddingStory(true)
+          }}
+          onDismiss={() => setTriggerPrefs({ claim_welcome_shown: true, claim_welcome_pending: false })}
         />
       )}
       {playingTimeline && person && (
@@ -721,6 +789,19 @@ export function OwnerTimelinePanel() {
             people={catalog.people}
             onStoryAdded={(s) => setStories((prev) => [s, ...prev])}
           />
+        )}
+
+        {/* First-3-stories loop (FTUE conversion): owner-only progress nudge that
+            sits with the Add-story affordance and disappears at 3 authored stories. */}
+        {isAuthUser(activePersonId) && authoredStoryCount < 3 && (
+          <div className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg border border-border-default bg-surface px-3 py-2 text-xs">
+            <span className="font-semibold text-foreground">
+              First stories: {authoredStoryCount}/3
+            </span>
+            <span className="text-muted">
+              Don&apos;t overthink them. First board, best trip, a day that mattered.
+            </span>
+          </div>
         )}
 
         {/* Quick-action row — wraps on narrow screens so the action buttons never
