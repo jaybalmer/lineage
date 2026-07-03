@@ -12,7 +12,24 @@ function escapeHtml(str: string): string {
 }
 
 // ─── Email HTML ───────────────────────────────────────────────────────────────
-function inviteEmailHtml(inviterName: string, personName: string, link: string): string {
+// primaryLink is the "Claim my profile" CTA. When a magic link was minted it is
+// the account-creating magic link (one click lands the invitee authenticated on
+// their populated profile, no onboarding, no second email). If generateLink was
+// unavailable it falls back to the plain /claim/[token] link. fallbackLink, when
+// present, is the plain /claim/[token] link shown as a secondary "or claim your
+// profile here" line so a late click past the short magic-link window still works.
+function inviteEmailHtml(
+  inviterName: string,
+  personName: string,
+  primaryLink: string,
+  fallbackLink?: string,
+): string {
+  const fallbackBlock = fallbackLink
+    ? `
+    <p style="margin:0 0 8px;font-size:12px;color:#52525b;text-align:center;line-height:1.6;">
+      Button not working, or opening this later? <a href="${fallbackLink}" style="color:#60a5fa;text-decoration:underline;">Claim your profile here</a>.
+    </p>`
+    : ""
   return `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -33,14 +50,15 @@ function inviteEmailHtml(inviterName: string, personName: string, link: string):
       Claim your profile to verify the connection and start building your own linestry.
     </p>
     <!-- CTA -->
-    <div style="text-align:center;margin-bottom:28px;">
-      <a href="${link}" style="display:inline-block;padding:14px 32px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:600;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <a href="${primaryLink}" style="display:inline-block;padding:14px 32px;background:#2563eb;color:#ffffff;text-decoration:none;border-radius:10px;font-size:15px;font-weight:600;">
         Claim my profile →
       </a>
     </div>
+    ${fallbackBlock}
     <!-- Fine print -->
-    <p style="margin:0;font-size:11px;color:#3f3f46;text-align:center;line-height:1.5;">
-      This link expires in 7 days. If you weren&rsquo;t expecting this, you can ignore it.
+    <p style="margin:16px 0 0;font-size:11px;color:#3f3f46;text-align:center;line-height:1.5;">
+      The button above signs you in with one click and expires shortly. If you weren&rsquo;t expecting this, you can ignore it.
     </p>
     </div>
     ${emailFooterHtml()}
@@ -114,13 +132,39 @@ export async function POST(req: NextRequest) {
     const resendKey = process.env.RESEND_API_KEY
     if (normalizedEmail && resendKey) {
       try {
+        // BUG-132: mint an account-creating magic link so the invitee clicks
+        // once and lands authenticated on their populated profile (no onboarding
+        // wizard, no SaveStep, no second "sign-in link" email). Mirrors the
+        // PR #138 applyNodeInvite pattern. The verified-email fold-in at
+        // /auth/complete needs no token in storage, so the click is the claim.
+        // Fall back to the plain /claim/[token] link if generateLink is
+        // unavailable, so the invite always works.
+        let primaryLink = link
+        let fallbackLink: string | undefined
+        try {
+          const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+            type: "magiclink",
+            email: normalizedEmail,
+            options: { redirectTo: `${origin}/auth/complete` },
+          })
+          const magicLink = linkData?.properties?.action_link
+          if (!linkErr && magicLink) {
+            primaryLink = magicLink
+            fallbackLink = link // secondary "or claim your profile here" for late clicks
+          } else {
+            console.error("[invite] generateLink failed:", linkErr?.message ?? linkErr)
+          }
+        } catch (linkGenErr) {
+          console.error("[invite] generateLink threw:", linkGenErr)
+        }
+
         const { Resend } = await import("resend")
         const resend = new Resend(resendKey)
         const { error: sendError } = await resend.emails.send({
           from: "Linestry <noreply@linestry.com>",
           to: normalizedEmail,
           subject: `${safeInviterName} added you to their snowboard linestry`,
-          html: inviteEmailHtml(safeInviterName, safePersonName, link),
+          html: inviteEmailHtml(safeInviterName, safePersonName, primaryLink, fallbackLink),
         })
         if (sendError) {
           console.error("Resend send rejected:", sendError)
