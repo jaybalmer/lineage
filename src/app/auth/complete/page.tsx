@@ -117,6 +117,11 @@ export default function AuthCompletePage() {
       // still forwarded for the same-browser / different-signup-email cases. The
       // route restores the invited name onto the profile, fixing the
       // email-placeholder bug, and deletes the ghost before claim-complete runs.
+      // BUG-132: capture the fold-in result so a per-profile invitee (now
+      // arriving via a magic link in the invite email) gets the same "your
+      // history is already here" welcome moment as an admin invitee, rather than
+      // the generic welcome explosion.
+      let inviteClaimed = false
       try {
         setStatus("Linking your profile…")
         let inviteToken: string | null = null
@@ -131,11 +136,13 @@ export default function AuthCompletePage() {
           }
         } catch { /* storage not available */ }
 
-        await fetch("/api/invite/claim", {
+        const inviteRes = await fetch("/api/invite/claim", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(inviteToken ? { token: inviteToken } : {}),
         })
+        const inviteData = (await inviteRes.json().catch(() => ({}))) as { claimed?: boolean }
+        inviteClaimed = inviteData?.claimed === true
 
         try {
           localStorage.removeItem("lineage_invite_token")
@@ -202,12 +209,15 @@ export default function AuthCompletePage() {
       }
 
       // Mark the arrival celebration as pending — the owner timeline picks it up.
-      // An admin-invite claimant gets the invite-specific "your history is
-      // already here" moment (claim_welcome_pending) instead of the generic
-      // welcome explosion, so they see one arrival moment, not two.
+      // A claimant (admin-invite node claim OR a per-profile email invite that
+      // just folded in) gets the invite-specific "your history is already here"
+      // moment (claim_welcome_pending) instead of the generic welcome explosion,
+      // so they see one arrival moment, not two.
       if (!existingProfile) {
         store.setTriggerPrefs(
-          adminInviteClaimed ? { claim_welcome_pending: true } : { welcome_pending: true },
+          adminInviteClaimed || inviteClaimed
+            ? { claim_welcome_pending: true }
+            : { welcome_pending: true },
         )
       }
 
