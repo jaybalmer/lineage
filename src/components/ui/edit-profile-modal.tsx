@@ -391,7 +391,6 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
             <div className="flex gap-2">
               {([
                 { v: "private", icon: "🔒", desc: "Only you" },
-                { v: "shared", icon: "👥", desc: "Connections" },
                 { v: "public", icon: "🌐", desc: "Everyone" },
               ] as { v: PrivacyLevel; icon: string; desc: string }[]).map(({ v, icon, desc }) => (
                 <button
