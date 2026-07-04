@@ -18,7 +18,6 @@ const CONFIDENCE_OPTIONS: { value: ConfidenceLevel; label: string; desc: string 
 
 const PRIVACY_OPTIONS: { value: PrivacyLevel; label: string; icon: string }[] = [
   { value: "private", label: "Private", icon: "🔒" },
-  { value: "shared", label: "Shared", icon: "👥" },
   { value: "public", label: "Public", icon: "🌐" },
 ]
 
