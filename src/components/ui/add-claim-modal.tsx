@@ -762,11 +762,11 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
       )}
 
       <div
-        className="fixed inset-0 z-40 flex items-center justify-center px-4"
+        className="fixed inset-0 z-40 flex items-start justify-center p-4"
         onClick={(e) => e.target === e.currentTarget && onClose()}
       >
         <div className="absolute inset-0 bg-black/60" />
-        <div className="relative w-full max-w-lg bg-surface border border-border-default rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="relative w-full max-w-lg bg-surface border border-border-default rounded-2xl shadow-2xl flex flex-col max-h-[calc(100dvh-2rem)]">
           {/* Header */}
           <div className="px-6 pt-5 pb-4 border-b border-border-default flex-shrink-0">
             <h2 className="text-base font-bold text-foreground">Add to your linestry</h2>
@@ -1172,7 +1172,6 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                       <div className="flex gap-2">
                         {([
                           { v: "private", icon: "🔒" },
-                          { v: "shared", icon: "👥" },
                           { v: "public", icon: "🌐" },
                         ] as { v: PrivacyLevel; icon: string }[]).map(({ v, icon }) => (
                           <button
