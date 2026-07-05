@@ -194,7 +194,7 @@ export const useLineageStore = create<LineageStore>()(
           supabase.from("claims_public").select("*"),
           // Registered users live in profiles, not people — fetch both and merge
           supabase.from("profiles").select(
-            "id, display_name, birth_year, riding_since, privacy_level, bio, links, home_resort_id, membership_tier, node_status, avatar_url, card_bg_url"
+            "id, display_name, birth_year, riding_since, privacy_level, bio, links, home_resort_id, membership_tier, node_status, avatar_url, card_bg_url, is_archived"
           ),
           // Junction tables fetched via service-role API route (RLS blocks anon reads)
           fetch("/api/catalog-junctions").then((r) => r.json()).catch(() => ({
@@ -245,8 +245,13 @@ export const useLineageStore = create<LineageStore>()(
 
           // Map profile rows → Person shape, skip any already in catalog people (dedup by id)
           const catalogIds = new Set(catalogPeople.map((x) => x.id))
+          // Admin user archive: an archived profile is hidden from every public
+          // surface fed by catalog.people (directory, compare, connections, entity
+          // chips/rosters, feed). The account holder still sees their own profile
+          // via the owner branch in people/[id] + /api/me, which read self-state
+          // rather than the anon catalog, so excluding all archived rows here is safe.
           const profilePeople: Person[] = (pr.data ?? [])
-            .filter((row) => !catalogIds.has(row.id) && row.display_name)
+            .filter((row) => !catalogIds.has(row.id) && row.display_name && !row.is_archived)
             .map((row) => ({
               id:               row.id,
               display_name:     row.display_name,
