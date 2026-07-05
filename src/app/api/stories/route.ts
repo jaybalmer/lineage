@@ -86,6 +86,19 @@ export async function GET(req: NextRequest) {
       query = query.or(`visibility.eq.public,author_id.eq.${viewerId}`)
     } else {
       query = query.eq("visibility", "public")
+
+      // Admin user archive: on the PUBLIC list path only, hide stories authored
+      // by an archived user. The author's own view (storyId permalink or the
+      // ownAuthorList branch above) is untouched, so an archived member still
+      // sees their own stories. author ids are UUIDs, safe to embed in the filter.
+      const { data: archivedRows } = await supabase
+        .from("profiles")
+        .select("id")
+        .eq("is_archived", true)
+      const archivedIds = (archivedRows ?? []).map((r: { id: string }) => r.id)
+      if (archivedIds.length > 0) {
+        query = query.not("author_id", "in", `(${archivedIds.join(",")})`)
+      }
     }
 
     if (authorId)  query = query.eq("author_id", authorId)

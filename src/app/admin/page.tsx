@@ -1893,6 +1893,13 @@ export default function AdminPage() {
                 <span>🏷️</span>
                 Brand Pages
               </Link>
+              <Link
+                href="/admin/users"
+                className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-lg bg-surface border border-border-default text-xs text-foreground hover:bg-surface-hover transition-colors"
+              >
+                <span>👤</span>
+                Users
+              </Link>
             </div>
           </div>
         </div>

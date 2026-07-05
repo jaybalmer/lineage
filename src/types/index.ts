@@ -290,6 +290,8 @@ export interface Person {
   public_timeline_enabled?: boolean
   /** Nullable override for the default public view. The app resolves the effective default per owner type when this is null. */
   public_timeline_default_view?: "timeline" | "stack" | null
+  /** Admin soft-hide. When true, the profile is excluded from all public reads; the account holder still sees their own profile. */
+  is_archived?: boolean
 }
 
 export interface Place {
