@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth, getServiceClient } from "@/lib/auth"
 import { verificationTierFor, vouchesRequiredForTier } from "@/lib/claim-request-helpers"
-import { claimSubmittedHtml, sendClaimEmail } from "@/lib/emails/claim-emails"
+import { claimSubmittedHtml, claimSubmittedText, sendClaimEmail } from "@/lib/emails/claim-emails"
 import type { Person } from "@/types"
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
@@ -174,6 +174,7 @@ export async function POST(req: NextRequest) {
         to: user.email,
         subject: `Your claim on ${person.display_name}`,
         html: claimSubmittedHtml(person.display_name, vouchesRequired),
+        text: claimSubmittedText(person.display_name, vouchesRequired),
       })
     }
 

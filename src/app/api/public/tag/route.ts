@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServiceClient } from "@/lib/auth"
 import { readPublicTimeline } from "@/lib/public-timeline-read"
 import { insertTagEvent } from "@/lib/tag-events"
-import { sendClaimEmail, claimYourSpotHtml } from "@/lib/emails/claim-emails"
+import { sendClaimEmail, claimYourSpotHtml, claimYourSpotText } from "@/lib/emails/claim-emails"
 import {
   hashVisitorValue,
   getClientIp,
@@ -288,6 +288,7 @@ export async function POST(req: NextRequest) {
       to: email,
       subject: `Claim your spot on ${owner.display_name}'s timeline`,
       html: claimYourSpotHtml({ ownerName: owner.display_name, momentLabel, link }),
+      text: claimYourSpotText({ ownerName: owner.display_name, momentLabel, link }),
     })
   }
 

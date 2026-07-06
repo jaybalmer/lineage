@@ -1,5 +1,6 @@
 import { pluralize } from "@/lib/claim-request-helpers"
-import { emailHeaderHtml, emailFooterHtml } from "@/lib/emails/shared-header"
+import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO } from "@/lib/emails/shared-header"
+import { listUnsubscribeHeaders, isEmailSuppressed } from "@/lib/email-suppression"
 
 function escapeHtml(str: string): string {
   return str
@@ -143,10 +144,61 @@ export function claimRequestAdminHtml(args: {
   )
 }
 
+// Plaintext counterparts to the HTML builders above. Kept co-located so the
+// copy and the primary link stay in sync. Plain text needs no HTML escaping.
+export function claimSubmittedText(personName: string, vouchesRequired: number): string {
+  const vouchWord = pluralize(vouchesRequired, "vouch", "vouches")
+  return `We received your request to claim ${personName} on Linestry.\n\nOther members can vouch for you on the profile. ${vouchesRequired} ${vouchWord} from people who know you will move this forward. We will email when something changes.\n\nthe Linestry team\n`
+}
+
+export function claimVouchedText(personName: string, vouchesRequired: number): string {
+  const vouchWord = pluralize(vouchesRequired, "vouch", "vouches")
+  return `Your claim on ${personName} has the ${vouchesRequired} ${vouchWord} it needs. An editor will review it soon.\n\nthe Linestry team\n`
+}
+
+export function claimApprovedText(personName: string, profileLink: string): string {
+  return `Your claim on ${personName} was approved. The profile is yours.\n\nStart adding your timeline:\n${profileLink}\n\nthe Linestry team\n`
+}
+
+export function claimDeniedText(personName: string, editorNotes: string | null): string {
+  const notes = editorNotes ? `Editor notes: ${editorNotes}\n\n` : ""
+  return `We were not able to approve your claim on ${personName}.\n\n${notes}Email jay@lineage.community if you would like to share more context.\n\nthe Linestry team\n`
+}
+
+export function claimYourSpotText(args: { ownerName: string; momentLabel: string; link: string }): string {
+  return `You marked that you were there: ${args.momentLabel}.\n\nConfirm your email to claim your spot and start your own snowboarding timeline on Linestry. Your mark is held for 7 days.\n\nClaim your spot:\n${args.link}\n\nIf this was not you, you can safely ignore this email.\n\nthe Linestry team\n`
+}
+
+export function claimInviteText(args: { personName: string; link: string }): string {
+  return `Good news. Your request to claim ${args.personName} on Linestry was approved.\n\nFinish setting up your profile and the existing history folds into your account, ready to build on:\n${args.link}\n\nthe Linestry team\n`
+}
+
+export function claimRequestAdminText(args: {
+  personName: string
+  claimantEmail: string
+  tier: string
+  note: string | null
+  reviewLink: string
+}): string {
+  const tierLine = args.tier === "protected"
+    ? "PROTECTED node. Verify identity out of band before approving."
+    : `Tier: ${args.tier}`
+  const noteLine = args.note ? `Note: ${args.note}\n` : ""
+  return `A visitor submitted an email claim on ${args.personName}.\n\nEmail: ${args.claimantEmail}\n${tierLine}\n${noteLine}\nReview in admin:\n${args.reviewLink}\n`
+}
+
 interface SendArgs {
   to: string
   subject: string
   html: string
+  // Plaintext alternative (required): every send carries a text part so the
+  // message does not read as HTML-only to spam filters. Include the same
+  // primary link and message as the html.
+  text: string
+  // Member-facing claim emails are list-like: they carry List-Unsubscribe and
+  // honor the suppression list. The internal admin notification passes false so
+  // it never gets an unsubscribe link and is never suppressed.
+  listUnsubscribe?: boolean
 }
 
 /**
@@ -157,6 +209,8 @@ interface SendArgs {
 export async function sendClaimEmail(args: SendArgs): Promise<void> {
   const key = process.env.RESEND_API_KEY
   if (!key || !args.to) return
+  const listUnsub = args.listUnsubscribe !== false
+  if (listUnsub && (await isEmailSuppressed(args.to))) return
   try {
     const { Resend } = await import("resend")
     const resend = new Resend(key)
@@ -165,8 +219,11 @@ export async function sendClaimEmail(args: SendArgs): Promise<void> {
     const { error: sendErr } = await resend.emails.send({
       from: "Linestry <noreply@linestry.com>",
       to: args.to,
+      replyTo: EMAIL_REPLY_TO,
+      headers: listUnsub ? listUnsubscribeHeaders(args.to) : undefined,
       subject: args.subject,
       html: args.html,
+      text: args.text,
     })
     if (sendErr) {
       console.error("[claim-emails] Resend send rejected:", sendErr)

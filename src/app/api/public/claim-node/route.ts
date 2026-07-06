@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServiceClient } from "@/lib/auth"
 import { verificationTierFor, vouchesRequiredForTier } from "@/lib/claim-request-helpers"
-import { claimRequestAdminHtml, sendClaimEmail } from "@/lib/emails/claim-emails"
+import { claimRequestAdminHtml, claimRequestAdminText, sendClaimEmail } from "@/lib/emails/claim-emails"
 import {
   hashVisitorValue,
   getClientIp,
@@ -164,6 +164,15 @@ export async function POST(req: NextRequest) {
       note,
       reviewLink: `${origin}/admin/claims`,
     }),
+    text: claimRequestAdminText({
+      personName: person.display_name,
+      claimantEmail: emailRaw,
+      tier,
+      note,
+      reviewLink: `${origin}/admin/claims`,
+    }),
+    // Internal admin alert: no List-Unsubscribe, never suppressed.
+    listUnsubscribe: false,
   })
 
   trackEvent(origin, "claim_node_requested", {

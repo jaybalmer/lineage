@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { claimInviteHtml, sendClaimEmail } from "@/lib/emails/claim-emails"
+import { claimInviteHtml, claimInviteText, sendClaimEmail } from "@/lib/emails/claim-emails"
 
 export type NodeInviteResult =
   | { ok: true; personName: string }
@@ -51,6 +51,7 @@ export async function applyNodeInvite(
         to: email,
         subject: `Your claim on ${personName} was approved`,
         html: claimInviteHtml({ personName, link }),
+        text: claimInviteText({ personName, link }),
       })
     } else {
       console.error("[applyNodeInvite] generateLink failed:", linkErr?.message ?? linkErr)

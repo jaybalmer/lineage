@@ -15,3 +15,13 @@ export function emailFooterHtml(): string {
     Linestry &middot; Lineage Community Technologies Inc. &middot; <a href="https://linestry.com" style="color:#2563eb;text-decoration:none;">linestry.com</a>
   </div>`;
 }
+
+// Reply-To for every transactional email. noreply@ is unmonitored, so this is
+// the address a member reply actually lands in. Must stay a watched inbox.
+export const EMAIL_REPLY_TO = "jay@linestry.com";
+
+// The per-recipient one-click List-Unsubscribe header builder lives in
+// src/lib/email-suppression.ts (listUnsubscribeHeaders), next to the suppression
+// store and the isEmailSuppressed check-before-send, since the header, the
+// /api/unsubscribe route, and the guard are one system. Attach it only to the
+// list-like notification emails, never to security or internal emails.
