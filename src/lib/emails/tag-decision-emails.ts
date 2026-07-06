@@ -12,7 +12,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { TagEventDeclineCategory } from "@/types"
 import { labelForDeclineCategory } from "@/lib/decline-categories"
-import { emailHeaderHtml, emailFooterHtml } from "@/lib/emails/shared-header"
+import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO, LIST_UNSUBSCRIBE_HEADERS } from "@/lib/emails/shared-header"
 
 const NOTIFICATION_TYPE_EDITOR_DECLINE = "editor_decline"
 
@@ -80,11 +80,14 @@ export async function fireEditorDeclineNotification(
     const { error: sendErr } = await resend.emails.send({
       from: "Linestry <noreply@linestry.com>",
       to: ownerEmail,
+      replyTo: EMAIL_REPLY_TO,
+      headers: LIST_UNSUBSCRIBE_HEADERS,
       subject: "A tag against your timeline was declined",
       html: editorDeclineHtml({
         ownerName,
         categoryLabel,
       }),
+      text: editorDeclineText({ ownerName, categoryLabel }),
     })
     if (sendErr) {
       console.error("[tag-decision-emails] Resend send rejected:", sendErr)
@@ -111,6 +114,11 @@ function editorDeclineHtml(args: { ownerName: string | null; categoryLabel: stri
       ${emailFooterHtml()}
     </div>
   `
+}
+
+function editorDeclineText(args: { ownerName: string | null; categoryLabel: string }): string {
+  const hello = args.ownerName ? `Hi ${args.ownerName},` : "Hi,"
+  return `${hello}\n\nA pending tag against your timeline was reviewed and declined. Category: ${args.categoryLabel}.\n\nYou can review your tag history any time at https://linestry.com/me/tags\n\nthe Linestry moderation team\n`
 }
 
 function escapeHtml(s: string): string {

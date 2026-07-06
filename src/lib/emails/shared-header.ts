@@ -15,3 +15,17 @@ export function emailFooterHtml(): string {
     Linestry &middot; Lineage Community Technologies Inc. &middot; <a href="https://linestry.com" style="color:#2563eb;text-decoration:none;">linestry.com</a>
   </div>`;
 }
+
+// Reply-To for every transactional email. noreply@ is unmonitored, so this is
+// the address a member reply actually lands in. Must stay a watched inbox.
+export const EMAIL_REPLY_TO = "jay@linestry.com";
+
+// One-click List-Unsubscribe (RFC 8058) for the list-like notification emails
+// (invites, claim, comment, tag-decision). Do NOT attach to the security emails
+// (magic-link, password reset) or the internal bug-report email: unsubscribing
+// from a login link makes no sense and can confuse filters. The mailto is
+// actioned by hand at current volume; a hosted endpoint is a later upgrade.
+export const LIST_UNSUBSCRIBE_HEADERS: Record<string, string> = {
+  "List-Unsubscribe": "<mailto:jay@linestry.com?subject=unsubscribe>",
+  "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+};

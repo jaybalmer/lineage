@@ -11,7 +11,7 @@
 // Reactions send nothing in v1.
 
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { emailHeaderHtml, emailFooterHtml } from "@/lib/emails/shared-header"
+import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO, LIST_UNSUBSCRIBE_HEADERS } from "@/lib/emails/shared-header"
 import { DEFAULT_COMMUNITY_SLUG } from "@/lib/community"
 import {
   type CommentEmailPref,
@@ -154,6 +154,8 @@ export async function fireCommentNotification(
     const { error: sendErr } = await resend.emails.send({
       from: "Linestry <noreply@linestry.com>",
       to: authorEmail,
+      replyTo: EMAIL_REPLY_TO,
+      headers: LIST_UNSUBSCRIBE_HEADERS,
       subject,
       html: commentNotificationHtml({
         authorName,

@@ -4,7 +4,9 @@ import { requireEditor, getServiceClient } from "@/lib/auth"
 import { nameToSlug } from "@/lib/utils"
 import {
   claimApprovedHtml,
+  claimApprovedText,
   claimDeniedHtml,
+  claimDeniedText,
   sendClaimEmail,
 } from "@/lib/emails/claim-emails"
 import { applyNodeInvite } from "@/lib/node-invite"
@@ -315,6 +317,7 @@ export async function PATCH(
             to: email,
             subject: `Your claim was approved`,
             html: claimApprovedHtml(personName, profileLink),
+            text: claimApprovedText(personName, profileLink),
           })
         }
       } catch (err) {
@@ -376,6 +379,7 @@ export async function PATCH(
         to: email,
         subject: `About your claim on ${personName}`,
         html: claimDeniedHtml(personName, updated.editor_notes ?? null),
+        text: claimDeniedText(personName, updated.editor_notes ?? null),
       })
     }
   } catch (err) {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { emailHeaderHtml, emailFooterHtml } from "@/lib/emails/shared-header"
+import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO } from "@/lib/emails/shared-header"
 import { safeReturnTo } from "@/lib/safe-redirect"
 
 // ─── Supabase admin client (service role required for generateLink) ───────────
@@ -161,8 +161,13 @@ export async function POST(req: NextRequest) {
     const { error: sendError } = await resend.emails.send({
       from: "Linestry <noreply@linestry.com>",
       to: email.trim().toLowerCase(),
+      replyTo: EMAIL_REPLY_TO,
       subject: "Your Linestry sign-in link",
       html: magicLinkEmailHtml(magicLink),
+      // Plaintext alternative. The link is a long tokened URL: keep it verbatim
+      // so it still works pasted from the text part (do not add query params
+      // the quoted-printable layer could corrupt).
+      text: `Sign in to Linestry.\n\nOpen this link to sign in:\n${magicLink}\n\nIf you did not request this, you can ignore this email.\n\nthe Linestry team\n`,
     })
 
     if (sendError) {

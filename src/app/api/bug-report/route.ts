@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServiceClient, ensureProfile } from "@/lib/auth"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
-import { emailHeaderHtml, emailFooterHtml } from "@/lib/emails/shared-header"
+import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO } from "@/lib/emails/shared-header"
 
 // POST /api/bug-report  (multipart/form-data)
 //
@@ -239,6 +239,7 @@ export async function POST(req: NextRequest) {
     const { error: sendError } = await resend.emails.send({
       from: "Linestry <noreply@linestry.com>",
       to: "jay@lineage.community",
+      replyTo: EMAIL_REPLY_TO,
       subject: `[Linestry Bug] ${firstLine}`,
       html: bugReportEmailHtml({
         note,
@@ -252,6 +253,9 @@ export async function POST(req: NextRequest) {
         posthogSessionUrl,
         hasImage: attachment !== null,
       }),
+      // Internal triage email; a plaintext part keeps the whole account's send
+      // profile consistent for filters. No List-Unsubscribe on an internal email.
+      text: `New bug report${reportedBy ? ` from ${reportedBy}` : ""}.\n\nWhat happened:\n${note}\n\nExpected:\n${expected || "(not provided)"}\n\nURL: ${url || "(none)"}\nViewport: ${viewport || "(none)"}\nUser agent: ${userAgent || "(none)"}\n${posthogSessionUrl ? `Session replay: ${posthogSessionUrl}\n` : ""}${attachment ? "Screenshot attached.\n" : ""}`,
       attachments: attachment ? [attachment] : undefined,
     })
     if (sendError) {

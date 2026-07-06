@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth, getServiceClient } from "@/lib/auth"
-import { emailHeaderHtml, emailFooterHtml } from "@/lib/emails/shared-header"
+import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO, LIST_UNSUBSCRIBE_HEADERS } from "@/lib/emails/shared-header"
 
 function escapeHtml(str: string): string {
   return str
@@ -163,8 +163,15 @@ export async function POST(req: NextRequest) {
         const { error: sendError } = await resend.emails.send({
           from: "Linestry <noreply@linestry.com>",
           to: normalizedEmail,
+          replyTo: EMAIL_REPLY_TO,
+          headers: LIST_UNSUBSCRIBE_HEADERS,
           subject: `${safeInviterName} added you to their snowboard linestry`,
           html: inviteEmailHtml(safeInviterName, safePersonName, primaryLink, fallbackLink),
+          // Plaintext alternative. Uses the raw (unescaped) names so entities
+          // like &amp; do not show through in plain text. primaryLink is the
+          // account-creating magic link (kept verbatim); fallbackLink, when set,
+          // is the plain /claim link for a late click past the magic window.
+          text: `${inviter_name || "Someone"} added you to their snowboard linestry on Linestry as ${person_name || "a rider"}.\n\nClaim your profile:\n${primaryLink}\n${fallbackLink ? `\nOpening this later? Use this link instead:\n${fallbackLink}\n` : ""}\nthe Linestry team\n`,
         })
         if (sendError) {
           console.error("Resend send rejected:", sendError)

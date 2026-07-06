@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth, getServiceClient } from "@/lib/auth"
-import { claimVouchedHtml, sendClaimEmail } from "@/lib/emails/claim-emails"
+import { claimVouchedHtml, claimVouchedText, sendClaimEmail } from "@/lib/emails/claim-emails"
 import type { ClaimRequest, Vouch } from "@/types"
 
 const RELATIONSHIPS = ["rode_with", "worked_with", "family", "other"] as const
@@ -182,6 +182,7 @@ export async function POST(
         to: email,
         subject: `Your claim on ${personName} is ready for review`,
         html: claimVouchedHtml(personName, current.vouches_required),
+        text: claimVouchedText(personName, current.vouches_required),
       })
     }
   }

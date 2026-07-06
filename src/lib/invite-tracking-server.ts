@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js"
-import { emailHeaderHtml, emailFooterHtml } from "@/lib/emails/shared-header"
+import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO, LIST_UNSUBSCRIBE_HEADERS } from "@/lib/emails/shared-header"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -112,8 +112,11 @@ async function sendThresholdEmail(args: { to: string; personName: string; count:
     const { error: sendErr } = await resend.emails.send({
       from: "Linestry <noreply@linestry.com>",
       to: args.to,
+      replyTo: EMAIL_REPLY_TO,
+      headers: LIST_UNSUBSCRIBE_HEADERS,
       subject: `${args.personName} is showing up more on Linestry`,
       html: thresholdEmailHtml(args.personName, args.count),
+      text: `${args.personName} is showing up more on Linestry. ${args.count} different riders have now tagged them in their snowboarding timelines.\n\nYou added them, so we wanted to let you know the community is starting to recognize the connection. If that is actually you, claim the profile to take ownership of the history.\n\nOpen Linestry: https://linestry.com\n\nthe Linestry team\n`,
     })
     if (sendErr) {
       console.error("[invite-tracking] Resend send rejected:", sendErr)

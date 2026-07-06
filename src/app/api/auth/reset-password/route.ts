@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
-import { emailHeaderHtml, emailFooterHtml } from "@/lib/emails/shared-header"
+import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO } from "@/lib/emails/shared-header"
 
 // ─── Supabase admin client (service role required for generateLink) ───────────
 function getSupabaseAdmin() {
@@ -109,8 +109,12 @@ export async function POST(req: NextRequest) {
     const { error: sendError } = await resend.emails.send({
       from: "Linestry <noreply@linestry.com>",
       to: normalizedEmail,
+      replyTo: EMAIL_REPLY_TO,
       subject: "Reset your Linestry password",
       html: resetPasswordEmailHtml(recoveryLink),
+      // Plaintext alternative. The recovery link is a long tokened URL: keep it
+      // verbatim so it still works pasted from the text part.
+      text: `Reset your Linestry password.\n\nOpen this link to choose a new password:\n${recoveryLink}\n\nIf you did not request this, you can ignore this email and your password stays the same.\n\nthe Linestry team\n`,
     })
 
     if (sendError) {
