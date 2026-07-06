@@ -171,6 +171,8 @@ export async function POST(req: NextRequest) {
       note,
       reviewLink: `${origin}/admin/claims`,
     }),
+    // Internal admin alert: no List-Unsubscribe, never suppressed.
+    listUnsubscribe: false,
   })
 
   trackEvent(origin, "claim_node_requested", {

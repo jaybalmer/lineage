@@ -1,5 +1,6 @@
 import { pluralize } from "@/lib/claim-request-helpers"
-import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO, LIST_UNSUBSCRIBE_HEADERS } from "@/lib/emails/shared-header"
+import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO } from "@/lib/emails/shared-header"
+import { listUnsubscribeHeaders, isEmailSuppressed } from "@/lib/email-suppression"
 
 function escapeHtml(str: string): string {
   return str
@@ -194,6 +195,10 @@ interface SendArgs {
   // message does not read as HTML-only to spam filters. Include the same
   // primary link and message as the html.
   text: string
+  // Member-facing claim emails are list-like: they carry List-Unsubscribe and
+  // honor the suppression list. The internal admin notification passes false so
+  // it never gets an unsubscribe link and is never suppressed.
+  listUnsubscribe?: boolean
 }
 
 /**
@@ -204,6 +209,8 @@ interface SendArgs {
 export async function sendClaimEmail(args: SendArgs): Promise<void> {
   const key = process.env.RESEND_API_KEY
   if (!key || !args.to) return
+  const listUnsub = args.listUnsubscribe !== false
+  if (listUnsub && (await isEmailSuppressed(args.to))) return
   try {
     const { Resend } = await import("resend")
     const resend = new Resend(key)
@@ -213,7 +220,7 @@ export async function sendClaimEmail(args: SendArgs): Promise<void> {
       from: "Linestry <noreply@linestry.com>",
       to: args.to,
       replyTo: EMAIL_REPLY_TO,
-      headers: LIST_UNSUBSCRIBE_HEADERS,
+      headers: listUnsub ? listUnsubscribeHeaders(args.to) : undefined,
       subject: args.subject,
       html: args.html,
       text: args.text,

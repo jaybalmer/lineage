@@ -12,7 +12,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { TagEventDeclineCategory } from "@/types"
 import { labelForDeclineCategory } from "@/lib/decline-categories"
-import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO, LIST_UNSUBSCRIBE_HEADERS } from "@/lib/emails/shared-header"
+import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO } from "@/lib/emails/shared-header"
+import { listUnsubscribeHeaders, isEmailSuppressed } from "@/lib/email-suppression"
 
 const NOTIFICATION_TYPE_EDITOR_DECLINE = "editor_decline"
 
@@ -50,6 +51,11 @@ export async function fireEditorDeclineNotification(
   if (!ownerEmail) {
     return { sent: false, reason: "no_owner_email" }
   }
+  // Honor unsubscribe before claiming the dedup row, so a suppressed recipient
+  // does not burn the once-per-decision row (mirrors the no-email guard above).
+  if (await isEmailSuppressed(ownerEmail)) {
+    return { sent: false, reason: "unsubscribed" }
+  }
   const ownerName =
     (ownerProfileRes.data as { display_name?: string } | null)?.display_name ?? null
 
@@ -81,7 +87,7 @@ export async function fireEditorDeclineNotification(
       from: "Linestry <noreply@linestry.com>",
       to: ownerEmail,
       replyTo: EMAIL_REPLY_TO,
-      headers: LIST_UNSUBSCRIBE_HEADERS,
+      headers: listUnsubscribeHeaders(ownerEmail),
       subject: "A tag against your timeline was declined",
       html: editorDeclineHtml({
         ownerName,

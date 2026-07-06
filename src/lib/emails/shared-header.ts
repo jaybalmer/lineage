@@ -20,12 +20,8 @@ export function emailFooterHtml(): string {
 // the address a member reply actually lands in. Must stay a watched inbox.
 export const EMAIL_REPLY_TO = "jay@linestry.com";
 
-// One-click List-Unsubscribe (RFC 8058) for the list-like notification emails
-// (invites, claim, comment, tag-decision). Do NOT attach to the security emails
-// (magic-link, password reset) or the internal bug-report email: unsubscribing
-// from a login link makes no sense and can confuse filters. The mailto is
-// actioned by hand at current volume; a hosted endpoint is a later upgrade.
-export const LIST_UNSUBSCRIBE_HEADERS: Record<string, string> = {
-  "List-Unsubscribe": "<mailto:jay@linestry.com?subject=unsubscribe>",
-  "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
-};
+// The per-recipient one-click List-Unsubscribe header builder lives in
+// src/lib/email-suppression.ts (listUnsubscribeHeaders), next to the suppression
+// store and the isEmailSuppressed check-before-send, since the header, the
+// /api/unsubscribe route, and the guard are one system. Attach it only to the
+// list-like notification emails, never to security or internal emails.

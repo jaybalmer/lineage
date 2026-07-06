@@ -11,7 +11,8 @@
 // Reactions send nothing in v1.
 
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO, LIST_UNSUBSCRIBE_HEADERS } from "@/lib/emails/shared-header"
+import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO } from "@/lib/emails/shared-header"
+import { listUnsubscribeHeaders, isEmailSuppressed } from "@/lib/email-suppression"
 import { DEFAULT_COMMUNITY_SLUG } from "@/lib/community"
 import {
   type CommentEmailPref,
@@ -69,6 +70,7 @@ export async function fireCommentNotification(
   ])
   const authorEmail = authorUserRes.data?.user?.email
   if (!authorEmail) return { sent: false, reason: "no_author_email" }
+  if (await isEmailSuppressed(authorEmail)) return { sent: false, reason: "unsubscribed" }
   const authorName = (authorRes.data as { display_name?: string } | null)?.display_name ?? null
   const commenterName = (commenterRes.data as { display_name?: string } | null)?.display_name ?? "A member"
 
@@ -155,7 +157,7 @@ export async function fireCommentNotification(
       from: "Linestry <noreply@linestry.com>",
       to: authorEmail,
       replyTo: EMAIL_REPLY_TO,
-      headers: LIST_UNSUBSCRIBE_HEADERS,
+      headers: listUnsubscribeHeaders(authorEmail),
       subject,
       html: commentNotificationHtml({
         authorName,
