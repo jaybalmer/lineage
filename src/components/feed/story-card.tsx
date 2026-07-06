@@ -334,12 +334,14 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
 
       {/* ── Title ── */}
       {displayStory.title && (
-        <h3 className="font-bold text-foreground text-base leading-snug mb-2">{displayStory.title}</h3>
+        <h3 className="font-bold text-foreground text-base leading-snug mb-2 break-words">{displayStory.title}</h3>
       )}
 
       {/* ── Body text ── */}
+      {/* break-words so a long unbroken string (e.g. a pasted URL) wraps inside
+          the card instead of forcing the page wider than the viewport (BUG-141). */}
       {displayStory.body && (
-        <p className="text-sm text-muted leading-relaxed mb-3 whitespace-pre-wrap">{displayStory.body}</p>
+        <p className="text-sm text-muted leading-relaxed mb-3 whitespace-pre-wrap break-words">{displayStory.body}</p>
       )}
 
       {/* ── URL link ── */}

@@ -252,7 +252,10 @@ export function StoryInteractions({ story, defaultExpanded = false, showConnect 
                       </button>
                     )}
                   </div>
-                  <p className="text-sm text-muted leading-relaxed whitespace-pre-wrap">{c.body}</p>
+                  {/* break-words so a long unbroken comment string (e.g. a
+                      pasted URL) wraps inside the card instead of overflowing
+                      the story frame and shrinking the viewport (BUG-142). */}
+                  <p className="text-sm text-muted leading-relaxed whitespace-pre-wrap break-words">{c.body}</p>
                   {confirmDeleteId === c.id && (
                     <div className="mt-1 flex items-center gap-3">
                       <span className="text-xs text-muted flex-1">Delete this comment?</span>
