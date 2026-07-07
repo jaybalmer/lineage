@@ -594,7 +594,7 @@ function MembershipDashboard() {
           {/* Equity launch offer */}
           <div className="bg-surface border border-border-default rounded-2xl p-5">
             <div className="md-heading text-foreground mb-3" style={{ fontSize: 16, fontWeight: 700, letterSpacing: 1 }}>
-              EQUITY LAUNCH OFFER
+              FOUNDING COMMUNITY EQUITY OFFER
             </div>
             <div className="space-y-3">
               <div className="flex justify-between">
@@ -655,7 +655,7 @@ function MembershipDashboard() {
                 </p>
               )}
               <Link href="/equity" className="text-muted hover:text-foreground transition-colors underline" style={{ fontSize: 10 }}>
-                How the equity launch offer works →
+                How the founding community equity offer works →
               </Link>
             </div>
           </div>
@@ -718,7 +718,7 @@ function MembershipDashboard() {
           <div className="flex gap-4 pt-2" style={{ fontSize: 10 }}>
             <CommunityLink href="/profile" className="text-muted hover:text-foreground transition-colors">← Profile</CommunityLink>
             <Link href="/membership" className="text-muted hover:text-foreground transition-colors">Membership options →</Link>
-            <Link href="/equity" className="text-muted hover:text-foreground transition-colors">Equity launch offer →</Link>
+            <Link href="/equity" className="text-muted hover:text-foreground transition-colors">Founding community equity offer →</Link>
           </div>
 
         </div>

@@ -79,7 +79,7 @@ export default function EquityPage() {
 
           {/* ── Header ──────────────────────────────────────────────────── */}
           <div>
-            <div className="text-muted mb-3" style={{ fontSize: 10, letterSpacing: 2 }}>// EQUITY LAUNCH OFFER</div>
+            <div className="text-muted mb-3" style={{ fontSize: 10, letterSpacing: 2 }}>// FOUNDING COMMUNITY EQUITY OFFER</div>
             <div className="eq-heading text-foreground"
               style={{ fontSize: "clamp(32px, 6vw, 52px)", fontWeight: 800, letterSpacing: 2, lineHeight: 1.05 }}>
               OWN A PIECE<br />OF LINESTRY
@@ -112,7 +112,7 @@ export default function EquityPage() {
             <div className="bg-surface border border-border-default rounded-2xl p-5">
               <p className="text-foreground" style={{ fontSize: 11, lineHeight: 1.9 }}>
                 Linestry is setting aside a single fixed pool of 100,000 common shares of
-                Lineage Community Technologies Inc. for the launch community. On{" "}
+                Lineage Community Technologies Inc. for the founding community. On{" "}
                 <strong>{EQUITY_SNAPSHOT_LABEL}</strong>{" "}we take a snapshot of every member&apos;s
                 token balance, and the pool is split in proportion to weighted tokens:
                 the more you have built by then, the larger your slice.

@@ -44,7 +44,7 @@ const TIERS = [
       "Everything in Rider",
       "Verify timeline entries",
       "Community governance & voting",
-      "Share of the equity launch offer pool",
+      "Share of the founding community equity offer pool",
       "Member badge on public profile",
       "20 tokens per year",
     ],
@@ -106,8 +106,8 @@ const FAQ = [
     a: "Members can confirm timeline entries added by others — saying 'yes, I was there' or 'I can corroborate this.' Three member verifications upgrade an entry's confidence level and earn the original submitter bonus tokens. It's how the collective record becomes trustworthy over time.",
   },
   {
-    q: "How does the equity launch offer work?",
-    a: "A fixed pool of 100,000 common shares is set aside for the launch community. On September 30, 2026 we snapshot every member's token balance and split the pool by weighted tokens: founder tokens count double, member and contribution tokens count once. Your membership page shows a live estimate of your share until then.",
+    q: "How does the founding community equity offer work?",
+    a: "A fixed pool of 100,000 common shares is set aside for the founding community. On September 30, 2026 we snapshot every member's token balance and split the pool by weighted tokens: founder tokens count double, member and contribution tokens count once. Your membership page shows a live estimate of your share until then.",
   },
   {
     q: "What happens to my tokens if I cancel an annual membership?",
@@ -119,7 +119,7 @@ const FAQ = [
   },
   {
     q: "When does the founding tier close?",
-    a: "When 500 spots are filled, or 12 months after launch — whichever comes first. The founding era badge is permanent once earned, even if the tier has closed for years.",
+    a: "When 500 spots are filled, or 12 months after the founding community opens, whichever comes first. The founding era badge is permanent once earned, even if the tier has closed for years.",
   },
 ]
 
@@ -226,7 +226,7 @@ export default function MembershipPage() {
                     <span style={{ color: "#f59e0b" }}>✦</span> FOUNDING ERA — {foundingRemaining} SPOTS REMAINING
                   </div>
                   <div className="text-muted" style={{ fontSize: 10, letterSpacing: 0.5 }}>
-                    First 500 only · closes when full or 12 months after launch
+                    First 500 only · closes when full or 12 months after the founding community opens
                   </div>
                   {/* Progress bar */}
                   <div className="mt-3 bg-surface-2 rounded-full overflow-hidden" style={{ width: 200, height: 4 }}>
@@ -385,10 +385,10 @@ export default function MembershipPage() {
               <div>
                 <div className="ms-heading text-foreground mb-1"
                   style={{ fontSize: 20, fontWeight: 700, letterSpacing: 1 }}>
-                  <span style={{ color: "#f59e0b" }}>✦</span> THE EQUITY LAUNCH OFFER
+                  <span style={{ color: "#f59e0b" }}>✦</span> THE FOUNDING COMMUNITY EQUITY OFFER
                 </div>
                 <p className="text-muted" style={{ fontSize: 11, lineHeight: 1.6, maxWidth: 480 }}>
-                  100,000 common shares, distributed to the launch community by token balance.
+                  100,000 common shares, distributed to the founding community by token balance.
                   First distribution September 2026. Every entry, story, and daily visit grows
                   your slice, even on the free tier.
                 </p>
