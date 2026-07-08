@@ -104,3 +104,67 @@ body {
 ::-webkit-scrollbar { width: 5px; }
 ::-webkit-scrollbar-track { background: var(--background); }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* ─── FTUE intro slideshow (/intro) ─────────────────────────────────────────
+   Lightweight hand-rolled motion for the pre-signup slideshow. No animation
+   library in the repo (by design); these are the only @keyframes in the file,
+   so the ftue-intro-* namespace establishes the pattern. Draw-in uses
+   stroke-dashoffset on paths carrying pathLength="1". Reduced-motion collapses
+   every one of these to a plain opacity fade (see the media query below). */
+@keyframes ftue-intro-draw { to { stroke-dashoffset: 0; } }
+@keyframes ftue-intro-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes ftue-intro-pop {
+  0%   { opacity: 0; transform: scale(0.4); }
+  60%  { opacity: 1; transform: scale(1.08); }
+  100% { opacity: 1; transform: scale(1); }
+}
+@keyframes ftue-intro-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 1;    transform: scale(1.16); }
+}
+@keyframes ftue-intro-screen {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ftue-intro-draw {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: ftue-intro-draw 0.7s ease forwards;
+}
+.ftue-intro-fade {
+  opacity: 0;
+  animation: ftue-intro-fade 0.5s ease forwards;
+}
+.ftue-intro-pop {
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ftue-intro-pop 0.5s ease forwards;
+}
+.ftue-intro-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ftue-intro-pulse 2.2s ease-in-out infinite;
+}
+.ftue-intro-screen {
+  animation: ftue-intro-screen 0.4s ease both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Draw-in and pulse become a simple fade; strokes render fully drawn. */
+  .ftue-intro-draw {
+    stroke-dashoffset: 0 !important;
+    animation: ftue-intro-fade 0.3s ease both !important;
+  }
+  .ftue-intro-pop,
+  .ftue-intro-pulse,
+  .ftue-intro-fade {
+    transform: none !important;
+    animation: ftue-intro-fade 0.3s ease both !important;
+  }
+  /* Screen transitions become a short instant-ish fade with no slide. */
+  .ftue-intro-screen {
+    animation: ftue-intro-fade 0.2s ease both !important;
+  }
+}

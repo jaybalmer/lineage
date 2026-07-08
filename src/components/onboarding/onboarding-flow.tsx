@@ -281,6 +281,29 @@ export function OnboardingFlow() {
   const currentStepId: StepId = steps[step] ?? "save"
   const totalSteps = steps.length
 
+  // D3: arrivals from the /intro slideshow skip the land step (the slideshow
+  // just delivered that pitch, so land would duplicate it). Jump straight to the
+  // name step and still fire ftue_landed so the PostHog FTUE funnel stays intact,
+  // tagged { source: "intro" }. Declared above the funnel effect below so the
+  // ftue_landed guard is set before that effect's land-step branch can run,
+  // preventing a second, source-less ftue_landed on the same mount.
+  const introHandledRef = useRef(false)
+  useEffect(() => {
+    if (introHandledRef.current) return
+    introHandledRef.current = true
+    let fromIntro = false
+    try {
+      fromIntro = new URLSearchParams(window.location.search).get("from") === "intro"
+    } catch { /* window/search may be unavailable */ }
+    if (!fromIntro) return
+    const nameIdx = steps.indexOf("name")
+    if (nameIdx > 0 && onboarding.step < nameIdx) setOnboardingStep(nameIdx)
+    if (!shownFiredRef.current.has("ftue_landed")) {
+      shownFiredRef.current.add("ftue_landed")
+      trackEvent("ftue", "ftue_landed", { source: "intro" })
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
   // FTUE funnel: fire each step-shown event once per session (brief D5).
   useEffect(() => {
     const shownEvent =

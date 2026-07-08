@@ -78,7 +78,7 @@ export default function Home() {
               </Link>
             ) : (
               <Link
-                href="/onboarding"
+                href="/intro"
                 className="px-6 py-2.5 rounded-lg bg-[#1C1917] text-white font-semibold text-sm hover:bg-[#292524] transition-colors"
               >
                 Start Your Timeline
