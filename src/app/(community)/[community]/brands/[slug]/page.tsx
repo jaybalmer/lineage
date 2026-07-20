@@ -403,6 +403,14 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
   // Stories are the richest, most human content on a brand page, so the feed
   // opens on Stories; the unified "All" decade feed is one tab away.
   const [tab, setTab] = useState<FeedTab>("stories")
+  // Stories is the last pill in a horizontally scrollable row, so on narrow
+  // viewports the default-selected tab starts scrolled off-screen (BUG-124).
+  // Nudge the active tab fully into view once on mount without moving the page
+  // vertically (block: "nearest" leaves the near-top row where it is).
+  const activeTabRef = useRef<HTMLButtonElement | null>(null)
+  useEffect(() => {
+    activeTabRef.current?.scrollIntoView({ inline: "nearest", block: "nearest" })
+  }, [])
   // Curated contribute-module chips can preselect a claim mode/predicate.
   const [claimPreset, setClaimPreset] = useState<{ mode: ClaimMode; predicate: Predicate } | undefined>(undefined)
   const openClaim = (preset?: { mode: ClaimMode; predicate: Predicate }) => { setClaimPreset(preset); setAddOpen(true) }
@@ -950,9 +958,10 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
             {tabs.map(({ key, label, count }) => (
               <button
                 key={key}
+                ref={tab === key ? activeTabRef : undefined}
                 onClick={() => setTab(key)}
                 className={cn(
-                  "px-3 py-1.5 rounded-md text-sm transition-colors",
+                  "px-3 py-1.5 rounded-md text-sm transition-colors whitespace-nowrap",
                   tab === key
                     ? "bg-surface-active text-foreground"
                     : "text-muted hover:text-foreground hover:bg-surface-hover"

@@ -54,7 +54,7 @@ export function PeopleInTimeline({
 
   return (
     <section className="mb-6">
-      {/* Header + prompt: the nudge to browse the People list or write a story. */}
+      {/* Header + prompt: the nudge to browse the Riders list or write a story. */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="min-w-0">
           <h2 className="text-sm font-bold uppercase tracking-widest text-foreground">
@@ -62,8 +62,8 @@ export function PeopleInTimeline({
           </h2>
           <p className="text-xs text-muted mt-1 leading-relaxed">
             {partners.length > 0
-              ? "The riders you have logged riding with. Browse the People list to add more, or write a story about a day you shared."
-              : "You have not linked anyone to your timeline yet. Browse the People list to add the riders you rode with, or write a story and tag who was there."}
+              ? "The riders you have logged riding with. Browse the Riders list to add more, or write a story about a day you shared."
+              : "You have not linked anyone to your timeline yet. Browse the Riders list to add the riders you rode with, or write a story and tag who was there."}
           </p>
         </div>
         <Link

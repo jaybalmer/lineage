@@ -383,17 +383,10 @@ function EntityBlock({ claim, entityName, isOwn, readOnly }: EntityBlockProps) {
 
   const isBoardImageLoading = type === "board" && !manualImageUrl && autoBoardImage === undefined
 
-  // Graphic
-  const graphic = (() => {
-    if (type === "board")  return <BoardGraphic />
-    if (type === "place")  return <PlaceGraphic />
-    if (type === "org")    return <OrgGraphic name={entityName} />
-    if (type === "event")  return <EventGraphic year={event?.year ?? (parseInt(event?.start_date?.slice(0, 4) ?? "0") || undefined)} />
-    if (type === "person") return <PersonGraphic name={entityName} />
-    return null
-  })()
-
-  // Primary display name
+  // Primary display name. Resolved from the locally-fetched catalog/userEntities
+  // entity, so it stays correct even when the caller's entityName prop could not
+  // resolve the object (e.g. a real catalog brand picked during onboarding, which
+  // PostCard's entityName resolver does not look up in catalog.orgs; BUG-126).
   const displayName = (() => {
     if (board)  return `${board.brand} ${board.model}`
     if (place)  return place.name
@@ -401,6 +394,17 @@ function EntityBlock({ claim, entityName, isOwn, readOnly }: EntityBlockProps) {
     if (event)  return event.name
     if (person) return person.display_name
     return entityName
+  })()
+
+  // Graphic. The avatar initial derives from displayName (not the entityName
+  // prop) so the letter matches the name shown below it (BUG-126).
+  const graphic = (() => {
+    if (type === "board")  return <BoardGraphic />
+    if (type === "place")  return <PlaceGraphic />
+    if (type === "org")    return <OrgGraphic name={displayName} />
+    if (type === "event")  return <EventGraphic year={event?.year ?? (parseInt(event?.start_date?.slice(0, 4) ?? "0") || undefined)} />
+    if (type === "person") return <PersonGraphic name={displayName} />
+    return null
   })()
 
   // Subtitle line
