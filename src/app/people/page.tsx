@@ -133,8 +133,8 @@ function RiderRow({ person, isMe, connected, onInvite, claims, activeCommunitySl
             )}
           </div>
 
-          {/* Stats */}
-          <div className="shrink-0 text-right hidden sm:block">
+          {/* Stats (compact, visible on mobile too so entry counts are never hidden) */}
+          <div className="shrink-0 text-right">
             {claimCount > 0 && (
               <>
                 <div className="text-xs font-semibold text-foreground">{claimCount}</div>
