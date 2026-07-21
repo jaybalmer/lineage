@@ -292,6 +292,13 @@ export interface Person {
   public_timeline_default_view?: "timeline" | "stack" | null
   /** Admin soft-hide. When true, the profile is excluded from all public reads; the account holder still sees their own profile. */
   is_archived?: boolean
+  // Curated Member Profile (paid differentiator). Written through
+  // PATCH /api/me/profile-curation, which gates on live membership_tier, so
+  // these render only while the member's tier is annual|lifetime|founding.
+  /** Rider statement; the first line renders as a bolder tagline on the profile. */
+  profile_statement?: string | null
+  /** Owner-ordered milestone spine, sorted by year on save. */
+  profile_milestones?: { year: number; label: string }[] | null
 }
 
 export interface Place {

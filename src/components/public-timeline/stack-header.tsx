@@ -17,6 +17,7 @@
 import { useState } from "react"
 import type { PublicTimelineOwner } from "@/lib/public-timeline-read"
 import { StackTimelineToggle } from "@/components/public-timeline/stack-timeline-toggle"
+import { memberBadgeFor } from "@/components/ui/member-badge"
 import { cn } from "@/lib/utils"
 
 export function StackViewControls({
@@ -66,6 +67,7 @@ export function StackViewControls({
 export function StackHeader({ owner }: { owner: PublicTimelineOwner }) {
   const tagline = owner.bio ? owner.bio.split("\n")[0] : null
   const location = [owner.region, owner.country].filter(Boolean).join(", ")
+  const memberBadge = memberBadgeFor(owner.membership_tier)
 
   return (
     <header className="mb-6">
@@ -95,6 +97,19 @@ export function StackHeader({ owner }: { owner: PublicTimelineOwner }) {
         {tagline && <p className="mt-1 text-sm text-white/55 max-w-md">{tagline}</p>}
 
         <div className="mt-3 flex items-center justify-center gap-2 flex-wrap">
+          {memberBadge && (
+            <span
+              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold uppercase tracking-wider"
+              style={{
+                color: memberBadge.color,
+                background: `${memberBadge.color}22`,
+                border: `1px solid ${memberBadge.color}55`,
+              }}
+            >
+              <span aria-hidden="true">{memberBadge.symbol}</span>
+              {memberBadge.label} member
+            </span>
+          )}
           {owner.era_start && (
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/8 border border-white/12 text-[11px] font-medium uppercase tracking-wider text-white/80">
               <span className="w-1 h-1 rounded-full bg-white/70" />
