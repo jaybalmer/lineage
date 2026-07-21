@@ -16,6 +16,7 @@
 
 import Link from "next/link"
 import { BrandMark } from "@/components/ui/brand-mark"
+import { MemberBadge } from "@/components/ui/member-badge"
 import { PublicTimeline } from "@/components/public-timeline/public-timeline"
 import { StackView } from "@/components/public-timeline/stack-view"
 import { StackHeader, StackViewControls } from "@/components/public-timeline/stack-header"
@@ -116,12 +117,15 @@ export function PublicProfileView({
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h1
-              className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground leading-tight"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              {owner.display_name}
-            </h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1
+                className="text-3xl sm:text-4xl font-extrabold tracking-tight text-foreground leading-tight"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                {owner.display_name}
+              </h1>
+              <MemberBadge tier={owner.membership_tier} />
+            </div>
             {subline && <p className="mt-1.5 text-sm text-muted">{subline}</p>}
             {owner.bio && (
               <p className="mt-3 text-sm font-light leading-relaxed text-foreground/90 whitespace-pre-wrap">

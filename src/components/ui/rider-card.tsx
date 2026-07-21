@@ -8,6 +8,8 @@ import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { supabase } from "@/lib/supabase"
 import { useLineageStore } from "@/store/lineage-store"
 import { usePersonHref } from "@/lib/use-person-href"
+import { memberBadgeFor } from "@/components/ui/member-badge"
+import Link from "next/link"
 
 // ── Card themes ───────────────────────────────────────────────────────────────
 
@@ -38,12 +40,6 @@ const THEMES = {
     accent: "#94a3b8",
   },
 } as const
-
-const TIER_LABEL: Record<string, { text: string; color: string; bg: string }> = {
-  annual:   { text: "MEMBER",            color: "#3b82f6", bg: "#3b82f622" },
-  lifetime: { text: "LIFETIME MEMBER",   color: "#8b5cf6", bg: "#8b5cf622" },
-  founding: { text: "FOUNDING MEMBER ✦", color: "#f59e0b", bg: "#f59e0b22" },
-}
 
 // ── Mountain SVG header illustration ─────────────────────────────────────────
 
@@ -136,6 +132,10 @@ export interface RiderCardProps {
   onEdit?: () => void
   onPlayTimeline?: () => void
   onMemberCard?: () => void
+  /** Public card URL for the tier pill on a non-owner profile (Curated Member
+   *  Profile T5). When set and onMemberCard is absent, the pill links here so a
+   *  visitor's tap lands on the member's shareable card instead of a dead pill. */
+  memberCardHref?: string
   /** When provided, the Boards / Places / Events stat tiles become clickable and
    *  call this with the matching FeedView filter category (BUG-034). Omit to
    *  render the tiles as static cells (for example on the public profile). */
@@ -152,6 +152,7 @@ export function RiderCard({
   onEdit,
   onPlayTimeline,
   onMemberCard,
+  memberCardHref,
   onStatClick,
 }: RiderCardProps) {
   const { setProfileOverride } = useLineageStore()
@@ -253,7 +254,10 @@ export function RiderCard({
   }
 
   // ── Derived display values ─────────────────────────────────────────────────
-  const tier     = TIER_LABEL[membership.tier]
+  // Tier pill routes through the canonical member badge (one source of truth for
+  // color/symbol/label, the BUG-099 intent) instead of a local label map.
+  const badge    = memberBadgeFor(membership.tier)
+  const foundingNumber = membership.tier === "founding" ? membership.founding_member_number : undefined
   const name     = person.display_name ?? "Rider"
   const initials = name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
   const shareUrl = typeof window !== "undefined"
@@ -402,23 +406,40 @@ export function RiderCard({
         {/* ── Card body ─────────────────────────────────────────────────────── */}
         <div className="pt-12 px-5 pb-5 bg-surface">
 
-          {/* Member tier badge */}
-          {tier && (
-            <div className="flex justify-center mb-2">
-              <button
-                onClick={onMemberCard}
-                className="inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[10px] font-bold tracking-widest hover:opacity-80 transition-opacity"
-                style={{
-                  background: tier.bg,
-                  color: tier.color,
-                  border: `1px solid ${tier.color}55`,
-                  fontFamily: "var(--font-body)",
-                }}
-              >
-                {tier.text}
-              </button>
-            </div>
-          )}
+          {/* Member tier badge: canonical color/symbol/label. Owner opens the
+              member-card overlay; a visitor's pill links to the public card
+              (T5); with neither wiring it is a static chip. */}
+          {badge && (() => {
+            const pillCls = "inline-flex items-center gap-1 px-3 py-0.5 rounded-full text-[10px] font-bold tracking-widest transition-opacity"
+            const pillStyle = {
+              background: `${badge.color}22`,
+              color: badge.color,
+              border: `1px solid ${badge.color}55`,
+              fontFamily: "var(--font-body)",
+            } as const
+            const label = (
+              <>
+                <span aria-hidden="true">{badge.symbol}</span>
+                {badge.label.toUpperCase()} MEMBER
+                {foundingNumber ? <span className="opacity-70">· #{foundingNumber} of 500</span> : null}
+              </>
+            )
+            return (
+              <div className="flex justify-center mb-2">
+                {onMemberCard ? (
+                  <button onClick={onMemberCard} className={`${pillCls} hover:opacity-80`} style={pillStyle}>
+                    {label}
+                  </button>
+                ) : memberCardHref ? (
+                  <Link href={memberCardHref} className={`${pillCls} hover:opacity-80`} style={pillStyle}>
+                    {label}
+                  </Link>
+                ) : (
+                  <span className={pillCls} style={pillStyle}>{label}</span>
+                )}
+              </div>
+            )
+          })()}
 
           {/* Name */}
           <h1 className="text-2xl font-bold text-foreground text-center leading-tight">
@@ -530,6 +551,11 @@ export function RiderCard({
             </button>
           </div>
         </div>
+
+        {/* Tier accent edge (Curated Member Profile T7). A 3px line in the
+            member's tier color along the card's bottom, echoing the member
+            card's accent-line motif. Free riders render nothing. */}
+        {badge && <div style={{ height: 3, background: badge.color }} />}
       </div>
     </>
   )

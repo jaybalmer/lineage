@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import { cn } from "@/lib/utils"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
+import { MemberBadge } from "@/components/ui/member-badge"
 import { STORY_REACTION_TYPES, STORY_REACTION_EMOJI } from "@/lib/story-reactions"
 import type { Story, StoryComment, StoryReactionType } from "@/types"
 
@@ -26,7 +27,7 @@ function formatCommentDate(iso: string): string {
 }
 
 export function StoryInteractions({ story, defaultExpanded = false, showConnect = false, onConnect }: StoryInteractionsProps) {
-  const { activePersonId, membership, addToast } = useLineageStore()
+  const { activePersonId, membership, addToast, catalog } = useLineageStore()
   const signedIn = isAuthUser(activePersonId)
   // Mirrors requireEditor(): is_editor OR founding tier. Server-side checks
   // re-verify; this only decides whether the Delete affordance renders.
@@ -241,6 +242,12 @@ export function StoryInteractions({ story, defaultExpanded = false, showConnect 
                     <span className="text-xs font-medium text-foreground">
                       {c.author?.display_name ?? "Rider"}
                     </span>
+                    {/* Curated Member Profile T3: mark a member comment author,
+                        tier resolved from the merged people catalog. */}
+                    <MemberBadge
+                      tier={catalog.people.find((p) => p.id === c.author_id)?.membership_tier}
+                      className="text-[9px] px-1 py-0 self-center"
+                    />
                     <span className="text-[10px] text-muted">{formatCommentDate(c.created_at)}</span>
                     {canDeleteComment(c) && confirmDeleteId !== c.id && (
                       <button

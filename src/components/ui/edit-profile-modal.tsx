@@ -35,7 +35,10 @@ export function getLinkIcon(url: string): string {
 }
 
 export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
-  const { setProfileOverride, onboarding, activePersonId } = useLineageStore()
+  const { setProfileOverride, onboarding, activePersonId, membership } = useLineageStore()
+
+  // Curated Member Profile: the Member page section is a paid-tier benefit.
+  const isMember = membership.tier !== "free"
 
   // Lock the background page while the modal is open (BUG-048).
   useBodyScrollLock()
@@ -58,6 +61,13 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
   const [links, setLinks] = useState<ProfileLink[]>(person.links ?? [])
   const [newLinkUrl, setNewLinkUrl] = useState("")
   const [newLinkLabel, setNewLinkLabel] = useState("")
+
+  // Member page (curated profile). Statement + milestones persist through the
+  // tier-gated /api/me/profile-curation route, not the direct profiles write.
+  const [statement, setStatement] = useState(person.profile_statement ?? "")
+  const [milestones, setMilestones] = useState<{ year: string; label: string }[]>(
+    (person.profile_milestones ?? []).map((m) => ({ year: String(m.year), label: m.label })),
+  )
 
   // Avatar upload
   const [avatarUrl, setAvatarUrl] = useState<string | null>(person.avatar_url ?? null)
@@ -110,6 +120,17 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
 
   function updateLinkLabel(i: number, label: string) {
     setLinks((prev) => prev.map((l, idx) => idx === i ? { ...l, label } : l))
+  }
+
+  // ── Milestones (Member page) ──
+  function addMilestone() {
+    setMilestones((prev) => [...prev, { year: "", label: "" }])
+  }
+  function removeMilestone(i: number) {
+    setMilestones((prev) => prev.filter((_, idx) => idx !== i))
+  }
+  function updateMilestone(i: number, field: "year" | "label", value: string) {
+    setMilestones((prev) => prev.map((m, idx) => (idx === i ? { ...m, [field]: value } : m)))
   }
 
   const [saving, setSaving] = useState(false)
@@ -168,6 +189,43 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
           return  // keep modal open so user can see error
         }
       }
+
+      // Member page fields go through the tier-gated curation route (D8), so
+      // the perk is enforced server-side. Only sent for members; a free caller
+      // would 403 and it is not surfaced to them anyway.
+      if (isMember) {
+        const cleanedMilestones = milestones
+          .map((m) => ({ year: parseInt(m.year, 10), label: m.label.trim() }))
+          .filter((m) => Number.isFinite(m.year) && m.year >= 1900 && m.year <= 2100 && m.label.length > 0)
+          .sort((a, b) => a.year - b.year)
+        const trimmedStatement = statement.trim()
+        try {
+          const r = await fetch("/api/me/profile-curation", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              profile_statement: trimmedStatement || null,
+              profile_milestones: cleanedMilestones,
+            }),
+          })
+          if (r.ok) {
+            setProfileOverride({
+              profile_statement: trimmedStatement || null,
+              profile_milestones: cleanedMilestones,
+            })
+          } else {
+            const { error: curErr } = await r.json().catch(() => ({ error: "Could not save your member page." }))
+            setSaveError(curErr ?? "Could not save your member page.")
+            setSaving(false)
+            return
+          }
+        } catch {
+          setSaveError("Could not save your member page.")
+          setSaving(false)
+          return
+        }
+      }
+
       setSaving(false)
     }
 
@@ -386,6 +444,77 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
               )}
             </div>
           </div>
+
+          {/* ── Member page (curated profile) ── */}
+          {isMember ? (
+            <div className="border-t border-border-default pt-4">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-semibold text-foreground">Member page</span>
+                <span className="text-[10px] text-accent-strong">Members only</span>
+              </div>
+              <p className="text-[11px] text-muted mb-3">
+                A curated page, like the brands get. Your statement and milestones show on your profile.
+              </p>
+
+              <Field label="Statement">
+                <textarea
+                  value={statement}
+                  onChange={(e) => setStatement(e.target.value)}
+                  placeholder="A line that sums up your riding. The first line shows larger."
+                  rows={3}
+                  maxLength={600}
+                  className={cn(inputCls, "resize-none")}
+                />
+              </Field>
+
+              <div className="mt-4">
+                <label className="block text-xs text-muted mb-2">Milestones</label>
+                {milestones.length > 0 && (
+                  <div className="space-y-1.5 mb-2">
+                    {milestones.map((m, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          value={m.year}
+                          onChange={(e) => updateMilestone(i, "year", e.target.value)}
+                          placeholder="Year"
+                          min={1900}
+                          max={2100}
+                          className="w-20 bg-background border border-border-default rounded-lg px-2.5 py-2 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+                        />
+                        <input
+                          type="text"
+                          value={m.label}
+                          onChange={(e) => updateMilestone(i, "label", e.target.value)}
+                          placeholder="What happened"
+                          maxLength={120}
+                          className="flex-1 min-w-0 bg-background border border-border-default rounded-lg px-3 py-2 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
+                        />
+                        <button
+                          onClick={() => removeMilestone(i)}
+                          className="text-muted hover:text-red-400 transition-colors text-sm flex-shrink-0"
+                          title="Remove"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={addMilestone}
+                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                >
+                  + Add milestone
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="text-[11px] text-muted border-t border-border-default pt-4">
+              Members can curate their page with a statement and milestones.{" "}
+              <a href="/membership" className="text-accent-strong hover:underline">Learn more</a>
+            </p>
+          )}
 
           <Field label="Profile visibility">
             <div className="flex gap-2">
