@@ -80,6 +80,9 @@ export interface PublicTimelineOwner {
   /** riding_since when set, else the earliest claim/story year. Drives the
    *  "Snowboarding since YYYY" header + OG line. Null when nothing is datable. */
   era_start: number | null
+  /** Live membership tier for the member badge in the owner header. Null for
+   *  event/org owners (episodes + shows carry no tier). */
+  membership_tier: string | null
 }
 
 export interface PublicTimelinePayload {
@@ -100,7 +103,7 @@ function yearOf(dateStr?: string | null): number | null {
 }
 
 const PROFILE_HEADER_COLS =
-  "id, display_name, avatar_url, bio, region, country, riding_since, public_slug, public_timeline_enabled, public_timeline_default_view"
+  "id, display_name, avatar_url, bio, region, country, riding_since, membership_tier, public_slug, public_timeline_enabled, public_timeline_default_view"
 
 type ProfileHeaderRow = {
   id: string
@@ -110,6 +113,7 @@ type ProfileHeaderRow = {
   region: string | null
   country: string | null
   riding_since: number | null
+  membership_tier: string | null
   public_slug: string | null
   public_timeline_enabled: boolean | null
   public_timeline_default_view: "timeline" | "stack" | null
@@ -386,13 +390,15 @@ async function resolveEntities(
 
 // ── Public entry points ──────────────────────────────────────────────────────
 
-/** Full payload for the chromeless page + public API. Null = 404 (D4). */
-export async function readPublicTimeline(slug: string): Promise<PublicTimelinePayload | null> {
-  if (!slug) return null
-  const db = getServiceClient()
-  const profile = await resolveEnabledProfile(db, slug)
-  if (!profile) return null
-
+/** Build the full timeline payload from an already-resolved profile row. Shared
+ *  by the slug-gated public read and the by-id profile read (the Featured rail),
+ *  so both apply the identical visibility discipline and header shape. `slug` is
+ *  the fallback for owner.slug when the profile has no stored public_slug. */
+async function buildProfilePayload(
+  db: ReturnType<typeof getServiceClient>,
+  profile: ProfileHeaderRow,
+  slug: string,
+): Promise<PublicTimelinePayload> {
   const ownerId = profile.id
 
   const claimsP = db
@@ -428,12 +434,50 @@ export async function readPublicTimeline(slug: string): Promise<PublicTimelinePa
       country: profile.country ?? null,
       riding_since: profile.riding_since ?? null,
       era_start,
+      membership_tier: profile.membership_tier ?? null,
     },
     claims,
     stories,
     entities,
     default_view: profile.public_timeline_default_view ?? null,
   }
+}
+
+/** Full payload for the chromeless page + public API. Null = 404 (D4). */
+export async function readPublicTimeline(slug: string): Promise<PublicTimelinePayload | null> {
+  if (!slug) return null
+  const db = getServiceClient()
+  const profile = await resolveEnabledProfile(db, slug)
+  if (!profile) return null
+  return buildProfilePayload(db, profile, slug)
+}
+
+/** By-id profile timeline, WITHOUT the public_timeline_enabled gate. Powers the
+ *  Featured rail on /people/[id], which surfaces a member's curated stack on
+ *  their own (already public) profile page even when they have not opted into
+ *  the standalone /t/[slug] page. Visibility is still enforced through
+ *  claims_public + the public story reads, so nothing private leaks. Null when
+ *  the profile is missing or archived. */
+export async function readProfileTimelineById(id: string): Promise<PublicTimelinePayload | null> {
+  if (!id) return null
+  const db = getServiceClient()
+  const { data } = await db
+    .from("profiles")
+    .select(PROFILE_HEADER_COLS + ", is_archived")
+    .eq("id", id)
+    .maybeSingle()
+  const profile = data as (ProfileHeaderRow & { is_archived: boolean | null }) | null
+  if (!profile || !profile.display_name || profile.is_archived === true) return null
+  return buildProfilePayload(db, profile, profile.public_slug ?? id)
+}
+
+/** Resolve a member's curated stack for the profile Featured rail. Reuses the
+ *  by-id timeline (no enabled gate) and the shared stack resolver. Null when the
+ *  profile is missing/archived; an empty entries array when nothing is curated. */
+export async function readProfileStackById(id: string): Promise<PublicStackPayload | null> {
+  const timeline = await readProfileTimelineById(id)
+  if (!timeline) return null
+  return readPublicStack(timeline.owner.slug, timeline)
 }
 
 /** Lightweight owner-only resolve for the OG image route, which only needs the
@@ -467,6 +511,7 @@ export async function readPublicTimelineOwner(slug: string): Promise<PublicTimel
     country: profile.country ?? null,
     riding_since: profile.riding_since ?? null,
     era_start,
+    membership_tier: profile.membership_tier ?? null,
   }
 }
 
@@ -897,6 +942,7 @@ function eventOwnerHeader(row: EventStackRow): PublicTimelineOwner {
     country: null,
     riding_since: null,
     era_start: row.year ?? yearOf(row.start_date),
+    membership_tier: null,
   }
 }
 
@@ -1158,6 +1204,7 @@ function orgOwnerHeader(row: OrgStackRow): PublicTimelineOwner {
     country: row.country ?? null,
     riding_since: null,
     era_start: row.founded_year ?? null,
+    membership_tier: null,
   }
 }
 

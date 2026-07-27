@@ -20,6 +20,7 @@ import { CommunityLink } from "@/components/ui/community-link"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { StackTimelineToggle } from "@/components/public-timeline/stack-timeline-toggle"
 import { OwnerTimelinePanel } from "@/components/profile/owner-timeline-panel"
+import { MemberCuratedSections } from "@/components/profile/member-curated-sections"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import { HelpConnectCard } from "@/components/ui/help-connect-card"
 import { isInvitableNodeStatus, trackInviteEvent } from "@/lib/invite-tracking"
@@ -302,7 +303,17 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
             userId={isCurrentUser ? activePersonId : undefined}
             onPlayTimeline={() => setPlayingTimeline(true)}
             onMemberCard={isCurrentUser ? () => setShowMemberCard(true) : undefined}
+            memberCardHref={
+              !isCurrentUser && person.membership_tier && person.membership_tier !== "free"
+                ? `/member/${nameToSlug(person.display_name)}/card`
+                : undefined
+            }
           />
+
+          {/* Curated member layer (statement, milestones, featured rail): the
+              paid differentiator. Renders nothing for free riders and, for a
+              member, only the blocks they have filled in. */}
+          <MemberCuratedSections person={person} isOwner={isCurrentUser} />
 
           {/* Action row */}
           {!isCurrentUser && (

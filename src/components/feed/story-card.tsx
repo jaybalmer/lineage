@@ -12,6 +12,7 @@ import { StoryInteractions } from "@/components/feed/story-interactions"
 import { AddConnectionsPopover, type StoryConnectionType } from "@/components/feed/add-connections-popover"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { getRiderTier } from "@/components/ui/rider-avatar"
+import { MemberBadge } from "@/components/ui/member-badge"
 import type { Story, TagEventDeclineCategory } from "@/types"
 
 interface StoryCardProps {
@@ -119,6 +120,11 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
   const taggedRiders = (displayStory.rider_ids ?? [])
     .map((id) => catalog.people.find((p) => p.id === id))
     .filter(Boolean)
+
+  // Curated Member Profile T2: resolve the author's membership tier from the
+  // people catalog (profiles are merged in) so the story header can mark a
+  // member. The denormalised story.author carries only name + avatar, not tier.
+  const authorTier = catalog.people.find((p) => p.id === displayStory.author_id)?.membership_tier
 
   // Story Connections: community-added chips render the union with the
   // author's own links, deduped by id, identical styling. Attribution lives
@@ -280,10 +286,11 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
               {(displayStory.author?.display_name ?? "?")[0].toUpperCase()}
             </div>
           )}
-          <div className="min-w-0">
+          <div className="min-w-0 flex items-center gap-1.5">
             <span className="text-xs font-medium text-muted">
               {displayStory.author?.display_name ?? "Rider"}
             </span>
+            <MemberBadge tier={authorTier} className="text-[9px] px-1 py-0" />
           </div>
         </div>
 

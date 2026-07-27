@@ -9,6 +9,7 @@ import { useLineageStore, getAllClaims, isAuthUser } from "@/store/lineage-store
 import { getPersonById, PLACES } from "@/lib/mock-data"
 import { EditProfileModal } from "@/components/ui/edit-profile-modal"
 import { RiderCard } from "@/components/ui/rider-card"
+import { MemberCuratedSections } from "@/components/profile/member-curated-sections"
 import { DailyTokenChip } from "@/components/ui/daily-token-chip"
 import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
@@ -359,6 +360,8 @@ export function OwnerTimelinePanel() {
             home_resort_id: data.home_resort_id ?? undefined,
             privacy_level: data.privacy_level as PrivacyLevel,
             links: data.links ?? undefined,
+            profile_statement: data.profile_statement ?? undefined,
+            profile_milestones: data.profile_milestones ?? undefined,
           })
           setPublicTimeline({
             enabled: data.public_timeline_enabled === true && !!data.public_slug,
@@ -751,6 +754,17 @@ export function OwnerTimelinePanel() {
               setTimelineFilter(cat)
               timelineRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
             }}
+          />
+        )}
+
+        {/* Curated member layer (statement, milestones, featured rail). Owner
+            view: empty blocks show a quiet "add" affordance that opens the
+            Member page section of the Edit Profile modal. */}
+        {person && (
+          <MemberCuratedSections
+            person={person}
+            isOwner
+            onEdit={() => setEditingProfile(true)}
           />
         )}
 
