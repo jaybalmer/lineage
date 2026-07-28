@@ -274,7 +274,13 @@ export async function GET(req: NextRequest) {
       comment_count: commentCountByStory.get(s.id as string) ?? 0,
     }))
 
-    return NextResponse.json(stories)
+    // BUG-122: never let a browser or CDN serve this list from cache. It is
+    // viewer-specific (an author's own private stories via the ownAuthorList
+    // branch, plus viewer_reaction) and mutable, so a cached copy can resurface
+    // a story the author has since deleted. no-store closes that path.
+    return NextResponse.json(stories, {
+      headers: { "Cache-Control": "no-store, max-age=0" },
+    })
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : (err as { message?: string })?.message ?? String(err)
     return NextResponse.json({ error: msg }, { status: 500 })
