@@ -18,7 +18,7 @@ import type {
   PublicTimelineEntities,
   PublicTimelineOwner,
 } from "@/lib/public-timeline-read"
-import { cn, PREDICATE_LABELS, formatDateRange } from "@/lib/utils"
+import { cn, PREDICATE_LABELS, formatDateRange, formatStoryDate } from "@/lib/utils"
 import { groupRodeAtCompanions } from "@/lib/companion-grouping"
 import { dateToSortNum, groupByDecade } from "@/lib/timeline-grouping"
 import { EntityGraphic } from "@/components/public-timeline/entity-graphic"
@@ -62,12 +62,6 @@ function accentClass(predicate: Predicate): string {
   if (predicate === "rode_with" || predicate === "shot_by" || predicate === "coached_by") return "border-violet-700"
   if (predicate === "competed_at" || predicate === "spectated_at" || predicate === "organized_at") return "border-amber-700"
   return "border-zinc-600"
-}
-
-function formatStoryDate(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00")
-  if (isNaN(d.getTime())) return dateStr
-  return d.toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" })
 }
 
 // Place and event claim cards are excluded from the public timeline (owner
@@ -298,7 +292,7 @@ function PublicStoryCard({ story, entities, owner }: { story: Story; entities: P
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className="text-[10px] uppercase tracking-widest font-semibold text-muted bg-surface-hover border border-border-default rounded px-1.5 py-0.5">Story</span>
-          <span className="text-xs text-muted">{formatStoryDate(story.story_date)}</span>
+          <span className="text-xs text-muted">{formatStoryDate(story.story_date, story.date_precision)}</span>
         </div>
       </div>
 

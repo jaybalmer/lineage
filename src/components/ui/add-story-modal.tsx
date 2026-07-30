@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
-import { cn, parseYouTubeId } from "@/lib/utils"
+import { cn, parseYouTubeId, type StoryDatePrecision } from "@/lib/utils"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { DateSelect } from "@/components/ui/date-select"
 import { SearchPicker } from "@/components/ui/search-picker"
@@ -58,6 +58,7 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
   const [title, setTitle]       = useState(editStory?.title ?? "")
   const [body, setBody]         = useState(editStory?.body ?? "")
   const [date, setDate]         = useState(editStory?.story_date ?? "")
+  const [datePrecision, setDatePrecision] = useState<StoryDatePrecision>(editStory?.date_precision ?? "day")
   const [visibility, setVisibility] = useState<PrivacyLevel>(editStory?.visibility ?? "public")
 
   // Story-author timeline toggle. Default rule: a brand-new story opened from an
@@ -155,7 +156,7 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
   // ── Save ───────────────────────────────────────────────────────────────────
 
   async function handleSave() {
-    if (!date) { setError("Please set the story date: year, month, and day."); return }
+    if (!date) { setError("Please set at least the year."); return }
     const keptCount = existingPhotos.filter((p) => keepPhotoIds.has(p.id)).length
     if (!body.trim() && uploads.length === 0 && keptCount === 0) {
       setError("Add some text or at least one photo."); return
@@ -168,6 +169,7 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
       title:           title.trim() || undefined,
       body:            body.trim(),
       story_date:      date,
+      date_precision:  datePrecision,
       visibility,
       on_timeline:     onTimeline,
       linked_place_id: selectedPlaceId || undefined,
@@ -309,7 +311,15 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
                   on mobile rather than tapping a calendar back year by year. */}
               <div>
                 <label htmlFor="story-date-year" className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">Date *</label>
-                <DateSelect id="story-date-year" value={date} onChange={(v) => setDate(v)} />
+                <DateSelect
+                  id="story-date-year"
+                  value={date}
+                  onChange={(v) => setDate(v)}
+                  partial
+                  precision={datePrecision}
+                  onPartialChange={(v, p) => { setDate(v); setDatePrecision(p) }}
+                />
+                <p className="text-[11px] text-muted mt-1.5">Only the year is required. Add the month and day if you remember them.</p>
               </div>
 
               {/* Title */}

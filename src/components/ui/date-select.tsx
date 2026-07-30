@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { cn } from "@/lib/utils"
+import { cn, type StoryDatePrecision } from "@/lib/utils"
 
 /**
  * Year / Month / Day picker built from three native <select>s.
@@ -15,8 +15,14 @@ import { cn } from "@/lib/utils"
  * the `stories.story_date` (a strict `date NOT NULL` column) contract and
  * every downstream sort/group/format stay untouched.
  *
- * The value is only emitted once all three parts are chosen; an incomplete
- * selection emits "" so existing required-date validation still fires.
+ * By default the value is only emitted once all three parts are chosen; an
+ * incomplete selection emits "" so required-date validation still fires.
+ *
+ * In `partial` mode (stories: many old dates are only known to the year), the
+ * control emits as soon as a year is picked. It reports a padded anchor plus a
+ * precision through `onPartialChange`: year-only 1998 -> ("1998-01-01", "year"),
+ * month-only -> ("1998-03-01", "month"), full -> ("1998-03-15", "day"). Month
+ * and day are optional; a month picked without a year still emits nothing.
  */
 
 const MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
@@ -39,10 +45,26 @@ function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate()
 }
 
+// Tolerant of partial ISO strings so a precision-trimmed value initializes the
+// right parts: "1998" -> year only, "1998-03" -> year+month, and a full
+// "1998-03-15" -> all three. This is what lets an edited year-only story show
+// Year filled with Month/Day empty (rather than the stored Jan 1 anchor).
 function parse(value: string): { year: Part; month: Part; day: Part } {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value || "")
+  const m = /^(\d{4})(?:-(\d{2}))?(?:-(\d{2}))?/.exec(value || "")
   if (!m) return { year: "", month: "", day: "" }
-  return { year: Number(m[1]), month: Number(m[2]), day: Number(m[3]) }
+  return {
+    year:  Number(m[1]),
+    month: m[2] ? Number(m[2]) : "",
+    day:   m[3] ? Number(m[3]) : "",
+  }
+}
+
+// Trim a padded anchor to only the parts a precision says are real, so edit-
+// init in partial mode does not re-surface the Jan 1 / day-1 padding.
+function trimByPrecision(value: string, precision?: StoryDatePrecision): string {
+  if (precision === "year")  return value.slice(0, 4)
+  if (precision === "month") return value.slice(0, 7)
+  return value
 }
 
 function pad(n: number): string {
@@ -50,7 +72,7 @@ function pad(n: number): string {
 }
 
 interface DateSelectProps {
-  value: string                       // "YYYY-MM-DD" or ""
+  value: string                       // "YYYY-MM-DD" or "" (padded anchor in partial mode)
   onChange: (value: string) => void
   /** Earliest selectable year. Defaults to 1960 (pre-dates modern snowboarding). */
   minYear?: number
@@ -59,10 +81,16 @@ interface DateSelectProps {
   className?: string
   /** id for the year <select>, so an external <label> can point at it. */
   id?: string
+  /** Opt-in: emit as soon as a year is chosen (month + day optional). */
+  partial?: boolean
+  /** Current precision of `value`, used only to init the parts in partial mode. */
+  precision?: StoryDatePrecision
+  /** Partial-mode emit: (padded anchor, derived precision). Empty year -> ("", "day"). */
+  onPartialChange?: (value: string, precision: StoryDatePrecision) => void
 }
 
-export function DateSelect({ value, onChange, minYear = 1960, maxYear, className, id }: DateSelectProps) {
-  const initial = parse(value)
+export function DateSelect({ value, onChange, minYear = 1960, maxYear, className, id, partial = false, precision, onPartialChange }: DateSelectProps) {
+  const initial = parse(partial ? trimByPrecision(value, precision) : value)
   const [year, setYear]   = useState<Part>(initial.year)
   const [month, setMonth] = useState<Part>(initial.month)
   const [day, setDay]     = useState<Part>(initial.day)
@@ -88,9 +116,23 @@ export function DateSelect({ value, onChange, minYear = 1960, maxYear, className
       const max = daysInMonth(nextYear === "" ? 2024 : nextYear, nextMonth)
       if (d > max) d = max
     }
+    // A month picked without a day (partial mode) can't clamp, but must still
+    // reset a stale day if the month later narrows; nothing to do here since
+    // day is already "".
     setYear(nextYear)
     setMonth(nextMonth)
     setDay(d)
+
+    if (partial && onPartialChange) {
+      // Emit the widest complete prefix: year -> anchor+year, +month -> +month,
+      // +day -> full day. No year emits nothing so required validation fires.
+      if (nextYear === "") { onPartialChange("", "day"); return }
+      if (nextMonth === "") { onPartialChange(`${nextYear}-01-01`, "year"); return }
+      if (d === "") { onPartialChange(`${nextYear}-${pad(nextMonth)}-01`, "month"); return }
+      onPartialChange(`${nextYear}-${pad(nextMonth)}-${pad(d)}`, "day")
+      return
+    }
+
     onChange(nextYear !== "" && nextMonth !== "" && d !== "" ? `${nextYear}-${pad(nextMonth)}-${pad(d)}` : "")
   }
 
