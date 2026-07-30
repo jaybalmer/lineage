@@ -624,6 +624,11 @@ export interface Story {
   title?: string
   body: string
   story_date: string   // YYYY-MM-DD — positions it on the timeline
+  /** How much of story_date is real. story_date always holds a padded anchor
+   * (year-only stores YYYY-01-01, month-only YYYY-MM-01); precision drives
+   * honest display ("1998" / "Mar 1998" / "15 Mar 1998"). Optional so
+   * pre-refresh clients and cached payloads stay valid; absent = "day". */
+  date_precision?: "day" | "month" | "year"
   visibility: PrivacyLevel
   /** false = authored but kept off the author's own timeline. Still public on
    * linked entity pages and in the community feed. Default true. */

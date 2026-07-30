@@ -2,7 +2,8 @@
 
 import { useState } from "react"
 import { CommunityLink } from "@/components/ui/community-link"
-import { cn, parseYouTubeId } from "@/lib/utils"
+import { cn, parseYouTubeId, formatStoryDate, type StoryDatePrecision } from "@/lib/utils"
+import { DateSelect } from "@/components/ui/date-select"
 import { orgSlug, placeSlug, eventSlug, boardSlug } from "@/lib/mock-data"
 import { personHref } from "@/lib/entity-links"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
@@ -23,11 +24,6 @@ interface StoryCardProps {
   expandComments?: boolean
 }
 
-function formatStoryDate(dateStr: string): string {
-  const d = new Date(dateStr + "T00:00:00")
-  return d.toLocaleDateString("en-CA", { year: "numeric", month: "short", day: "numeric" })
-}
-
 export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardProps) {
   const { catalog, activePersonId, addToast, membership } = useLineageStore()
   const [displayStory, setDisplayStory] = useState(story)
@@ -36,6 +32,13 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [editing, setEditing] = useState(false)
+
+  // Editor "Fix date" (moderator repair of the date only; never the words,
+  // photos, boards, or rider tags). Seeded from the current story on open.
+  const [fixDateOpen, setFixDateOpen] = useState(false)
+  const [fixDate, setFixDate] = useState("")
+  const [fixPrecision, setFixPrecision] = useState<StoryDatePrecision>("day")
+  const [savingDate, setSavingDate] = useState(false)
 
   // Story Connections: + Connect popover + community chip removal state.
   const [connectOpen, setConnectOpen] = useState(false)
@@ -236,6 +239,36 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
     || taggedRiders.length > 0 || communityPlaceChips.length > 0 || communityEventChips.length > 0
     || communityOrgChips.length > 0
 
+  function openFixDate() {
+    setFixDate(displayStory.story_date)
+    setFixPrecision(displayStory.date_precision ?? "day")
+    setFixDateOpen(true)
+  }
+
+  async function handleFixDate() {
+    if (!fixDate) { addToast("Please set at least the year.", "error"); return }
+    setSavingDate(true)
+    const r = await fetch("/api/stories", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: displayStory.id, story_date: fixDate, date_precision: fixPrecision, moderator_fix: true }),
+    })
+    setSavingDate(false)
+    if (!r.ok) {
+      addToast("Couldn't update the date.", "error")
+      return
+    }
+    // The moderator branch echoes the normalized anchor + precision; trust it.
+    const j = await r.json().catch(() => ({})) as { story_date?: string; date_precision?: StoryDatePrecision }
+    setDisplayStory((prev) => ({
+      ...prev,
+      story_date:     j.story_date ?? fixDate,
+      date_precision: j.date_precision ?? fixPrecision,
+    }))
+    setFixDateOpen(false)
+    addToast("Date updated.")
+  }
+
   async function handleDelete() {
     setDeleting(true)
     const r = await fetch(`/api/stories?id=${displayStory.id}`, { method: "DELETE" })
@@ -298,7 +331,7 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
           <span className="text-[10px] uppercase tracking-widest font-semibold text-muted bg-surface-hover border border-border-default rounded px-1.5 py-0.5">
             Story
           </span>
-          <span className="text-xs text-muted">{formatStoryDate(displayStory.story_date)}</span>
+          <span className="text-xs text-muted">{formatStoryDate(displayStory.story_date, displayStory.date_precision)}</span>
 
           {showMenu && (
             <div className="relative">
@@ -322,6 +355,17 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
                         className="w-full text-left px-3 py-2 text-xs text-foreground hover:bg-surface-hover transition-colors"
                       >
                         Edit story
+                      </button>
+                      <div className="border-t border-border-default mx-2" />
+                    </>
+                  )}
+                  {canModerate && (
+                    <>
+                      <button
+                        onClick={() => { setMenuOpen(false); openFixDate() }}
+                        className="w-full text-left px-3 py-2 text-xs text-foreground hover:bg-surface-hover transition-colors"
+                      >
+                        Fix date
                       </button>
                       <div className="border-t border-border-default mx-2" />
                     </>
@@ -620,6 +664,36 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
               onAdded={handleConnectionAdded}
             />
           )}
+        </div>
+      )}
+
+      {/* ── Editor Fix date ── */}
+      {fixDateOpen && (
+        <div className="mt-3 pt-3 border-t border-border-default">
+          <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">Fix date</label>
+          <DateSelect
+            value={fixDate}
+            onChange={setFixDate}
+            partial
+            precision={fixPrecision}
+            onPartialChange={(v, p) => { setFixDate(v); setFixPrecision(p) }}
+          />
+          <p className="text-[11px] text-muted mt-1.5">Only the year is required. Editing the date does not touch the story&apos;s words, photos, or tags.</p>
+          <div className="flex items-center justify-end gap-3 mt-2.5">
+            <button
+              onClick={() => setFixDateOpen(false)}
+              className="text-xs text-muted hover:text-foreground transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleFixDate}
+              disabled={savingDate}
+              className="text-xs text-blue-400 hover:text-blue-300 font-medium transition-colors"
+            >
+              {savingDate ? "Saving…" : "Save date"}
+            </button>
+          </div>
         </div>
       )}
 

@@ -62,6 +62,37 @@ export function formatPartialDate(dateStr?: string): string {
   return year
 }
 
+export type StoryDatePrecision = "day" | "month" | "year"
+
+/** Precision-aware story date label. stories.story_date always holds a full
+ *  padded anchor ("1998-01-01" for a year-only story); precision says how much
+ *  of it is real, so we trim before delegating to formatPartialDate:
+ *  - year  → "1998"
+ *  - month → "Mar 1998"
+ *  - day (or undefined, i.e. legacy rows) → "15 Mar 1998"
+ *  Shared by StoryCard and the public timeline so one date style spans the app. */
+export function formatStoryDate(dateStr: string, precision?: StoryDatePrecision): string {
+  if (!dateStr) return ""
+  const trimmed = precision === "year"  ? dateStr.slice(0, 4)
+                : precision === "month" ? dateStr.slice(0, 7)
+                : dateStr
+  return formatPartialDate(trimmed)
+}
+
+/** Force a story_date anchor to match its precision, so a year-only story
+ *  always stores YYYY-01-01 and a month-only story YYYY-MM-01 no matter what
+ *  the client sent. Display can then trust the (anchor, precision) pair. Input
+ *  is a "YYYY-MM-DD" anchor; returns the same when precision is 'day' or the
+ *  string is not a full anchor. */
+export function normalizeStoryAnchor(dateStr: string, precision?: StoryDatePrecision): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr || "")
+  if (!m) return dateStr
+  const [, y, mo] = m
+  if (precision === "year")  return `${y}-01-01`
+  if (precision === "month") return `${y}-${mo}-01`
+  return dateStr
+}
+
 /** Format an event's start/end dates as a range, compressing shared parts.
  *  Precision-aware (see formatPartialDate), so it is safe on year-only and
  *  year-month events. Examples:

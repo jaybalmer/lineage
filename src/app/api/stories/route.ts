@@ -7,7 +7,15 @@ import { fireTagEvents } from "@/lib/invite-tracking-server"
 import { pairStoryRiderTagEvents, isAsserterGloballyBlocked } from "@/lib/tag-events"
 import { logTagActions } from "@/lib/tag-action-log"
 import { awardContributionTokens, reverseContributionTokens } from "@/lib/tokens"
+import { normalizeStoryAnchor, type StoryDatePrecision } from "@/lib/utils"
 import type { StoryReactionType } from "@/types"
+
+// Whitelist an incoming date_precision to the three valid values, defaulting
+// to 'day' (a full date) for anything absent or malformed. Never let an
+// arbitrary string reach the CHECK-constrained column.
+function normalizePrecision(raw: unknown): StoryDatePrecision {
+  return raw === "year" || raw === "month" ? raw : "day"
+}
 
 function getServiceClient() {
   return createClient(
@@ -311,6 +319,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "story_date is required" }, { status: 400 })
     }
 
+    // Partial-date support: precision says how much of story_date is real; the
+    // anchor is forced to match (year -> YYYY-01-01, month -> YYYY-MM-01) so
+    // display can trust the pair regardless of what the client sent.
+    const datePrecision = normalizePrecision(body.date_precision)
+    const storyAnchor   = normalizeStoryAnchor(story_date, datePrecision)
+
     // PB-009 Phase 3: refuse the entire write if the author is globally
     // restricted AND the story tags riders. Stories with no riders are not
     // person-implicating, so a restricted author can still write them.
@@ -328,7 +342,7 @@ export async function POST(req: NextRequest) {
       .from("stories")
       .insert({
         author_id: user.id, title: title || null, body: storyBody ?? "",
-        story_date, visibility,
+        story_date: storyAnchor, date_precision: datePrecision, visibility,
         on_timeline,
         linked_event_id: linked_event_id || null,
         linked_place_id: linked_place_id || null,
@@ -412,6 +426,7 @@ export async function POST(req: NextRequest) {
       props: {
         story_id: storyId,
         visibility,
+        date_precision: datePrecision,
         photo_count: (photos as unknown[]).length,
         rider_count: (rider_ids as unknown[]).length,
         board_count: (board_ids as unknown[]).length,
@@ -452,6 +467,9 @@ export async function PATCH(req: NextRequest) {
 
     if (!id) return NextResponse.json({ error: "id required" }, { status: 400 })
 
+    const datePrecision = normalizePrecision(body.date_precision)
+    const storyAnchor   = story_date ? normalizeStoryAnchor(story_date, datePrecision) : story_date
+
     // Verify ownership (also read on_timeline so an old client payload that
     // omits it falls back to the stored value instead of forcing true).
     const { data: existing } = await supabase
@@ -461,8 +479,46 @@ export async function PATCH(req: NextRequest) {
       .single()
 
     if (!existing) return NextResponse.json({ error: "Story not found" }, { status: 404 })
+
+    // ── Editor Fix date branch ─────────────────────────────────────────────
+    // A non-author who is an editor (is_editor, NOT founding tier — mirrors the
+    // DELETE moderator boundary) may repair ONLY the date. This MUST short-
+    // circuit before the photo/board/rider junction logic below: that logic
+    // defaults board_ids and rider_ids to [] when absent, so letting a date-
+    // only moderator payload fall through would wipe every board link and flip
+    // every rider tag_event to 'disabled'. Early return, no exceptions.
     if (existing.author_id !== user.id) {
-      return NextResponse.json({ error: "Not authorized to edit this story" }, { status: 403 })
+      const { data: me } = await supabase
+        .from("profiles")
+        .select("is_editor")
+        .eq("id", user.id)
+        .single()
+      if (!me?.is_editor) {
+        return NextResponse.json({ error: "Not authorized to edit this story" }, { status: 403 })
+      }
+      if (!story_date) {
+        return NextResponse.json({ error: "story_date is required" }, { status: 400 })
+      }
+      const { error: fixErr } = await supabase
+        .from("stories")
+        .update({
+          story_date:     storyAnchor,
+          date_precision: datePrecision,
+          updated_at:     new Date().toISOString(),
+        })
+        .eq("id", id)
+      if (fixErr) throw fixErr
+
+      await captureServerEvent({
+        category: "content",
+        event: "story_date_fixed",
+        actorId: user.id,
+        // moderated=true: an editor repaired someone else's story date; the
+        // author_id is recorded so the fix is auditable at /admin/activity.
+        props: { story_id: id, author_id: existing.author_id, moderated: true, date_precision: datePrecision },
+      })
+
+      return NextResponse.json({ ok: true, story_date: storyAnchor, date_precision: datePrecision })
     }
 
     // Update story row
@@ -471,7 +527,8 @@ export async function PATCH(req: NextRequest) {
       .update({
         title: title || null,
         body: storyBody ?? "",
-        story_date,
+        story_date: storyAnchor,
+        date_precision: datePrecision,
         visibility,
         on_timeline: on_timeline ?? existing.on_timeline ?? true,
         linked_event_id: linked_event_id || null,
