@@ -31,8 +31,10 @@ export function PublicShowView({ payload, preview = false }: {
   preview?: boolean
 }) {
   const { owner, entries, episodes, stories, entities } = payload
-  // The public show page links only to episodes that published their own page.
-  const publicEpisodes = episodes.filter((e) => e.public_enabled && e.slug)
+  // The public show page links only to episodes that are LIVE and have their own
+  // page. `live` folds in the Session C schedule, so an episode waiting on its
+  // publish_at is not announced here before its time.
+  const publicEpisodes = episodes.filter((e) => e.live && e.slug)
 
   return (
     <div className="min-h-screen w-full" style={{ background: "#1C1917" }}>
