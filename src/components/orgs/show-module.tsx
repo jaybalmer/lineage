@@ -12,6 +12,7 @@ import { useEffect, useState } from "react"
 import { useParams } from "next/navigation"
 import { CommunityLink } from "@/components/ui/community-link"
 import { useLineageStore } from "@/store/lineage-store"
+import { eventSlug } from "@/lib/mock-data"
 import { StackView } from "@/components/public-timeline/stack-view"
 import { StackCurateModal } from "@/components/ui/stack-curate-modal"
 import { EpisodeCreateModal } from "@/components/events/episode-create-modal"
@@ -65,6 +66,20 @@ export function ShowModule({ org }: { org: Org }) {
     if (!publicUrl) return
     try { await navigator.clipboard.writeText(publicUrl); setCopied(true); setTimeout(() => setCopied(false), 1800) } catch {}
   }
+  // Pre-publish preview (B4): mint the slug without publishing if needed, then
+  // open /t/[slug], which renders banner-marked for editors while disabled.
+  async function openPreview() {
+    let slug = link.slug
+    if (!slug) {
+      const res = await fetch(`/api/orgs/${org.id}/public-link`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mint: true }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (res.ok && d.slug) { slug = d.slug as string; setLink((l) => ({ ...l, slug })) }
+    }
+    if (slug) window.open(`/t/${slug}`, "_blank", "noopener,noreferrer")
+  }
 
   // Nothing to show and not an editor (no controls to offer): render nothing so a
   // brand-shaped media org with no episodes/canon yet stays clean for visitors.
@@ -112,14 +127,16 @@ export function ShowModule({ org }: { org: Org }) {
               <input type="checkbox" checked={link.enabled} onChange={togglePublish} className="accent-blue-600" />
               Public link
             </label>
-            {link.enabled && link.slug && (
-              <div className="flex items-center gap-2">
-                <a href={`/t/${link.slug}`} target="_blank" rel="noopener noreferrer" className="text-xs text-accent-strong hover:underline">Preview ↗</a>
+            <div className="flex items-center gap-2">
+              <button onClick={openPreview} className="text-xs text-accent-strong hover:underline">
+                Preview ↗
+              </button>
+              {link.enabled && link.slug && (
                 <button onClick={copy} className="text-xs px-2 py-1 rounded-lg border border-border-default text-muted hover:text-foreground transition-colors">
                   {copied ? "Copied" : "Copy link"}
                 </button>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -137,7 +154,10 @@ export function ShowModule({ org }: { org: Org }) {
         ) : (
           <div className="space-y-2">
             {episodes.map((e) => (
-              <CommunityLink key={e.id} href={`/events/${e.id}`}>
+              // Name-based slug so the episode page's URL-derived tab title is
+              // the episode name, not the raw generated id (the detail page
+              // resolves slug OR id, so the id fallback still works).
+              <CommunityLink key={e.id} href={`/events/${eventSlug({ name: e.title }) || e.id}`}>
                 <div className="flex items-center justify-between gap-3 px-4 py-3 bg-background border border-border-default rounded-xl hover:border-blue-500/40 transition-all">
                   <div className="min-w-0">
                     <div className="text-sm font-medium text-foreground truncate">{e.title}</div>

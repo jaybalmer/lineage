@@ -25,7 +25,11 @@ function BrandHome() {
   )
 }
 
-export function PublicShowView({ payload }: { payload: PublicShowPayload }) {
+export function PublicShowView({ payload, preview = false }: {
+  payload: PublicShowPayload
+  /** Editor-only pre-publish render (B4): banner-marked, otherwise identical. */
+  preview?: boolean
+}) {
   const { owner, entries, episodes, stories, entities } = payload
   // The public show page links only to episodes that published their own page.
   const publicEpisodes = episodes.filter((e) => e.public_enabled && e.slug)
@@ -36,6 +40,13 @@ export function PublicShowView({ payload }: { payload: PublicShowPayload }) {
         <div className="flex items-center justify-between gap-3 mb-6">
           <BrandHome />
         </div>
+
+        {preview && (
+          <div className="mb-6 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3.5 py-2.5 text-xs text-amber-200">
+            <span className="font-semibold">Preview.</span> This page is not public yet. Only
+            editors can see it. Tick &ldquo;Public link&rdquo; on the show to publish.
+          </div>
+        )}
 
         {/* Show header */}
         <header className="mb-8 flex items-start gap-4">

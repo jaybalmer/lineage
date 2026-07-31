@@ -559,7 +559,7 @@ export function orgSlug(org: Org): string {
   return slugify(org.name)
 }
 
-export function eventSlug(event: Event): string {
+export function eventSlug(event: Pick<Event, "name">): string {
   return slugify(event.name)
 }
 

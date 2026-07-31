@@ -1,7 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServiceClient } from "@/lib/auth"
-import { readPublicTimeline } from "@/lib/public-timeline-read"
+import {
+  readPublicTimeline,
+  readEventStack,
+  readOrgStack,
+  type PublicTimelineEntities,
+} from "@/lib/public-timeline-read"
 import { insertTagEvent } from "@/lib/tag-events"
+import type { Story } from "@/types"
 import { sendClaimEmail, claimYourSpotHtml, claimYourSpotText } from "@/lib/emails/claim-emails"
 import {
   hashVisitorValue,
@@ -102,27 +108,62 @@ export async function POST(req: NextRequest) {
   }
   const email = emailRaw.toLowerCase()
 
-  // Resolve the slug to an enabled owner. Disabled/unknown → 404, leaking nothing.
+  // Resolve the slug across the shared /t/ namespace in the same order as the
+  // /t/[slug] page: profile first, then episode (event) owner, then show (org)
+  // owner. Disabled/unknown → 404, leaking nothing. (The event/org legs were
+  // missing until the podcast pass: IWasThere renders on episode/show stacks,
+  // so every submission from those pages 404ed here.)
   const timeline = await readPublicTimeline(slug)
-  if (!timeline) {
+  let surface: {
+    ownerKind: "profile" | "event" | "org"
+    owner: { id: string; display_name: string }
+    stories: Story[]
+    entities: PublicTimelineEntities
+    momentValid: boolean
+  } | null = null
+  if (timeline) {
+    // Validate the moment is actually on this owner's public surface. Stories
+    // come through payload.stories; place/event come through the owner's public
+    // claims (the payload carries them even though the timeline UI hides
+    // place/event cards — they surface only as curated Stack entries, which is
+    // where these tags originate). This is the guard against tagging an
+    // arbitrary id.
+    surface = {
+      ownerKind: "profile",
+      owner: timeline.owner,
+      stories: timeline.stories,
+      entities: timeline.entities,
+      momentValid:
+        kind === "story"
+          ? timeline.stories.some((s) => s.id === momentId)
+          : timeline.claims.some(
+              (c) => c.object_type === kind && c.object_id === momentId,
+            ),
+    }
+  } else {
+    const episode = await readEventStack({ slug, requireEnabled: true })
+    const stack = episode ?? (await readOrgStack({ slug, requireEnabled: true }))
+    if (stack) {
+      // For a curated owner the public surface IS the stack: the moment must be
+      // one of its entries of the claimed kind.
+      surface = {
+        ownerKind: episode ? "event" : "org",
+        owner: stack.owner,
+        stories: stack.stories,
+        entities: stack.entities,
+        momentValid: stack.entries.some(
+          (en) => en.entry_type === kind && en.refId === momentId,
+        ),
+      }
+    }
+  }
+  if (!surface) {
     return NextResponse.json({ error: "Timeline not found" }, { status: 404 })
   }
-  const owner = timeline.owner
-
-  // Validate the moment is actually on this owner's public surface. Stories come
-  // through payload.stories; place/event come through the owner's public claims
-  // (the payload carries them even though the timeline UI hides place/event cards
-  // — they surface only as curated Stack entries, which is where these tags
-  // originate). This is the guard against tagging an arbitrary id.
-  const momentValid =
-    kind === "story"
-      ? timeline.stories.some((s) => s.id === momentId)
-      : timeline.claims.some(
-          (c) => c.object_type === kind && c.object_id === momentId,
-        )
-  if (!momentValid) {
+  if (!surface.momentValid) {
     return NextResponse.json({ error: "That moment is not on this timeline" }, { status: 400 })
   }
+  const { ownerKind, owner } = surface
 
   const db = getServiceClient()
   const emailHash = hashVisitorValue(email)
@@ -143,6 +184,24 @@ export async function POST(req: NextRequest) {
         reason: "rate_limited",
       },
       { status: 429 },
+    )
+  }
+
+  // ── Accounted-email guard (podcast pass, B3) ────────────────────────────────
+  // An email that already belongs to a Linestry account must not mint a ghost
+  // twin: the member IS the person, and a duplicate ghost splits them on the
+  // graph (Jay marking "I was there" on his own episode was creating a second
+  // Jay). Send them to the app instead, where the write lands under their real
+  // identity. Soft-fail-open: if the admin listing errors we proceed as before
+  // rather than block a legitimate anonymous visitor.
+  if (await emailHasAccount(db, email)) {
+    return NextResponse.json(
+      {
+        error:
+          "This email already has a Linestry account. Sign in and add this moment from the app, so it lands on your real timeline.",
+        reason: "has_account",
+      },
+      { status: 409 },
     )
   }
 
@@ -176,10 +235,12 @@ export async function POST(req: NextRequest) {
   // ── Moment → claim shape (brief §5) ─────────────────────────────────────────
   // place              → ghost rode_at place
   // event              → ghost {role}_at event (spectator|competitor|organizer)
-  // story (no event)   → ghost rode_with owner (co-presence with the owner)
+  // story (no event)   → ghost rode_with the person behind the story: the
+  //                      timeline owner on a profile page, the story AUTHOR on
+  //                      an episode/show page (the curated owner is not a person)
   // story + event role → ghost {role}_at the linked event, moment_ref carries
   //                      BOTH story_id and event_id (tagged on story AND event)
-  const story = kind === "story" ? timeline.stories.find((s) => s.id === momentId) ?? null : null
+  const story = kind === "story" ? surface.stories.find((s) => s.id === momentId) ?? null : null
   let predicate: string
   let objectId: string
   let objectType: string
@@ -206,7 +267,7 @@ export async function POST(req: NextRequest) {
       !!eventId && !!story &&
       (story.linked_event_id === eventId ||
         (story.community_events ?? []).some((ce) => ce.event_id === eventId)) &&
-      !!timeline.entities.events[eventId]
+      !!surface.entities.events[eventId]
     if (eventId && !eventLinked) {
       return NextResponse.json({ error: "That event is not linked to this story" }, { status: 400 })
     }
@@ -219,12 +280,63 @@ export async function POST(req: NextRequest) {
       momentRefBase.story_id = momentId
       momentRefBase.event_id = eventId!
     } else {
+      // Co-presence target: the profile owner, or on a curated (episode/show)
+      // surface the story's author, since the owner there is an event/org, not a
+      // person a ghost can have ridden with.
+      const personTarget = ownerKind === "profile" ? owner.id : story?.author_id ?? null
+      if (!personTarget) {
+        return NextResponse.json({ error: "That story has no one to connect to" }, { status: 400 })
+      }
       predicate = "rode_with"
       objectType = "person"
-      objectId = owner.id
+      objectId = personTarget
       visitorRole = "rider"
       momentRefBase.story_id = momentId
     }
+  }
+
+  // Label + claim-link email are shared by the fresh-mark and repeat-mark paths.
+  const momentLabel =
+    kind === "story" && objectType === "event"
+      ? surface.entities.events[objectId]?.name ?? "this event"
+      : labelForMoment(kind, momentId, {
+          stories: surface.stories,
+          entities: surface.entities,
+          ownerName: owner.display_name,
+        })
+  const sendLinkEmail = async () => {
+    const origin = resolveOrigin(req)
+    const link = await generateClaimLink(db, email, origin)
+    if (link) {
+      await sendClaimEmail({
+        to: email,
+        subject:
+          ownerKind === "profile"
+            ? `Claim your spot on ${owner.display_name}'s timeline`
+            : `Claim your spot at ${owner.display_name}`,
+        html: claimYourSpotHtml({ ownerName: owner.display_name, momentLabel, link }),
+        text: claimYourSpotText({ ownerName: owner.display_name, momentLabel, link }),
+      })
+    }
+  }
+
+  // ── Repeat-mark dedupe (podcast pass, B3) ───────────────────────────────────
+  // The same visitor marking the same moment again must not stack duplicate
+  // claims. Re-send the claim link (they likely lost the email), still count the
+  // attempt against the throttle so this path cannot become an email cannon, and
+  // report success.
+  const { data: dupClaim } = await db
+    .from("claims")
+    .select("id")
+    .eq("subject_id", ghostId)
+    .eq("predicate", predicate)
+    .eq("object_id", objectId)
+    .limit(1)
+    .maybeSingle()
+  if (dupClaim) {
+    await recordTagThrottle(db, { emailHash, ipHash, ownerId: owner.id })
+    await sendLinkEmail()
+    return NextResponse.json({ ok: true, momentLabel, already: true })
   }
 
   // The claim is the ghost's future timeline data (becomes theirs on claim).
@@ -250,13 +362,20 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Could not save your mark. Try again." }, { status: 500 })
   }
 
-  // Paired tag_event — subject = OWNER so it surfaces in the owner's inbox; the
-  // anonymous visitor lives in asserter_visitor_record (hashed). insertTagEvent
-  // derives status=pending, display_state=anonymous_aggregate, expires_at=+7d.
+  // Paired tag_event: the subject must be a PERSON (the inbox at /me/tags is
+  // person-keyed): on a profile surface that is the owner; on an episode/show
+  // surface it is the implicated person when there is one (the rode_with story
+  // author), else the ghost itself (a pure self-assertion: "I was at this
+  // event" implicates nobody else, and the ghost-subject pairing keeps the
+  // moderation cascade + claim_id linkage intact). The anonymous visitor lives
+  // in asserter_visitor_record (hashed). insertTagEvent derives status=pending,
+  // display_state=anonymous_aggregate, expires_at=+7d.
+  const tagSubjectId =
+    ownerKind === "profile" ? owner.id : objectType === "person" ? objectId : ghostId
   const tagEventId = await insertTagEvent(db, {
     source: "public_timeline_embed",
     asserterId: null,
-    subjectId: owner.id,
+    subjectId: tagSubjectId,
     predicate,
     momentRef: { ...momentRefBase, claim_id: claimId },
     asserterVisitorRecord: {
@@ -277,20 +396,7 @@ export async function POST(req: NextRequest) {
   await recordTagThrottle(db, { emailHash, ipHash, ownerId: owner.id })
 
   // ── Claim-your-spot email (best-effort) ─────────────────────────────────────
-  // For an event-linked story the meaningful subject is the event, so label it.
-  const momentLabel = kind === "story" && objectType === "event"
-    ? timeline.entities.events[objectId]?.name ?? "this event"
-    : labelForMoment(kind, momentId, timeline)
-  const origin = resolveOrigin(req)
-  const link = await generateClaimLink(db, email, origin)
-  if (link) {
-    await sendClaimEmail({
-      to: email,
-      subject: `Claim your spot on ${owner.display_name}'s timeline`,
-      html: claimYourSpotHtml({ ownerName: owner.display_name, momentLabel, link }),
-      text: claimYourSpotText({ ownerName: owner.display_name, momentLabel, link }),
-    })
-  }
+  await sendLinkEmail()
 
   return NextResponse.json({ ok: true, momentLabel })
 }
@@ -309,15 +415,37 @@ function roleForEvent(role: string | null): { predicate: string; role: string } 
   }
 }
 
-/** Human label for the moment, for the email + the marked-state card. */
+/** Human label for the moment, for the email + the marked-state card. Works for
+ *  any owner kind: the caller passes the surface's stories/entities/name. */
 function labelForMoment(
   kind: MomentKind,
   id: string,
-  timeline: Awaited<ReturnType<typeof readPublicTimeline>>,
+  s: { stories: Story[]; entities: PublicTimelineEntities; ownerName: string },
 ): string {
-  if (!timeline) return "this moment"
-  if (kind === "place") return timeline.entities.places[id]?.name ?? "this spot"
-  if (kind === "event") return timeline.entities.events[id]?.name ?? "this event"
-  const story = timeline.stories.find((s) => s.id === id)
-  return story?.title?.trim() || `a story on ${timeline.owner.display_name}'s timeline`
+  if (kind === "place") return s.entities.places[id]?.name ?? "this spot"
+  if (kind === "event") return s.entities.events[id]?.name ?? "this event"
+  const story = s.stories.find((st) => st.id === id)
+  return story?.title?.trim() || `a story on ${s.ownerName}'s timeline`
+}
+
+/** True when the email belongs to an existing auth account. Pages through the
+ *  admin user listing (the same scan the magic-link route uses; there is no
+ *  by-email admin lookup and profiles carries no email column). Errors return
+ *  false so a transient admin-API blip never blocks a legitimate anonymous
+ *  visitor; the guard is best-effort dedupe, not a security boundary. */
+async function emailHasAccount(
+  db: ReturnType<typeof getServiceClient>,
+  email: string,
+): Promise<boolean> {
+  try {
+    for (let page = 1; page <= 10; page++) {
+      const { data, error } = await db.auth.admin.listUsers({ page, perPage: 1000 })
+      if (error) return false
+      if (data.users.some((u) => u.email?.toLowerCase() === email)) return true
+      if (data.users.length < 1000) return false
+    }
+  } catch (err) {
+    console.error("[public-tag] emailHasAccount scan failed:", err)
+  }
+  return false
 }

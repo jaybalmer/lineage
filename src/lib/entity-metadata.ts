@@ -16,6 +16,13 @@ import type { Metadata } from "next"
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+// Locally-generated catalog ids ("evt_1782850803307_a1b2c3" from genId() in
+// /api/admin/show-episode and older client-side generators). Not humanizable:
+// title-casing one yields "Evt 1782850803307 A1b2c3", which leaked into tab
+// titles for episode pages reached by raw-id links. A name-based slug never
+// contains a 9+ digit run, so this cannot swallow a real name.
+const GENERATED_ID_RE = /^[a-z]{1,8}[_-]\d{9,}([_-][a-z0-9]+)*$/i
+
 export type DetailType = "person" | "board" | "place" | "event" | "org"
 
 const TYPE_FALLBACK: Record<DetailType, string> = {
@@ -36,7 +43,7 @@ const TYPE_DESC: Record<DetailType, (name: string) => string> = {
 
 /** Reverse a name-based slug into a readable, title-cased display string. */
 function humanizeSlug(slug: string): string | null {
-  if (!slug || UUID_RE.test(slug)) return null
+  if (!slug || UUID_RE.test(slug) || GENERATED_ID_RE.test(slug)) return null
   const words = decodeURIComponent(slug).replace(/[_-]+/g, " ").trim()
   if (!words) return null
   // Upper-case the first letter of each word; leave the rest as-is so existing

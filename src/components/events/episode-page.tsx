@@ -71,6 +71,20 @@ export function EpisodeView({ instance }: { instance: Event }) {
     if (!publicUrl) return
     try { await navigator.clipboard.writeText(publicUrl); setCopied(true); setTimeout(() => setCopied(false), 1800) } catch {}
   }
+  // Pre-publish preview (B4): mint the slug without publishing if needed, then
+  // open /t/[slug], which renders banner-marked for editors while disabled.
+  async function openPreview() {
+    let slug = link.slug
+    if (!slug) {
+      const res = await fetch(`/api/events/${instance.id}/public-link`, {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mint: true }),
+      })
+      const d = await res.json().catch(() => ({}))
+      if (res.ok && d.slug) { slug = d.slug as string; setLink((l) => ({ ...l, slug })) }
+    }
+    if (slug) window.open(`/t/${slug}`, "_blank", "noopener,noreferrer")
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -155,14 +169,16 @@ export function EpisodeView({ instance }: { instance: Event }) {
                 <input type="checkbox" checked={link.enabled} onChange={togglePublish} className="accent-blue-600" />
                 Public link
               </label>
-              {link.enabled && link.slug && (
-                <div className="flex items-center gap-2">
-                  <a href={`/t/${link.slug}`} target="_blank" rel="noopener noreferrer" className="text-xs text-accent-strong hover:underline">Preview ↗</a>
+              <div className="flex items-center gap-2">
+                <button onClick={openPreview} className="text-xs text-accent-strong hover:underline">
+                  Preview ↗
+                </button>
+                {link.enabled && link.slug && (
                   <button onClick={copy} className="text-xs px-2 py-1 rounded-lg border border-border-default text-muted hover:text-foreground transition-colors">
                     {copied ? "Copied" : "Copy link"}
                   </button>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
         </div>
