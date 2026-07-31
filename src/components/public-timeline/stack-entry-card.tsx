@@ -99,18 +99,22 @@ function StackThumb({ entry }: { entry: ResolvedStackEntry }) {
   )
 }
 
-export function StackEntryCard({ entry, owner, story, entities }: {
+export function StackEntryCard({ entry, owner, story, entities, allowTagging = true }: {
   entry: ResolvedStackEntry
   owner: PublicTimelineOwner
   /** Full story behind a story entry — drives the rich in-place expansion. */
   story?: Story
   entities?: PublicTimelineEntities
+  /** Session C: off for the auto-surfaced linked-stories list. POST
+   *  /api/public/tag validates the moment against the CURATED stack, so an
+   *  "I was there" on a non-curated card would be a dead affordance. */
+  allowTagging?: boolean
 }) {
   const [expanded, setExpanded] = useState(false)
   const isSummary = entry.entry_type === "category_summary"
   const hasItems = isSummary && entry.items.length > 0
   const taggable =
-    TAGGABLE.has(entry.entry_type as TagMoment["kind"]) && !!entry.refId
+    allowTagging && TAGGABLE.has(entry.entry_type as TagMoment["kind"]) && !!entry.refId
 
   // An event-linked story offers spectator / competitor / organizer in its tag
   // panel, tagged on the story and the event.

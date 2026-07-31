@@ -12,8 +12,10 @@
 // catalog joins; it never widens what the _public views already gate.
 
 import { getServiceClient } from "@/lib/auth"
+import { readPublishedMentions } from "@/lib/mentions-server"
+import { eventSlug } from "@/lib/mock-data"
 import type {
-  Claim, Story, EntityType, Predicate,
+  Claim, Story, EntityType, Predicate, MentionSubjectType,
   PublicStackEntry, PublicStackEntryType, PublicStackCategoryKey,
 } from "@/types"
 
@@ -889,7 +891,7 @@ const PREDICATE_RESULT_LABEL: Partial<Record<Predicate, string>> = {
 // event_image_votes), so it is intentionally absent here — selecting it 404s the
 // whole read.
 const EVENT_STACK_COLS =
-  "id, name, description, event_type, year, start_date, episode_number, media_url, show_org_id, public_slug, public_enabled"
+  "id, name, description, event_type, year, start_date, episode_number, media_url, show_org_id, public_slug, public_enabled, publish_at"
 
 type EventStackRow = {
   id: string
@@ -903,6 +905,26 @@ type EventStackRow = {
   show_org_id: string | null
   public_slug: string | null
   public_enabled: boolean | null
+  publish_at: string | null
+}
+
+/**
+ * Session C scheduled release: an episode is LIVE to the public when it is
+ * enabled AND its scheduled time has passed (null = publish immediately, the
+ * pre-Session-C behavior). Evaluated on every read, so a scheduled page goes
+ * live on its own with no cron, no queue, and no deploy. Editors bypass this
+ * entirely via the /t/[slug] preview branch.
+ *
+ * An unparseable publish_at is treated as "not yet", which fails closed.
+ */
+export function isEpisodeLive(
+  row: { public_enabled?: boolean | null; publish_at?: string | null },
+  now: number = Date.now(),
+): boolean {
+  if (row.public_enabled !== true) return false
+  if (!row.publish_at) return true
+  const at = Date.parse(row.publish_at)
+  return Number.isFinite(at) && at <= now
 }
 
 export interface PublicEpisodeShow {
@@ -918,6 +940,26 @@ export interface PublicEpisodeMeta {
   date: string | null
   show: PublicEpisodeShow | null
   guests: PublicPersonLite[]
+  /** Session C: the raw publish gate, so the editor preview can tell a
+   *  never-published page from a scheduled one. */
+  public_enabled: boolean
+  publish_at: string | null
+  /** Session C: the in-app episode page, resolved here so the chromeless view
+   *  does not have to pull the slug helpers (and the mock catalog behind them)
+   *  into the public bundle. Bare /events/... 301s to the active community. */
+  in_app_path: string
+}
+
+/** Session C: one published mention, fully resolved server-side so the
+ *  chromeless (store-free) public page can render it without the catalog. */
+export interface PublicMention {
+  id: string
+  subject_type: MentionSubjectType
+  subject_id: string
+  /** Resolved display name, falling back to the raw id when unresolvable. */
+  subject_name: string
+  timestamp_seconds: number | null
+  excerpt: string | null
 }
 
 export interface PublicEpisodePayload {
@@ -927,6 +969,16 @@ export interface PublicEpisodePayload {
   /** Carried so the story stack cards can expand to the rich story in StackView. */
   stories: Story[]
   entities: PublicTimelineEntities
+  /** Session C: published mentions on this episode, timestamp order. */
+  mentions: PublicMention[]
+  /** Session C: public stories that link or tag this episode, newest first,
+   *  capped, resolved as story cards. Curated-stack stories are excluded (they
+   *  already render above). */
+  linkedEntries: ResolvedStackEntry[]
+  linkedStories: Story[]
+  /** Total matching linked stories before the cap, so the view can offer
+   *  "See all on the episode". */
+  linkedTotal: number
 }
 
 /** Map an episode event row to the shared owner header shape (display_name =
@@ -943,6 +995,30 @@ function eventOwnerHeader(row: EventStackRow): PublicTimelineOwner {
     riding_since: null,
     era_start: row.year ?? yearOf(row.start_date),
     membership_tier: null,
+  }
+}
+
+/** Resolve one story into a stack story card. Shared by the curated resolver
+ *  and the Session C auto-surfaced linked-stories list, so a curated story and
+ *  a linked story can never render as two different-looking cards. */
+function storyStackEntry(
+  story: Story,
+  entities: PublicTimelineEntities,
+  opts: { id: string; position: number; customTitle?: string | null; customSummary?: string | null },
+): ResolvedStackEntry {
+  const linkedPlace = story.linked_place_id ? entities.places[story.linked_place_id] : undefined
+  const linkedImg =
+    (story.linked_place_id && entities.places[story.linked_place_id]?.image_url) ||
+    (story.linked_event_id && entities.events[story.linked_event_id]?.image_url) ||
+    (story.board_ids ?? []).map((b) => entities.boards[b]?.image_url).find(Boolean) || null
+  return {
+    id: opts.id, position: opts.position, refId: story.id,
+    entry_type: "story", accent: "violet", kicker: "Story",
+    kickerMeta: joinMeta([yearOf(story.story_date)?.toString(), linkedPlace?.name]),
+    title: opts.customTitle ?? story.title ?? (story.body ?? "").split("\n")[0].slice(0, 80) ?? "Story",
+    summary: opts.customSummary ?? story.body ?? null,
+    thumbPhotoUrl: firstPhotoUrl(story) ?? linkedImg, thumbEntity: null, thumbName: "", thumbYear: null, board: null,
+    categoryKey: null, count: null, items: [],
   }
 }
 
@@ -966,19 +1042,10 @@ function resolveCuratedRow(
   if (row.entry_type === "story") {
     const story = storiesById.get(ref)
     if (!story) return null
-    const linkedPlace = story.linked_place_id ? entities.places[story.linked_place_id] : undefined
-    const linkedImg =
-      (story.linked_place_id && entities.places[story.linked_place_id]?.image_url) ||
-      (story.linked_event_id && entities.events[story.linked_event_id]?.image_url) ||
-      (story.board_ids ?? []).map((b) => entities.boards[b]?.image_url).find(Boolean) || null
-    return {
-      ...base, entry_type: "story", accent: "violet", kicker: "Story",
-      kickerMeta: joinMeta([yearOf(story.story_date)?.toString(), linkedPlace?.name]),
-      title: row.custom_title ?? story.title ?? (story.body ?? "").split("\n")[0].slice(0, 80) ?? "Story",
-      summary: row.custom_summary ?? story.body ?? null,
-      thumbPhotoUrl: firstPhotoUrl(story) ?? linkedImg, thumbEntity: null, thumbName: "", thumbYear: null, board: null,
-      categoryKey: null, count: null, items: [],
-    }
+    return storyStackEntry(story, entities, {
+      id: row.id, position: row.position,
+      customTitle: row.custom_title, customSummary: row.custom_summary,
+    })
   }
 
   if (row.entry_type === "place") {
@@ -1035,14 +1102,19 @@ function resolveCuratedRow(
 
 /** Load + resolve a non-profile owner's curated stack: the rows, their resolved
  *  cards, and the referenced stories + entities (so StackView can expand story
- *  cards). `extraPersonIds` seeds extra people the header needs (e.g. an
- *  episode's guests) into the single entity resolution. Shared by the event
- *  (episode) and org (show) reads. */
+ *  cards). `extra.seed` folds in ids the surrounding page needs resolved (an
+ *  episode's guests, its published mention subjects) and `extra.stories` folds
+ *  in stories read elsewhere (the Session C linked-stories list) so the whole
+ *  page still costs ONE entity resolution. Shared by the event (episode) and
+ *  org (show) reads. */
 async function loadOwnerStack(
   db: ReturnType<typeof getServiceClient>,
   ownerType: "event" | "org",
   ownerId: string,
-  extraPersonIds: string[] = [],
+  extra: {
+    seed?: { person?: string[]; place?: string[]; event?: string[]; org?: string[]; board?: string[] }
+    stories?: Story[]
+  } = {},
 ): Promise<{ entries: ResolvedStackEntry[]; stories: Story[]; entities: PublicTimelineEntities }> {
   const { data: rowData } = await db
     .from("public_stack_entries")
@@ -1052,7 +1124,13 @@ async function loadOwnerStack(
     .order("position", { ascending: true })
   const rows = (rowData ?? []) as PublicStackEntry[]
 
-  const seed = { person: [...extraPersonIds] as string[], place: [] as string[], event: [] as string[], board: [] as string[] }
+  const seed = {
+    person: [...(extra.seed?.person ?? [])],
+    place: [...(extra.seed?.place ?? [])],
+    event: [...(extra.seed?.event ?? [])],
+    org: [...(extra.seed?.org ?? [])],
+    board: [...(extra.seed?.board ?? [])],
+  }
   const storyIds: string[] = []
   for (const r of rows) {
     if (!r.entry_ref_id) continue
@@ -1064,13 +1142,57 @@ async function loadOwnerStack(
   }
 
   const stories = await readStoriesByIds(db, storyIds)
-  const entities = await resolveEntities(db, [], stories, seed)
+  const entities = await resolveEntities(db, [], [...stories, ...(extra.stories ?? [])], seed)
   const storiesById = new Map(stories.map((s) => [s.id, s]))
   const entries = rows
     .map((r) => resolveCuratedRow(r, entities, storiesById))
     .filter((e): e is ResolvedStackEntry => e !== null)
 
   return { entries, stories, entities }
+}
+
+/** Session C default cap on the auto-surfaced linked-stories list. */
+const EPISODE_LINKED_STORY_CAP = 12
+
+/**
+ * Every PUBLIC story that links or tags an episode, newest first.
+ *
+ * Mirrors the `event_id` union in GET /api/stories (singular `linked_event_id`
+ * plus the `story_events` junction the Story Connections flow writes) rather
+ * than calling that route: the /t/ read path is a server component on the
+ * service client and never goes back out over HTTP. Two queries merged by id,
+ * exactly like readOwnerStories, so a story that is both linked and tagged
+ * appears once.
+ */
+async function readEventLinkedStories(
+  db: ReturnType<typeof getServiceClient>,
+  eventId: string,
+): Promise<Story[]> {
+  const { data: junctionRows } = await db
+    .from("story_events")
+    .select("story_id")
+    .eq("event_id", eventId)
+  const taggedIds = Array.from(
+    new Set(((junctionRows ?? []) as { story_id: string }[]).map((r) => r.story_id)),
+  )
+
+  const linkedP = db
+    .from("stories")
+    .select(STORY_JOIN)
+    .eq("visibility", "public")
+    .eq("linked_event_id", eventId)
+
+  const taggedP = taggedIds.length
+    ? db.from("stories").select(STORY_JOIN).eq("visibility", "public").in("id", taggedIds)
+    : Promise.resolve({ data: [] as Record<string, unknown>[] })
+
+  const [linkedRes, taggedRes] = await Promise.all([linkedP, taggedP])
+
+  const byId = new Map<string, Record<string, unknown>>()
+  for (const s of (linkedRes.data ?? []) as Record<string, unknown>[]) byId.set(s.id as string, s)
+  for (const s of (taggedRes.data ?? []) as Record<string, unknown>[]) byId.set(s.id as string, s)
+  // enrichStories returns newest-first.
+  return enrichStories(db, Array.from(byId.values()))
 }
 
 /** Resolve an episode's curated stack. Pass `slug` for the public chromeless
@@ -1090,7 +1212,11 @@ export async function readEventStack(
   const { data } = await query.maybeSingle()
   const event = data as EventStackRow | null
   if (!event) return null
-  if (opts.requireEnabled && event.public_enabled !== true) return null
+  // Session C: "enabled" now also means "scheduled time has passed". A page
+  // waiting on its publish_at is invisible to the public read; the /t/[slug]
+  // editor-preview branch re-reads without requireEnabled, so editors still see
+  // it (banner-marked).
+  if (opts.requireEnabled && !isEpisodeLive(event)) return null
 
   // Guests seed the header (and the shared entity resolution) before the stack.
   const { data: guestRows } = await db
@@ -1100,7 +1226,48 @@ export async function readEventStack(
     .order("position", { ascending: true })
   const guestIds = ((guestRows ?? []) as { person_id: string }[]).map((g) => g.person_id)
 
-  const { entries, stories, entities } = await loadOwnerStack(db, "event", event.id, guestIds)
+  // Session C: published mentions + auto-surfaced linked stories, read before
+  // the stack so their subjects and entities fold into the one resolution pass.
+  const [mentionRows, allLinked] = await Promise.all([
+    readPublishedMentions(event.id),
+    readEventLinkedStories(db, event.id),
+  ])
+
+  const mentionSeed = { person: [] as string[], place: [] as string[], event: [] as string[], org: [] as string[], board: [] as string[] }
+  for (const m of mentionRows) {
+    const bucket = mentionSeed[m.subject_type as keyof typeof mentionSeed]
+    if (bucket) bucket.push(m.subject_id)
+  }
+
+  const { entries, stories, entities } = await loadOwnerStack(db, "event", event.id, {
+    seed: {
+      person: [...guestIds, ...mentionSeed.person],
+      place: mentionSeed.place,
+      event: mentionSeed.event,
+      org: mentionSeed.org,
+      board: mentionSeed.board,
+    },
+    stories: allLinked,
+  })
+
+  // A story already featured in the curated stack does not repeat below it.
+  const curatedStoryIds = new Set(
+    entries.filter((e) => e.entry_type === "story" && e.refId).map((e) => e.refId as string),
+  )
+  const linkedAll = allLinked.filter((s) => !curatedStoryIds.has(s.id))
+  const linkedStories = linkedAll.slice(0, EPISODE_LINKED_STORY_CAP)
+  const linkedEntries = linkedStories.map((s, i) =>
+    storyStackEntry(s, entities, { id: `linked-${s.id}`, position: i }),
+  )
+
+  const mentions: PublicMention[] = mentionRows.map((m) => ({
+    id: m.id,
+    subject_type: m.subject_type,
+    subject_id: m.subject_id,
+    subject_name: mentionSubjectName(m.subject_type, m.subject_id, entities),
+    timestamp_seconds: m.timestamp_seconds ?? null,
+    excerpt: m.excerpt ?? null,
+  }))
 
   // Show header (Phase 3 gives the show its own public page; until then slug is
   // whatever the org has, possibly null).
@@ -1127,11 +1294,34 @@ export async function readEventStack(
       date: event.start_date ?? null,
       show,
       guests,
+      public_enabled: event.public_enabled === true,
+      publish_at: event.publish_at ?? null,
+      in_app_path: `/events/${eventSlug({ name: event.name ?? "" }) || event.id}`,
     },
     entries,
     stories,
     entities,
+    mentions,
+    linkedEntries,
+    linkedStories,
+    linkedTotal: linkedAll.length,
   }
+}
+
+/** Display name for a mention subject, resolved from the already-loaded public
+ *  entities so the chromeless page needs no client catalog. Falls back to the
+ *  raw id, which is what the in-app row does too. */
+function mentionSubjectName(
+  type: MentionSubjectType,
+  id: string,
+  entities: PublicTimelineEntities,
+): string {
+  if (type === "person") return entities.people[id]?.display_name ?? id
+  if (type === "place") return entities.places[id]?.name ?? id
+  if (type === "event") return entities.events[id]?.name ?? id
+  if (type === "org") return entities.orgs[id]?.name ?? id
+  const board = entities.boards[id]
+  return board ? [board.brand, board.model].filter(Boolean).join(" ") || id : id
 }
 
 /** Owner-only header for the episode OG image (no stack resolution). */
@@ -1144,7 +1334,7 @@ export async function readEventOwner(slug: string): Promise<PublicTimelineOwner 
     .eq("public_slug", slug)
     .maybeSingle()
   const event = data as EventStackRow | null
-  if (!event || event.public_enabled !== true) return null
+  if (!event || !isEpisodeLive(event)) return null
   return eventOwnerHeader(event)
 }
 
@@ -1183,6 +1373,9 @@ export interface PublicShowEpisode {
   year: number | null
   slug: string | null
   public_enabled: boolean
+  /** Session C: enabled AND past its publish_at. The public show page lists only
+   *  live episodes, so a scheduled one stays hidden until its time. */
+  live: boolean
 }
 
 export interface PublicShowPayload {
@@ -1231,11 +1424,12 @@ export async function readOrgStack(
   // Episode list: every event linked to this show, newest first.
   const { data: epRows } = await db
     .from("events")
-    .select("id, name, episode_number, year, start_date, public_slug, public_enabled")
+    .select("id, name, episode_number, year, start_date, public_slug, public_enabled, publish_at")
     .eq("show_org_id", org.id)
   const episodes: PublicShowEpisode[] = ((epRows ?? []) as {
     id: string; name: string | null; episode_number: number | null
-    year: number | null; start_date: string | null; public_slug: string | null; public_enabled: boolean | null
+    year: number | null; start_date: string | null; public_slug: string | null
+    public_enabled: boolean | null; publish_at: string | null
   }[])
     .map((e) => ({
       id: e.id,
@@ -1244,6 +1438,7 @@ export async function readOrgStack(
       year: e.year ?? yearOf(e.start_date),
       slug: e.public_slug ?? null,
       public_enabled: e.public_enabled === true,
+      live: isEpisodeLive(e),
     }))
     .sort((a, b) => {
       // Newest first: episode_number desc when both present, else year desc.
@@ -1251,7 +1446,15 @@ export async function readOrgStack(
       return (b.year ?? 0) - (a.year ?? 0)
     })
 
-  return { owner: orgOwnerHeader(org), entries, episodes, stories, entities }
+  // Session C: on the PUBLIC read, drop everything that is not live. The view
+  // already filters what it renders, but the payload is serialized into the
+  // page, so an unfiltered list would leak the titles of unpublished and
+  // scheduled episodes to anyone reading the source. A scheduled episode has to
+  // be genuinely absent before its time, not just unlinked. The in-app read
+  // (orgId, no requireEnabled) keeps the full list for editors.
+  const visibleEpisodes = opts.requireEnabled ? episodes.filter((e) => e.live) : episodes
+
+  return { owner: orgOwnerHeader(org), entries, episodes: visibleEpisodes, stories, entities }
 }
 
 /** Owner-only header for the show OG image (no stack resolution). */

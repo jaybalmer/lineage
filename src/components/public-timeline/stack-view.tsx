@@ -9,13 +9,18 @@ import type { ResolvedStackEntry, PublicTimelineOwner, PublicTimelineEntities } 
 import type { Story } from "@/types"
 import { StackEntryCard } from "@/components/public-timeline/stack-entry-card"
 
-export function StackView({ entries, owner, stories, entities }: {
+export function StackView({ entries, owner, stories, entities, allowTagging = true, emptyState = true }: {
   entries: ResolvedStackEntry[]
   owner: PublicTimelineOwner
   /** Full stories + resolved entities, so story cards expand to the rich story. */
   stories?: Story[]
   entities?: PublicTimelineEntities
+  /** Session C: off for the auto-surfaced linked-stories list (see StackEntryCard). */
+  allowTagging?: boolean
+  /** Off when the caller already hides the whole section on empty. */
+  emptyState?: boolean
 }) {
+  if (entries.length === 0 && !emptyState) return null
   if (entries.length === 0) {
     return (
       <div className="text-center text-white/55 py-16">
@@ -34,6 +39,7 @@ export function StackView({ entries, owner, stories, entities }: {
           owner={owner}
           story={entry.entry_type === "story" && entry.refId ? storyById.get(entry.refId) : undefined}
           entities={entities}
+          allowTagging={allowTagging}
         />
       ))}
     </div>

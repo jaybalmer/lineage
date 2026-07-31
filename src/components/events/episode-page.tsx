@@ -22,6 +22,40 @@ import { EpisodeConnections } from "@/components/events/episode-connections"
 import type { Event, Mention } from "@/types"
 import type { PublicEpisodePayload } from "@/lib/public-timeline-read"
 
+// ── Session C scheduled release ──────────────────────────────────────────────
+// The picker is a <input type="datetime-local">, which speaks LOCAL wall-clock
+// with no zone, while the column is timestamptz. These two convert at the edge
+// so an editor sets "Feb 3, 9am" in their own time and the gate compares an
+// absolute instant.
+
+/** ISO timestamp -> the `YYYY-MM-DDTHH:mm` a datetime-local input expects. */
+function toLocalInput(iso: string | null): string {
+  if (!iso) return ""
+  const at = new Date(iso)
+  if (Number.isNaN(at.getTime())) return ""
+  const pad = (n: number) => String(n).padStart(2, "0")
+  return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}T${pad(at.getHours())}:${pad(at.getMinutes())}`
+}
+
+/** Local wall-clock from the input -> an absolute ISO instant, or null. */
+function fromLocalInput(value: string): string | null {
+  if (!value) return null
+  const at = new Date(value)
+  return Number.isNaN(at.getTime()) ? null : at.toISOString()
+}
+
+/** How the public gate currently reads, in one line. */
+function publishStateLabel(enabled: boolean, publishAt: string | null): string {
+  if (!enabled) return "Not public"
+  if (!publishAt) return "Public"
+  const at = new Date(publishAt)
+  if (Number.isNaN(at.getTime())) return "Public"
+  const when = at.toLocaleString(undefined, {
+    day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+  })
+  return at.getTime() <= Date.now() ? `Public since ${when}` : `Scheduled: goes public ${when}`
+}
+
 export function EpisodeView({ instance }: { instance: Event }) {
   const { catalog, activePersonId, membership } = useLineageStore()
   const isEditor = membership.is_editor
@@ -34,7 +68,11 @@ export function EpisodeView({ instance }: { instance: Event }) {
   const [mentions, setMentions] = useState<Mention[]>([])
   const [addingMention, setAddingMention] = useState(false)
   const [editingMention, setEditingMention] = useState<Mention | null>(null)
-  const [link, setLink] = useState<{ enabled: boolean; slug: string | null }>({ enabled: false, slug: null })
+  const [link, setLink] = useState<{ enabled: boolean; slug: string | null; publish_at: string | null }>(
+    { enabled: false, slug: null, publish_at: null },
+  )
+  const [scheduleDraft, setScheduleDraft] = useState("")
+  const [scheduleSaving, setScheduleSaving] = useState(false)
   const [copied, setCopied] = useState(false)
   const [origin, setOrigin] = useState("")
 
@@ -54,7 +92,13 @@ export function EpisodeView({ instance }: { instance: Event }) {
 
   useEffect(() => {
     if (!isEditor) return
-    fetch(`/api/events/${instance.id}/public-link`).then((r) => r.json()).then((d) => setLink({ enabled: Boolean(d?.enabled), slug: d?.slug ?? null })).catch(() => {})
+    fetch(`/api/events/${instance.id}/public-link`)
+      .then((r) => r.json())
+      .then((d) => {
+        setLink({ enabled: Boolean(d?.enabled), slug: d?.slug ?? null, publish_at: d?.publish_at ?? null })
+        setScheduleDraft(toLocalInput(d?.publish_at ?? null))
+      })
+      .catch(() => {})
   }, [instance.id, isEditor])
 
   // Mentions. Editors also pull drafts (the server re-checks the session, so
@@ -91,7 +135,23 @@ export function EpisodeView({ instance }: { instance: Event }) {
       body: JSON.stringify({ enabled: next }),
     })
     const d = await res.json().catch(() => ({}))
-    if (res.ok) setLink({ enabled: Boolean(d.enabled), slug: d.slug ?? link.slug })
+    if (res.ok) setLink({ enabled: Boolean(d.enabled), slug: d.slug ?? link.slug, publish_at: d.publish_at ?? link.publish_at })
+  }
+  // Schedule save. Sends publish_at ALONE (no enabled key), so saving a time
+  // never flips the published flag as a side effect.
+  async function saveSchedule() {
+    setScheduleSaving(true)
+    const publish_at = fromLocalInput(scheduleDraft)
+    const res = await fetch(`/api/events/${instance.id}/public-link`, {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ publish_at }),
+    }).catch(() => null)
+    const d = await res?.json().catch(() => ({}))
+    if (res?.ok) {
+      setLink((l) => ({ ...l, publish_at: d?.publish_at ?? null }))
+      setScheduleDraft(toLocalInput(d?.publish_at ?? null))
+    }
+    setScheduleSaving(false)
   }
   async function copy() {
     if (!publicUrl) return
@@ -217,6 +277,36 @@ export function EpisodeView({ instance }: { instance: Event }) {
                     {copied ? "Copied" : "Copy link"}
                   </button>
                 )}
+              </div>
+
+              {/* Scheduled release. Empty = manual (live the moment Public link
+                  is ticked). A future time keeps the page editor-only until it
+                  passes, with no cron and no redeploy. */}
+              <div className="w-full flex flex-wrap items-center gap-2 pt-1">
+                <label htmlFor="episode-publish-at" className="text-xs text-muted">Publish at</label>
+                <input
+                  id="episode-publish-at"
+                  type="datetime-local"
+                  value={scheduleDraft}
+                  onChange={(e) => setScheduleDraft(e.target.value)}
+                  className="text-xs px-2 py-1 rounded-lg border border-border-default bg-background text-foreground"
+                />
+                <button
+                  onClick={saveSchedule}
+                  disabled={scheduleSaving || scheduleDraft === toLocalInput(link.publish_at)}
+                  className="text-xs px-2 py-1 rounded-lg border border-border-default text-muted hover:text-foreground disabled:opacity-40 transition-colors"
+                >
+                  {scheduleSaving ? "Saving…" : "Save"}
+                </button>
+                {scheduleDraft && (
+                  <button
+                    onClick={() => setScheduleDraft("")}
+                    className="text-xs text-muted hover:text-foreground transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
+                <span className="text-xs text-muted">· {publishStateLabel(link.enabled, link.publish_at)}</span>
               </div>
             </div>
           )}

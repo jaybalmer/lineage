@@ -432,6 +432,10 @@ export interface Event {
   public_slug?: string | null
   /** Opt-in gate for the public, login-free chromeless episode page. Default false. */
   public_enabled?: boolean
+  /** Podcast pass Session C: scheduled public release (ISO timestamp). Null =
+   *  manual. Live gate is public_enabled AND (publish_at is null or in the past),
+   *  evaluated at read time; editors always bypass it. */
+  publish_at?: string | null
 }
 
 export type EntityType = "person" | "place" | "org" | "board" | "event"

@@ -154,22 +154,40 @@ export function ShowModule({ org }: { org: Org }) {
         ) : (
           <div className="space-y-2">
             {episodes.map((e) => (
-              // Name-based slug so the episode page's URL-derived tab title is
-              // the episode name, not the raw generated id (the detail page
-              // resolves slug OR id, so the id fallback still works).
-              <CommunityLink key={e.id} href={`/events/${eventSlug({ name: e.title }) || e.id}`}>
-                <div className="flex items-center justify-between gap-3 px-4 py-3 bg-background border border-border-default rounded-xl hover:border-blue-500/40 transition-all">
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-foreground truncate">{e.title}</div>
-                    {(e.episode_number != null || e.year) && (
-                      <div className="text-xs text-muted">
-                        {[e.episode_number != null ? `Episode ${e.episode_number}` : null, e.year ? String(e.year) : null].filter(Boolean).join(" · ")}
-                      </div>
-                    )}
+              <div
+                key={e.id}
+                className="flex items-center justify-between gap-3 px-4 py-3 bg-background border border-border-default rounded-xl hover:border-blue-500/40 transition-all"
+              >
+                {/* The row itself stays in-app (the in-app episode page is the
+                    richer one: mentions, connections, editor controls). Name-based
+                    slug so the URL-derived tab title is the episode name, not the
+                    raw generated id (the detail page resolves slug OR id). */}
+                <CommunityLink href={`/events/${eventSlug({ name: e.title }) || e.id}`} className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-foreground truncate">{e.title}</div>
+                  <div className="text-xs text-muted">
+                    {[
+                      e.episode_number != null ? `Episode ${e.episode_number}` : null,
+                      e.year ? String(e.year) : null,
+                      // Session C: an episode enabled but waiting on its
+                      // publish_at reads as scheduled, not public.
+                      e.live ? "Public" : e.public_enabled ? "Scheduled" : null,
+                    ].filter(Boolean).join(" · ")}
                   </div>
+                </CommunityLink>
+                {/* Session C (D6): the shareable public page, when it is live. */}
+                {e.live && e.slug ? (
+                  <a
+                    href={`/t/${e.slug}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-accent-strong hover:underline shrink-0"
+                  >
+                    Public page ↗
+                  </a>
+                ) : (
                   <span className="text-muted text-sm shrink-0">→</span>
-                </div>
-              </CommunityLink>
+                )}
+              </div>
             ))}
           </div>
         )}

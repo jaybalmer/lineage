@@ -8,8 +8,18 @@
 import Link from "next/link"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { StackView } from "@/components/public-timeline/stack-view"
+import { PublicMentionRow } from "@/components/public-timeline/public-mention-row"
 import { parseYouTubeId } from "@/lib/utils"
 import type { PublicEpisodePayload } from "@/lib/public-timeline-read"
+
+/** "3 Feb 2026 at 09:00" in the reader's own locale, for the scheduled banner. */
+function scheduleLabel(iso: string): string {
+  const at = new Date(iso)
+  if (Number.isNaN(at.getTime())) return iso
+  return at.toLocaleString(undefined, {
+    day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit",
+  })
+}
 
 function BrandHome() {
   return (
@@ -45,8 +55,13 @@ export function PublicEpisodeView({ payload, preview = false }: {
   /** Editor-only pre-publish render (B4): banner-marked, otherwise identical. */
   preview?: boolean
 }) {
-  const { owner, meta, entries, stories, entities } = payload
+  const { owner, meta, entries, stories, entities, mentions, linkedEntries, linkedStories, linkedTotal } = payload
   const ytId = meta.media_url ? parseYouTubeId(meta.media_url) : null
+  // Two distinct editor-only states: never published, and published but waiting
+  // on its scheduled time. Both only ever render for an editor (an anonymous
+  // visitor 404s until the page is genuinely live).
+  const scheduled = meta.public_enabled && Boolean(meta.publish_at)
+  const moreLinked = linkedTotal - linkedStories.length
   const year = owner.era_start
   const epLine = [
     meta.episode_number != null ? `Episode ${meta.episode_number}` : null,
@@ -62,8 +77,17 @@ export function PublicEpisodeView({ payload, preview = false }: {
 
         {preview && (
           <div className="mb-6 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3.5 py-2.5 text-xs text-amber-200">
-            <span className="font-semibold">Preview.</span> This page is not public yet. Only
-            editors can see it. Tick &ldquo;Public link&rdquo; on the episode to publish.
+            {scheduled && meta.publish_at ? (
+              <>
+                <span className="font-semibold">Scheduled.</span> This page goes public on{" "}
+                {scheduleLabel(meta.publish_at)}. Until then only editors can see it.
+              </>
+            ) : (
+              <>
+                <span className="font-semibold">Preview.</span> This page is not public yet. Only
+                editors can see it. Tick &ldquo;Public link&rdquo; on the episode to publish.
+              </>
+            )}
           </div>
         )}
 
@@ -139,6 +163,49 @@ export function PublicEpisodeView({ payload, preview = false }: {
           </div>
         )}
         <StackView entries={entries} owner={owner} stories={stories} entities={entities} />
+
+        {/* Mentions (Session C). Published only, read-only: no draft badge, no
+            edit, no remove on the public surface. Hidden entirely when empty so
+            a thin episode still renders exactly as it did before. */}
+        {mentions.length > 0 && (
+          <section className="mt-10">
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-white/40 mb-3">
+              Mentioned in this episode
+            </div>
+            <div className="flex flex-col gap-2">
+              {mentions.map((m) => (
+                <PublicMentionRow key={m.id} mention={m} mediaUrl={meta.media_url} />
+              ))}
+            </div>
+          </section>
+        )}
+
+        {/* Auto-surfaced stories (Session C, D1): any PUBLIC story that links or
+            tags this episode shows up here without editor curation. No tag
+            affordance on these cards (D7). */}
+        {linkedEntries.length > 0 && (
+          <section className="mt-10">
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-white/40 mb-3">
+              Stories from this episode
+            </div>
+            <StackView
+              entries={linkedEntries}
+              owner={owner}
+              stories={linkedStories}
+              entities={entities}
+              allowTagging={false}
+              emptyState={false}
+            />
+            {moreLinked > 0 && (
+              <Link
+                href={meta.in_app_path}
+                className="mt-3 inline-block text-xs font-semibold text-white/70 hover:text-white"
+              >
+                See all {linkedTotal} stories on the episode →
+              </Link>
+            )}
+          </section>
+        )}
 
         <footer className="mt-12 pt-6 border-t border-white/10 flex flex-col items-center gap-3 text-center">
           <Link href="/" className="inline-flex items-center gap-2 text-white/55 hover:text-white transition-colors" aria-label="Linestry home">

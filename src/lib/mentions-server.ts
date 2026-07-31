@@ -13,6 +13,30 @@
 import { getServiceClient } from "@/lib/auth"
 import type { Mention } from "@/types"
 
+/**
+ * Podcast pass Session C: every PUBLISHED mention on an episode, timestamp
+ * order (nulls last, then insertion order), matching GET /api/mentions.
+ *
+ * Read directly rather than through the route because the public /t/[slug] page
+ * is a server component that never calls its own HTTP routes. Published-only
+ * with no editor escape hatch: this feeds a public surface, so a draft must not
+ * be reachable here even for an editor previewing the page.
+ *
+ * Episode context is NOT hydrated: every caller already knows the episode.
+ */
+export async function readPublishedMentions(episodeId: string): Promise<Mention[]> {
+  if (!episodeId) return []
+  const db = getServiceClient()
+  const { data } = await db
+    .from("mentions")
+    .select("*")
+    .eq("episode_event_id", episodeId)
+    .eq("status", "published")
+    .order("timestamp_seconds", { ascending: true, nullsFirst: false })
+    .order("created_at", { ascending: true })
+  return (data ?? []) as Mention[]
+}
+
 /** Attach { episode } context to a set of raw mention rows, in place of a join. */
 export async function hydrateEpisodes(rows: Mention[]): Promise<Mention[]> {
   if (rows.length === 0) return []
