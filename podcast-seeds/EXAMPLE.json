@@ -1,0 +1,65 @@
+{
+  "episode": {
+    "show_name": "FNRad Podcast",
+    "episode_number": 21,
+    "episode_name": "FNRad: Jay Balmer",
+    "episode_event_id": "evt_1782850803307_apuqit",
+    "media_url": "https://www.youtube.com/watch?v=xpr2sqrPUHA",
+    "public_slug": "fnrad_jay_balmer"
+  },
+  "mentions": [
+    {
+      "subject_name": "Ken Achenbach",
+      "subject_type": "person",
+      "resolution": "matched_existing",
+      "subject_id": "208a8e52-b859-4379-b80d-ab8e4409eabd",
+      "timestamp_seconds": 498,
+      "excerpt": "A verbatim line from the transcript, quoted not paraphrased.",
+      "status": "draft"
+    },
+    {
+      "subject_name": "A rider with no catalog entry yet",
+      "subject_type": "person",
+      "resolution": "new_ghost",
+      "subject_id": null,
+      "timestamp": "29:40",
+      "excerpt": "The importer creates this one as an unclaimed person on --apply.",
+      "status": "draft"
+    },
+    {
+      "subject_name": "A contest with no catalog entry yet",
+      "subject_type": "event",
+      "resolution": "new_ghost",
+      "subject_id": null,
+      "ghost": {
+        "start_date": "1988",
+        "event_type": "contest"
+      },
+      "timestamp": "41:02",
+      "excerpt": "An event ghost needs ghost.start_date: events.start_date is NOT NULL.",
+      "status": "draft"
+    },
+    {
+      "subject_name": "A board with no catalog entry yet",
+      "subject_type": "board",
+      "resolution": "new_ghost",
+      "subject_id": null,
+      "ghost": {
+        "brand": "Sims",
+        "model": "1500",
+        "model_year": 1987
+      },
+      "timestamp": "52:15",
+      "excerpt": "A board ghost needs brand, model and model_year: boards.model_year is NOT NULL.",
+      "status": "draft"
+    },
+    {
+      "subject_name": "Something the transcript picked up that is not worth a row",
+      "subject_type": "person",
+      "resolution": "skip",
+      "subject_id": null,
+      "excerpt": "resolution: skip excludes a row without deleting it, so the seed stays a record of what was considered.",
+      "status": "draft"
+    }
+  ]
+}
