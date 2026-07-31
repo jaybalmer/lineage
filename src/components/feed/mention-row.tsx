@@ -26,15 +26,23 @@ import { parseYouTubeId, formatSmartDate } from "@/lib/utils"
 import { entityHref } from "@/lib/entity-links"
 import type { Mention } from "@/types"
 
-/** YouTube deep link that opens the episode at the mentioned moment. */
-function watchHref(mention: Mention): string | null {
+/**
+ * Link to the episode media, deep-linked to the mentioned moment when we can.
+ *
+ * `seeks` is what the label keys on, and it is deliberately NOT the same as
+ * "there is a timestamp": plenty of episodes are Apple Podcasts links, and
+ * only YouTube takes a `t=` offset. Promising "Watch at 12:34" on a link that
+ * opens at 0:00 is a lie the reader catches immediately, so a non-YouTube
+ * media_url degrades to a plain "Open episode".
+ */
+function watchLink(mention: Mention): { href: string; seeks: boolean } | null {
   const url = mention.episode?.media_url
   if (!url) return null
   const id = parseYouTubeId(url)
-  if (!id) return url
+  if (!id) return { href: url, seeks: false }
   return mention.timestamp_seconds != null
-    ? `https://www.youtube.com/watch?v=${id}&t=${mention.timestamp_seconds}s`
-    : `https://www.youtube.com/watch?v=${id}`
+    ? { href: `https://www.youtube.com/watch?v=${id}&t=${mention.timestamp_seconds}s`, seeks: true }
+    : { href: `https://www.youtube.com/watch?v=${id}`, seeks: false }
 }
 
 /** "FNRad #142" when both are known, degrading to whatever we do have. */
@@ -66,7 +74,7 @@ export function MentionRow({
   const personHref = usePersonHref()
 
   const stamp = mention.timestamp_seconds != null ? formatTimestamp(mention.timestamp_seconds) : null
-  const watch = watchHref(mention)
+  const watch = watchLink(mention)
   const hasDetail = Boolean(mention.excerpt) || Boolean(watch)
 
   const subject =
@@ -161,12 +169,12 @@ export function MentionRow({
           <div className="flex flex-wrap items-center gap-3 mt-3">
             {watch && (
               <a
-                href={watch}
+                href={watch.href}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-xs font-medium text-accent-strong hover:underline"
               >
-                {stamp ? `Watch at ${stamp}` : "Open episode"} ↗
+                {watch.seeks && stamp ? `Watch at ${stamp}` : "Open episode"} ↗
               </a>
             )}
             {mention.episode && (
