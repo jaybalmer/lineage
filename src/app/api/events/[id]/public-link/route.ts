@@ -5,7 +5,7 @@ import { ensureUniquePublicSlug } from "@/lib/public-slug"
 // FNRad Featured Timelines Phase 2: editor opt-in for an episode's public,
 // login-free chromeless page at /t/[slug].
 //
-// GET   /api/events/[id]/public-link — { enabled, slug, publish_at }
+// GET   /api/events/[id]/public-link -> { enabled, slug, publish_at }
 // PATCH /api/events/[id]/public-link — body { enabled: boolean } (editor only),
 //   or { mint: true } to mint the slug WITHOUT publishing (podcast pass, B4:
 //   powers the pre-publish editor preview at /t/[slug]).
