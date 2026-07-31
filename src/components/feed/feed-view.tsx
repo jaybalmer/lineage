@@ -1,10 +1,11 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import type { Claim, Person, RidingDay, Story } from "@/types"
+import type { Claim, Mention, Person, RidingDay, Story } from "@/types"
 import { PostCard } from "@/components/feed/post-card"
 import { DayPostCard } from "@/components/feed/day-post-card"
 import { StoryCard } from "@/components/feed/story-card"
+import { MentionRow } from "@/components/feed/mention-row"
 import { StartCard } from "@/components/feed/start-card"
 import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
@@ -32,9 +33,9 @@ function injectEntranceStyles() {
   document.head.appendChild(el)
 }
 
-export type FilterType = "all" | "places" | "gear" | "people" | "orgs" | "events" | "stories"
+export type FilterType = "all" | "places" | "gear" | "people" | "orgs" | "events" | "stories" | "mentions"
 
-const FILTER_PREDICATES: Record<Exclude<FilterType, "stories">, string[]> = {
+const FILTER_PREDICATES: Record<Exclude<FilterType, "stories" | "mentions">, string[]> = {
   all: [],
   places: ["rode_at", "worked_at"],
   gear: ["owned_board"],
@@ -49,6 +50,10 @@ const FILTER_PREDICATES: Record<Exclude<FilterType, "stories">, string[]> = {
 const FILTER_LABELS: Record<FilterType, string> = {
   all: "All",
   stories: "Stories",
+  // Podcast mentions. Unlike every other chip this one is conditional: it only
+  // renders when the timeline actually holds mentions, so a rider who has never
+  // been named on an episode sees exactly the chip row they saw before.
+  mentions: "Mentions",
   people: "Riders",
   events: "Events",
   gear: "Boards",
@@ -60,6 +65,7 @@ type FeedItem =
   | { kind: "claim"; claim: Claim; sortDate: number }
   | { kind: "day"; day: RidingDay; sortDate: number }
   | { kind: "story"; story: Story; sortDate: number }
+  | { kind: "mention"; mention: Mention; sortDate: number }
   | { kind: "riding_start"; year: number; sortDate: number }
 
 // Timeline node color keyed to predicate category
@@ -67,6 +73,8 @@ function nodeColor(item: FeedItem): string {
   if (item.kind === "riding_start") return "bg-amber-500"
   if (item.kind === "day") return "bg-emerald-600"
   if (item.kind === "story") return "bg-violet-600"
+  // Fuchsia matches the "Episode" label on the episode page header.
+  if (item.kind === "mention") return "bg-fuchsia-500"
   const p = item.claim.predicate
   if (p === "owned_board") return "bg-emerald-700"
   if (p === "rode_at" || p === "worked_at") return "bg-teal-700"
@@ -81,6 +89,7 @@ function predicateRank(item: FeedItem): number {
   if (item.kind === "riding_start") return -1
   if (item.kind === "day") return 9
   if (item.kind === "story") return 8
+  if (item.kind === "mention") return 7
   const p = item.claim.predicate
   if (p === "owned_board") return 0
   if (p === "rode_at" || p === "worked_at") return 2
@@ -111,6 +120,7 @@ export function FeedView({
   claims,
   days = [],
   stories = [],
+  mentions = [],
   personName,
   isOwn,
   hideActionButtons = false,
@@ -128,6 +138,8 @@ export function FeedView({
   claims: Claim[]
   days?: RidingDay[]
   stories?: Story[]
+  /** Podcast mentions of this person, already filtered to published upstream. */
+  mentions?: Mention[]
   personName: string
   isOwn?: boolean
   hideActionButtons?: boolean
@@ -204,18 +216,27 @@ export function FeedView({
         }))
       : []
 
+    // Mentions sit on the episode's date, padded like every other partial date.
+    const mentionItems: FeedItem[] = filter === "all" || filter === "mentions"
+      ? mentions.map((mention) => ({
+          kind: "mention" as const,
+          mention,
+          sortDate: dateToSortNum(mention.episode?.start_date),
+        }))
+      : []
+
     // Inject "Riding Since" milestone at Jan 1 of that year — visible on "all" filter only
     const ridingStartItem: FeedItem[] =
       ridingSince && filter === "all"
         ? [{ kind: "riding_start" as const, year: ridingSince, sortDate: ridingSince * 10000 + 101 }]
         : []
 
-    return [...claimItems, ...dayItems, ...storyItems, ...ridingStartItem].sort((a, b) => {
+    return [...claimItems, ...dayItems, ...storyItems, ...mentionItems, ...ridingStartItem].sort((a, b) => {
       const dir = order === "asc" ? 1 : -1
       if (a.sortDate !== b.sortDate) return dir * (a.sortDate - b.sortDate)
       return predicateRank(a) - predicateRank(b)
     })
-  }, [groupedClaims, days, stories, filter, ridingSince, order])
+  }, [groupedClaims, days, stories, mentions, filter, ridingSince, order])
 
   const grouped = useMemo(() => groupByDecade(items), [items])
   const decades = Object.keys(grouped).sort((a, b) =>
@@ -250,8 +271,12 @@ export function FeedView({
       orgs: countCat("orgs"),
       events: countCat("events"),
       stories: stories.length,
+      // Deliberately NOT folded into `all`: countTimelineEntries also drives the
+      // owner's "Entry #N" celebration, and a mention is something someone else
+      // said about you, not an entry you made.
+      mentions: mentions.length,
     }
-  }, [groupedClaims, days, stories])
+  }, [groupedClaims, days, stories, mentions])
 
   return (
     <div>
@@ -293,7 +318,7 @@ export function FeedView({
       {/* Filter chips with counts */}
       {!hideFilters && (
       <div className="flex gap-2 flex-wrap mb-6">
-        {(Object.keys(FILTER_LABELS) as FilterType[]).map((f) => {
+        {(Object.keys(FILTER_LABELS) as FilterType[]).filter((f) => f !== "mentions" || mentions.length > 0).map((f) => {
           const isStoriesChip = f === "stories"
           const count = filterCounts[f]
           const active = filter === f
@@ -361,6 +386,7 @@ export function FeedView({
                       const key = item.kind === "claim" ? item.claim.id
                         : item.kind === "day" ? item.day.id
                         : item.kind === "story" ? `story-${item.story.id}`
+                        : item.kind === "mention" ? `mention-${item.mention.id}`
                         : `riding-start-${item.year}`
                       return (
                         <div key={key} className={cn("relative pl-9", entranceClass())} style={entranceStyle()}>
@@ -386,6 +412,8 @@ export function FeedView({
                             <DayPostCard day={item.day} isOwn={isOwn} />
                           ) : item.kind === "story" ? (
                             <StoryCard story={item.story} isOwn={isOwn} onDelete={onStoryDeleted} />
+                          ) : item.kind === "mention" ? (
+                            <MentionRow mention={item.mention} context="timeline" />
                           ) : person ? (
                             <StartCard person={person} claims={claims} isOwn={isOwn} />
                           ) : null}

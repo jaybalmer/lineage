@@ -24,7 +24,7 @@ import { StackTimelineToggle } from "@/components/public-timeline/stack-timeline
 import { readSeenIds, writeSeenIds } from "@/lib/seen-celebrations"
 import { groupRodeAtCompanions, countTimelineEntries } from "@/lib/companion-grouping"
 import { estimateShares } from "@/lib/equity-offer"
-import type { Claim, CelebrationPayload, PrivacyLevel, Story } from "@/types"
+import type { Claim, CelebrationPayload, Mention, PrivacyLevel, Story } from "@/types"
 
 // ─── FTUE helpers ─────────────────────────────────────────────────────────────
 
@@ -235,6 +235,9 @@ export function OwnerTimelinePanel() {
   // `stories` (so they don't show on the timeline or trip the story
   // celebration, which keys off the `stories` array).
   const [contributions,  setContributions]     = useState<Story[]>([])
+  // Podcast mentions of the owner. Third-party artifacts, so they are read-only
+  // here and never counted as the owner's own timeline entries.
+  const [mentions,       setMentions]          = useState<Mention[]>([])
   const [claimDefaultFilter, setClaimDefaultFilter] = useState<string>("all")
   // Lifted so the summary stat tiles can drive the timeline filter (BUG-034).
   const [timelineFilter, setTimelineFilter]    = useState<FilterType>("all")
@@ -412,6 +415,13 @@ export function OwnerTimelinePanel() {
         setStories(merged)
       })
       .finally(() => setStoriesLoaded(true))
+
+    // Podcast mentions of the owner. Published only (the subject-side read
+    // never returns drafts), so the owner sees exactly what visitors see.
+    fetch(`/api/mentions?subject_type=person&subject_id=${encodeURIComponent(activePersonId)}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows) => setMentions(Array.isArray(rows) ? (rows as Mention[]) : []))
+      .catch(() => setMentions([]))
 
     // Contributions: stories this author kept off their own timeline.
     fetch(`/api/stories?author_id=${activePersonId}&on_timeline=false&limit=100`)
@@ -889,6 +899,7 @@ export function OwnerTimelinePanel() {
           claims={personClaims}
           days={myDays}
           stories={stories}
+          mentions={mentions}
           personName={person?.display_name ?? "Your"}
           isOwn={true}
           hideActionButtons={true}
