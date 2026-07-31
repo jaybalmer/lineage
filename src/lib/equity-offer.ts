@@ -7,9 +7,19 @@
 
 export const EQUITY_POOL_SHARES = 100_000
 
-/** Snapshot date for the first distribution (D3, Q1: quarter-end aligned). */
-export const EQUITY_SNAPSHOT_DATE = "2026-09-30"
-export const EQUITY_SNAPSHOT_LABEL = "September 30, 2026"
+/**
+ * Snapshot for the first distribution. The launch offer runs to the end of
+ * Season 12 of the FNRad Snowboard Podcast (Linestry is the season's
+ * presenting sponsor); tabulation happens after the season's final episode
+ * has been released. Machine value is the exact instant: April 30, 2027 at
+ * 12:00 noon Pacific (19:00 UTC, PDT). This date is the offer-active gate
+ * (intro slideshow D5): there is no separate boolean flag.
+ */
+export const EQUITY_SNAPSHOT_DATE = "2027-04-30T19:00:00Z"
+export const EQUITY_SNAPSHOT_LABEL = "April 30, 2027"
+export const EQUITY_SNAPSHOT_TIME_LABEL = "12:00 noon Pacific"
+/** Season phrasing for offer copy, e.g. "First distribution at {CONTEXT}". */
+export const EQUITY_SNAPSHOT_CONTEXT = "the end of FNRad Season 12"
 
 // Projected end-of-offer pool (BUG-061). The live aggregate from
 // GET /api/equity/pool is tiny early in launch, so dividing by it makes an early

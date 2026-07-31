@@ -5,6 +5,7 @@ import { PublicProfileView } from "@/components/public-timeline/public-profile-v
 import { PublicEpisodeView } from "@/components/public-timeline/public-episode-view"
 import { PublicShowView } from "@/components/public-timeline/public-show-view"
 import { readPublicTimeline, readPublicStack, readEventStack, readOrgStack } from "@/lib/public-timeline-read"
+import { isEditorSession } from "@/lib/auth"
 
 // PB-010 Phase 2: the chromeless public timeline at /t/[slug].
 //
@@ -114,8 +115,19 @@ export default async function PublicTimelinePage(
     const episode = await getEpisode(slug)
     if (episode) return <PublicEpisodeView payload={episode} />
     const show = await getShow(slug)
-    if (!show) notFound()
-    return <PublicShowView payload={show} />
+    if (show) return <PublicShowView payload={show} />
+
+    // Editor preview (podcast pass, B4): a minted-but-unpublished episode/show
+    // renders for editors only, banner-marked, so a page can actually be
+    // previewed before "Public link" is ticked. Anonymous and non-editor
+    // visitors still 404, leaking nothing.
+    if (await isEditorSession()) {
+      const draftEpisode = await readEventStack({ slug })
+      if (draftEpisode) return <PublicEpisodeView payload={draftEpisode} preview />
+      const draftShow = await readOrgStack({ slug })
+      if (draftShow) return <PublicShowView payload={draftShow} preview />
+    }
+    notFound()
   }
 
   // Reuse the already-read timeline so the stack read only fetches the curated

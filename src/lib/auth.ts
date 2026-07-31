@@ -127,6 +127,28 @@ export async function requireModerator(): Promise<
  * editor, requireModerator for tag-queue / activity / asserters), so authority
  * to mutate is still enforced server-side at the data layer.
  */
+/**
+ * Non-redirecting editor check for server components that render an
+ * editor-only variant of an otherwise-public page (e.g. the /t/[slug]
+ * pre-publish preview). Anonymous visitors and non-editors get false; the
+ * caller decides what to render. Authority mirrors requireEditor()
+ * (is_editor OR founding).
+ */
+export async function isEditorSession(): Promise<boolean> {
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return false
+
+  const db = getServiceClient()
+  const { data: profile } = await db
+    .from("profiles")
+    .select("is_editor, membership_tier")
+    .eq("id", user.id)
+    .single()
+
+  return Boolean(profile?.is_editor || profile?.membership_tier === "founding")
+}
+
 export async function requireEditorPage(): Promise<void> {
   const supabase = await createServerSupabaseClient()
   const { data: { user } } = await supabase.auth.getUser()

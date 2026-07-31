@@ -6,7 +6,9 @@ import { ensureUniquePublicSlug } from "@/lib/public-slug"
 // chromeless page at /t/[slug].
 //
 // GET   /api/orgs/[id]/public-link — { enabled, slug }
-// PATCH /api/orgs/[id]/public-link — body { enabled: boolean } (editor only)
+// PATCH /api/orgs/[id]/public-link — body { enabled: boolean } (editor only),
+//   or { mint: true } to mint the slug WITHOUT publishing (podcast pass, B4:
+//   powers the pre-publish editor preview at /t/[slug]).
 //
 // Mirrors /api/events/[id]/public-link, generalized to an org owner: enabling
 // mints a slug in the shared /t/{slug} namespace when none exists; disabling only
@@ -41,14 +43,15 @@ export async function PATCH(
   const { id: orgId } = await params
   const body = await req.json().catch(() => null)
   const enabled: unknown = body?.enabled
-  if (typeof enabled !== "boolean") {
+  const mintOnly = body?.mint === true
+  if (!mintOnly && typeof enabled !== "boolean") {
     return NextResponse.json({ error: "enabled must be a boolean" }, { status: 400 })
   }
 
   const db = getServiceClient()
   const { data: org, error: readErr } = await db
     .from("orgs")
-    .select("name, public_slug")
+    .select("name, public_slug, public_enabled")
     .eq("id", orgId)
     .maybeSingle()
   if (readErr) return NextResponse.json({ error: readErr.message }, { status: 500 })
@@ -56,19 +59,28 @@ export async function PATCH(
 
   let slug: string | null = org.public_slug ?? null
 
-  if (!enabled || slug) {
+  // Mint-only: ensure a slug exists (for the editor preview), never touch the
+  // published flag.
+  if (mintOnly && slug) {
+    return NextResponse.json({ ok: true, enabled: Boolean(org.public_enabled), slug })
+  }
+
+  // Flag-only update: disabling, or enabling with a slug already minted.
+  if (!mintOnly && (enabled === false || slug)) {
     const { error } = await db.from("orgs").update({ public_enabled: enabled }).eq("id", orgId)
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
     return NextResponse.json({ ok: true, enabled, slug })
   }
 
+  // No slug yet: mint a unique one across the shared namespace, retry once on
+  // a partial-unique-index race (23505). Enabling sets both; mint-only sets the
+  // slug alone.
+  const nextEnabled = mintOnly ? Boolean(org.public_enabled) : true
   for (let attempt = 0; attempt < 2; attempt++) {
     slug = await ensureUniquePublicSlug(org.name ?? null, orgId, db, "org")
-    const { error } = await db
-      .from("orgs")
-      .update({ public_enabled: true, public_slug: slug })
-      .eq("id", orgId)
-    if (!error) return NextResponse.json({ ok: true, enabled: true, slug })
+    const update = mintOnly ? { public_slug: slug } : { public_enabled: true, public_slug: slug }
+    const { error } = await db.from("orgs").update(update).eq("id", orgId)
+    if (!error) return NextResponse.json({ ok: true, enabled: nextEnabled, slug })
     if (error.code !== "23505" || attempt === 1) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }

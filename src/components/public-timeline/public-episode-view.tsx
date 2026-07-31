@@ -40,7 +40,11 @@ function GuestAvatar({ name, url }: { name: string; url: string | null }) {
   )
 }
 
-export function PublicEpisodeView({ payload }: { payload: PublicEpisodePayload }) {
+export function PublicEpisodeView({ payload, preview = false }: {
+  payload: PublicEpisodePayload
+  /** Editor-only pre-publish render (B4): banner-marked, otherwise identical. */
+  preview?: boolean
+}) {
   const { owner, meta, entries, stories, entities } = payload
   const ytId = meta.media_url ? parseYouTubeId(meta.media_url) : null
   const year = owner.era_start
@@ -55,6 +59,13 @@ export function PublicEpisodeView({ payload }: { payload: PublicEpisodePayload }
         <div className="flex items-center justify-between gap-3 mb-6">
           <BrandHome />
         </div>
+
+        {preview && (
+          <div className="mb-6 rounded-lg border border-amber-400/40 bg-amber-400/10 px-3.5 py-2.5 text-xs text-amber-200">
+            <span className="font-semibold">Preview.</span> This page is not public yet. Only
+            editors can see it. Tick &ldquo;Public link&rdquo; on the episode to publish.
+          </div>
+        )}
 
         {/* Episode header */}
         <header className="mb-6">

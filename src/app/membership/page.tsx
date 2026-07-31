@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
+import { EQUITY_SNAPSHOT_LABEL, EQUITY_SNAPSHOT_CONTEXT } from "@/lib/equity-offer"
 
 // ─── Tier definitions ─────────────────────────────────────────────────────────
 
@@ -107,7 +108,7 @@ const FAQ = [
   },
   {
     q: "How does the founding community equity offer work?",
-    a: "A fixed pool of 100,000 common shares is set aside for the founding community. On September 30, 2026 we snapshot every member's token balance and split the pool by weighted tokens: founder tokens count double, member and contribution tokens count once. Your membership page shows a live estimate of your share until then.",
+    a: `A fixed pool of 100,000 common shares is set aside for the founding community. At ${EQUITY_SNAPSHOT_CONTEXT} (${EQUITY_SNAPSHOT_LABEL}) we snapshot every member's token balance and split the pool by weighted tokens: founder tokens count double, member and contribution tokens count once. Your membership page shows a live estimate of your share until then.`,
   },
   {
     q: "What happens to my tokens if I cancel an annual membership?",
@@ -389,8 +390,8 @@ export default function MembershipPage() {
                 </div>
                 <p className="text-muted" style={{ fontSize: 11, lineHeight: 1.6, maxWidth: 480 }}>
                   100,000 common shares, distributed to the founding community by token balance.
-                  First distribution September 2026. Every entry, story, and daily visit grows
-                  your slice, even on the free tier.
+                  First distribution at {EQUITY_SNAPSHOT_CONTEXT}: {EQUITY_SNAPSHOT_LABEL}. Every
+                  entry, story, and daily visit grows your slice, even on the free tier.
                 </p>
               </div>
               <Link href="/equity"

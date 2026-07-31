@@ -24,6 +24,7 @@ import { MemberCuratedSections } from "@/components/profile/member-curated-secti
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import { HelpConnectCard } from "@/components/ui/help-connect-card"
 import { isInvitableNodeStatus, trackInviteEvent } from "@/lib/invite-tracking"
+import { EQUITY_SNAPSHOT_LABEL } from "@/lib/equity-offer"
 import { isAuthUser } from "@/store/lineage-store"
 import { notFound } from "next/navigation"
 import { ClaimRequestModal } from "@/components/ui/claim-request-modal"
@@ -579,7 +580,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
               weighted tokens
             </span>
             <span className="text-border-default">·</span>
-            <span>Next distribution: <span className="text-foreground">April 2026</span></span>
+            <span>Next distribution: <span className="text-foreground">{EQUITY_SNAPSHOT_LABEL}</span></span>
             <span className="text-border-default">·</span>
             <Link href="/account/membership" className="text-blue-400 hover:text-blue-300 transition-colors">
               View dashboard →

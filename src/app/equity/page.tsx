@@ -6,6 +6,8 @@ import { Nav } from "@/components/ui/nav"
 import {
   EQUITY_POOL_SHARES,
   EQUITY_SNAPSHOT_LABEL,
+  EQUITY_SNAPSHOT_TIME_LABEL,
+  EQUITY_SNAPSHOT_CONTEXT,
   PROJECTED_TOTAL_WEIGHTED,
   CONTRIBUTOR_COMP_THRESHOLD,
   estimateShares,
@@ -15,7 +17,9 @@ import {
 // (token-system-equity-offer brief §5.4): there is no revenue yet, so the
 // premature revenue-share framing gave way to a concrete offer, one fixed
 // pool of 100,000 common shares distributed by token balance at the
-// September 30, 2026 snapshot. /revenue 308s here via next.config.
+// end-of-FNRad-Season-12 snapshot (see EQUITY_SNAPSHOT_DATE in
+// src/lib/equity-offer.ts, the single source of truth for the date).
+// /revenue 308s here via next.config.
 
 const TOKEN_TABLE = [
   { type: "Founder token",      earners: "Founding members",          amount: "100 on purchase",                        weight: "2×" },
@@ -86,7 +90,8 @@ export default function EquityPage() {
             </div>
             <p className="text-muted mt-4" style={{ fontSize: 12, lineHeight: 1.8, maxWidth: 520 }}>
               100,000 common shares, set aside for the community that builds the record.
-              Your token balance decides your slice. First distribution September 2026.
+              Your token balance decides your slice. First distribution at{" "}
+              {EQUITY_SNAPSHOT_CONTEXT}: {EQUITY_SNAPSHOT_LABEL}.
             </p>
           </div>
 
@@ -99,7 +104,8 @@ export default function EquityPage() {
             <div className="grid sm:grid-cols-3 gap-4 mb-5">
               {[
                 { big: "100,000", small: "COMMON SHARES IN THE POOL", color: "#f59e0b" },
-                { big: "SEP 30", small: "2026 SNAPSHOT DATE", color: "#3b82f6" },
+                // Keep in sync with EQUITY_SNAPSHOT_DATE (src/lib/equity-offer.ts).
+                { big: "APR 30", small: "2027 SNAPSHOT · END OF FNRAD SEASON 12", color: "#3b82f6" },
                 { big: "2×", small: "FOUNDER TOKEN WEIGHT", color: "#10b981" },
               ].map((t) => (
                 <div key={t.small} className="bg-surface border rounded-2xl p-4 text-center"
@@ -313,7 +319,8 @@ export default function EquityPage() {
               style={{ fontSize: 10, lineHeight: 1.7 }}>
               <p className="text-foreground">
                 <span className="text-muted">Snapshot:</span>{" "}
-                Token balances recorded on {EQUITY_SNAPSHOT_LABEL} at 23:59 UTC. Nothing to do
+                Token balances recorded on {EQUITY_SNAPSHOT_LABEL} at {EQUITY_SNAPSHOT_TIME_LABEL},
+                after the final episode of FNRad Season 12 has been released. Nothing to do
                 before then except keep building your linestry.
               </p>
               <p className="text-foreground">
