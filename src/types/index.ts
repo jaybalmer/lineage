@@ -436,6 +436,40 @@ export interface Event {
 
 export type EntityType = "person" | "place" | "org" | "board" | "event"
 
+// ── Podcast mentions (Session B) ────────────────────────────────────────────
+// An editor-curated pointer from an episode to a subject entity: "this person
+// was talked about on this episode, at this timestamp, and here is the line".
+// Same five subject types as EntityType, kept as its own alias so the mention
+// domain can diverge later without dragging the entity-link helpers with it.
+export type MentionSubjectType = EntityType
+
+export type MentionStatus = "draft" | "published"
+
+export interface Mention {
+  id: string
+  episode_event_id: string
+  subject_type: MentionSubjectType
+  subject_id: string
+  /** Offset into the episode media, in seconds. Null when unmapped. */
+  timestamp_seconds?: number | null
+  /** Transcript excerpt shown when the row is expanded. */
+  excerpt?: string | null
+  status: MentionStatus
+  created_by?: string | null
+  created_at: string
+  updated_at: string
+  /** Joined episode context, populated by GET /api/mentions (not stored). */
+  episode?: {
+    id: string
+    name: string
+    start_date?: string
+    episode_number?: number | null
+    media_url?: string | null
+    show_org_id?: string | null
+    show_name?: string | null
+  }
+}
+
 export interface RidingDay {
   id: string
   date: string           // YYYY-MM-DD

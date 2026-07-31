@@ -16,8 +16,10 @@ import { entityHref } from "@/lib/entity-links"
 import { parseYouTubeId, formatEventDateRange } from "@/lib/utils"
 import { StackView } from "@/components/public-timeline/stack-view"
 import { StackCurateModal } from "@/components/ui/stack-curate-modal"
+import { MentionEditorModal } from "@/components/ui/mention-editor-modal"
+import { MentionRow } from "@/components/feed/mention-row"
 import { EpisodeConnections } from "@/components/events/episode-connections"
-import type { Event } from "@/types"
+import type { Event, Mention } from "@/types"
 import type { PublicEpisodePayload } from "@/lib/public-timeline-read"
 
 export function EpisodeView({ instance }: { instance: Event }) {
@@ -29,6 +31,9 @@ export function EpisodeView({ instance }: { instance: Event }) {
   const [loading, setLoading] = useState(true)
   const [guestIds, setGuestIds] = useState<string[]>([])
   const [curating, setCurating] = useState(false)
+  const [mentions, setMentions] = useState<Mention[]>([])
+  const [addingMention, setAddingMention] = useState(false)
+  const [editingMention, setEditingMention] = useState<Mention | null>(null)
   const [link, setLink] = useState<{ enabled: boolean; slug: string | null }>({ enabled: false, slug: null })
   const [copied, setCopied] = useState(false)
   const [origin, setOrigin] = useState("")
@@ -51,6 +56,27 @@ export function EpisodeView({ instance }: { instance: Event }) {
     if (!isEditor) return
     fetch(`/api/events/${instance.id}/public-link`).then((r) => r.json()).then((d) => setLink({ enabled: Boolean(d?.enabled), slug: d?.slug ?? null })).catch(() => {})
   }, [instance.id, isEditor])
+
+  // Mentions. Editors also pull drafts (the server re-checks the session, so
+  // include_drafts is a request, not a grant). Re-runs when the editor flag
+  // resolves so a signed-in editor never sees the anonymous read.
+  function loadMentions() {
+    const url = `/api/mentions?episode_id=${encodeURIComponent(instance.id)}${isEditor ? "&include_drafts=1" : ""}`
+    fetch(url)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => setMentions(Array.isArray(d) ? (d as Mention[]) : []))
+      .catch(() => {})
+  }
+  useEffect(() => {
+    loadMentions()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [instance.id, isEditor])
+
+  async function removeMention(mention: Mention) {
+    if (!confirm("Remove this mention?")) return
+    const res = await fetch(`/api/admin/mentions/${mention.id}`, { method: "DELETE" }).catch(() => null)
+    if (res?.ok) setMentions((rows) => rows.filter((m) => m.id !== mention.id))
+  }
 
   const meta = payload?.meta
   const show = meta?.show ?? null
@@ -103,6 +129,15 @@ export function EpisodeView({ instance }: { instance: Event }) {
             loadStack()
             fetch(`/api/events/${instance.id}/guests`).then((r) => r.json()).then((d) => setGuestIds(d?.person_ids ?? [])).catch(() => {})
           }}
+        />
+      )}
+
+      {(addingMention || editingMention) && (
+        <MentionEditorModal
+          episodeId={instance.id}
+          editMention={editingMention ?? undefined}
+          onClose={() => { setAddingMention(false); setEditingMention(null) }}
+          onSaved={loadMentions}
         />
       )}
 
@@ -165,6 +200,10 @@ export function EpisodeView({ instance }: { instance: Event }) {
                 className="text-xs px-3 py-1.5 bg-[#1C1917] text-white rounded-lg hover:bg-[#292524] disabled:opacity-50 transition-colors font-medium">
                 Curate featured set
               </button>
+              <button onClick={() => setAddingMention(true)}
+                className="text-xs px-3 py-1.5 rounded-lg border border-border-default text-foreground hover:bg-surface-hover transition-colors font-medium">
+                Add mentions
+              </button>
               <label className="flex items-center gap-2 text-xs text-muted cursor-pointer">
                 <input type="checkbox" checked={link.enabled} onChange={togglePublish} className="accent-blue-600" />
                 Public link
@@ -223,6 +262,30 @@ export function EpisodeView({ instance }: { instance: Event }) {
             </div>
           )}
         </section>
+
+        {/* Mentions — who and what got talked about, and when. Hidden entirely
+            for non-editors when empty, so a thin episode reads clean. */}
+        {(mentions.length > 0 || isEditor) && (
+          <section className="mb-8">
+            <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Mentioned in this episode</h2>
+            {mentions.length > 0 ? (
+              mentions.map((m) => (
+                <MentionRow
+                  key={m.id}
+                  mention={m}
+                  context="episode"
+                  isEditor={isEditor}
+                  onEdit={setEditingMention}
+                  onRemove={removeMention}
+                />
+              ))
+            ) : (
+              <div className="text-sm text-muted py-8 text-center border border-dashed border-border-default rounded-xl">
+                No mentions mapped yet. <button onClick={() => setAddingMention(true)} className="text-blue-400 hover:text-blue-300">Add mentions →</button>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Community connections (member-added) */}
         <EpisodeConnections eventId={instance.id} />
