@@ -1446,7 +1446,15 @@ export async function readOrgStack(
       return (b.year ?? 0) - (a.year ?? 0)
     })
 
-  return { owner: orgOwnerHeader(org), entries, episodes, stories, entities }
+  // Session C: on the PUBLIC read, drop everything that is not live. The view
+  // already filters what it renders, but the payload is serialized into the
+  // page, so an unfiltered list would leak the titles of unpublished and
+  // scheduled episodes to anyone reading the source. A scheduled episode has to
+  // be genuinely absent before its time, not just unlinked. The in-app read
+  // (orgId, no requireEnabled) keeps the full list for editors.
+  const visibleEpisodes = opts.requireEnabled ? episodes.filter((e) => e.live) : episodes
+
+  return { owner: orgOwnerHeader(org), entries, episodes: visibleEpisodes, stories, entities }
 }
 
 /** Owner-only header for the show OG image (no stack resolution). */
