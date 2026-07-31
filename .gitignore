@@ -47,6 +47,11 @@ next-env.d.ts
 # feature session docs (local-only working tracker, mirrors /bugs/)
 /features/
 
+# podcast mention seeds (local-only: proposed catalog data pending review).
+# The committed EXAMPLE.json is the format reference; real seeds stay out.
+/podcast-seeds/*.json
+!/podcast-seeds/EXAMPLE.json
+
 # local-only scratch: personal Claude settings, planning docs, ops SQL (not app code)
 .claude/settings.local.json
 .claude/launch.json
