@@ -9,6 +9,7 @@
 // toggle, and a copy-link control; everyone else sees the read-only page.
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
 import { CommunityLink } from "@/components/ui/community-link"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
@@ -253,7 +254,11 @@ export function EpisodeView({ instance }: { instance: Event }) {
               </div>
               <div className="flex flex-wrap gap-2">
                 {guests.map((g) => (
-                  <span key={g.id} className="inline-flex items-center gap-2 rounded-full bg-surface-hover border border-border-default pr-3">
+                  <Link
+                    key={g.id}
+                    href={`/people/${g.id}`}
+                    className="inline-flex items-center gap-2 rounded-full bg-surface-hover border border-border-default pr-3 hover:border-violet-700 transition-colors"
+                  >
                     {g.avatar_url ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={g.avatar_url} alt={g.display_name} className="w-8 h-8 rounded-full object-cover" />
@@ -261,7 +266,7 @@ export function EpisodeView({ instance }: { instance: Event }) {
                       <span className="w-8 h-8 rounded-full bg-violet-600 flex items-center justify-center text-xs font-bold text-white">{g.display_name[0]?.toUpperCase() ?? "?"}</span>
                     )}
                     <span className="text-xs text-foreground">{g.display_name}</span>
-                  </span>
+                  </Link>
                 ))}
               </div>
             </div>
