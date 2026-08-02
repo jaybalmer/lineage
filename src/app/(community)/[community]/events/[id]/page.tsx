@@ -18,6 +18,7 @@ import { StoryCard } from "@/components/feed/story-card"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { EditEventModal } from "@/components/ui/edit-event-modal"
 import { EpisodeView } from "@/components/events/episode-page"
+import { EntityMentions } from "@/components/feed/entity-mentions"
 import { parseYouTubeId, formatEventDateRange } from "@/lib/utils"
 
 const EVENT_PREDICATES = ["competed_at", "spectated_at", "organized_at"] as const
@@ -866,6 +867,8 @@ function EventPageInner({ params }: { params: Promise<{ community: string; id: s
               <AttendeeList eventId={instance.id} />
             </div>
           </section>
+
+          <EntityMentions subjectType="event" subjectId={instance.id} className="mb-8" />
 
           {/* Stories */}
           {(eventStories.length > 0 || isAuth) && (
