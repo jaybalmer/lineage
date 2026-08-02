@@ -129,6 +129,21 @@ next step fills them in.
 
 Real seed files are gitignored. Do not commit one.
 
+### Two ways to finish
+
+Steps 3 to 5 resolve, review and import. They need a live catalog connection and
+the service-role key, so they only run in a checkout with `.env.local`.
+
+**If you are not in one** (claude.ai, Claude Code on the web, a phone), stop
+after this step. Hand the reviewer the seed JSON and tell them to paste it into
+`/admin/podcast/import` in the app. That page does steps 3 to 5 in the browser
+under their normal editor login: it resolves against the catalog, renders the
+same review surface, holds near misses open until they are decided, and imports
+drafts. Never ask for a service-role key to work around this.
+
+**If you are in a checkout**, the local path below is faster. It is the same
+logic: `src/lib/mention-import.ts` and the script are mirrors of each other.
+
 ## Step 3: resolve against the catalog
 
 ```bash
