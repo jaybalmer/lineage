@@ -433,6 +433,10 @@ let inserted = 0
 let skipped = 0
 let refused = 0
 let excluded = 0
+// Trimmed rows, grouped by the activity they were parked under. The seed keeps
+// them so an episode never has to be re-transcribed when another activity or
+// community goes live.
+const parked = new Map()
 const seedChanged = []
 
 for (const [index, row] of seed.mentions.entries()) {
@@ -440,7 +444,9 @@ for (const [index, row] of seed.mentions.entries()) {
 
   if (row.resolution === "skip") {
     excluded++
-    console.log(`${label}: excluded by the seed (resolution: skip)`)
+    const activity = row.activity ?? "unfiled"
+    parked.set(activity, (parked.get(activity) ?? 0) + 1)
+    console.log(`${label}: trimmed, parked under ${activity}${row.skip_reason ? ` (${row.skip_reason})` : ""}`)
     continue
   }
   if (!SUBJECT_TYPES.includes(row.subject_type)) {
@@ -586,7 +592,10 @@ console.log(`Episode:            ${episode.name} [${episode.id}]`)
 console.log(`Ghosts ${APPLY ? "created:   " : "to create: "} ${created}`)
 console.log(`Drafts ${APPLY ? "inserted:  " : "to insert: "} ${inserted}`)
 console.log(`Skipped (existing): ${skipped}`)
-console.log(`Excluded by seed:   ${excluded}`)
+console.log(`Trimmed (kept):     ${excluded}`)
+for (const [activity, count] of [...parked.entries()].sort()) {
+  console.log(`  parked: ${activity.padEnd(16)} ${count}`)
+}
 console.log(`Refused:            ${refused}`)
 
 if (!APPLY && !RESOLVE_ONLY) {

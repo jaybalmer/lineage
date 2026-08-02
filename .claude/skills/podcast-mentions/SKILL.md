@@ -56,6 +56,35 @@ Hard rules:
   a brand named only as a figure of speech). Prefer a shorter, real list.
 - No em dashes in anything you write.
 
+### Scope: snowboarding history, by default
+
+These episodes range far beyond snowboarding. Import only what belongs to
+snowboarding history: riders, shops, brands, resorts, terrain parks, contests,
+associations, boards, and the people and places behind them.
+
+Everything else is **trimmed, not dropped**. A trimmed candidate stays in the
+seed with `"resolution": "skip"` plus two fields recording why:
+
+- `activity`: the world it belongs to (`skateboarding`, `surfing`, `music`,
+  `business`, `general`, and so on). Use `general` for biographical or
+  incidental references that belong to no activity.
+- `skip_reason`: one short line, so the call is legible later.
+
+This matters because the seed is the permanent record of the transcript pass.
+An episode should never need re-transcribing to pull its skate history out
+later: when another activity or community goes live, its mentions are already
+captured, timestamped and excerpted, waiting in the seed. Deleting a candidate
+throws that away. Never delete one.
+
+Things that are usually out of scope for snowboarding: skateparks, skate
+contests and skate organizations; general-interest people and companies named
+in passing; hometowns and biographical detail with no riding attached.
+
+Things that stay in scope even though they look adjacent: a skate shop that
+also sold snowboards, an indoor park that sponsored a mountain's terrain park,
+a person who crossed over. If a mention is load-bearing for the snowboarding
+story, keep it.
+
 ## Step 2: write the seed
 
 Write `podcast-seeds/<show-slug>-ep<N>.json` in the format documented in
@@ -90,10 +119,16 @@ and the excerpt trimmed to a line. Call out explicitly:
 - every `new_ghost` of type `board` or `event`, because those need extra `ghost`
   fields before they can be created (`brand` + `model` + `model_year` for a
   board, `start_date` for an event) and are otherwise refused;
+- every name you had to infer from context rather than read in the transcript,
+  because a wrong inference mints a wrong catalog node;
+- the count of new entities the import would create, since each one is a
+  permanent catalog node;
+- what you trimmed and under which `activity`, so the scope call is visible;
 - anything you were unsure about typing.
 
-Apply the review edits to the seed: fix names, set `"resolution": "skip"` on
-rows to drop, pick `subject_id` on ambiguous rows, add `ghost` fields.
+Apply the review edits to the seed: fix names, set `"resolution": "skip"` with
+an `activity` and `skip_reason` on rows to trim, pick `subject_id` on ambiguous
+rows, add `ghost` fields.
 
 Then dry-run to confirm the plan:
 
