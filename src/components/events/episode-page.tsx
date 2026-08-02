@@ -116,6 +116,20 @@ export function EpisodeView({ instance }: { instance: Event }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [instance.id, isEditor])
 
+  // Publishing is a per-STORY act while the schema stores per-subject rows, so
+  // every row of a story flips together. One request, not one per subject.
+  async function setMentionStatus(rows: Mention[], status: "draft" | "published") {
+    const ids = rows.map((m) => m.id)
+    if (ids.length === 0) return
+    const res = await fetch("/api/admin/mentions", {
+      method: "PATCH", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids, status }),
+    }).catch(() => null)
+    if (!res?.ok) return
+    const idSet = new Set(ids)
+    setMentions((all) => all.map((m) => (idSet.has(m.id) ? { ...m, status } : m)))
+  }
+
   async function removeMention(mention: Mention) {
     if (!confirm("Remove this mention?")) return
     const res = await fetch(`/api/admin/mentions/${mention.id}`, { method: "DELETE" }).catch(() => null)
@@ -357,7 +371,22 @@ export function EpisodeView({ instance }: { instance: Event }) {
             for non-editors when empty, so a thin episode reads clean. */}
         {(mentions.length > 0 || isEditor) && (
           <section className="mb-8">
-            <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Mentioned in this episode</h2>
+            <div className="flex items-center justify-between gap-3 mb-3">
+              <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">Mentioned in this episode</h2>
+              {isEditor && mentions.some((m) => m.status === "draft") && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const drafts = mentions.filter((m) => m.status === "draft")
+                    if (!confirm(`Publish all ${drafts.length} draft mentions on this episode?`)) return
+                    void setMentionStatus(drafts, "published")
+                  }}
+                  className="text-[11px] font-medium px-2.5 py-1 rounded-lg border border-border-default text-muted hover:text-foreground transition-colors"
+                >
+                  Publish all {mentions.filter((m) => m.status === "draft").length}
+                </button>
+              )}
+            </div>
             {mentions.length > 0 ? (
               groupMentionsByMoment(mentions).map((moment) => (
                 <MentionGroup
@@ -366,6 +395,7 @@ export function EpisodeView({ instance }: { instance: Event }) {
                   isEditor={isEditor}
                   onEdit={setEditingMention}
                   onRemove={removeMention}
+                  onSetStatus={setMentionStatus}
                 />
               ))
             ) : (

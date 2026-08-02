@@ -135,3 +135,47 @@ export async function POST(req: NextRequest) {
   const hydrated = await hydrateEpisodes((data ?? []) as Mention[])
   return NextResponse.json(hydrated, { status: 201 })
 }
+
+// PATCH /api/admin/mentions
+//   { ids: [...], status: 'draft' | 'published' }
+//
+// Bulk status change, because publishing is a per-STORY act while the schema
+// stores per-subject rows: one story with six subjects is six rows that have to
+// flip together or the episode page shows half a story. Editing a mention's
+// content stays on PATCH /api/admin/mentions/[id]; this route only moves status.
+export async function PATCH(req: NextRequest) {
+  const { response } = await requireEditor()
+  if (response) return response
+
+  const body = await req.json().catch(() => null)
+  if (!body || typeof body !== "object") {
+    return NextResponse.json({ error: "Invalid body" }, { status: 400 })
+  }
+  const { ids, status } = body as { ids?: unknown; status?: unknown }
+
+  if (status !== "draft" && status !== "published") {
+    return NextResponse.json({ error: "status must be draft or published" }, { status: 400 })
+  }
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return NextResponse.json({ error: "ids is required" }, { status: 400 })
+  }
+  if (ids.length > MAX_BULK) {
+    return NextResponse.json({ error: `At most ${MAX_BULK} mentions per request` }, { status: 400 })
+  }
+  const clean = ids.filter((id): id is string => typeof id === "string" && id.trim().length > 0)
+  if (clean.length !== ids.length) {
+    return NextResponse.json({ error: "ids must all be strings" }, { status: 400 })
+  }
+
+  const db = getServiceClient()
+  const { data, error } = await db
+    .from("mentions")
+    .update({ status, updated_at: new Date().toISOString() })
+    .in("id", clean)
+    .select("*")
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  const hydrated = await hydrateEpisodes((data ?? []) as Mention[])
+  return NextResponse.json(hydrated)
+}
