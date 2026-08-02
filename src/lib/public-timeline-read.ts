@@ -960,6 +960,7 @@ export interface PublicMention {
   subject_name: string
   timestamp_seconds: number | null
   excerpt: string | null
+  story_title: string | null
 }
 
 export interface PublicEpisodePayload {
@@ -1267,6 +1268,7 @@ export async function readEventStack(
     subject_name: mentionSubjectName(m.subject_type, m.subject_id, entities),
     timestamp_seconds: m.timestamp_seconds ?? null,
     excerpt: m.excerpt ?? null,
+    story_title: m.story_title ?? null,
   }))
 
   // Show header (Phase 3 gives the show its own public page; until then slug is

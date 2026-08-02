@@ -458,6 +458,9 @@ export interface Mention {
   timestamp_seconds?: number | null
   /** Transcript excerpt shown when the row is expanded. */
   excerpt?: string | null
+  /** Headline for the story this mention belongs to, shared by every mention at
+   *  the same moment. Null renders excerpt-first. */
+  story_title?: string | null
   status: MentionStatus
   created_by?: string | null
   created_at: string

@@ -124,10 +124,15 @@ export function MentionRow({
           </div>
 
           {context === "timeline" ? (
-            <p className="text-xs text-muted mt-1 truncate">
-              {mention.episode?.name}
-              {mention.episode?.start_date ? ` · ${formatSmartDate(mention.episode.start_date)}` : ""}
-            </p>
+            <>
+              {mention.story_title && (
+                <p className="text-sm font-semibold text-foreground mt-1 leading-snug">{mention.story_title}</p>
+              )}
+              <p className="text-xs text-muted mt-1 truncate">
+                {mention.episode?.name}
+                {mention.episode?.start_date ? ` · ${formatSmartDate(mention.episode.start_date)}` : ""}
+              </p>
+            </>
           ) : null}
 
           {hasDetail && !expanded && (

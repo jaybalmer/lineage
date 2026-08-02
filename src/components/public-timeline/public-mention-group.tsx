@@ -47,8 +47,15 @@ export function PublicMentionGroup({ moment, mediaUrl }: {
             </span>
           )}
         </div>
+        {moment.story_title && (
+          <p className="text-sm font-semibold text-white mt-1.5 leading-snug">{moment.story_title}</p>
+        )}
         {!expanded && moment.excerpt && (
-          <p className="text-sm text-white/85 mt-1.5 line-clamp-2 leading-relaxed">{moment.excerpt}</p>
+          <p
+            className={`text-sm text-white/70 line-clamp-2 leading-relaxed ${moment.story_title ? "mt-0.5" : "mt-1.5"}`}
+          >
+            {moment.excerpt}
+          </p>
         )}
         {hasDetail && !expanded && (
           <p className="text-[11px] text-white/45 mt-1">{moment.excerpt ? "Read the line" : "Listen"} →</p>

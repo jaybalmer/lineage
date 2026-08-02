@@ -22,6 +22,7 @@ type Incoming = {
   subject_id?: unknown
   timestamp_seconds?: unknown
   excerpt?: unknown
+  story_title?: unknown
   status?: unknown
 }
 
@@ -31,6 +32,7 @@ type NormalizedRow = {
   subject_id: string
   timestamp_seconds: number | null
   excerpt: string | null
+  story_title: string | null
   status: "draft" | "published"
   created_by: string
 }
@@ -55,6 +57,7 @@ function normalize(raw: Incoming, userId: string): NormalizedRow | { error: stri
   }
 
   const excerptRaw = typeof raw.excerpt === "string" ? raw.excerpt.trim() : ""
+  const titleRaw = typeof raw.story_title === "string" ? raw.story_title.trim() : ""
   const status = raw.status === "draft" ? "draft" : "published"
 
   return {
@@ -63,6 +66,7 @@ function normalize(raw: Incoming, userId: string): NormalizedRow | { error: stri
     subject_id: subjectId,
     timestamp_seconds: ts,
     excerpt: excerptRaw || null,
+    story_title: titleRaw || null,
     status,
     created_by: userId,
   }

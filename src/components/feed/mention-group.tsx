@@ -96,8 +96,15 @@ export function MentionGroup({
             )}
           </div>
 
+          {moment.story_title && (
+            <p className="text-sm font-semibold text-foreground mt-1.5 leading-snug">{moment.story_title}</p>
+          )}
           {!expanded && moment.excerpt && (
-            <p className="text-sm text-foreground mt-1.5 line-clamp-2 leading-relaxed">{moment.excerpt}</p>
+            <p
+              className={`text-sm text-muted line-clamp-2 leading-relaxed ${moment.story_title ? "mt-0.5" : "mt-1.5"}`}
+            >
+              {moment.excerpt}
+            </p>
           )}
           {hasDetail && !expanded && (
             <p className="text-[11px] text-muted mt-1">{moment.excerpt ? "Read the line" : "Listen"} →</p>
