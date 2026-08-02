@@ -29,6 +29,52 @@ export function parseTimestampInput(raw: string): number | null | undefined {
   return h * 3600 + m * 60 + s
 }
 
+export type MomentGroup<T> = {
+  key: string
+  timestamp_seconds: number | null
+  excerpt: string | null
+  items: T[]
+}
+
+/**
+ * Fold mentions that describe the same moment into one group.
+ *
+ * The transcript-to-mentions workflow writes a story once per subject: the
+ * 1986 Worlds road trip is six rows sharing a timestamp and a paragraph, so
+ * that the story lands whole on all six timelines. That is right for a person's
+ * timeline, where they see it once, and wrong for the episode page, which shows
+ * every subject and would otherwise print the same paragraph six times.
+ *
+ * Grouping is on timestamp AND excerpt together, so two subjects that merely
+ * happen to share a timestamp are never merged. A mention with no excerpt is
+ * always its own group: there is no story text to be duplicated, and two blank
+ * mentions at the same moment are far more likely to be unrelated hand-added
+ * rows than one story.
+ *
+ * Input order is preserved, so a timestamp-ordered read stays ordered.
+ */
+export function groupMentionsByMoment<
+  T extends { timestamp_seconds?: number | null; excerpt?: string | null },
+>(rows: T[]): MomentGroup<T>[] {
+  const order: string[] = []
+  const byKey = new Map<string, MomentGroup<T>>()
+
+  rows.forEach((row, index) => {
+    const ts = row.timestamp_seconds ?? null
+    const excerpt = (row.excerpt ?? "").trim() || null
+    const key = excerpt === null ? `solo:${index}` : `${ts ?? -1}|${excerpt}`
+    let group = byKey.get(key)
+    if (!group) {
+      group = { key, timestamp_seconds: ts, excerpt, items: [] }
+      byKey.set(key, group)
+      order.push(key)
+    }
+    group.items.push(row)
+  })
+
+  return order.map((key) => byKey.get(key)!)
+}
+
 /** Seconds to `mm:ss`, or `h:mm:ss` past the hour mark. */
 export function formatTimestamp(seconds: number): string {
   const s = Math.max(0, Math.floor(seconds))
