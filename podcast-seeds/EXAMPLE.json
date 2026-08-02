@@ -3,63 +3,40 @@
     "show_name": "FNRad Podcast",
     "episode_number": 21,
     "episode_name": "FNRad: Jay Balmer",
-    "episode_event_id": "evt_1782850803307_apuqit",
+    "episode_event_id": "evt_...optional_if_show_and_number_given...",
     "media_url": "https://www.youtube.com/watch?v=xpr2sqrPUHA",
     "public_slug": "fnrad_jay_balmer"
   },
-  "mentions": [
+  "stories": [
     {
-      "subject_name": "Ken Achenbach",
-      "subject_type": "person",
-      "resolution": "matched_existing",
-      "subject_id": "208a8e52-b859-4379-b80d-ab8e4409eabd",
-      "timestamp_seconds": 498,
-      "excerpt": "A verbatim line from the transcript, quoted not paraphrased.",
-      "status": "draft"
+      "timestamp": "9:27",
+      "title": "The motor home to the 1986 World Championships in Breckenridge",
+      "excerpt": "The Achenbachs at some point said they were going down to the world championships in Colorado, and Mom and Dad loaded up the motor home and we drove down to the World Championships of snowboarding in Breckenridge Colorado in 86. Four months after the first snowboard entered the family. That's when I started riding, when I saw what could be done.",
+      "subjects": [
+        { "subject_name": "1986 Snowboarding World Championships", "subject_type": "event", "resolution": "matched_existing", "subject_id": "event_..." },
+        { "subject_name": "Breckenridge", "subject_type": "place", "resolution": "new_ghost", "subject_id": null, "ghost": { "place_type": "resort" } },
+        { "subject_name": "Ken Achenbach", "subject_type": "person", "resolution": "new_ghost", "subject_id": null }
+      ]
     },
     {
-      "subject_name": "A rider with no catalog entry yet",
-      "subject_type": "person",
-      "resolution": "new_ghost",
-      "subject_id": null,
-      "timestamp": "29:40",
-      "excerpt": "The importer creates this one as an unclaimed person on --apply.",
-      "status": "draft"
+      "timestamp": "13:30",
+      "title": "Winning the 1990 obstacle course for a Fishlip board",
+      "excerpt": "I think 90 when I won the West Beach Classic, which was just like an obstacle course race. I won a fish lip snowboard for first place.",
+      "subjects": [
+        { "subject_name": "Westbeach Classic 1990", "subject_type": "event", "resolution": "matched_existing", "subject_id": "event_..." },
+        { "subject_name": "Fishlip Snowboards", "subject_type": "org", "resolution": "new_ghost", "subject_id": null, "ghost": { "org_type": "brand" } }
+      ]
     },
     {
-      "subject_name": "A contest with no catalog entry yet",
-      "subject_type": "event",
-      "resolution": "new_ghost",
-      "subject_id": null,
-      "ghost": {
-        "start_date": "1988",
-        "event_type": "contest"
-      },
-      "timestamp": "41:02",
-      "excerpt": "An event ghost needs ghost.start_date: events.start_date is NOT NULL.",
-      "status": "draft"
-    },
-    {
-      "subject_name": "A board with no catalog entry yet",
-      "subject_type": "board",
-      "resolution": "new_ghost",
-      "subject_id": null,
-      "ghost": {
-        "brand": "Sims",
-        "model": "1500",
-        "model_year": 1987
-      },
-      "timestamp": "52:15",
-      "excerpt": "A board ghost needs brand, model and model_year: boards.model_year is NOT NULL.",
-      "status": "draft"
-    },
-    {
-      "subject_name": "Something the transcript picked up that is not worth a row",
-      "subject_type": "person",
+      "timestamp": "37:29",
+      "title": "A story about a different sport entirely",
+      "excerpt": "Trimmed rows keep their timestamp and excerpt so the episode never needs transcribing again. Set resolution to skip on the story and its whole cast is trimmed in one edit.",
       "resolution": "skip",
-      "subject_id": null,
-      "excerpt": "resolution: skip excludes a row without deleting it, so the seed stays a record of what was considered.",
-      "status": "draft"
+      "activity": "skateboarding",
+      "skip_reason": "skate contest, outside snowboarding history",
+      "subjects": [
+        { "subject_name": "Slam City Jam", "subject_type": "event", "resolution": "new_ghost", "subject_id": null }
+      ]
     }
   ]
 }

@@ -65,7 +65,31 @@ Brands -> the show -> Add episode).
 | `media_url` | Context for the author. The importer does not write it. |
 | `public_slug` | Context only. |
 
-### `mentions[]`
+### `stories[]`
+
+A story is one passage of the episode that carries something worth reading: what
+happened, who was there, how they were connected. It has a cast, and the
+importer expands it into one mention per subject, all sharing the moment and the
+excerpt. That way the whole story lands on every participant's timeline instead
+of the fragment that happens to name them.
+
+| Field | Notes |
+|---|---|
+| `timestamp` | Where the story starts. `mm:ss` or `h:mm:ss`. |
+| `title` | Short line naming what happens. For the reviewer, never written to the database. |
+| `excerpt` | The story, two to six sentences, close to verbatim. This is what a reader sees. |
+| `subjects[]` | Every entity the story establishes (see below). |
+| `resolution` | Set to `skip` to trim the whole story and its cast in one edit. |
+| `activity`, `skip_reason` | On a trimmed story, as below. |
+
+A subject carries `subject_name`, `subject_type`, `resolution`, `subject_id`,
+and optional `ghost` fields. It may override the story's `timestamp` or
+`excerpt`, but rarely needs to.
+
+The flat `mentions[]` array below still works, so seeds written before the story
+format keep importing. New seeds should use `stories[]`.
+
+### `mentions[]` (legacy flat form)
 
 | Field | Notes |
 |---|---|
