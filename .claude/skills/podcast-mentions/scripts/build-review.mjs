@@ -69,10 +69,19 @@ const live = stories.filter((s) => s.resolution !== "skip")
 const parked = stories.filter((s) => s.resolution === "skip")
 const liveSubs = live.flatMap((s) => s.subjects ?? [])
 const key = (x) => x.subject_type + "|" + x.subject_name
-const newSet = new Set(liveSubs.filter((x) => x.resolution !== "matched_existing").map(key))
+const newSet = new Set(liveSubs.filter((x) => x.resolution === "new_ghost").map(key))
+const reviewSet = new Set(liveSubs.filter((x) => x.resolution === "review" || x.resolution === "ambiguous").map(key))
 const matchSet = new Set(liveSubs.filter((x) => x.resolution === "matched_existing").map(key))
 
-const chip = (x) => `<span class="sub sub-${x.subject_type}${x.resolution === "matched_existing" ? "" : " is-new"}"><i></i>${esc(x.subject_name)}<em>${LABEL[x.subject_type] ?? x.subject_type}${x.resolution === "matched_existing" ? "" : " &middot; new"}</em></span>`
+const chipState = (x) =>
+  x.resolution === "matched_existing" ? { cls: "", note: "" }
+  : x.resolution === "review" || x.resolution === "ambiguous" ? { cls: " is-review", note: " &middot; needs a decision" }
+  : { cls: " is-new", note: " &middot; new" }
+
+const chip = (x) => {
+  const st = chipState(x)
+  return `<span class="sub sub-${x.subject_type}${st.cls}"><i></i>${esc(x.subject_name)}<em>${LABEL[x.subject_type] ?? x.subject_type}${st.note}</em></span>`
+}
 
 const card = (s, trimmable) => {
   const tc = s.secs !== null && VID
@@ -150,6 +159,7 @@ h3{font-size:15.5px;font-weight:650;letter-spacing:-.01em;margin:0;line-height:1
 .sub i{width:7px;height:7px;border-radius:50%;flex:none}
 .sub em{font-style:normal;font-weight:500;opacity:.6;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase}
 .sub.is-new{border-style:dashed;border-color:currentColor}
+.sub.is-review{border-style:solid;border-color:currentColor;box-shadow:inset 0 0 0 1px currentColor}
 .sub-person{color:var(--person);background:var(--personbg)}.sub-person i{background:var(--person)}
 .sub-place{color:var(--place);background:var(--placebg)}.sub-place i{background:var(--place)}
 .sub-org{color:var(--org);background:var(--orgbg)}.sub-org i{background:var(--org)}
@@ -178,10 +188,11 @@ code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;ba
 <div class="tile"><b>${liveSubs.length}</b><span>draft mentions</span></div>
 <div class="tile tile-a"><b>${newSet.size}</b><span>new nodes created</span></div>
 <div class="tile"><b>${matchSet.size}</b><span>matched in catalog</span></div>
+${reviewSet.size ? `<div class="tile"><b>${reviewSet.size}</b><span>need a decision</span></div>` : ""}
 </div>
 <section>
 <h2>The episode, story by story</h2>
-<p class="hint">A dashed chip is an entity Linestry does not have yet and would create. Solid chips already exist.</p>
+<p class="hint">A dashed chip is an entity Linestry does not have yet and would create. A double-outlined chip is a near miss the importer refuses until someone picks: it looks like something already in the catalog. Plain chips already exist.</p>
 <div class="controls" role="group" aria-label="Filter stories">
 <button class="chip" data-f="all" aria-pressed="true">All</button>
 <button class="chip" data-f="new" aria-pressed="false">Creates something new</button>
