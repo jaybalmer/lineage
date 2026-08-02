@@ -31,10 +31,17 @@
 // scripts/backfill-public-slug.mjs. Uses the service-role key, so it bypasses
 // RLS.
 //
-// TIMESTAMP RULE KEPT IN SYNC WITH src/lib/mentions.ts (parseTimestampInput).
-// This script runs under plain Node and cannot import the TypeScript helper, so
-// the mm:ss / h:mm:ss / raw-seconds rule is mirrored here. If you change the
-// rule, change BOTH files.
+// MIRROR NOTE. The same logic now also lives in TypeScript, as
+// src/lib/mention-import.ts (pure rules) + src/lib/mention-import-server.ts
+// (the executor), behind POST /api/admin/mentions/import and the
+// /admin/podcast/import page. That path is the portable one: it runs in the
+// browser under an editor login, so the service-role key never has to leave the
+// server. This script stays for local use and is now a MIRROR of it.
+//
+// CHANGE BOTH FILES when you change any of: the seed contract, the near-miss
+// rule, ghost planning, the dedupe key, or the timestamp rule (which is itself
+// a mirror of parseTimestampInput in src/lib/mentions.ts, because this script
+// runs under plain Node and cannot import the TypeScript helper).
 
 import { readFileSync, writeFileSync } from "node:fs"
 import { fileURLToPath } from "node:url"

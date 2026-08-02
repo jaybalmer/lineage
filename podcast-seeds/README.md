@@ -22,7 +22,21 @@ Authoring is the `podcast-mentions` skill (`.claude/skills/podcast-mentions/`).
 In Claude Code: give it the transcript, the show, the episode number and the
 media URL, and it writes the seed.
 
-Then, from the repo root:
+### In the browser (works from any computer)
+
+Paste the seed into `/admin/podcast/import`. The page resolves it against the
+live catalog server-side, renders the review surface (stories with their casts,
+timecodes, trim checkboxes, near-miss decisions, the count of nodes it would
+create) and imports drafts, all under a normal editor login. Nothing needs a
+checkout, and the service-role key never leaves the server.
+
+This is the same code as the script below: `src/lib/mention-import.ts` and
+`scripts/import-mentions.mjs` are mirrors, so a plan reviewed one way behaves
+identically the other way.
+
+### On the command line (needs a checkout with `.env.local`)
+
+From the repo root:
 
 ```bash
 node scripts/import-mentions.mjs podcast-seeds/fnrad-ep21.json --resolve-only
