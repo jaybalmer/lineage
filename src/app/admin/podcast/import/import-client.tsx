@@ -126,7 +126,14 @@ export function PodcastImportClient() {
     } catch (err) {
       setPlan(null)
       setSeed(null)
-      setParseError(err instanceof Error ? err.message : "Could not parse JSON")
+      // A paste that does not even start with an object is almost always the
+      // transcript itself, which is the first thing anyone reaches for. Name
+      // that case rather than handing back a JSON parser message about it.
+      setParseError(
+        text.trim().startsWith("{")
+          ? err instanceof Error ? err.message : "Could not parse JSON"
+          : "TRANSCRIPT",
+      )
       return
     }
     setSeed(parsed as MentionSeed)
@@ -214,9 +221,9 @@ export function PodcastImportClient() {
           </Link>
           <h1 className="text-2xl font-bold text-foreground mt-2">Podcast mention import</h1>
           <p className="text-sm text-muted mt-1 max-w-2xl">
-            Paste a mention seed. It is resolved against the live catalog here, so you can see
-            what would be created before anything is written. Import lands every mention as a
-            draft: editor-only until you publish it from the episode page.
+            Resolves a mention seed against the live catalog, so you can see what would be
+            created before anything is written. Import lands every mention as a draft:
+            editor-only until you publish it from the episode page.
           </p>
         </div>
 
@@ -225,6 +232,25 @@ export function PodcastImportClient() {
           <label htmlFor="seed" className="block text-xs font-semibold text-muted uppercase tracking-widest mb-2">
             1. Seed JSON
           </label>
+
+          {/*
+            The first thing anyone tries here is pasting a transcript, because that is
+            what they have in hand. Say what this box wants BEFORE the box, not in a
+            footnote under it.
+          */}
+          <div className="mb-3 p-3 rounded-lg border border-border-default bg-surface-2">
+            <p className="text-sm text-foreground">
+              This takes a <b>mention seed</b>, not a transcript.
+            </p>
+            <p className="text-sm text-muted mt-1">
+              Give your transcript to Claude (anywhere: this repo, claude.ai, your phone) with
+              the show and episode number, and ask it to index the episode. The{" "}
+              <code className="px-1 py-0.5 rounded bg-surface border border-border-default text-xs">podcast-mentions</code>{" "}
+              skill reads the transcript, writes the stories with their casts, and hands back
+              the JSON that goes in this box. Extraction stays with Claude on your plan; this
+              page does the catalog half.
+            </p>
+          </div>
           <textarea
             id="seed"
             value={text}
@@ -243,15 +269,24 @@ export function PodcastImportClient() {
               {busy === "resolve" ? "Resolving..." : "Resolve"}
             </button>
             <p className="text-xs text-muted">
-              Format: <code className="px-1 py-0.5 rounded bg-surface border border-border-default">podcast-seeds/README.md</code>.
-              The <code className="px-1 py-0.5 rounded bg-surface border border-border-default">podcast-mentions</code> skill writes it from a transcript.
+              Seed format: <code className="px-1 py-0.5 rounded bg-surface border border-border-default">podcast-seeds/README.md</code>
             </p>
           </div>
-          {parseError && (
+          {parseError === "TRANSCRIPT" ? (
+            <div className="mt-3 p-3 rounded-lg border border-red-500/40 bg-red-500/10">
+              <p className="text-sm text-foreground font-semibold">That looks like a transcript, not a seed</p>
+              <p className="text-sm text-muted mt-1">
+                A seed starts with <code className="px-1 py-0.5 rounded bg-surface border border-border-default text-xs">{"{"}</code> and
+                names the episode. Hand the transcript to Claude first: ask it to index the
+                episode, give it the show name and episode number, and paste back what it
+                returns. Nothing was sent anywhere.
+              </p>
+            </div>
+          ) : parseError ? (
             <p className="mt-3 text-sm text-red-500 font-mono">
               Could not parse JSON: {parseError}
             </p>
-          )}
+          ) : null}
           {serverError && (
             <p className="mt-3 text-sm text-red-500">{serverError}</p>
           )}
