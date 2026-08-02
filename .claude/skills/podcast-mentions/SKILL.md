@@ -56,8 +56,12 @@ That is **one story with several subjects**, not several unrelated mentions.
 Capture each story with:
 
 - `timestamp`: the time marker where the story starts, as `mm:ss` or `h:mm:ss`.
-- `title`: a short line naming what happens, in plain words. This is for the
-  person reviewing the seed, not for the database.
+- `title`: name the story in the plainest words that fit it, like a caption.
+  Stay as close to the actual story as you can. No colon stacking a second
+  clause on the end, no listing the cast, no editorializing, no cleverness.
+  "The first snowboard in the family", not "The first snowboard in the family:
+  a Chuck Barfoot from Achenbach's shop". This is for the person reviewing the
+  seed, not for the database.
 - `excerpt`: the story itself, two to six sentences, close to verbatim. Light
   cleanup of transcription noise is fine (stutters, repeated words, mangled
   proper nouns, filler) as long as you never add a fact, a name, or a claim
@@ -140,10 +144,23 @@ row comes back as:
 - `ambiguous` with a `candidates` list: the name matched more than one. It is
   never auto-picked.
 
-## Step 4: hand the list back for review
+## Step 4: build the review page and hand it over
 
-Present the candidates as a compact table: name, type, timestamp, resolution,
-and the excerpt trimmed to a line. Call out explicitly:
+```bash
+node .claude/skills/podcast-mentions/scripts/build-review.mjs podcast-seeds/<file>.json
+```
+
+This writes `<seed>-review.html` beside the seed: every story in episode order
+with its cast, a timecode on each that opens the video at that second, filters,
+and a checkbox per story with a "Copy trim list" button. Publish it as an
+artifact and give the reviewer the link. **Do this instead of pasting a table
+into chat.** A seed file is JSON and a chat table is a wall of rows; neither is
+something a person can work through against the audio.
+
+The reviewer ticks the stories to trim and pastes the list back. Apply those by
+setting `"resolution": "skip"` on each named story, then rebuild the page.
+
+Alongside the link, call out explicitly:
 
 - every `ambiguous` row, with its candidates, because import refuses them until
   a `subject_id` is set by hand;
