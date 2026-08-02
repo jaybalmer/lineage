@@ -29,31 +29,62 @@ Ask for anything missing before starting:
 The episode must already exist in the app. If it does not, say so and point at
 the in-app authoring flow (Brands -> the show -> Add episode). Do not create it.
 
-## Step 1: extract candidates
+## Step 1: find the stories, not the names
 
-Read the transcript and pull every named person, place, brand or shop, board,
-and event or contest. For each, capture:
+**Look for stories, not name-drops.** A mention earns its place only when it
+sits inside something worth reading or listening to: something happened,
+someone was there, a connection got made. A name spoken in passing is not a
+mention, no matter how notable the person.
 
-- `subject_name`: the surface name as spoken, cleaned up to the form a catalog
-  entry would use. "Achenbach" alone becomes "Ken Achenbach" only if the
-  transcript establishes it elsewhere.
-- `subject_type`: one of `person`, `place`, `org`, `board`, `event`. A shop or a
-  brand is `org`. A resort, a zone or a shop's physical location is `place`. Use
-  your judgement and let the reviewer correct it.
-- `timestamp`: the nearest time marker at or before the mention, as `mm:ss` or
-  `h:mm:ss`. If the transcript carries no time markers, leave it out entirely.
-- `excerpt`: a short **verbatim** quote, one or two sentences, that contains the
-  mention.
+The test: read the excerpt on its own, with no other context. Does it tell you
+something about who was there, what they did, or how they were connected? If
+not, it does not belong in the seed.
+
+- "I talked to Chip" is a name-drop. Discard it.
+- "I went to Chip and said I want to make the West Beach Classic better" is a
+  story. Keep it.
+
+A good episode yields roughly 15 to 40 stories. If you are producing eighty,
+you are indexing names instead of finding stories.
+
+### Stories have a cast
+
+One passage often establishes several entities at once: a road trip names the
+people in the van, the mountain they drove to, and the contest they drove for.
+That is **one story with several subjects**, not several unrelated mentions.
+
+Capture each story with:
+
+- `timestamp`: the time marker where the story starts, as `mm:ss` or `h:mm:ss`.
+- `title`: a short line naming what happens, in plain words. This is for the
+  person reviewing the seed, not for the database.
+- `excerpt`: the story itself, two to six sentences, close to verbatim. Light
+  cleanup of transcription noise is fine (stutters, repeated words, mangled
+  proper nouns, filler) as long as you never add a fact, a name, or a claim
+  that is not in the transcript. This is what a reader sees on the subject's
+  timeline, so it has to read well on its own.
+- `subjects`: every entity the story establishes, each with a `subject_name`, a
+  `subject_type` (`person`, `place`, `org`, `board`, `event`), and optional
+  `ghost` fields. A shop or a brand is `org`; a resort, a zone, a city or a
+  venue is `place`.
+
+The importer expands a story into one mention per subject, all sharing the
+moment and the excerpt, so the whole story lands on every participant's
+timeline rather than the fragment that happens to name them.
+
+`subject_name` is the surface name as spoken, cleaned up to the form a catalog
+entry would use. "Achenbach" alone becomes "Ken Achenbach" only if the
+transcript establishes it elsewhere.
 
 Hard rules:
 
-- **Never invent a timestamp or an excerpt.** Both must be grounded in the
-  transcript as given. A missing time marker means no timestamp, not a guess.
-- **One row per moment, not per entity.** The same person mentioned at three
-  points in the episode is three rows with three timestamps. The dedupe index
-  allows that, and it is what makes an episode navigable.
-- Skip passing references with nothing behind them (an aside about the weather,
-  a brand named only as a figure of speech). Prefer a shorter, real list.
+- **Never invent a timestamp, a fact, or a name.** Everything must be grounded
+  in the transcript as given. If someone is only ever called "Dad", write "Dad"
+  and raise it at review rather than guessing who that is.
+- **One story per moment.** The same person appearing in four stories across an
+  episode is four rows, one per story. That is what makes an episode navigable,
+  and it is why the dedupe index keys on the timestamp.
+- Do not pad a thin moment into a story to get more coverage. Fewer, better.
 - No em dashes in anything you write.
 
 ### Scope: snowboarding history, by default
@@ -87,7 +118,7 @@ story, keep it.
 
 ## Step 2: write the seed
 
-Write `podcast-seeds/<show-slug>-ep<N>.json` in the format documented in
+Write `podcast-seeds/<show-slug>-ep<N>.json` as a `stories` array, in the format documented in
 `podcast-seeds/README.md`, with `EXAMPLE.json` beside it as the reference. Set
 every row's `resolution` to `new_ghost` and `subject_id` to null for now: the
 next step fills them in.

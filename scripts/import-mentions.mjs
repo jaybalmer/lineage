@@ -141,9 +141,51 @@ try {
   console.error(`Could not read seed file ${SEED_PATH}: ${err.message}`)
   process.exit(1)
 }
-if (!seed || typeof seed !== "object" || !seed.episode || !Array.isArray(seed.mentions)) {
-  console.error("Seed file must be an object with an { episode } block and a mentions array.")
+if (!seed || typeof seed !== "object" || !seed.episode) {
+  console.error("Seed file must be an object with an { episode } block.")
   process.exit(1)
+}
+if (!Array.isArray(seed.stories) && !Array.isArray(seed.mentions)) {
+  console.error("Seed file needs a stories array (preferred) or a flat mentions array.")
+  process.exit(1)
+}
+
+// A story is a passage of the episode with a cast: one timestamp, one excerpt,
+// and every entity the story establishes. It expands to one mention per subject,
+// all sharing the moment, so each subject's timeline carries the whole story
+// rather than the fragment that happens to name them.
+//
+// The flat mentions array is still read, so seeds written before the story
+// format keep working.
+function expandStories(s) {
+  const out = []
+  for (const [storyIndex, story] of (s.stories ?? []).entries()) {
+    for (const subject of story.subjects ?? []) {
+      out.push({
+        ...subject,
+        timestamp: subject.timestamp ?? story.timestamp,
+        timestamp_seconds: subject.timestamp_seconds ?? story.timestamp_seconds,
+        excerpt: subject.excerpt ?? story.excerpt,
+        status: subject.status ?? story.status ?? "draft",
+        resolution: subject.resolution ?? "new_ghost",
+        activity: subject.activity ?? story.activity,
+        skip_reason: subject.skip_reason ?? story.skip_reason,
+        _story: storyIndex,
+        _title: story.title,
+        // The expanded row is a copy, so --resolve-only writes through this
+        // reference to reach the subject inside the seed's story block.
+        _ref: subject,
+      })
+    }
+  }
+  return out
+}
+// Story rows are appended after any flat rows so indexes stay stable in output.
+const mentionRows = [...(seed.mentions ?? []), ...expandStories(seed)]
+// A story marked skip trims its whole cast in one edit.
+for (const [storyIndex, story] of (seed.stories ?? []).entries()) {
+  if (story.resolution !== "skip") continue
+  for (const row of mentionRows) if (row._story === storyIndex) row.resolution = "skip"
 }
 
 const db = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, { auth: { persistSession: false } })
@@ -439,7 +481,7 @@ let excluded = 0
 const parked = new Map()
 const seedChanged = []
 
-for (const [index, row] of seed.mentions.entries()) {
+for (const [index, row] of mentionRows.entries()) {
   const label = `${index + 1}. ${row.subject_name ?? "(no name)"}`
 
   if (row.resolution === "skip") {
@@ -576,7 +618,8 @@ for (const [index, row] of seed.mentions.entries()) {
 // ── write resolutions back into the seed (review surface) ───────────────────
 if (RESOLVE_ONLY && seedChanged.length > 0) {
   for (const change of seedChanged) {
-    const row = seed.mentions[change.index]
+    // Write back into the row's real home: a story subject, or the flat array.
+    const row = mentionRows[change.index]._ref ?? mentionRows[change.index]
     if (change.subject_id) row.subject_id = change.subject_id
     row.resolution = change.resolution
     if (change.candidates) row.candidates = change.candidates
