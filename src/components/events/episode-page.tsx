@@ -17,7 +17,8 @@ import { parseYouTubeId, formatEventDateRange } from "@/lib/utils"
 import { StackView } from "@/components/public-timeline/stack-view"
 import { StackCurateModal } from "@/components/ui/stack-curate-modal"
 import { MentionEditorModal } from "@/components/ui/mention-editor-modal"
-import { MentionRow } from "@/components/feed/mention-row"
+import { MentionGroup } from "@/components/feed/mention-group"
+import { groupMentionsByMoment } from "@/lib/mentions"
 import { EpisodeConnections } from "@/components/events/episode-connections"
 import type { Event, Mention } from "@/types"
 import type { PublicEpisodePayload } from "@/lib/public-timeline-read"
@@ -359,11 +360,10 @@ export function EpisodeView({ instance }: { instance: Event }) {
           <section className="mb-8">
             <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">Mentioned in this episode</h2>
             {mentions.length > 0 ? (
-              mentions.map((m) => (
-                <MentionRow
-                  key={m.id}
-                  mention={m}
-                  context="episode"
+              groupMentionsByMoment(mentions).map((moment) => (
+                <MentionGroup
+                  key={moment.key}
+                  moment={moment}
                   isEditor={isEditor}
                   onEdit={setEditingMention}
                   onRemove={removeMention}

@@ -8,7 +8,8 @@
 import Link from "next/link"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { StackView } from "@/components/public-timeline/stack-view"
-import { PublicMentionRow } from "@/components/public-timeline/public-mention-row"
+import { PublicMentionGroup } from "@/components/public-timeline/public-mention-group"
+import { groupMentionsByMoment } from "@/lib/mentions"
 import { parseYouTubeId } from "@/lib/utils"
 import type { PublicEpisodePayload } from "@/lib/public-timeline-read"
 
@@ -173,8 +174,8 @@ export function PublicEpisodeView({ payload, preview = false }: {
               Mentioned in this episode
             </div>
             <div className="flex flex-col gap-2">
-              {mentions.map((m) => (
-                <PublicMentionRow key={m.id} mention={m} mediaUrl={meta.media_url} />
+              {groupMentionsByMoment(mentions).map((moment) => (
+                <PublicMentionGroup key={moment.key} moment={moment} mediaUrl={meta.media_url} />
               ))}
             </div>
           </section>
