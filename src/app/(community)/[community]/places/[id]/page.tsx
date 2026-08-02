@@ -16,6 +16,7 @@ import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { supabase } from "@/lib/supabase"
 import { StoryCard } from "@/components/feed/story-card"
+import { EntityMentions } from "@/components/feed/entity-mentions"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import type { Story } from "@/types"
 
@@ -655,6 +656,7 @@ function PlacePageInner({ params }: { params: Promise<{ community: string; id: s
             {/* ── Stories tab ── */}
             {tab === "stories" && (
               <div className="space-y-4">
+                <EntityMentions subjectType="place" subjectId={place.id} className="mb-6" />
                 <div className="flex items-center justify-between">
                   <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">Stories</h2>
                   {isAuth && (

@@ -15,6 +15,7 @@ import { formatDateRange } from "@/lib/utils"
 import { supabase } from "@/lib/supabase"
 import { clearBoardImageCache } from "@/hooks/use-board-image"
 import { StoryCard as RichStoryCard } from "@/components/feed/story-card"
+import { EntityMentions } from "@/components/feed/entity-mentions"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { BrandMark } from "@/components/ui/brand-mark"
 import type { Story } from "@/types"
@@ -787,6 +788,8 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
                 </div>
               )}
             </div>
+
+            <EntityMentions subjectType="board" subjectId={board.id} className="mb-8" />
 
             {/* ── Rich Stories ──────────────────────────────────────────────── */}
             {(richStories.length > 0 || isAuth) && (

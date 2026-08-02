@@ -14,6 +14,7 @@ import { usePersonHref } from "@/lib/use-person-href"
 import { useCanonicalPath } from "@/lib/use-canonical-path"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { StoryCard } from "@/components/feed/story-card"
+import { EntityMentions } from "@/components/feed/entity-mentions"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { ShowModule } from "@/components/orgs/show-module"
 import type { Org, ConfidenceLevel, Predicate, Event, Place, Story, Person } from "@/types"
@@ -1314,6 +1315,7 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
             {/* ── Stories tab ── */}
             {tab === "stories" && (
               <div className="space-y-3">
+                <EntityMentions subjectType="org" subjectId={org.id} className="mb-6" />
                 <div className="flex items-center justify-between">
                   <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">Stories</h2>
                   {isAuth && (
