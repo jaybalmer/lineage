@@ -183,12 +183,12 @@ export function AvatarDropdown({ displayName, tier, totalTokens, pendingTagCount
             </span>
           </button>
 
-          {/* Editor (catalog editors only) */}
+          {/* Admin (catalog editors only) */}
           {isEditor && (
             <Link href="/admin"
               className="flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
               style={{ fontSize: 11 }}>
-              Editor
+              Admin
             </Link>
           )}
 
