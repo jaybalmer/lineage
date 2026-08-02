@@ -78,7 +78,21 @@ Brands -> the show -> Add episode).
 | `timestamp` | Alternative to the above: `mm:ss` or `h:mm:ss`. Same rule as the in-app editor. |
 | `excerpt` | A short verbatim quote from the transcript. Never paraphrase. |
 | `ghost` | Extra columns a `new_ghost` needs (see below). Ignored for a matched row. |
+| `activity` | On a trimmed row: the world it belongs to (`skateboarding`, `music`, `business`, `general`). |
+| `skip_reason` | On a trimmed row: one line on why it was trimmed. |
 | `status` | Always imported as `draft`. A seed saying `published` is downgraded with a warning. |
+
+### Trimmed rows are kept, not deleted
+
+A transcript pass captures far more than snowboarding history. Anything out of
+scope is marked `"resolution": "skip"` with an `activity` and a `skip_reason`
+rather than removed from the seed.
+
+The seed is the permanent record of the pass. Keeping the trimmed candidates
+means an episode never has to be re-transcribed to pull, say, its skate history
+out later: when another activity or community goes live, those mentions are
+already captured, timestamped and excerpted. The importer reports them grouped
+by activity so you can see what is parked.
 
 ### `ghost` fields, per subject type
 
