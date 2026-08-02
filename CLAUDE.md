@@ -387,9 +387,9 @@ Bug tracking lives in `bugs/` (local-only, gitignored: it holds reporter emails 
 **Standing rules for bug-fix sessions:**
 - `npx tsc --noEmit` clean before commit.
 - One PR per session: push a branch, open the PR.
-- **Run the full Ship sequence** (see "Session Workflow" below) before wrapping: surface every migration as copy-paste SQL, wait for Jay to apply it, prompt and wait for the merge, then log the ship. Do not treat PR-open as the end of the session.
+- **Run the full Ship sequence** (see "Session Workflow" below) before wrapping: classify every migration against the risk gate, apply SAFE ones yourself via the Supabase MCP, merge the PR yourself with `gh pr merge` unless the exception list applies, then log the ship. Only GATED/sensitive work waits for Jay. Do not treat PR-open as the end of the session.
 - Do NOT edit the **Shipped** section of `bugs/bug-triage.md`. Cowork reconciles that after the PR lands so the daily dedupe stays clean.
-- **Log the ship.** As the final wrap step, append one entry to `bugs/SHIP-LOG.md` using the schema at the top of that file (type, pr, branch, ids, migration, status, tsc). This applies to bug-fix AND feature sessions, and it is what lets Cowork reconcile features too (bugs reconcile off `BUG-NNN`, features have no other sweep). Because the merge now happens in-session, write `status: merged` with the real PR number once Jay confirms the merge; only fall back to `status: pending` if he defers it. Record `migration:` so the reconcile knows the gate is closed. A `SessionEnd` hook auto-appends a stub if you forget, but writing it yourself gives the richer line and the correct status. Do NOT edit earlier SHIP-LOG entries.
+- **Log the ship.** As the final wrap step, append one entry to `bugs/SHIP-LOG.md` using the schema at the top of that file (type, pr, branch, ids, migration, status, tsc). This applies to bug-fix AND feature sessions, and it is what lets Cowork reconcile features too (bugs reconcile off `BUG-NNN`, features have no other sweep). Because the merge now happens in-session (usually by you), write `status: merged` with the real PR number once the PR is merged; only fall back to `status: pending` if a gated step was deferred. Record `migration:` so the reconcile knows the gate is closed. A `SessionEnd` hook auto-appends a stub if you forget, but writing it yourself gives the richer line and the correct status. Do NOT edit earlier SHIP-LOG entries.
 - No em dashes anywhere you write.
 
 Historical one-off briefs from before this convention live at the repo root (e.g. `launch-bugfix-session-1-brief.md`); new bug-fix briefs live in `bugs/`.
@@ -410,8 +410,8 @@ Feature work (new product capability, not bug repairs) lives in `features/` (loc
 **Standing rules for feature sessions:**
 - `npx tsc --noEmit` clean before commit.
 - One PR per session: push a branch, open the PR.
-- **Run the full Ship sequence** (see "Session Workflow" below) before wrapping: surface every migration as copy-paste SQL, wait for Jay to apply it, prompt and wait for the merge, then log the ship. Do not treat PR-open as the end of the session. Feature briefs that add a column the write path sends unconditionally are a hard pre-merge migration gate (apply before merge or every insert 500s in the window).
-- **Log the ship.** Append one entry to `bugs/SHIP-LOG.md` using the schema at the top of that file. Feature sessions carry no `BUG-NNN`, so use `type: feature`, `ids: none`, and a `scope:` slug. This is the only sweep that records feature ships, so the `scope:` and PR number are what lets Cowork reconcile `features/feature-queue.md`. Write `status: merged` with the real PR number once Jay confirms the merge; fall back to `status: pending` only if he defers it. Record `migration:`.
+- **Run the full Ship sequence** (see "Session Workflow" below) before wrapping: classify every migration against the risk gate, apply SAFE ones yourself via the Supabase MCP, merge the PR yourself with `gh pr merge` unless the exception list applies, then log the ship. Only GATED/sensitive work waits for Jay. Do not treat PR-open as the end of the session. Feature briefs that add a column the write path sends unconditionally are a hard pre-merge migration gate (apply before merge or every insert 500s in the window).
+- **Log the ship.** Append one entry to `bugs/SHIP-LOG.md` using the schema at the top of that file. Feature sessions carry no `BUG-NNN`, so use `type: feature`, `ids: none`, and a `scope:` slug. This is the only sweep that records feature ships, so the `scope:` and PR number are what lets Cowork reconcile `features/feature-queue.md`. Write `status: merged` with the real PR number once the PR is merged (usually by you); fall back to `status: pending` only if a gated step was deferred. Record `migration:`.
 - Do NOT edit the **Shipped** section of `features/feature-queue.md`. Cowork reconciles that after the PR lands.
 - No em dashes anywhere you write.
 
@@ -426,30 +426,46 @@ Feature work (new product capability, not bug repairs) lives in `features/` (loc
 
 A session is NOT done when you push. Pushing and opening the PR is the middle of the
 session, not the end. The deploy steps (apply any SQL migration, merge the PR) are
-part of the session and you walk Jay through them live before you wrap. This keeps
-migrations from being left as silent "outstanding" gates and lets the work be
-recorded as complete in the same session it shipped.
+part of the session and you now run them YOURSELF using your Supabase MCP access and
+`gh`. Jay is only pulled in when the risk gate below says so. This keeps migrations
+from being left as silent "outstanding" gates and lets the work be recorded as
+complete in the same session it shipped.
+
+**Risk gate (decides SAFE vs GATED, applies to both migrations and merges):**
+- **SAFE (do it yourself, no confirmation):** purely additive schema changes:
+  CREATE TABLE, ADD COLUMN, CREATE INDEX, new RLS policies on tables created this
+  session, and backfills that only populate a column added this session.
+- **GATED (print it, state the risk in one sentence, wait for Jay):** anything
+  destructive or hard to reverse: DROP or TRUNCATE anything, DELETE or UPDATE of
+  existing rows, ALTER COLUMN type changes, renames of tables/columns, changes to
+  RLS on pre-existing tables, and any SQL touching `profiles`, `memberships`, or
+  Stripe/payment data. When in doubt, treat it as GATED.
 
 Run these steps in order and do not wrap until they are all done:
 
 1. **Push the branch and open the PR.** As before. State the PR number.
-2. **Surface every migration / manual SQL this session needs.** If the session
-   created any `supabase/migrations/*.sql` file, or any one-off SQL Jay must run by
-   hand (e.g. a backfill in `docs/`), print each one to chat inside a fenced
-   ```sql block, in full, ready to copy-paste straight into the Supabase SQL
-   editor. Do not just name the file. If there is genuinely no migration, say
-   "No migration this session" explicitly so the record is unambiguous.
-3. **State the apply/merge ordering.** Default is **migrate first, then merge**.
-   Call out the hard pre-merge gate case (an additive column the write path sends
-   unconditionally; see Group F lesson): for those the migration MUST be applied
-   before the PR merges or every insert 500s in the window between. For a plain
-   additive change with no write-path dependency the order is still safe as
-   migrate-then-merge, so default to that.
-4. **Wait for Jay to confirm the migration is applied** (or that there was none).
-   Do not move on until he confirms.
-5. **Prompt Jay to merge the PR, and wait for him to confirm the merge.**
-6. **Only now wrap.** Write the `bugs/SHIP-LOG.md` entry with the real PR number,
-   `migration:` set to what was applied, and `status: merged` (Jay just merged it
-   in-session). State which BUG-IDs or feature scope shipped. If Jay explicitly
-   defers the migration or merge to later, fall back to `status: pending` and
-   `migration: DEFERRED <file>` and say so plainly so the daily reconcile carries it.
+2. **Classify every migration / manual SQL this session needs** using the risk gate
+   above. If there is genuinely no migration, say "No migration this session"
+   explicitly so the record is unambiguous.
+3. **Ordering is migrate first, then merge.** Call out the hard pre-merge gate case
+   (an additive column the write path sends unconditionally; see Group F lesson):
+   for those the migration MUST be applied before the PR merges or every insert
+   500s in the window between.
+4. **Apply SAFE migrations yourself** via the Supabase MCP (apply_migration /
+   execute_sql). Print the SQL you applied in a fenced ```sql block for the record
+   (in full, not just the file name), then verify it took (e.g. select against the
+   new column/table). If the Supabase MCP is unavailable in the session, fall back
+   to the old flow: print the SQL and wait for Jay to confirm he applied it.
+5. **GATED migrations: print the SQL, state the risk, and wait for Jay's go-ahead.**
+   Never apply a GATED migration without it. After he approves, apply it yourself
+   and verify.
+6. **Merge the PR yourself** (`gh pr merge`) once `npx tsc --noEmit` is clean and
+   the migration step is complete. EXCEPTION, prompt Jay and wait instead, when any
+   of these hold: the session touched payments/Stripe, auth flows, or
+   data-deletion paths; the migration was GATED; or you have real doubt about the
+   change. State in chat that you merged and confirm Vercel will auto-deploy main.
+7. **Only now wrap.** Write the `bugs/SHIP-LOG.md` entry with the real PR number,
+   `migration:` set to what was applied, and `status: merged` (you just merged it
+   in-session). State which BUG-IDs or feature scope shipped. If a GATED step was
+   deferred by Jay, fall back to `status: pending` and `migration: DEFERRED <file>`
+   and say so plainly so the daily reconcile carries it.
