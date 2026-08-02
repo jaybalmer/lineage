@@ -13,7 +13,7 @@
 
 import { getServiceClient } from "@/lib/auth"
 import { readPublishedMentions } from "@/lib/mentions-server"
-import { eventSlug } from "@/lib/mock-data"
+import { eventSlug, placeSlug, boardSlug } from "@/lib/mock-data"
 import type {
   Claim, Story, EntityType, Predicate, MentionSubjectType,
   PublicStackEntry, PublicStackEntryType, PublicStackCategoryKey,
@@ -555,6 +555,12 @@ export interface ResolvedStackEntry {
   kicker: string                 // "Story" | "Place" | … | "Places"
   kickerMeta: string | null      // muted context line ("1994 · Blackcomb")
   title: string
+  /** In-app path to the entity this card points at, so the featured set is
+   *  browsable and not just expandable. Null for stories and summaries, which
+   *  have no entity page and expand instead. Community-scoped paths are emitted
+   *  BARE (/places/…): the proxy 301s them to the active community, which is
+   *  what lets the chromeless /t/ page link into the app. */
+  href: string | null
   summary: string | null         // full text; the client truncates per breakpoint
   // Thumbnail: a server-resolvable photo, else an entity-graphic fallback.
   thumbPhotoUrl: string | null
@@ -758,7 +764,7 @@ export async function readPublicStack(
       const noun = row.category_key
       const title = row.custom_title ?? defaultSummaryTitle(noun, count)
       return {
-        ...base, entry_type: "category_summary", accent: CATEGORY_ACCENT[noun],
+        ...base, entry_type: "category_summary", href: null, accent: CATEGORY_ACCENT[noun],
         kicker: CATEGORY_KICKER[noun], kickerMeta: era,
         title, summary: row.custom_summary ?? null,
         thumbPhotoUrl: null, thumbEntity: null, thumbName: "", thumbYear: null, board: null,
@@ -779,7 +785,7 @@ export async function readPublicStack(
         (story.linked_event_id && entities.events[story.linked_event_id]?.image_url) ||
         (story.board_ids ?? []).map((b) => entities.boards[b]?.image_url).find(Boolean) || null
       return {
-        ...base, entry_type: "story", accent: "violet", kicker: "Story",
+        ...base, entry_type: "story", href: null, accent: "violet", kicker: "Story",
         kickerMeta: joinMeta([yearOf(story.story_date)?.toString(), linkedPlace?.name]),
         title: row.custom_title ?? story.title ?? (story.body ?? "").split("\n")[0].slice(0, 80) ?? "Story",
         summary: row.custom_summary ?? story.body ?? null,
@@ -794,6 +800,7 @@ export async function readPublicStack(
       const agg = placeAgg.get(ref)
       return {
         ...base, entry_type: "place", accent, kicker: "Place",
+        href: stackHref("place", ref, place),
         kickerMeta: joinMeta([agg ? eraLabel(agg.years, agg.ongoing) : null, joinMeta([place.region, place.country])]),
         title: row.custom_title ?? place.name,
         summary: row.custom_summary ?? null,
@@ -809,6 +816,7 @@ export async function readPublicStack(
       const yr = eventYear.get(ref) ?? event.year ?? yearOf(event.start_date)
       return {
         ...base, entry_type: "event", accent, kicker: "Event",
+        href: stackHref("event", ref, event),
         kickerMeta: joinMeta([yr?.toString(), event.event_type?.replace(/-/g, " ")]),
         title: row.custom_title ?? event.name,
         summary: row.custom_summary ?? eventLabel(eventClaimByEvent.get(ref)),
@@ -825,6 +833,7 @@ export async function readPublicStack(
       const yearLbl = board.model_year ? `'${String(board.model_year).slice(2)}` : null
       return {
         ...base, entry_type: "board", accent, kicker: "Board",
+        href: stackHref("board", ref, board),
         kickerMeta: joinMeta([board.model_year?.toString(), board.shape?.replace(/-/g, " ")]),
         title: row.custom_title ?? `${board.brand} ${board.model}`,
         summary: row.custom_summary ?? joinMeta([yearLbl, agg ? eraLabel(agg.years, agg.ongoing) : null]),
@@ -841,6 +850,7 @@ export async function readPublicStack(
     const agg = riderAgg.get(ref)
     return {
       ...base, entry_type: "rider", accent: "violet", kicker: "Rider",
+      href: stackHref("rider", ref, null),
       kickerMeta: joinMeta([
         agg ? eraLabel(agg.years, agg.ongoing) : null,
         agg && agg.moments > 0 ? `${agg.moments} shared moment${agg.moments === 1 ? "" : "s"}` : null,
@@ -1014,7 +1024,7 @@ function storyStackEntry(
     (story.board_ids ?? []).map((b) => entities.boards[b]?.image_url).find(Boolean) || null
   return {
     id: opts.id, position: opts.position, refId: story.id,
-    entry_type: "story", accent: "violet", kicker: "Story",
+    entry_type: "story", href: null, accent: "violet", kicker: "Story",
     kickerMeta: joinMeta([yearOf(story.story_date)?.toString(), linkedPlace?.name]),
     title: opts.customTitle ?? story.title ?? (story.body ?? "").split("\n")[0].slice(0, 80) ?? "Story",
     summary: opts.customSummary ?? story.body ?? null,
@@ -1027,6 +1037,32 @@ function storyStackEntry(
 // the row resolves against the catalog/story entities the same way regardless of
 // owner. Category summaries summarize an owner CLAIM set, which neither an
 // episode nor a show has, so they are dropped.
+/**
+ * In-app path for a featured card, resolved server-side because StackView is
+ * store-free and cannot reach the catalog to build one.
+ *
+ * Person links use the raw id rather than a name slug: the collision rule needs
+ * the whole people catalog to know whether a name is unique, which this context
+ * does not hold, and /people/[id] accepts both and canonicalizes the URL to the
+ * slug on load anyway.
+ */
+function stackHref(
+  type: PublicStackEntryType,
+  ref: string,
+  entity: { name?: string; brand?: string; model?: string } | null,
+): string | null {
+  if (type === "place") return `/places/${(entity && entity.name ? placeSlug({ name: entity.name } as never) : "") || ref}`
+  if (type === "event") return `/events/${(entity && entity.name ? eventSlug({ name: entity.name }) : "") || ref}`
+  if (type === "board") {
+    const slug = entity && entity.brand && entity.model
+      ? boardSlug({ brand: entity.brand, model: entity.model } as never)
+      : ""
+    return `/boards/${slug || ref}`
+  }
+  if (type === "rider") return `/people/${ref}`
+  return null
+}
+
 function resolveCuratedRow(
   row: PublicStackEntry,
   entities: PublicTimelineEntities,
@@ -1054,6 +1090,7 @@ function resolveCuratedRow(
     if (!place) return null
     return {
       ...base, entry_type: "place", accent, kicker: "Place",
+      href: stackHref("place", ref, place),
       kickerMeta: joinMeta([place.region, place.country]),
       title: row.custom_title ?? place.name, summary: row.custom_summary ?? null,
       thumbPhotoUrl: place.image_url ?? null, thumbEntity: "place", thumbName: place.name, thumbYear: null, board: null,
@@ -1067,6 +1104,7 @@ function resolveCuratedRow(
     const yr = event.year ?? yearOf(event.start_date)
     return {
       ...base, entry_type: "event", accent, kicker: "Event",
+      href: stackHref("event", ref, event),
       kickerMeta: joinMeta([yr?.toString(), event.event_type?.replace(/-/g, " ")]),
       title: row.custom_title ?? event.name, summary: row.custom_summary ?? null,
       thumbPhotoUrl: event.image_url ?? null, thumbEntity: "event", thumbName: event.name, thumbYear: yr ?? null, board: null,
@@ -1079,6 +1117,7 @@ function resolveCuratedRow(
     if (!board) return null
     return {
       ...base, entry_type: "board", accent, kicker: "Board",
+      href: stackHref("board", ref, board),
       kickerMeta: joinMeta([board.model_year?.toString(), board.shape?.replace(/-/g, " ")]),
       title: row.custom_title ?? `${board.brand} ${board.model}`, summary: row.custom_summary ?? null,
       thumbPhotoUrl: board.image_url ?? null, thumbEntity: "board",
@@ -1094,6 +1133,7 @@ function resolveCuratedRow(
   if (!person) return null
   return {
     ...base, entry_type: "rider", accent: "violet", kicker: "Rider", kickerMeta: null,
+    href: stackHref("rider", ref, null),
     title: row.custom_title ?? person.display_name, summary: row.custom_summary ?? null,
     thumbPhotoUrl: person.avatar_url ?? null, thumbEntity: "person",
     thumbName: person.display_name, thumbYear: null, board: null,

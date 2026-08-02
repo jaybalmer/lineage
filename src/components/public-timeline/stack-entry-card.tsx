@@ -9,6 +9,7 @@
 // at once. The card layout leaves room for it and stops there.
 
 import { useState } from "react"
+import Link from "next/link"
 import type { ResolvedStackEntry, StackAccent, PublicTimelineOwner, PublicTimelineEntities } from "@/lib/public-timeline-read"
 import type { Story } from "@/types"
 import { useBoardImage } from "@/hooks/use-board-image"
@@ -162,7 +163,17 @@ export function StackEntryCard({ entry, owner, story, entities, allowTagging = t
               <span className="text-[10px] text-muted tracking-wide">· {entry.kickerMeta}</span>
             )}
           </div>
-          <p className="font-bold text-foreground text-[15px] leading-snug truncate">{entry.title}</p>
+          {entry.href ? (
+            <Link
+              href={entry.href}
+              onClick={(e) => e.stopPropagation()}
+              className="font-bold text-foreground text-[15px] leading-snug truncate block hover:underline decoration-1 underline-offset-2"
+            >
+              {entry.title}
+            </Link>
+          ) : (
+            <p className="font-bold text-foreground text-[15px] leading-snug truncate">{entry.title}</p>
+          )}
           {entry.summary && (
             <p className={cn("text-xs text-muted leading-relaxed mt-0.5", !expanded && "line-clamp-2")}>
               {entry.summary}
