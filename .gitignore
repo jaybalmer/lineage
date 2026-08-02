@@ -64,3 +64,6 @@ next-env.d.ts
 
 # local Claude Code worktrees (tool artifact)
 .claude/worktrees/
+
+# review pages built from seeds (regenerate with the skill script)
+/podcast-seeds/*.html
