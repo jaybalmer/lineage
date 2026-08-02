@@ -237,66 +237,150 @@ async function resolveEpisode(ep) {
 }
 
 // ── subject resolution ──────────────────────────────────────────────────────
-// Case-insensitive exact name match against the table that owns the subject
-// type. Exactly one match resolves; zero becomes a ghost candidate; more than
-// one is ambiguous and is never auto-picked (D6).
+// Two passes, and the second one exists because the first one is not enough.
+//
+// Pass 1 is a case-insensitive EXACT name match. Exactly one hit resolves, more
+// than one is ambiguous and is never auto-picked (D6).
+//
+// Pass 2 is the near-miss probe. Exact matching alone quietly minted duplicates
+// on the first real import: the transcript says "Mount Baker" and the catalog
+// holds "Mt. Baker Ski Area", so nothing matched and a second Baker was created.
+// Same for Nakiska, Breckenridge, Whistler and Blackcomb. A near miss now
+// REFUSES the row and hands back the candidates, because a wrong new node is
+// worse than a stopped import: the mention still gets written, just against a
+// twin nobody else links to.
+//
+// Escape hatch: set "confirm_new": true on the subject to say "I looked, it is
+// genuinely different", and the probe is skipped for that row.
 //
 // person spans BOTH people and profiles: the app's people catalog is the union
 // of the two (lineage-store catalog load), and a mention against a member must
 // carry the profile id so it lands on their real timeline.
+
+// Words that carry no identity, so "Nakiska" and "Nakiska Ski Area" compare
+// equal. Deliberately short: anything dropped here is a word two different
+// entities are allowed to share.
+const GENERIC_TOKENS = new Set([
+  "the", "a", "an", "and", "of", "at",
+  "ski", "skiing", "area", "resort", "mountain", "mtn", "hill", "park",
+  "snowboard", "snowboards", "snowboarding", "boards", "co", "inc", "ltd", "llc",
+])
+
+/** Lowercase, expand the abbreviations that actually collide, strip punctuation. */
+function normalizeName(raw) {
+  return String(raw ?? "")
+    .toLowerCase()
+    .replace(/\bmt\.?\b/g, "mount")
+    .replace(/\bst\.?\b/g, "saint")
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+}
+
+/** Identity-bearing tokens only. */
+function significantTokens(raw) {
+  return normalizeName(raw).split(" ").filter((t) => t && !GENERIC_TOKENS.has(t))
+}
+
+/**
+ * True when two names are close enough that a human should decide.
+ *
+ * The rule is token containment after normalization: every significant token of
+ * the shorter name appears in the longer. That catches abbreviation ("Mt." vs
+ * "Mount"), generic suffixes ("Nakiska" vs "Nakiska Ski Area") and partial names
+ * ("Whistler" vs "Whistler Blackcomb"), which is every duplicate the first
+ * import produced. It is deliberately loose: a false flag costs one review, a
+ * missed one costs a permanent duplicate node.
+ */
+function isNearMiss(a, b) {
+  const A = new Set(significantTokens(a))
+  const B = new Set(significantTokens(b))
+  if (A.size === 0 || B.size === 0) return false
+  const [small, large] = A.size <= B.size ? [A, B] : [B, A]
+  for (const token of small) if (!large.has(token)) return false
+  return true
+}
+
+const sameName = (a, b) => String(a ?? "").trim().toLowerCase() === String(b ?? "").trim().toLowerCase()
+
+// One read per table per run, held in memory. Matching in memory rather than
+// per-row SQL is what makes the near-miss scan affordable at all, and it lets a
+// ghost created mid-run be visible to later rows (see rememberCreated).
+const indexCache = new Map()
+
+async function loadIndex(type) {
+  if (indexCache.has(type)) return indexCache.get(type)
+  let rows = []
+  if (type === "person") {
+    const [{ data: people }, { data: profiles }] = await Promise.all([
+      db.from("people").select("id, display_name, node_status"),
+      db.from("profiles").select("id, display_name, is_archived"),
+    ])
+    for (const p of profiles ?? []) {
+      if (p.is_archived || !p.display_name) continue
+      rows.push({ id: p.id, name: p.display_name, label: `${p.display_name} (member)` })
+    }
+    const seen = new Set(rows.map((r) => r.id))
+    for (const p of people ?? []) {
+      if (seen.has(p.id) || !p.display_name) continue
+      rows.push({ id: p.id, name: p.display_name, label: `${p.display_name} (${p.node_status})` })
+    }
+  } else if (type === "place") {
+    const { data } = await db.from("places").select("id, name, place_type")
+    rows = (data ?? []).map((p) => ({ id: p.id, name: p.name, label: `${p.name} (${p.place_type})` }))
+  } else if (type === "org") {
+    const { data } = await db.from("orgs").select("id, name, org_type")
+    rows = (data ?? []).map((o) => ({ id: o.id, name: o.name, label: `${o.name} (${o.org_type})` }))
+  } else if (type === "event") {
+    const { data } = await db.from("events").select("id, name, year")
+    rows = (data ?? []).map((e) => ({ id: e.id, name: e.name, label: `${e.name}${e.year ? ` (${e.year})` : ""}` }))
+  } else {
+    const { data } = await db.from("boards").select("id, brand, model, model_year")
+    rows = (data ?? []).map((b) => ({
+      id: b.id,
+      name: `${b.brand ?? ""} ${b.model ?? ""}`.trim(),
+      brand: b.brand, model: b.model, model_year: b.model_year,
+      label: `${b.brand} ${b.model}${b.model_year ? ` ${b.model_year}` : ""}`,
+    }))
+  }
+  indexCache.set(type, rows)
+  return rows
+}
+
+/** Make a just-created ghost visible to the rest of this run. */
+function rememberCreated(type, entity) {
+  const rows = indexCache.get(type)
+  if (rows) rows.push(entity)
+}
+
+/**
+ * Resolve one subject.
+ *
+ * Returns { exact } when the name matched outright (0, 1 or many), and
+ * { near } when nothing matched exactly but something looks like it should have.
+ */
 async function findCandidates(row) {
   const name = (row.subject_name ?? "").trim()
   const ghost = row.ghost ?? {}
+  const type = row.subject_type
+  const index = await loadIndex(type)
 
-  if (row.subject_type === "person") {
-    const [{ data: people }, { data: profiles }] = await Promise.all([
-      db.from("people").select("id, display_name, node_status").ilike("display_name", ilikeExact(name)),
-      db.from("profiles").select("id, display_name, is_archived").ilike("display_name", ilikeExact(name)),
-    ])
-    const out = []
-    for (const p of profiles ?? []) {
-      if (p.is_archived) continue
-      out.push({ id: p.id, label: `${p.display_name} (member)`, source: "profiles" })
-    }
-    const seen = new Set(out.map((c) => c.id))
-    for (const p of people ?? []) {
-      if (seen.has(p.id)) continue
-      out.push({ id: p.id, label: `${p.display_name} (${p.node_status})`, source: "people" })
-    }
-    return out
+  if (type === "board") {
+    // brand + model is the real identity. Match on both when the seed carries
+    // them (it must, to create the ghost at all), else fall back to the model.
+    const exact = ghost.brand && ghost.model
+      ? index.filter((b) =>
+          sameName(b.brand, ghost.brand) && sameName(b.model, ghost.model) &&
+          (!ghost.model_year || b.model_year === ghost.model_year))
+      : index.filter((b) => sameName(b.model, name))
+    if (exact.length > 0) return { exact }
+    const probe = ghost.brand && ghost.model ? `${ghost.brand} ${ghost.model}` : name
+    return { exact: [], near: index.filter((b) => isNearMiss(probe, b.name)) }
   }
 
-  if (row.subject_type === "place") {
-    const { data } = await db.from("places").select("id, name, place_type").ilike("name", ilikeExact(name))
-    return (data ?? []).map((p) => ({ id: p.id, label: `${p.name} (${p.place_type})`, source: "places" }))
-  }
-
-  if (row.subject_type === "org") {
-    const { data } = await db.from("orgs").select("id, name, org_type").ilike("name", ilikeExact(name))
-    return (data ?? []).map((o) => ({ id: o.id, label: `${o.name} (${o.org_type})`, source: "orgs" }))
-  }
-
-  if (row.subject_type === "event") {
-    const { data } = await db.from("events").select("id, name, year").ilike("name", ilikeExact(name))
-    return (data ?? []).map((e) => ({ id: e.id, label: `${e.name}${e.year ? ` (${e.year})` : ""}`, source: "events" }))
-  }
-
-  // board: brand + model is the real identity. Match on both when the seed
-  // carries them (it must, to be able to create the ghost at all), else fall
-  // back to the model alone so a bare "Sims 1500" style name still probes.
-  let probe = db.from("boards").select("id, brand, model, model_year")
-  if (ghost.brand && ghost.model) {
-    probe = probe.ilike("brand", ilikeExact(ghost.brand)).ilike("model", ilikeExact(ghost.model))
-    if (ghost.model_year) probe = probe.eq("model_year", ghost.model_year)
-  } else {
-    probe = probe.ilike("model", ilikeExact(name))
-  }
-  const { data } = await probe
-  return (data ?? []).map((b) => ({
-    id: b.id,
-    label: `${b.brand} ${b.model}${b.model_year ? ` ${b.model_year}` : ""}`,
-    source: "boards",
-  }))
+  const exact = index.filter((e) => sameName(e.name, name))
+  if (exact.length > 0) return { exact }
+  return { exact: [], near: index.filter((e) => isNearMiss(name, e.name)) }
 }
 
 // ── ghost creation (D5) ─────────────────────────────────────────────────────
@@ -521,22 +605,31 @@ for (const [index, row] of mentionRows.entries()) {
   let resolution = row.resolution ?? null
 
   if (!subjectId) {
-    const candidates = await findCandidates(row)
-    if (candidates.length === 1) {
-      subjectId = candidates[0].id
+    const { exact, near } = await findCandidates(row)
+    if (exact.length === 1) {
+      subjectId = exact[0].id
       resolution = "matched_existing"
       seedChanged.push({ index, subject_id: subjectId, resolution, candidates: null })
-      console.log(`${label}: matched ${candidates[0].label} [${subjectId}]`)
-    } else if (candidates.length === 0) {
+      console.log(`${label}: matched ${exact[0].label} [${subjectId}]`)
+    } else if (exact.length > 1) {
+      resolution = "ambiguous"
+      seedChanged.push({ index, subject_id: null, resolution, candidates: exact })
+      refused++
+      console.log(`${label}: AMBIGUOUS, ${exact.length} exact matches. Pick one and set subject_id in the seed:`)
+      for (const c of exact) console.log(`     ${c.id}  ${c.label}`)
+      continue
+    } else if ((near?.length ?? 0) > 0 && row.confirm_new !== true) {
+      // Nothing matched outright, but something is close enough that creating a
+      // node here would probably mint a twin. Refuse and let a human decide.
+      resolution = "review"
+      seedChanged.push({ index, subject_id: null, resolution, candidates: near })
+      refused++
+      console.log(`${label}: NEAR MISS, no exact match but ${near.length} similar. Set subject_id to one of these, or add "confirm_new": true if it really is new:`)
+      for (const c of near) console.log(`     ${c.id}  ${c.label}`)
+      continue
+    } else {
       resolution = "new_ghost"
       seedChanged.push({ index, subject_id: null, resolution, candidates: null })
-    } else {
-      resolution = "ambiguous"
-      seedChanged.push({ index, subject_id: null, resolution, candidates })
-      refused++
-      console.log(`${label}: AMBIGUOUS, ${candidates.length} matches. Pick one and set subject_id in the seed:`)
-      for (const c of candidates) console.log(`     ${c.id}  ${c.label}`)
-      continue
     }
   }
 
@@ -556,6 +649,14 @@ for (const [index, row] of mentionRows.entries()) {
         continue
       }
       await linkCommunity(plan.table, plan.id, communityId)
+      rememberCreated(row.subject_type, {
+        id: plan.id,
+        name: row.subject_type === "board"
+          ? `${plan.row.brand ?? ""} ${plan.row.model ?? ""}`.trim()
+          : (plan.row.display_name ?? plan.row.name),
+        brand: plan.row.brand, model: plan.row.model, model_year: plan.row.model_year,
+        label: `${plan.row.display_name ?? plan.row.name ?? plan.id} (just created)`,
+      })
       subjectId = plan.id
       created++
       console.log(`${label}: created ${row.subject_type} ghost [${plan.id}]`)

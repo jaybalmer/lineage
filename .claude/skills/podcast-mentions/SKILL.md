@@ -141,8 +141,13 @@ row comes back as:
 - `matched_existing` with a `subject_id`: the name matched exactly one catalog
   entity.
 - `new_ghost`: no match. The importer will create an unclaimed entity on apply.
-- `ambiguous` with a `candidates` list: the name matched more than one. It is
-  never auto-picked.
+- `ambiguous` with a `candidates` list: the name matched more than one exactly.
+  It is never auto-picked.
+- `review` with a `candidates` list: nothing matched exactly, but something in
+  the catalog is close enough that creating a node would probably mint a
+  duplicate ("Mount Baker" against an existing "Mt. Baker Ski Area"). The
+  importer refuses these until someone sets `subject_id`, or adds
+  `"confirm_new": true` to say it really is a different entity.
 
 ## Step 4: build the review page and hand it over
 
@@ -162,8 +167,10 @@ setting `"resolution": "skip"` on each named story, then rebuild the page.
 
 Alongside the link, call out explicitly:
 
-- every `ambiguous` row, with its candidates, because import refuses them until
-  a `subject_id` is set by hand;
+- every `ambiguous` and `review` row, with its candidates, because import
+  refuses them until a `subject_id` is set by hand or `confirm_new` is added.
+  A `review` row is the one most likely to become a duplicate catalog node, so
+  never wave it through;
 - every `new_ghost` of type `board` or `event`, because those need extra `ghost`
   fields before they can be created (`brand` + `model` + `model_year` for a
   board, `start_date` for an event) and are otherwise refused;

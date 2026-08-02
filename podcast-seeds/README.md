@@ -95,7 +95,8 @@ format keep importing. New seeds should use `stories[]`.
 |---|---|
 | `subject_name` | The surface name from the transcript. Drives resolution. |
 | `subject_type` | `person`, `place`, `org`, `board` or `event`. |
-| `resolution` | `matched_existing`, `new_ghost`, `ambiguous` or `skip`. |
+| `resolution` | `matched_existing`, `new_ghost`, `review`, `ambiguous` or `skip`. |
+| `confirm_new` | `true` overrides a `review` flag: "I looked, it really is a different entity." |
 | `subject_id` | Filled by `--resolve-only`, or set by hand to disambiguate. A row that already carries one is never re-resolved. |
 | `candidates` | Written by `--resolve-only` on an `ambiguous` row: the ids to choose between. |
 | `timestamp_seconds` | Whole seconds. |
@@ -141,3 +142,24 @@ created ghost is linked into the episode's community.
 The importer stamps `created_by` (mentions) and `added_by` (ghosts) with a
 `profiles.id`. Set `MENTIONS_IMPORT_ACTOR_ID` in `.env.local`, or pass
 `--actor <uuid>`. `--apply` refuses to run without one.
+
+## Near misses
+
+Exact name matching alone is not safe. The first real import wrote "Mount Baker"
+while the catalog held "Mt. Baker Ski Area", found nothing, and created a second
+Baker. The same happened to Nakiska, Breckenridge, Whistler and Blackcomb.
+
+So when nothing matches exactly, the resolver looks for names that are close:
+same significant tokens after normalizing abbreviations (`Mt.` to `Mount`) and
+dropping words that carry no identity (`Ski`, `Area`, `Resort`, `Mountain`). A
+hit lands the row as `review` with the candidates listed, and the importer
+refuses it.
+
+Resolve a `review` row one of two ways:
+
+- set `subject_id` to the catalog entity it should point at, or
+- add `"confirm_new": true` to the subject, meaning you looked and it really is
+  a different thing.
+
+The check is deliberately loose. A false flag costs one decision; a missed one
+costs a permanent duplicate node that other people start linking to.
