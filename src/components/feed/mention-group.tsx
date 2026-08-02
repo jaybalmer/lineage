@@ -47,13 +47,17 @@ export function MentionGroup({
   isEditor = false,
   onEdit,
   onRemove,
+  onSetStatus,
 }: {
   moment: MentionMoment
   isEditor?: boolean
   onEdit?: (mention: Mention) => void
   onRemove?: (mention: Mention) => void
+  /** Flip the whole story's rows together. A story publishes or it does not. */
+  onSetStatus?: (mentions: Mention[], status: "draft" | "published") => Promise<void> | void
 }) {
   const [expanded, setExpanded] = useState(false)
+  const [busy, setBusy] = useState(false)
   const catalog = useLineageStore((s) => s.catalog)
   const personHref = usePersonHref()
 
@@ -110,6 +114,25 @@ export function MentionGroup({
             <p className="text-[11px] text-muted mt-1">{moment.excerpt ? "Read the line" : "Listen"} →</p>
           )}
         </button>
+
+        {isEditor && onSetStatus && (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true)
+              try { await onSetStatus(moment.items, anyDraft ? "published" : "draft") }
+              finally { setBusy(false) }
+            }}
+            className={`flex-shrink-0 text-[11px] font-medium px-2.5 py-1 rounded-lg border transition-colors disabled:opacity-50 ${
+              anyDraft
+                ? "border-transparent bg-[#1C1917] text-white hover:bg-[#292524]"
+                : "border-border-default text-muted hover:text-foreground"
+            }`}
+          >
+            {busy ? "Saving…" : anyDraft ? "Publish" : "Unpublish"}
+          </button>
+        )}
       </div>
 
       {/* The cast. Outside the expand button so every chip stays its own link. */}
