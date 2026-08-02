@@ -19,7 +19,6 @@ import { StackCurateModal } from "@/components/ui/stack-curate-modal"
 import { MentionEditorModal } from "@/components/ui/mention-editor-modal"
 import { MentionGroup } from "@/components/feed/mention-group"
 import { groupMentionsByMoment } from "@/lib/mentions"
-import { EpisodeConnections } from "@/components/events/episode-connections"
 import type { Event, Mention } from "@/types"
 import type { PublicEpisodePayload } from "@/lib/public-timeline-read"
 
@@ -377,8 +376,17 @@ export function EpisodeView({ instance }: { instance: Event }) {
           </section>
         )}
 
-        {/* Community connections (member-added) */}
-        <EpisodeConnections eventId={instance.id} />
+        {/* The member-added "community connections" list used to sit here. It
+            was a flat roster of every entity an episode touched, with no
+            context: a name, and nothing about why it was there.
+            Story-first mentions replaced it. A mention says what happened, when
+            in the episode it happened, and who else was in it, and the whole
+            cast links out the same way the roster did. Keeping both meant the
+            page named an entity twice and said less the second time.
+            The junction data (event_people / event_places / event_events /
+            event_orgs / event_boards) and GET|POST|DELETE
+            /api/events/[id]/connections are deliberately left intact, so this
+            is a rendering decision and not a deletion. */}
 
         {!isAuth && (
           <p className="text-xs text-muted text-center">
