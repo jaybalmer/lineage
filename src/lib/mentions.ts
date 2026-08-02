@@ -33,6 +33,8 @@ export type MomentGroup<T> = {
   key: string
   timestamp_seconds: number | null
   excerpt: string | null
+  /** Headline for the moment, from the first row that carries one. */
+  story_title: string | null
   items: T[]
 }
 
@@ -54,7 +56,11 @@ export type MomentGroup<T> = {
  * Input order is preserved, so a timestamp-ordered read stays ordered.
  */
 export function groupMentionsByMoment<
-  T extends { timestamp_seconds?: number | null; excerpt?: string | null },
+  T extends {
+    timestamp_seconds?: number | null
+    excerpt?: string | null
+    story_title?: string | null
+  },
 >(rows: T[]): MomentGroup<T>[] {
   const order: string[] = []
   const byKey = new Map<string, MomentGroup<T>>()
@@ -65,10 +71,13 @@ export function groupMentionsByMoment<
     const key = excerpt === null ? `solo:${index}` : `${ts ?? -1}|${excerpt}`
     let group = byKey.get(key)
     if (!group) {
-      group = { key, timestamp_seconds: ts, excerpt, items: [] }
+      group = { key, timestamp_seconds: ts, excerpt, story_title: null, items: [] }
       byKey.set(key, group)
       order.push(key)
     }
+    // The title is denormalized across the story's rows, so the first non-empty
+    // one wins rather than requiring every row to agree.
+    if (!group.story_title) group.story_title = (row.story_title ?? "").trim() || null
     group.items.push(row)
   })
 

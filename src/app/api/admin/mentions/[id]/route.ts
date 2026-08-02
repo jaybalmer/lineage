@@ -41,6 +41,10 @@ export async function PATCH(
     const raw = typeof b.excerpt === "string" ? b.excerpt.trim() : ""
     patch.excerpt = raw || null
   }
+  if ("story_title" in b) {
+    const raw = typeof b.story_title === "string" ? b.story_title.trim() : ""
+    patch.story_title = raw || null
+  }
   if ("status" in b) {
     if (b.status !== "draft" && b.status !== "published") {
       return NextResponse.json({ error: "status must be draft or published" }, { status: 400 })

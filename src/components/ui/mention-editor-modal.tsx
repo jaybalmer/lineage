@@ -3,9 +3,9 @@
 // Podcast pass Session B: the editor surface for mapping podcast mentions.
 //
 // Editor-only, opened from the episode page. One subject per save, with a
-// "Save + add another" path because mapping an episode means entering a run of
-// mentions back to back: the modal stays open and clears the subject, the
-// timestamp, and the excerpt, keeping the subject-type tab where it was.
+// "Save + add another" path because a story has a cast: the modal stays open,
+// clears the subject, and KEEPS the moment (title, timestamp, excerpt) so the
+// next person in the same story is one pick away rather than a full retype.
 //
 // Pass `editMention` to switch to edit mode (PATCH instead of POST).
 
@@ -49,6 +49,7 @@ export function MentionEditorModal({
     editMention?.timestamp_seconds != null ? formatTimestamp(editMention.timestamp_seconds) : ""
   )
   const [excerpt, setExcerpt] = useState(editMention?.excerpt ?? "")
+  const [storyTitle, setStoryTitle] = useState(editMention?.story_title ?? "")
   const [status, setStatus] = useState<"draft" | "published">(editMention?.status ?? "published")
   const [saving, setSaving] = useState(false)
 
@@ -83,6 +84,7 @@ export function MentionEditorModal({
       subject_id: subjectId,
       timestamp_seconds: parsed,
       excerpt,
+      story_title: storyTitle,
       status,
     }
     const res = await fetch(
@@ -110,10 +112,14 @@ export function MentionEditorModal({
       onClose()
       return
     }
-    // Save + add another: keep the tab, clear the entry.
+    // Save + add another: clear ONLY the subject, and keep the moment.
+    //
+    // Adding a story means entering its whole cast against one timestamp,
+    // title and excerpt, so clearing those made an editor retype the same
+    // paragraph once per person. Keeping them turns "add another" into "add the
+    // next person in this story", which is the actual job. Clear the timestamp
+    // and excerpt by hand to start a new moment.
     setSubjectId(null)
-    setStamp("")
-    setExcerpt("")
   }
 
   return (
@@ -183,6 +189,23 @@ export function MentionEditorModal({
             />
             <p className="text-[11px] text-muted mt-1">
               mm:ss, h:mm:ss, or raw seconds. Links the row straight to that moment.
+            </p>
+          </div>
+
+          {/* Story title. Shared by every mention at the same moment, so the
+              episode page can group a story's cast under one headline. */}
+          <div>
+            <label className="text-[10px] font-semibold text-muted uppercase tracking-widest">
+              Story title (optional)
+            </label>
+            <input
+              value={storyTitle}
+              onChange={(e) => setStoryTitle(e.target.value)}
+              placeholder="e.g. The first snowboard in the family"
+              className={cn(inputCls, "mt-1.5")}
+            />
+            <p className="text-[11px] text-muted mt-1">
+              Heads the card on the episode page. Use the same title and timestamp for everyone in one story.
             </p>
           </div>
 

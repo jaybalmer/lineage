@@ -166,6 +166,7 @@ function expandStories(s) {
         timestamp: subject.timestamp ?? story.timestamp,
         timestamp_seconds: subject.timestamp_seconds ?? story.timestamp_seconds,
         excerpt: subject.excerpt ?? story.excerpt,
+        story_title: subject.story_title ?? story.title ?? null,
         status: subject.status ?? story.status ?? "draft",
         resolution: subject.resolution ?? "new_ghost",
         activity: subject.activity ?? story.activity,
@@ -587,6 +588,7 @@ for (const [index, row] of mentionRows.entries()) {
     subject_id: subjectId,
     timestamp_seconds: ts,
     excerpt: (row.excerpt ?? "").trim() || null,
+    story_title: (row.story_title ?? "").trim() || null,
     status: "draft",
     created_by: ACTOR_ID,
   }
