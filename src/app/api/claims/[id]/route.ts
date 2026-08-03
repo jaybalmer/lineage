@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { requireAuth, getServiceClient } from "@/lib/auth"
-import { disableClaimTagEventsForDeletion } from "@/lib/tag-events"
+import { disableClaimTagEventsForDeletion, reverseClaimAwardOnDecline } from "@/lib/tag-events"
+import { logTagActions } from "@/lib/tag-action-log"
 import { reverseContributionTokens } from "@/lib/tokens"
 import { ENTITY_TYPES, CONFIDENCE, VISIBILITY, BOARD_RELATIONSHIPS, str } from "../validation"
 
@@ -36,10 +37,64 @@ import { ENTITY_TYPES, CONFIDENCE, VISIBILITY, BOARD_RELATIONSHIPS, str } from "
 async function loadClaim(db: SupabaseClient, id: string) {
   const { data } = await db
     .from("claims")
-    .select("id, asserted_by, object_type")
+    .select("id, asserted_by, object_type, subject_id, object_id")
     .eq("id", id)
     .maybeSingle()
-  return data as { id: string; asserted_by: string | null; object_type: string | null } | null
+  return data as {
+    id: string
+    asserted_by: string | null
+    object_type: string | null
+    subject_id: string | null
+    object_id: string | null
+  } | null
+}
+
+// BUG-148: decline the caller's own pending/approved tag_events on a claim they
+// did not assert. Returns how many rows moved, so the DELETE handler can tell a
+// legitimate subject-side removal from a genuine 403. The status filter is what
+// makes this safe to call speculatively: a caller with no tag on the claim moves
+// nothing and falls through to the 403.
+//
+// The declining subject is recorded as the decider with `preference`, the same
+// terminal state the /me/tags Remove path writes, so the editor rap sheet and
+// the asserter's decline rate stay consistent no matter which surface was used.
+async function declineOwnTagsForClaim(
+  db: SupabaseClient,
+  claimId: string,
+  userId: string,
+): Promise<number> {
+  const now = new Date().toISOString()
+  const { data, error } = await db
+    .from("tag_events")
+    .update({
+      status: "declined",
+      decision_by: userId,
+      decision_at: now,
+      decision_reason_category: "preference",
+    })
+    .eq("moment_ref->>claim_id", claimId)
+    .eq("subject_id", userId)
+    .in("status", ["pending", "approved"])
+    .select("id, asserter_id")
+  if (error) {
+    console.error("[api/claims/[id]] subject-side decline failed:", error.message)
+    return 0
+  }
+  const rows = (data ?? []) as { id: string; asserter_id: string | null }[]
+  if (rows.length === 0) return 0
+
+  await logTagActions(db, rows.map((r) => ({
+    tagEventId:     r.id,
+    asserterId:     r.asserter_id,
+    actorId:        userId,
+    actorRole:      "owner" as const,
+    action:         "decline" as const,
+    reasonCategory: "preference" as const,
+  })))
+
+  // Same claw-back the /me/tags decline runs (BUG-151).
+  await reverseClaimAwardOnDecline(db, claimId)
+  return rows.length
 }
 
 // Same authority rule as requireEditor(): is_editor flag OR founding tier.
@@ -183,6 +238,17 @@ export async function DELETE(
 
   const isOwner = claim.asserted_by === user.id
   if (!isOwner && !(await callerIsEditor(db, user.id))) {
+    // BUG-148: the caller is not the asserter, but the claim may be ABOUT them.
+    // Someone else asserting "you rode at X" lands on the subject's own timeline
+    // with a Remove button (the card gates on subject_id === activePersonId),
+    // and a hard delete here would let anyone tagged in a claim destroy another
+    // member's row. The subject's real authority is the PB-009 one: decline the
+    // tag. That hides the claim from them and, since Remove is optimistic, reads
+    // as a removal. Same end state as declining from /me/tags.
+    const declined = await declineOwnTagsForClaim(db, id, user.id)
+    if (declined > 0) {
+      return NextResponse.json({ ok: true, declined })
+    }
     return NextResponse.json({ error: "You can only delete claims you added." }, { status: 403 })
   }
 

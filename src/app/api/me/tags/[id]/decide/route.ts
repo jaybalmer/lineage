@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { requireAuth, getServiceClient } from "@/lib/auth"
 import { isUserFacingDeclineCategory } from "@/lib/decline-categories"
 import { logTagAction, logTagActions } from "@/lib/tag-action-log"
+import { reverseClaimAwardOnDecline } from "@/lib/tag-events"
 import type { TagEventDeclineCategory } from "@/types"
 
 // PATCH /api/me/tags/[id]/decide
@@ -35,7 +36,7 @@ export async function PATCH(
 
   const { data: ev, error: readErr } = await db
     .from("tag_events")
-    .select("id, subject_id, asserter_id, status")
+    .select("id, subject_id, asserter_id, status, moment_ref")
     .eq("id", id)
     .maybeSingle()
   if (readErr) return NextResponse.json({ error: readErr.message }, { status: 500 })
@@ -89,6 +90,14 @@ export async function PATCH(
     decision_reason_note: note,
   }).eq("id", id)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+  // BUG-151: a declined claim tag must not leave its asserter holding the
+  // contribution token it earned. No-op for story tags and for claims that
+  // still have a live tag_event on another person.
+  const declinedClaimId = (ev.moment_ref as { claim_id?: string } | null)?.claim_id
+  if (declinedClaimId) {
+    await reverseClaimAwardOnDecline(db, declinedClaimId)
+  }
 
   await closeOpenReports(db, id, user.id, now, ev.asserter_id as string | null)
   await logTagAction(db, {

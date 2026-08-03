@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAuth, getServiceClient } from "@/lib/auth"
 import { isUserFacingDeclineCategory } from "@/lib/decline-categories"
 import { logTagActions } from "@/lib/tag-action-log"
+import { claimIdsForTagEvents, reverseClaimAwardOnDecline } from "@/lib/tag-events"
 import type { TagEventDeclineCategory } from "@/types"
 
 // POST /api/me/tags/bulk-decide
@@ -70,6 +71,16 @@ export async function POST(req: NextRequest) {
   // PB-009 Phase 3 (§9): log each owner action; auto-close any open reports
   // against the decided tag_events; log the report-close per row.
   if (decidedRows.length > 0) {
+    // BUG-151: same claw-back as the single-decide route. Resolve the claim ids
+    // behind the declined tags (story tags carry none and drop out), then let
+    // the helper decide per claim whether a live tag_event still survives.
+    if (body.action === "decline") {
+      const claimIds = await claimIdsForTagEvents(db, decidedRows.map((r) => r.id))
+      for (const claimId of claimIds) {
+        await reverseClaimAwardOnDecline(db, claimId)
+      }
+    }
+
     const newStatus = body.action === "approve" ? "approved" : "declined"
     const reasonCategory = body.action === "approve" ? null : (baseUpdate.decision_reason_category as TagEventDeclineCategory)
     const reasonNote = body.action === "approve" ? null : (baseUpdate.decision_reason_note as string | null)

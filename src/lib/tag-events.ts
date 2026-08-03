@@ -14,6 +14,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js"
 import { logTagActions } from "@/lib/tag-action-log"
+import { reverseContributionTokens } from "@/lib/tokens"
 import type {
   TagActionActorRole,
   TagEventSource,
@@ -439,4 +440,89 @@ export async function disableClaimTagEventsForDeletion(
     newStatus:      "disabled" as const,
     reasonCategory: "lifecycle_destroyed" as const,
   })))
+}
+
+// ── BUG-151: the contribution award must not outlive the subject's rejection ──
+//
+// A claim written about ANOTHER person (the add-connection popover on a rider
+// profile, and any other client that writes the same shape) awards its asserter
+// a contribution token at insert time in POST /api/claims, tied to the claim via
+// source_ref. Declining the tag used to hide the claim but leave that token, and
+// its equity weight, standing: in prod one account held 26 tokens across 27
+// claims the subject had already declined.
+//
+// So a decline now reverses the award, mirroring the delete claw-back that
+// BUG-103 built on the same source_ref mechanism.
+//
+// Two deliberate limits:
+//   - Only CLAIM tags reverse. A story tag declined by the tagged rider removes
+//     the tag, not the story, and the story is still the author's own
+//     contribution, so its token stays.
+//   - A claim can carry one tag_event per implicated person. The award is
+//     reversed only once NO pending or approved tag_event remains for the claim,
+//     so one declining subject does not erase an award that still stands for
+//     another.
+//
+// Best-effort like every other token call: failures log and return 0 rather
+// than throwing into the decide path that triggered them.
+
+export async function reverseClaimAwardOnDecline(
+  supabase: SupabaseClient,
+  claimId: string,
+): Promise<number> {
+  try {
+    const { data: survivors, error: survivorErr } = await supabase
+      .from("tag_events")
+      .select("id")
+      .eq("moment_ref->>claim_id", claimId)
+      .in("status", ["pending", "approved"])
+      .limit(1)
+    if (survivorErr) {
+      console.error("[tag-events] decline claw-back survivor check failed:", survivorErr.message)
+      return 0
+    }
+    if ((survivors ?? []).length > 0) return 0
+
+    const { data: claim, error: claimErr } = await supabase
+      .from("claims")
+      .select("asserted_by")
+      .eq("id", claimId)
+      .maybeSingle()
+    if (claimErr) {
+      console.error("[tag-events] decline claw-back claim read failed:", claimErr.message)
+      return 0
+    }
+    // asserted_by is TEXT and holds legacy person ids on old rows, which simply
+    // match no token_events row; the reversal is a no-op there.
+    const asserterId = (claim as { asserted_by: string | null } | null)?.asserted_by
+    if (!asserterId) return 0
+
+    return await reverseContributionTokens(supabase, asserterId, `claim:${claimId}`)
+  } catch (e) {
+    console.error("[tag-events] decline claw-back threw:", e)
+    return 0
+  }
+}
+
+// Resolve the claim ids behind a set of tag_events so a decide path can hand
+// them to reverseClaimAwardOnDecline. Story tags carry no claim_id and drop out.
+export async function claimIdsForTagEvents(
+  supabase: SupabaseClient,
+  tagEventIds: string[],
+): Promise<string[]> {
+  if (tagEventIds.length === 0) return []
+  const { data, error } = await supabase
+    .from("tag_events")
+    .select("moment_ref")
+    .in("id", tagEventIds)
+  if (error) {
+    console.error("[tag-events] claim-id lookup failed:", error.message)
+    return []
+  }
+  const ids = new Set<string>()
+  for (const row of (data ?? []) as { moment_ref: { claim_id?: string } | null }[]) {
+    const claimId = row.moment_ref?.claim_id
+    if (claimId) ids.add(claimId)
+  }
+  return Array.from(ids)
 }

@@ -42,7 +42,12 @@ export function AddPersonConnectionsPopover({ person, onClose }: AddPersonConnec
   // inline (mirrors the story popover + Add Story modal), then connect against it.
   const [addingEntity, setAddingEntity] = useState<CreateKind | null>(null)
   // Same-session dedupe so a double-tap on the same item doesn't write two
-  // claims (the picker never marks items as selected, so they stay tappable).
+  // claims. BUG-151: this used to be the ONLY guard, because every picker was
+  // passed selected={[]} and so never rendered a tapped item as selected. A tap
+  // looked like it had done nothing (the reporter: "tapping does not add the
+  // name to the search field like how it did before") while silently writing a
+  // token-earning claim, which is what made the farm invisible to the person
+  // doing it. The per-section selected ids below drive real selected state.
   const [connected, setConnected] = useState<Set<string>>(new Set())
   const [rodeWithDone, setRodeWithDone] = useState(false)
 
@@ -77,7 +82,11 @@ export function AddPersonConnectionsPopover({ person, onClose }: AddPersonConnec
     if (!viewerId) return
     const key = `${kind}:${objectId}`
     if (connected.has(key)) {
-      addToast("Already added.", "info")
+      // Re-tapping a selected row, or the × on its chip, lands here. This
+      // surface is add-only by design (removal is the subject's call, at
+      // /me/tags), so say that rather than leaving an × that looks like it
+      // should undo and silently does nothing.
+      addToast(`Already added. ${firstName} can remove it from their tags.`, "info")
       return
     }
     const { predicate, objectType } = SECTION_MAP[kind]
@@ -132,6 +141,14 @@ export function AddPersonConnectionsPopover({ person, onClose }: AddPersonConnec
   // the fast path) from the Riders picker.
   const riders = catalog.people.filter((p) => p.id !== person.id && p.id !== viewerId)
 
+  // The ids already connected in this section, in the shape SearchPicker's
+  // `selected` prop wants. `connected` is keyed "kind:objectId" so one Set backs
+  // both the dedupe and the selected state and the two can never disagree.
+  const selectedIn = (kind: SectionKind) =>
+    Array.from(connected)
+      .filter((key) => key.startsWith(`${kind}:`))
+      .map((key) => key.slice(kind.length + 1))
+
   return (
     <>
       {/* Create sub-modal: AddEntityModal is z-[60], so it stacks above this
@@ -185,7 +202,7 @@ export function AddPersonConnectionsPopover({ person, onClose }: AddPersonConnec
                 <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">Places — rode here</label>
                 <SearchPicker
                   items={catalog.places}
-                  selected={[]}
+                  selected={selectedIn("place")}
                   onToggle={(id) => connectSection("place", id)}
                   getLabel={(p) => p.name}
                   placeholder="Search places…"
@@ -197,7 +214,7 @@ export function AddPersonConnectionsPopover({ person, onClose }: AddPersonConnec
                 <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">Brands — ridden for</label>
                 <SearchPicker
                   items={catalog.orgs}
-                  selected={[]}
+                  selected={selectedIn("org")}
                   onToggle={(id) => connectSection("org", id)}
                   getLabel={(o) => o.name}
                   placeholder="Search brands…"
@@ -209,7 +226,7 @@ export function AddPersonConnectionsPopover({ person, onClose }: AddPersonConnec
                 <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">Events — competed at</label>
                 <SearchPicker
                   items={catalog.events}
-                  selected={[]}
+                  selected={selectedIn("event")}
                   onToggle={(id) => connectSection("event", id)}
                   getLabel={(e) => `${e.name} ${e.year ?? ""}`}
                   placeholder="Search events…"
@@ -221,7 +238,7 @@ export function AddPersonConnectionsPopover({ person, onClose }: AddPersonConnec
                 <label className="block text-[10px] uppercase tracking-widest text-muted mb-1.5">Riders — rode with</label>
                 <SearchPicker
                   items={riders}
-                  selected={[]}
+                  selected={selectedIn("rider")}
                   onToggle={(id) => connectSection("rider", id)}
                   getLabel={(r) => r.display_name}
                   placeholder="Search riders…"
