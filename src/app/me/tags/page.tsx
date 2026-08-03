@@ -70,6 +70,17 @@ export default function MeTagsPage() {
   const [reportTarget, setReportTarget] = useState<{ id: string } | null>(null)
   const [reportSubmitting, setReportSubmitting] = useState(false)
 
+  // BUG-150: entering the inbox landed at a remembered scroll position, with the
+  // "Your tags" header, the status chips and the MeSubNav row all above the
+  // viewport, so the page read as headerless (only the sticky main nav showed).
+  // Reset on mount. This covers every restoration mechanism (App Router back-nav
+  // restoration, iOS Safari bfcache, and a stale body-scroll-lock restore carried
+  // over from the previous page) without needing to tell them apart. There are no
+  // anchor deep links into this page, so nothing legitimate wants a non-top entry.
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
+
   const refresh = useCallback(() => {
     if (!isAuthUser(activePersonId)) return
     setLoading(true)
