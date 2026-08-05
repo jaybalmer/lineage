@@ -108,6 +108,41 @@ export function defaultStatusForSource(source: TagEventSource): TagEventStatus {
   }
 }
 
+// ── Trust check (BUG-138) ───────────────────────────────────────────────────
+// /me/tags promises, in the toast the moment you trust someone, that "future
+// tags from this rider auto-approve". Until now trust was retroactive only:
+// POST /api/me/trust approved the pending tags that already existed, and the
+// insert path never consulted tag_trust, so the next tag from the same trusted
+// rider landed pending in the inbox again.
+//
+// Both ids are uuid columns on tag_trust, so a non-uuid subject (a legacy
+// catalog id) can never match a row; skip the read rather than hand PostgREST
+// a value the column cannot hold. Soft-fail-open on a DB error: the cost of
+// missing a trust is one extra inbox row, the cost of throwing is a lost tag.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+export async function subjectTrustsAsserter(
+  supabase: SupabaseClient,
+  subjectId: string,
+  asserterId: string | null,
+): Promise<boolean> {
+  if (!asserterId) return false
+  if (!UUID_RE.test(subjectId) || !UUID_RE.test(asserterId)) return false
+
+  const { data, error } = await supabase
+    .from("tag_trust")
+    .select("id")
+    .eq("subject_id", subjectId)
+    .eq("trusted_asserter_id", asserterId)
+    .maybeSingle()
+
+  if (error) {
+    console.error("[tag-events] trust lookup failed:", error.message)
+    return false
+  }
+  return !!data
+}
+
 // ── Predicate → human-readable label (Phase 2) ─────────────────────────────
 // Returns the predicate clause used after the asserter name. The Owner Inbox
 // at /me/tags renders this as second-person ("tagged you in a story"); the
@@ -171,8 +206,18 @@ export async function insertTagEvent(
   input: InsertTagEventInput,
 ): Promise<string | null> {
   const subjectTier = await getSubjectTier(supabase, input.subjectId)
-  const status = defaultStatusForSource(input.source)
+  const defaultStatus = defaultStatusForSource(input.source)
   const displayState = defaultDisplayStateForSource(input.source)
+
+  // BUG-138: a tag the subject would have approved anyway should never reach
+  // their inbox. Only the statuses that would otherwise wait get the lookup, so
+  // editor and system tags (already approved) cost no extra read. The subject
+  // is recorded as the decider because trust IS their standing decision, which
+  // keeps the asserter's approval rate and the editor rap sheet honest.
+  const trusted = defaultStatus === "pending"
+    && await subjectTrustsAsserter(supabase, input.subjectId, input.asserterId)
+  const status: TagEventStatus = trusted ? "approved" : defaultStatus
+
   // Approved rows don't expire; pending rows get the source-typed TTL.
   const expiresAt = status === "approved" ? null : expiryForSource(input.source)
 
@@ -188,6 +233,7 @@ export async function insertTagEvent(
       moment_ref: input.momentRef,
       community_id: input.communityId ?? null,
       status,
+      decision_by: trusted ? input.subjectId : null,
       decision_at: status === "approved" ? new Date().toISOString() : null,
       display_state: displayState,
       expires_at: expiresAt,

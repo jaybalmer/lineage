@@ -337,11 +337,18 @@ export function OwnerTimelinePanel() {
     }
   }, [animateEntrance, triggerPrefs.timeline_animated, setTriggerPrefs])
 
+  // BUG-154: the curated member layer below (statement, milestones, featured
+  // rail) gates on person.membership_tier, and neither the mock lookup nor
+  // profileOverride carries that field, so the owner saw an empty profile while
+  // a logged-out visitor saw the full block. Merge the live tier off the store,
+  // the same way the public branch does at people/[id]/page.tsx. Free stays
+  // absent so the gate reads identically on both branches.
   const basePerson = getPersonById(activePersonId)
+  const tierField = membership.tier !== "free" ? { membership_tier: membership.tier } : {}
   const person = basePerson
-    ? { ...basePerson, ...profileOverride }
+    ? { ...basePerson, ...profileOverride, ...tierField }
     : Object.keys(profileOverride).length > 0
-      ? { id: activePersonId, ...profileOverride } as typeof basePerson & typeof profileOverride
+      ? { id: activePersonId, ...profileOverride, ...tierField } as typeof basePerson & typeof profileOverride
       : null
 
   useEffect(() => {

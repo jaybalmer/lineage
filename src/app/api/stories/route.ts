@@ -79,31 +79,38 @@ export async function GET(req: NextRequest) {
       .range(offset, offset + limit - 1)
 
     // Single-story fetch mirrors the stories RLS rule: public, or the viewer
-    // is the author. The list fetch stays public-only EXCEPT when an author
-    // requests their own authored list (?author_id === viewer): then include
-    // their non-public stories so an "Only Me" story the author added to their
-    // own timeline survives the refetch (BUG-106). Everyone else's list, and
-    // any list not scoped to the viewer's own author_id, stays public-only.
-    const ownAuthorList = !storyId && !!viewerId && authorId === viewerId
+    // is the author.
+    //
+    // BUG-106 gave the author's OWN authored list (?author_id === viewer) the
+    // same rule, so an "Only Me" story survived the timeline refetch. BUG-157:
+    // that carve-out was too narrow. A member who set a story to "Only Me"
+    // watched it vanish from the stories index they wrote it on, with nothing
+    // to say why, because that list is not author-scoped and fell to
+    // public-only. Every list a signed-in viewer requests now carries their own
+    // non-public rows, and StoryCard badges them "Only you" so the author can
+    // tell which rows nobody else can see. This does not widen anyone else's
+    // visibility: the or() is author_id-pinned to the viewer.
     if (storyId) {
       query = query.eq("id", storyId)
       query = viewerId
         ? query.or(`visibility.eq.public,author_id.eq.${viewerId}`)
         : query.eq("visibility", "public")
-    } else if (ownAuthorList) {
-      query = query.or(`visibility.eq.public,author_id.eq.${viewerId}`)
     } else {
-      query = query.eq("visibility", "public")
+      query = viewerId
+        ? query.or(`visibility.eq.public,author_id.eq.${viewerId}`)
+        : query.eq("visibility", "public")
 
-      // Admin user archive: on the PUBLIC list path only, hide stories authored
-      // by an archived user. The author's own view (storyId permalink or the
-      // ownAuthorList branch above) is untouched, so an archived member still
-      // sees their own stories. author ids are UUIDs, safe to embed in the filter.
+      // Admin user archive: on list paths, hide stories authored by an archived
+      // user. The viewer's own rows are exempt (an archived member still sees
+      // their own stories, matching the storyId permalink path), so the viewer
+      // is dropped from the exclusion set. author ids are UUIDs, safe to embed.
       const { data: archivedRows } = await supabase
         .from("profiles")
         .select("id")
         .eq("is_archived", true)
-      const archivedIds = (archivedRows ?? []).map((r: { id: string }) => r.id)
+      const archivedIds = (archivedRows ?? [])
+        .map((r: { id: string }) => r.id)
+        .filter((id: string) => id !== viewerId)
       if (archivedIds.length > 0) {
         query = query.not("author_id", "in", `(${archivedIds.join(",")})`)
       }
@@ -283,7 +290,7 @@ export async function GET(req: NextRequest) {
     }))
 
     // BUG-122: never let a browser or CDN serve this list from cache. It is
-    // viewer-specific (an author's own private stories via the ownAuthorList
+    // viewer-specific (an author's own private stories via the own-rows
     // branch, plus viewer_reaction) and mutable, so a cached copy can resurface
     // a story the author has since deleted. no-store closes that path.
     return NextResponse.json(stories, {
