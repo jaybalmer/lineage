@@ -36,7 +36,7 @@ src/
       admin/            # Catalog entity creation (user-contributed)
       auth/magic-link/  # Passwordless email auth
       bug-report/       # In-app bug reports: writes bug_reports + emails a [Linestry Bug] report via Resend
-      (+ stripe, gift, founding, memberships, images, etc.)
+      (+ stripe, gift, founding, equity, invite, mentions, *-image, etc.)
     (pages)/            # 30+ routes — see Page Inventory below
   components/
     ui/                 # Modals, nav, cards, overlays
@@ -93,21 +93,51 @@ Simple daily log: date, place, riders[], note. Lighter than a full claim.
 ## Supabase Database
 
 ### Key tables
+
+**There is no `memberships` table.** Membership state lives in columns on `profiles`:
+`membership_tier`, `membership_status`, `membership_source`, `membership_expires_at`,
+`founding_badge`, `founding_member_number`, `token_founder`, `token_member`,
+`token_contribution`, `stripe_customer_id`, `stripe_subscription_id`, `pending_credit`,
+`comp_earned_at`, `is_editor`. Those are the columns `src/components/catalog-loader.tsx`
+and `src/app/api/me/route.ts` actually select. Anything that reads or writes membership
+reads or writes `profiles`.
+
 | Table | Notes |
 |---|---|
-| `profiles` | Auth users — linked to Supabase Auth |
+| `profiles` | Auth users, linked to Supabase Auth. Also carries membership + Stripe + token columns (see above), the public-timeline settings (`public_slug`, `public_timeline_enabled`, `public_timeline_default_view`), tag-privacy (`require_tag_approval`, `tag_preference`), curated-profile fields (`profile_statement`, `profile_milestones`), and archival (`is_archived`, `archived_at`, `archived_by`) |
+| `people` | Catalog person records, including unclaimed/ghost nodes. Separate from `profiles`: a person is only a `profiles` row once they have an auth account. Both are merged into the `people` catalog array client-side |
 | `claims` | All relationship claims |
+| `claims_public` | VIEW over `claims`, filtered by tag_event visibility. Read through this, write to `claims` (see Gotcha 9) |
 | `stories` | Story posts |
 | `story_photos` | Photos per story (cascade delete) |
-| `story_boards` | Junction: story ↔ board |
-| `story_riders` | Junction: story ↔ rider (profiles) |
+| `story_boards`, `story_riders`, `story_places`, `story_events`, `story_orgs` | Story link junctions (board, rider, place, event, brand). `story_riders.rider_id` is a uuid but carries no FK |
+| `story_riders_public` | VIEW over `story_riders`, same visibility rule as `claims_public` |
 | `riding_days` | Daily log entries |
-| `boards`, `places`, `events`, `orgs`, `event_series` | Catalog entities |
-| `memberships` | Stripe-backed membership records |
+| `boards`, `places`, `events`, `orgs`, `event_series`, `people` | Catalog entities |
+| `board_links`, `board_stories` | Board detail extras. `board_stories` is the legacy per-board story table, distinct from `stories` (see Gotcha 8) |
+| `communities` | Community records |
+| `community_people`, `community_places`, `community_boards`, `community_events`, `community_orgs` | Community scoping junctions |
+| `event_people`, `event_places`, `event_boards`, `event_orgs`, `event_brands`, `event_events`, `event_guests`, `event_series_brands` | Event link junctions |
 | `story_reactions` | One emoji reaction per member per story (composite PK story_id, reactor_id; upsert to change) |
 | `story_comments` | Flat story comments, hard-deleted, no threading |
 | `story_comment_notifications` | Per-story batch window (6h) for comment emails; see `supabase/migrations/20260609000001_story_reactions_comments.sql` |
+| `tag_events` | PB-009 consent layer. Drives both `_public` views |
+| `tag_action_log`, `tag_reports`, `tag_blocklist`, `tag_throttle`, `tag_trust`, `tag_decision_notifications` | PB-009 moderation, throttling, and notification support |
+| `token_events` | Token ledger. `source_ref` enables claw-back on delete |
+| `distributions`, `gift_codes` | Equity distributions and gifted-membership codes |
+| `invites`, `claim_requests`, `person_invite_notifications`, `person_slug_aliases`, `merge_log` | Invite/claim flow, slug history, and merge audit trail |
+| `public_stack_entries` | Curated Stack View entries for `/t/[slug]` (profile, event, and org owners) |
+| `mentions` | Podcast/episode mentions |
+| `board_image_votes`, `place_image_votes`, `event_image_votes` | Image voting per entity type |
+| `analytics_events` | Diagnostics Phase 1 event log, surfaced at `/admin/activity` |
+| `email_suppressions` | Unsubscribe list. Notification sends must check `isEmailSuppressed` |
 | `bug_reports` | In-app bug reports (note, expected, url, viewport, user_agent, posthog_session_url, reporter_id/email). Written by `POST /api/bug-report`; see migration-010-bug-reports.sql |
+
+`_backfill_visibility_20260617` is a leftover backfill scratch table, not part of the model.
+
+That list is the whole `public` schema as of 2026-08-04 (59 base tables including the
+backfill leftover, plus the two `_public` views). If a table is not on it, it does not
+exist.
 
 ### Adding a column
 Run SQL directly in Supabase dashboard — there are no local migration files to maintain. After adding a column:
@@ -367,9 +397,14 @@ Strength: **strong** ≥20, **medium** ≥8, **light** >0, **none** = 0
 Tiers: `free | annual | lifetime | founding`
 
 - **Founding members** get a badge, unique member number, and founder token allocation
-- **Tokens:** Three types — founder_tokens, member_tokens, contribution_tokens
+- **Tokens:** Three types, stored as `token_founder`, `token_member`, `token_contribution` on `profiles`
 - Contribution tokens earned by adding entities (places, boards, etc.)
-- `is_editor` flag in membership gives access to `/admin` catalog editor
+- `profiles.is_editor` gives access to the `/admin` catalog editor
+
+**Storage:** there is no `memberships` table. Every field above is a column on `profiles`
+(see "Key tables"). The `membership` slice in the Zustand store is a client-side shape
+hydrated from those columns by `src/components/catalog-loader.tsx`, not a row from a
+membership table. `token_events` is the append-only ledger behind the token counters.
 
 ---
 
@@ -438,8 +473,9 @@ complete in the same session it shipped.
 - **GATED (print it, state the risk in one sentence, wait for Jay):** anything
   destructive or hard to reverse: DROP or TRUNCATE anything, DELETE or UPDATE of
   existing rows, ALTER COLUMN type changes, renames of tables/columns, changes to
-  RLS on pre-existing tables, and any SQL touching `profiles`, `memberships`, or
-  Stripe/payment data. When in doubt, treat it as GATED.
+  RLS on pre-existing tables, and any SQL touching `profiles` (which carries the
+  membership, Stripe, and token columns) or any other payment data. When in doubt,
+  treat it as GATED.
 
 Run these steps in order and do not wrap until they are all done:
 
