@@ -328,6 +328,20 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
+          {/* BUG-157: a story saved as "Only me" looked identical to a public
+              one, so an author who set one to private read its absence from the
+              community lists as the story being lost. The author (and only the
+              author, who is the only viewer these rows are returned to) now
+              sees who can read it. */}
+          {isAuthorViewer && displayStory.visibility !== "public" && (
+            <span
+              className="text-[10px] uppercase tracking-widest font-semibold rounded px-1.5 py-0.5 border"
+              style={{ color: "#2563EB", borderColor: "#2563EB40", background: "#3B82F615" }}
+              title="Only you can see this story. Other riders will not see it on the feed, the stories index, or your public profile."
+            >
+              🔒 Only you
+            </span>
+          )}
           <span className="text-[10px] uppercase tracking-widest font-semibold text-muted bg-surface-hover border border-border-default rounded px-1.5 py-0.5">
             Story
           </span>
