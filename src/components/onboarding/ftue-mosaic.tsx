@@ -1,8 +1,8 @@
 "use client"
 
-import { useMemo } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { useLineageStore } from "@/store/lineage-store"
-import type { Board, Event, Place } from "@/types"
+import type { Board } from "@/types"
 
 // The two mosaic states behind the FTUE's opening beat.
 //
@@ -12,10 +12,12 @@ import type { Board, Event, Place } from "@/types"
 //             catalog entity, threads drawn between them.
 //             "Linestry gives every piece a home."
 //
-// Images are REAL catalog photos (places, boards, events) pulled from the
-// already-loaded store, so the opening beat shows the actual archive rather
-// than stock art. The catalog loads asynchronously on mount, so the first paint
-// is the generated fallback below and photos swap in when they land.
+// Images are REAL photos, sourced primarily from members' STORIES (fetched from
+// /api/stats/community-images), which usually carry a linked place or event for
+// the caption, with board catalog photos backfilling. Stories are where the real
+// photos live; the catalog entity pages themselves are nearly all image-less.
+// The photos are fetched on mount, so the first paint is the generated fallback
+// below and real photos swap in when they land.
 //
 // The post chrome deliberately carries NO handle or like count. Attaching an
 // invented @name to a real photo of someone's mountain would be fabricating
@@ -40,6 +42,15 @@ type Tile = {
   src?: string
   caption: string
   tint: string
+}
+
+/** One real photo from /api/stats/community-images. */
+type StoryImage = { url: string; caption: string; kind: "place" | "event" | "story" }
+
+const TINT_BY_KIND: Record<StoryImage["kind"], string> = {
+  place: TIER.place,
+  event: TIER.event,
+  story: TIER.story,
 }
 
 // Percent-based layouts. Same eight tiles in both, so the transition between
@@ -97,53 +108,47 @@ function fallbackPhoto(i: number): string {
   return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
 }
 
-/** Interleaves places / boards / events so one dense category cannot fill the
- *  whole grid, then rotates by `offset` so repeat visits see a different eight. */
-function pickTiles(
-  places: Place[],
-  boards: Board[],
-  events: Event[],
-  offset: number,
-): Tile[] {
-  const p: Tile[] = places
-    .filter((x) => x.image_url)
-    .map((x) => ({ key: `pl-${x.id}`, src: x.image_url, caption: x.name, tint: TIER.place }))
-  const b: Tile[] = boards
+/** Builds the eight tiles from real photos, rotated by `offset` so repeat visits
+ *  see a different eight. Story photos are the primary source (real uploads,
+ *  usually captioned by their linked place or event); board catalog photos
+ *  backfill. Every photo is used AT MOST ONCE: once the real photos run out, the
+ *  remaining slots take a generated fallback rather than repeating a photo to pad
+ *  the grid. Repeating both looks broken (the same image eight times) and
+ *  collides render keys. With a small archive the fallback path is the common
+ *  case, not an edge case. */
+function pickTiles(storyImages: StoryImage[], boards: Board[], offset: number): Tile[] {
+  const fromStories: Tile[] = storyImages
+    .filter((im) => im.url)
+    .map((im, i) => ({
+      key: `st-${im.url.slice(-24)}-${i}`,
+      src: im.url,
+      caption: im.caption ?? "",
+      tint: TINT_BY_KIND[im.kind] ?? TIER.story,
+    }))
+  const fromBoards: Tile[] = boards
     .filter((x) => x.image_url)
     .map((x) => ({
       key: `bd-${x.id}`,
-      src: x.image_url,
+      src: x.image_url as string,
       caption: [x.brand, x.model, x.model_year ? `· ${x.model_year}` : ""].filter(Boolean).join(" "),
       tint: TIER.board,
     }))
-  const e: Tile[] = events
-    .filter((x) => x.image_url)
-    .map((x) => ({
-      key: `ev-${x.id}`,
-      src: x.image_url,
-      caption: x.year ? `${x.name} · ${x.year}` : x.name,
-      tint: TIER.event,
-    }))
 
-  const woven: Tile[] = []
-  const longest = Math.max(p.length, b.length, e.length)
-  for (let i = 0; i < longest; i++) {
-    if (p[i]) woven.push(p[i])
-    if (b[i]) woven.push(b[i])
-    if (e[i]) woven.push(e[i])
+  // Stories first, boards backfill, deduped by src so one upload never appears
+  // twice.
+  const pool: Tile[] = []
+  const seen = new Set<string>()
+  for (const t of [...fromStories, ...fromBoards]) {
+    if (t.src && !seen.has(t.src)) {
+      seen.add(t.src)
+      pool.push(t)
+    }
   }
 
   const out: Tile[] = []
-  // Rotate the starting point so a growing catalog varies which photos appear,
-  // but use each real photo AT MOST ONCE. When the catalog carries fewer than
-  // TILE_COUNT photos, the remaining slots take a generated fallback rather than
-  // repeating a photo to pad the grid. Repeating both looks broken (the same
-  // mountain eight times) and collides render keys, since a tile's key derives
-  // from its entity id. Today the live catalog has only a handful of images, so
-  // this path is the common case, not an edge case.
-  const start = woven.length ? offset % woven.length : 0
+  const start = pool.length ? offset % pool.length : 0
   for (let i = 0; i < TILE_COUNT; i++) {
-    const found = i < woven.length ? woven[(start + i) % woven.length] : undefined
+    const found = i < pool.length ? pool[(start + i) % pool.length] : undefined
     out.push(
       found ?? {
         key: `fb-${i}`,
@@ -160,24 +165,32 @@ function pickTiles(
 
 export function FtueMosaic({ mode }: { mode: "scatter" | "woven" }) {
   const catalog = useLineageStore((s) => s.catalog)
+  const [storyImages, setStoryImages] = useState<StoryImage[]>([])
 
-  // The starting point in the interleaved list. Derived from catalog size
-  // rather than Math.random() on purpose: a random offset would differ between
-  // the server render and the client one and tear the hydration, and the store
-  // seeds its catalog with mock entities before the live fetch lands, so the
-  // first paint is NOT empty. Keying off the count still varies the eight tiles
-  // as the archive grows, without any nondeterminism.
+  // Real story photos are fetched client-side, so the first paint uses the
+  // generated fallback below and real photos swap in when the request lands.
+  useEffect(() => {
+    let alive = true
+    fetch("/api/stats/community-images")
+      .then((r) => (r.ok ? r.json() : { images: [] }))
+      .then((d) => {
+        if (alive && Array.isArray(d?.images)) setStoryImages(d.images as StoryImage[])
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  // The starting point in the tile pool. Derived from catalog size rather than
+  // Math.random() on purpose: a random offset would differ between the server
+  // render and the client one and tear the hydration. Keying off the count still
+  // varies the eight tiles as the archive grows, without any nondeterminism.
   const offset = (catalog.places?.length ?? 0) + (catalog.boards?.length ?? 0)
 
   const tiles = useMemo(
-    () =>
-      pickTiles(
-        (catalog.places ?? []) as Place[],
-        (catalog.boards ?? []) as Board[],
-        (catalog.events ?? []) as Event[],
-        offset,
-      ),
-    [catalog.places, catalog.boards, catalog.events, offset],
+    () => pickTiles(storyImages, (catalog.boards ?? []) as Board[], offset),
+    [storyImages, catalog.boards, offset],
   )
 
   const layout = mode === "scatter" ? SCATTER : WOVEN
