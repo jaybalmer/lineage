@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { eventSlug, seriesSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
+import { SignInPrompt } from "@/components/ui/sign-in-prompt"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
@@ -201,9 +202,12 @@ function EventsPageInner() {
   const [typeFilter, setTypeFilter] = useState<EventType | null>(null)
   const [myOnly, setMyOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  // BUG-161: a signed-out add is a no-op, so gate at press time and prompt.
+  const [signinPromptOpen, setSigninPromptOpen] = useState(false)
   const [search, setSearch] = useState(yearParam ?? "")
   const { catalog, activePersonId } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
+  const openAdd = () => (isAuth ? setAddOpen(true) : setSigninPromptOpen(true))
 
   // Episodes (FNRad) are a media type, not a contest/trip/gathering, so they do
   // not belong in the general Events index; they live on their show hub + their
@@ -315,7 +319,7 @@ function EventsPageInner() {
           </div>
           <div className="flex shrink-0">
             <button
-              onClick={() => setAddOpen(true)}
+              onClick={openAdd}
               className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-all whitespace-nowrap"
             >
               + Add event
@@ -404,7 +408,7 @@ function EventsPageInner() {
             {isEmpty ? (
               <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
                 No events found.{" "}
-                <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
+                <button onClick={openAdd} className="text-blue-500 hover:text-blue-400">Add one.</button>
               </div>
             ) : (
               decadeGroups.map(({ label, events }) => (
@@ -427,7 +431,7 @@ function EventsPageInner() {
             {isEmpty ? (
               <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
                 No events found.{" "}
-                <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
+                <button onClick={openAdd} className="text-blue-500 hover:text-blue-400">Add one.</button>
               </div>
             ) : (
               entriesSorted.map((event) => (
@@ -484,6 +488,7 @@ function EventsPageInner() {
           onAdded={() => setAddOpen(false)}
         />
       )}
+      {signinPromptOpen && <SignInPrompt onClose={() => setSigninPromptOpen(false)} />}
     </div>
   )
 }

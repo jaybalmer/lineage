@@ -87,6 +87,8 @@ function PlaceSelect({
         <AddEntityModal
           entityType="place"
           initialName={query}
+          // Onboarding runs before signup; keep the local-only add (BUG-161).
+          allowAnonymous
           onClose={() => setShowModal(false)}
           onAdded={(id) => {
             onChange(id)
@@ -170,6 +172,8 @@ function BrandSelect({
         <AddEntityModal
           entityType="org"
           initialName={query}
+          // Onboarding runs before signup; keep the local-only add (BUG-161).
+          allowAnonymous
           onClose={() => setShowModal(false)}
           onAdded={(id) => {
             onChange(id)

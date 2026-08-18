@@ -32,6 +32,10 @@ type UserEntities = {
   people: Person[]
 }
 
+// anonymousOk lets a caller (the onboarding flow) keep the local-only optimistic
+// add while not signed in. Everywhere else, an anonymous add is a no-op (BUG-161).
+type AddUserOpts = { anonymousOk?: boolean }
+
 interface LineageStore {
   // Onboarding
   onboardingComplete: boolean
@@ -56,13 +60,20 @@ interface LineageStore {
   claimOverrides: Record<string, Partial<Claim>>
 
   // User-created entities (unverified until community confirms)
+  //
+  // addUser* opts.anonymousOk: BUG-161. When not signed in these actions now
+  // return false with NO optimistic insert, so a caller that slips past the UI
+  // gate fails honestly instead of showing a phantom entity that reaches nobody.
+  // The onboarding flow is the one legitimate anonymous caller (it adds a place
+  // or brand before signup and replays it after), so it opts in with
+  // anonymousOk to keep today's local-only behaviour.
   userEntities: UserEntities
-  addUserPlace: (place: Place) => Promise<boolean>
-  addUserBoard: (board: Board) => Promise<boolean>
-  addUserOrg: (org: Org) => Promise<boolean>
-  addUserEvent: (event: Event) => Promise<boolean>
-  addUserSeries: (series: EventSeries) => Promise<boolean>
-  addUserPerson: (person: Person) => Promise<boolean>
+  addUserPlace: (place: Place, opts?: AddUserOpts) => Promise<boolean>
+  addUserBoard: (board: Board, opts?: AddUserOpts) => Promise<boolean>
+  addUserOrg: (org: Org, opts?: AddUserOpts) => Promise<boolean>
+  addUserEvent: (event: Event, opts?: AddUserOpts) => Promise<boolean>
+  addUserSeries: (series: EventSeries, opts?: AddUserOpts) => Promise<boolean>
+  addUserPerson: (person: Person, opts?: AddUserOpts) => Promise<boolean>
   updateUserEvent: (id: string, updates: Partial<Event>) => void
   verifyEntity: (entityType: "place" | "board" | "org" | "event" | "person", id: string) => void
   loadDbEntities: () => void
@@ -558,13 +569,17 @@ export const useLineageStore = create<LineageStore>()(
       claimOverrides: {},
 
       userEntities: { places: [], boards: [], orgs: [], events: [], eventSeries: [], people: [] },
-      addUserPlace: async (place) => {
+      addUserPlace: async (place, opts) => {
+        const authed = isAuthUser(get().activePersonId)
+        // Signed out: no optimistic insert, honest failure (BUG-161). Onboarding
+        // opts in with anonymousOk to keep its local-only add before signup.
+        if (!authed && !opts?.anonymousOk) return false
         const entity = { ...place, community_status: "unverified" as const }
         set((s) => ({
           userEntities: { ...s.userEntities, places: [...s.userEntities.places, entity] },
           catalog: { ...s.catalog, places: [...s.catalog.places, entity] },
         }))
-        if (!isAuthUser(get().activePersonId)) return true
+        if (!authed) return true
         // Member-allowed create path (token brief §5.5). This used to post
         // to /api/admin, which is requireEditor-gated, so every non-editor
         // add 403ed and rolled back. The catalog route whitelists fields,
@@ -596,7 +611,9 @@ export const useLineageStore = create<LineageStore>()(
           return false
         }
       },
-      addUserBoard: async (board) => {
+      addUserBoard: async (board, opts) => {
+        const authed = isAuthUser(get().activePersonId)
+        if (!authed && !opts?.anonymousOk) return false
         // Stamp created_at locally so the optimistic row sorts to the top of the
         // "Recently added" rail immediately; the server sets its own default on
         // insert, which wins on the next catalog reload.
@@ -605,7 +622,7 @@ export const useLineageStore = create<LineageStore>()(
           userEntities: { ...s.userEntities, boards: [...s.userEntities.boards, entity] },
           catalog: { ...s.catalog, boards: [...s.catalog.boards, entity] },
         }))
-        if (!isAuthUser(get().activePersonId)) return true
+        if (!authed) return true
         try {
           const r = await fetch("/api/catalog/entity", { method: "POST", headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ type: "board", data: {
@@ -630,13 +647,15 @@ export const useLineageStore = create<LineageStore>()(
           return false
         }
       },
-      addUserOrg: async (org) => {
+      addUserOrg: async (org, opts) => {
+        const authed = isAuthUser(get().activePersonId)
+        if (!authed && !opts?.anonymousOk) return false
         const entity = { ...org, community_status: "unverified" as const }
         set((s) => ({
           userEntities: { ...s.userEntities, orgs: [...s.userEntities.orgs, entity] },
           catalog: { ...s.catalog, orgs: [...s.catalog.orgs, entity] },
         }))
-        if (!isAuthUser(get().activePersonId)) return true
+        if (!authed) return true
         // Member-allowed create path (token brief §5.5, BUG-042). This used
         // to post to /api/admin, which is requireEditor-gated, so every
         // non-editor brand add 403ed and rolled back. The catalog route
@@ -666,12 +685,14 @@ export const useLineageStore = create<LineageStore>()(
           return false
         }
       },
-      addUserSeries: async (series) => {
+      addUserSeries: async (series, opts) => {
+        const authed = isAuthUser(get().activePersonId)
+        if (!authed && !opts?.anonymousOk) return false
         set((s) => ({
           userEntities: { ...s.userEntities, eventSeries: [...(s.userEntities.eventSeries ?? []), series] },
           catalog: { ...s.catalog, eventSeries: [...s.catalog.eventSeries, series] },
         }))
-        if (!isAuthUser(get().activePersonId)) return true
+        if (!authed) return true
         // Awaited so an event that references a brand-new series (created
         // inline) only inserts after the series row exists (FK ordering).
         try {
@@ -693,13 +714,15 @@ export const useLineageStore = create<LineageStore>()(
           return false
         }
       },
-      addUserEvent: async (event) => {
+      addUserEvent: async (event, opts) => {
+        const authed = isAuthUser(get().activePersonId)
+        if (!authed && !opts?.anonymousOk) return false
         const entity = { ...event, community_status: "unverified" as const }
         set((s) => ({
           userEntities: { ...s.userEntities, events: [...s.userEntities.events, entity] },
           catalog: { ...s.catalog, events: [...s.catalog.events, entity] },
         }))
-        if (!isAuthUser(get().activePersonId)) return true
+        if (!authed) return true
         // start_date year-only normalisation now happens server-side in
         // /api/catalog/entity, mirroring the old payload shape.
         try {
@@ -728,7 +751,9 @@ export const useLineageStore = create<LineageStore>()(
           return false
         }
       },
-      addUserPerson: async (person) => {
+      addUserPerson: async (person, opts) => {
+        const authed = isAuthUser(get().activePersonId)
+        if (!authed && !opts?.anonymousOk) return false
         // PB-008: a member-created rider with a name and no account is
         // 'unclaimed'. Without an explicit value the DB default ('catalog')
         // wins and the ghost is misfiled; the optimistic entity needs it too
@@ -742,7 +767,7 @@ export const useLineageStore = create<LineageStore>()(
           userEntities: { ...s.userEntities, people: [...s.userEntities.people, entity] },
           catalog: { ...s.catalog, people: [...s.catalog.people, entity] },
         }))
-        if (!isAuthUser(get().activePersonId)) return true
+        if (!authed) return true
         const { error } = await supabase.from("people").insert({
           id: person.id, display_name: person.display_name,
           riding_since: person.riding_since ?? null,

@@ -16,6 +16,11 @@ interface AddEntityModalProps {
   initialSeriesId?: string
   initialPlaceId?: string
   initialOrgType?: OrgType
+  // BUG-161: catalog adds by a signed-out visitor are a no-op at the store, so
+  // hosts that must let an anonymous user add (the onboarding flow, which
+  // replays the pick after signup) set this to keep the local-only add working.
+  // Every other host leaves it false, and the signed-out add fails honestly.
+  allowAnonymous?: boolean
   onClose: () => void
   onAdded: (id: string) => void
 }
@@ -38,7 +43,7 @@ const MONTHS = [
   "July", "August", "September", "October", "November", "December",
 ]
 
-export function AddEntityModal({ entityType, initialName = "", initialSeriesId = "", initialPlaceId = "", initialOrgType, onClose, onAdded }: AddEntityModalProps) {
+export function AddEntityModal({ entityType, initialName = "", initialSeriesId = "", initialPlaceId = "", initialOrgType, allowAnonymous = false, onClose, onAdded }: AddEntityModalProps) {
   const { addUserPlace, addUserBoard, addUserOrg, addUserEvent, addUserSeries, addUserPerson, activePersonId, profileOverride, catalog } = useLineageStore()
 
   // Lock the background page while the modal is open (BUG-048).
@@ -142,6 +147,8 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
   const handleSubmit = async () => {
     if (!canSubmit() || submitting) return
     setSubmitting(true)
+    // BUG-161: signed-out adds are a store-level no-op unless the host opts in.
+    const opts = { anonymousOk: allowAnonymous }
     try {
       let id: string
       let ok = true
@@ -159,7 +166,7 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
           first_snowboard_year: firstSnowboardYear ? parseInt(firstSnowboardYear) : undefined,
           community_status: "unverified",
           added_by: activePersonId,
-        })
+        }, opts)
       } else if (entityType === "board") {
         id = boardId
         ok = await addUserBoard({
@@ -170,7 +177,7 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
           image_url: boardImageUrl || undefined,
           community_status: "unverified",
           added_by: activePersonId,
-        })
+        }, opts)
       } else if (entityType === "org") {
         id = generateId("org")
         ok = await addUserOrg({
@@ -183,7 +190,7 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
           website: website.trim() || undefined,
           community_status: "unverified",
           added_by: activePersonId,
-        })
+        }, opts)
       } else if (entityType === "event") {
         // If user typed a new series name but hasn't created it yet, create it
         // now and wait for it so the event can FK to it.
@@ -196,7 +203,7 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
             frequency: newSeriesFreq,
             start_year: newSeriesStartYear ? parseInt(newSeriesStartYear) : undefined,
             place_id: eventPlaceId || undefined,
-          })
+          }, opts)
           if (seriesOk) resolvedSeriesId = sid
         }
         id = generateId("event")
@@ -215,7 +222,7 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
           series_id: resolvedSeriesId || undefined,
           community_status: "unverified",
           added_by: activePersonId,
-        })
+        }, opts)
       } else {
         id = crypto.randomUUID()
         ok = await addUserPerson({
@@ -226,7 +233,7 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
           privacy_level: "public",
           community_status: "unverified",
           added_by: activePersonId,
-        })
+        }, opts)
       }
 
       // On failure the store already rolled back and toasted; keep the modal

@@ -7,6 +7,7 @@ import { getPlaceById, getPersonById } from "@/lib/mock-data"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { usePersonHref } from "@/lib/use-person-href"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
+import { SignInPrompt } from "@/components/ui/sign-in-prompt"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import { RiderAvatar, getRiderTier, type RiderTier } from "@/components/ui/rider-avatar"
@@ -207,6 +208,9 @@ function RidersPageInner() {
   // "People in your timeline" strip on My Timeline lands here).
   const [myOnly, setMyOnly] = useState(searchParams.get("mine") === "1")
   const [addOpen, setAddOpen] = useState(false)
+  // BUG-161: a signed-out add is a no-op, so gate at press time and prompt.
+  const [signinPromptOpen, setSigninPromptOpen] = useState(false)
+  const openAdd = () => (isAuth ? setAddOpen(true) : setSigninPromptOpen(true))
   const [invitePerson, setInvitePerson] = useState<Person | null>(null)
   // ?community=all opts out of the community filter and shows the global directory.
   const showAllCommunities = searchParams.get("community") === "all"
@@ -360,7 +364,7 @@ function RidersPageInner() {
           </div>
           <div className="flex shrink-0">
             <button
-              onClick={() => setAddOpen(true)}
+              onClick={openAdd}
               className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-all whitespace-nowrap"
             >
               + Add rider
@@ -421,7 +425,7 @@ function RidersPageInner() {
         {totalCount === 0 ? (
           <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
             No riders found.{" "}
-            <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">
+            <button onClick={openAdd} className="text-blue-500 hover:text-blue-400">
               Add one.
             </button>
           </div>
@@ -467,6 +471,7 @@ function RidersPageInner() {
           onAdded={() => setAddOpen(false)}
         />
       )}
+      {signinPromptOpen && <SignInPrompt onClose={() => setSigninPromptOpen(false)} />}
       {invitePerson && (
         <InviteRiderModal
           personId={invitePerson.id}

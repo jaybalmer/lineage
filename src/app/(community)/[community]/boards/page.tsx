@@ -5,6 +5,7 @@ import { useSearchParams, useRouter, usePathname } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { orgSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
+import { SignInPrompt } from "@/components/ui/sign-in-prompt"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { boardRelationshipFlags } from "@/lib/board-relationship"
 import { cn } from "@/lib/utils"
@@ -69,9 +70,13 @@ function BoardsPageInner() {
   const [viewMode, setViewMode] = useState<ViewMode>("card")
   const [addOpen, setAddOpen] = useState(false)
   const [addBrandOpen, setAddBrandOpen] = useState(false)
+  // BUG-161: a signed-out add is a no-op, so gate at press time and prompt.
+  const [signinPromptOpen, setSigninPromptOpen] = useState(false)
 
   const { catalog, activePersonId, communities, activeCommunitySlug } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
+  const openAdd = () => (isAuth ? setAddOpen(true) : setSigninPromptOpen(true))
+  const openAddBrand = () => (isAuth ? setAddBrandOpen(true) : setSigninPromptOpen(true))
 
   // Merge URL param changes into one navigation, preserving scroll position.
   // Lateral view switches (tabs, search, year) use replace so they do not pile up
@@ -347,13 +352,13 @@ function BoardsPageInner() {
             </div>
             <div className="flex flex-wrap gap-2">
               <button
-                onClick={() => setAddOpen(true)}
+                onClick={openAdd}
                 className="px-4 py-2.5 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-all whitespace-nowrap"
               >
                 + Add a board
               </button>
               <button
-                onClick={() => setAddBrandOpen(true)}
+                onClick={openAddBrand}
                 className="px-4 py-2.5 rounded-lg border border-border-default text-sm font-medium text-foreground hover:bg-surface-hover transition-all whitespace-nowrap"
               >
                 + Add a brand
@@ -444,7 +449,7 @@ function BoardsPageInner() {
         {catalogEmpty ? (
           <div className="text-sm text-muted text-center py-12 border border-dashed border-border-default rounded-xl">
             No boards yet.{" "}
-            <button onClick={() => setAddOpen(true)} className="text-accent-strong hover:underline">
+            <button onClick={openAdd} className="text-accent-strong hover:underline">
               Add one.
             </button>
           </div>
@@ -622,6 +627,7 @@ function BoardsPageInner() {
           onAdded={() => setAddBrandOpen(false)}
         />
       )}
+      {signinPromptOpen && <SignInPrompt onClose={() => setSigninPromptOpen(false)} />}
     </div>
   )
 }

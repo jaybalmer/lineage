@@ -6,6 +6,7 @@ import { CommunityLink } from "@/components/ui/community-link"
 import { Nav } from "@/components/ui/nav"
 import { orgSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
+import { SignInPrompt } from "@/components/ui/sign-in-prompt"
 import { CreateShowModal } from "@/components/orgs/create-show-modal"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
@@ -119,12 +120,15 @@ function BrandsPageInner() {
   const params = useParams<{ community: string }>()
   const community = params?.community ?? "snowboarding"
   const [addOpen, setAddOpen] = useState(false)
+  // BUG-161: a signed-out add is a no-op, so gate at press time and prompt.
+  const [signinPromptOpen, setSigninPromptOpen] = useState(false)
   const [showCreateOpen, setShowCreateOpen] = useState(false)
   const [myOnly, setMyOnly] = useState(false)
   const [search, setSearch] = useState(yearParam ?? "")
   const [sort, setSort] = useState<BrandSort>("entries")
   const { catalog, activePersonId, membership } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
+  const openAdd = () => (isAuth ? setAddOpen(true) : setSigninPromptOpen(true))
   const isEditor = membership.is_editor || membership.tier === "founding"
 
   // Connection counts per org, mirroring the brand detail page:
@@ -268,7 +272,7 @@ function BrandsPageInner() {
               </button>
             )}
             <button
-              onClick={() => setAddOpen(true)}
+              onClick={openAdd}
               className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-all"
             >
               + Add brand
@@ -380,6 +384,7 @@ function BrandsPageInner() {
           onAdded={() => setAddOpen(false)}
         />
       )}
+      {signinPromptOpen && <SignInPrompt onClose={() => setSigninPromptOpen(false)} />}
 
       {showCreateOpen && (
         <CreateShowModal
