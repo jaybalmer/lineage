@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 // as the story it tells rather than as a pile of presentational helpers.
 
 /** Counts up to `value` once, when it first becomes a number. Renders nothing
- *  at all while the value is null — the FTUE hides callouts it cannot source
+ *  at all while the value is null. The FTUE hides callouts it cannot source
  *  rather than showing a zero or a placeholder. */
 export function BigNumber({
   value,
@@ -77,7 +77,7 @@ export function BigNumber({
 }
 
 /** One tile in a stat row. Renders nothing when its value is unavailable, so a
- *  partially-failed stats fetch degrades to a shorter row, never to "—". */
+ *  partially-failed stats fetch degrades to a shorter row, never to a dash. */
 export function StatTile({
   value,
   label,

@@ -20,13 +20,13 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 // The FTUE, as one story rather than a form.
 //
-//   scatter  — our stories are strewn across feeds, unconnected
-//   weave    — Linestry gives every piece a home (live catalog numbers)
-//   name     — "you're joining a community weaving our real stories together"
-//   year     — the one anchor the whole timeline hangs off
-//   era      — the reveal: your year, your seasons, your era, your peers
-//   welcome  — "Here is the start of your timeline" + what you can add
-//   save     — the auth gate
+//   scatter  our stories are strewn across feeds, unconnected
+//   weave    Linestry gives every piece a home (live catalog numbers)
+//   name     "you're joining a community weaving our real stories together"
+//   year     the one anchor the whole timeline hangs off
+//   era      the reveal: your year, your seasons, your era, your peers
+//   welcome  "Here is the start of your timeline" + what you can add
+//   save     the auth gate
 //
 // Design notes that matter to future edits:
 //
@@ -69,7 +69,7 @@ const EMPTY_STATS: CommunityStats = {
 function Lockup() {
   // The canonical lockup: the tilted mark sized to the wordmark's ink height,
   // wordmark in Calendula Bold via --font-wordmark. Do not substitute a body
-  // font here — the wordmark face IS the brand.
+  // font here. The wordmark face IS the brand.
   return (
     <div className="flex items-center gap-2">
       <BrandMark size={26} />
@@ -210,7 +210,7 @@ export function OnboardingFlow() {
 
   // ── Live community stats ──────────────────────────────────────────────────
   // Every number in the flow comes from here. A failed or partial fetch leaves
-  // the field null and the callout simply does not render — the FTUE never
+  // the field null and the callout simply does not render, so the FTUE never
   // shows an invented or zero-filled number.
   const [stats, setStats] = useState<CommunityStats>(EMPTY_STATS)
   useEffect(() => {
@@ -262,7 +262,7 @@ export function OnboardingFlow() {
     router.push(`/${activeCommunitySlug}`)
   }
 
-  // Dev bypass — skip the OAuth gate locally, binding the answers to a dev user
+  // Dev bypass. Skips the OAuth gate locally, binding the answers to a dev user
   // so the timeline renders exactly as the real save path would leave it.
   const devBypass = () => {
     const devId = `dev-${Date.now().toString(36)}`
@@ -360,8 +360,8 @@ export function OnboardingFlow() {
             <p className="ftue-body mt-3.5">
               Each one lands on a <strong className="text-foreground font-medium">place</strong>, a{" "}
               <strong className="text-foreground font-medium">year</strong>, and the{" "}
-              <strong className="text-foreground font-medium">people who were there</strong>
-              {" — "}and you can see how it connects to everyone else&apos;s.
+              <strong className="text-foreground font-medium">people who were there</strong>. From
+              there you can see how it connects to everyone else&apos;s.
             </p>
 
             {stats.riders !== null && (
@@ -534,8 +534,8 @@ export function OnboardingFlow() {
             <div className="mt-5">
               <Callout>
                 Your year isn&apos;t just a field on a form. It drops you into{" "}
-                <b className="text-foreground font-semibold">{era.label}</b> — and connects you to
-                everyone else who was there for it.
+                <b className="text-foreground font-semibold">{era.label}</b>, and connects you
+                to everyone else who was there for it.
               </Callout>
             </div>
           </>
@@ -607,7 +607,7 @@ export function OnboardingFlow() {
                 delay="0.54s"
                 tint="#10b981"
                 title="Boards you've ridden or own"
-                body="Every model carries its own lineage — the year, the riders, the graphics. Yours joins it."
+                body="Every model carries its own lineage: the year, the riders, the graphics. Yours joins it."
               />
               <NextUpCard
                 delay="0.66s"
@@ -641,7 +641,7 @@ export function OnboardingFlow() {
                   onClick={devBypass}
                   className="self-center rounded-lg border border-amber-900/50 bg-amber-950/20 px-3 py-2 text-xs text-amber-400 hover:bg-amber-950/40 transition-colors"
                 >
-                  Skip — dev only
+                  Skip (dev only)
                 </button>
               )}
             </>

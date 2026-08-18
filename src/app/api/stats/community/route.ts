@@ -4,7 +4,7 @@ import { getServiceClient } from "@/lib/auth"
 // GET /api/stats/community[?year=1994]
 //
 // Public aggregate behind the FTUE callouts (the "riders named so far" number
-// and the era screen's two stats). Counts only — no row data leaves here, so
+// and the era screen's two stats). Counts only, so no row data leaves here and
 // there is nothing to leak. Same posture as /api/equity/pool and /api/founding,
 // which already expose community-size signals publicly.
 //

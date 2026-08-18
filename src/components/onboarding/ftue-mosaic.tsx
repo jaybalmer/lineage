@@ -6,9 +6,9 @@ import type { Board, Event, Place } from "@/types"
 
 // The two mosaic states behind the FTUE's opening beat.
 //
-//   scatter — the same images strewn, rotated, wearing generic post chrome.
+//   scatter  the same images strewn, rotated, wearing generic post chrome.
 //             "Your stories are scattered across feeds."
-//   woven   — the same images squared into a grid, captioned with the real
+//   woven    the same images squared into a grid, captioned with the real
 //             catalog entity, threads drawn between them.
 //             "Linestry gives every piece a home."
 //
@@ -249,7 +249,7 @@ export function FtueMosaic({ mode }: { mode: "scatter" | "woven" }) {
 
               {mode === "scatter" ? (
                 <>
-                  {/* Generic post chrome — no handle, no count, nothing invented. */}
+                  {/* Generic post chrome: no handle, no count, nothing invented. */}
                   <div
                     className="absolute top-0 left-0 right-0 flex items-center gap-1.5 px-1.5 pt-1.5 pb-3 z-[2]"
                     style={{ background: "linear-gradient(to bottom,rgba(0,0,0,.62),transparent)" }}

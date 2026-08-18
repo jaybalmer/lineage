@@ -61,7 +61,7 @@ export function SaveStep({
 }: {
   firstName?: string
   startYear?: number | null
-  /** Null when the community stats fetch failed — the tile is dropped, never faked. */
+  /** Null when the community stats fetch failed. The tile is dropped, never faked. */
   ridersWaiting?: number | null
 } = {}) {
   const [showEmail, setShowEmail] = useState(false)
@@ -179,7 +179,7 @@ export function SaveStep({
         <h2 className="ftue-h1 mt-3">Save it before it scatters again.</h2>
         <p className="ftue-body mt-3.5">
           Your timeline is built and waiting{firstName ? `, ${firstName}` : ""}. Sign in and it&apos;s
-          yours — including every story anyone else adds that mentions you.
+          yours, including every story anyone else adds that mentions you.
         </p>
       </div>
 
