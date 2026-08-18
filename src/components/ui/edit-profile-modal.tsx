@@ -169,8 +169,24 @@ export function EditProfileModal({ person, onClose }: EditProfileModalProps) {
       setSaveError(null)
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
+        // BUG-159: display_name goes through a server route so the frozen
+        // public_slug can be re-minted to match the new name (keeping the Stack
+        // URL /t/<slug> in sync with the timeline URL). The other fields stay on
+        // the direct client write below.
+        const nameRes = await fetch("/api/me/display-name", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ display_name: override.display_name }),
+        })
+        if (!nameRes.ok) {
+          const { error: nameErr } = await nameRes.json().catch(() => ({ error: "Could not save name" }))
+          console.error("Display-name save failed:", nameErr)
+          setSaveError(nameErr || "Could not save name")
+          setSaving(false)
+          return  // keep modal open so user can see error
+        }
+
         const { error } = await supabase.from("profiles").update({
-          display_name:   override.display_name,
           birth_year:     override.birth_year     ?? null,
           riding_since:   override.riding_since   ?? null,
           bio:            override.bio            ?? null,
