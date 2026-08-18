@@ -1,11 +1,12 @@
 import { cache } from "react"
 import type { Metadata } from "next"
-import { notFound } from "next/navigation"
+import { notFound, permanentRedirect } from "next/navigation"
 import { PublicProfileView } from "@/components/public-timeline/public-profile-view"
 import { PublicEpisodeView } from "@/components/public-timeline/public-episode-view"
 import { PublicShowView } from "@/components/public-timeline/public-show-view"
 import { readPublicTimeline, readPublicStack, readEventStack, readOrgStack } from "@/lib/public-timeline-read"
-import { isEditorSession } from "@/lib/auth"
+import { isEditorSession, getServiceClient } from "@/lib/auth"
+import { resolvePublicSlugAlias } from "@/lib/public-slug"
 
 // PB-010 Phase 2: the chromeless public timeline at /t/[slug].
 //
@@ -127,6 +128,12 @@ export default async function PublicTimelinePage(
       const draftShow = await readOrgStack({ slug })
       if (draftShow) return <PublicShowView payload={draftShow} preview />
     }
+
+    // BUG-159: an outgoing slug kept from a re-mint. 308-redirect an old shared
+    // link to the owner's current /t/<slug> rather than 404ing.
+    const canonical = await resolvePublicSlugAlias(slug, getServiceClient())
+    if (canonical) permanentRedirect(`/t/${canonical}`)
+
     notFound()
   }
 
