@@ -347,19 +347,25 @@ function RidersPageInner() {
       <div className="max-w-3xl mx-auto px-4 py-8">
 
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Riders</h1>
-            <p className="text-sm text-muted mt-1">
-              {totalCount} rider{totalCount !== 1 ? "s" : ""} in the community
+        <div className="bg-surface border border-border-default rounded-xl p-5 mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-wordmark)" }}>
+              The Riders Who Were There
+            </h1>
+            <p className="text-sm text-muted mt-1 max-w-md">
+              Your crew, the locals, the ones who shaped your scene. Some of them are on here already
+              and most of them are not. Add the riders you rode with. That is how the lines start crossing.
+              {totalCount ? ` ${totalCount} rider${totalCount !== 1 ? "s" : ""} so far.` : ""}
             </p>
           </div>
-          <button
-            onClick={() => setAddOpen(true)}
-            className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-all"
-          >
-            + Add rider
-          </button>
+          <div className="flex shrink-0">
+            <button
+              onClick={() => setAddOpen(true)}
+              className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-all whitespace-nowrap"
+            >
+              + Add rider
+            </button>
+          </div>
         </div>
 
         {/* Search — standard list-page control (matches Places/Boards/Events/Brands), BUG-006 */}

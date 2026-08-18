@@ -235,14 +235,17 @@ function BrandsPageInner() {
       <div className="max-w-3xl mx-auto px-4 py-8">
 
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-foreground mb-1">Brands & Orgs</h1>
-            <p className="text-sm text-muted">
-              {totalBrands} brands, media outlets, and collectives in the community
+        <div className="bg-surface border border-border-default rounded-xl p-5 mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-wordmark)" }}>
+              The Brands That Built It
+            </h1>
+            <p className="text-sm text-muted mt-1 max-w-md">
+              Brands, shops, teams, and mags each hold their own history, and none of it is in one place.
+              Add the ones you rode for, worked at, or grew up on. Help connect them to the riders who carried them.
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             {isAuth && (
               <button
                 onClick={() => setMyOnly(!myOnly)}
