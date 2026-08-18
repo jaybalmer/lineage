@@ -516,7 +516,7 @@ export function OnboardingFlow() {
             <h2 className="ftue-h2 mt-7">{eraCopy.headline}</h2>
             <p className="ftue-body mt-3.5">{eraCopy.body}</p>
 
-            {(stats.peers !== null || stats.stories !== null) && (
+            {((stats.peers ?? 0) > 0 || (stats.stories ?? 0) > 0) && (
               <div className="flex gap-2 mt-6">
                 <StatTile
                   value={stats.peers}

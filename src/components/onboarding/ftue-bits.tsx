@@ -76,8 +76,10 @@ export function BigNumber({
   )
 }
 
-/** One tile in a stat row. Renders nothing when its value is unavailable, so a
- *  partially-failed stats fetch degrades to a shorter row, never to a dash. */
+/** One tile in a stat row. Renders nothing when its value is unavailable OR
+ *  zero, so a partially-failed stats fetch degrades to a shorter row and a
+ *  genuine zero (e.g. no peers started that exact year) is hidden rather than
+ *  shown, never a dash and never a deflating "0" on a celebration beat. */
 export function StatTile({
   value,
   label,
@@ -89,7 +91,7 @@ export function StatTile({
   tone?: string
   grouped?: boolean
 }) {
-  if (value === null) return null
+  if (value === null || value === 0) return null
   return (
     <div className="flex-1 bg-surface border border-border-default rounded-2xl px-2.5 py-3 text-center">
       <div

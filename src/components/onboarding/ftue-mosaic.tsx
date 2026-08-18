@@ -134,8 +134,16 @@ function pickTiles(
   }
 
   const out: Tile[] = []
+  // Rotate the starting point so a growing catalog varies which photos appear,
+  // but use each real photo AT MOST ONCE. When the catalog carries fewer than
+  // TILE_COUNT photos, the remaining slots take a generated fallback rather than
+  // repeating a photo to pad the grid. Repeating both looks broken (the same
+  // mountain eight times) and collides render keys, since a tile's key derives
+  // from its entity id. Today the live catalog has only a handful of images, so
+  // this path is the common case, not an edge case.
+  const start = woven.length ? offset % woven.length : 0
   for (let i = 0; i < TILE_COUNT; i++) {
-    const found = woven.length ? woven[(i + offset) % woven.length] : undefined
+    const found = i < woven.length ? woven[(start + i) % woven.length] : undefined
     out.push(
       found ?? {
         key: `fb-${i}`,
@@ -223,7 +231,7 @@ export function FtueMosaic({ mode }: { mode: "scatter" | "woven" }) {
           // Outer element owns the angle; inner owns the drop-in animation, so
           // the reduced-motion override cannot flatten a tile's rotation.
           <div
-            key={`${tile.key}-${mode}`}
+            key={`${tile.key}-${mode}-${i}`}
             className="absolute"
             style={{
               left: `${t.x}%`,
