@@ -299,13 +299,37 @@ export function OnboardingFlow() {
     try {
       fromIntro = new URLSearchParams(window.location.search).get("from") === "intro"
     } catch { /* window/search may be unavailable */ }
-    if (!fromIntro) return
-    const nameIdx = steps.indexOf("name")
-    if (nameIdx > 0 && onboarding.step < nameIdx) setOnboardingStep(nameIdx)
-    if (!shownFiredRef.current.has("ftue_landed")) {
+
+    // Fire ftue_landed synchronously (before the funnel effect below runs on this
+    // same mount) so an intro arrival is tagged { source: "intro" } and the
+    // funnel can never also fire a source-less ftue_landed for the same visit.
+    if (fromIntro && !shownFiredRef.current.has("ftue_landed")) {
       shownFiredRef.current.add("ftue_landed")
       trackEvent("ftue", "ftue_landed", { source: "intro" })
     }
+
+    // BUG-166 D2: always enter at the start of the flow. Intro arrivals begin at
+    // the name step (the slideshow already delivered the land pitch); everyone
+    // else begins at land. The persisted answers are left untouched, so a
+    // returning half-finished visitor sees land first with their picks still
+    // pre-filled, instead of being dropped onto a bare mid-flow question. The
+    // persisted onboarding.step is a resume hint for the answers, not a jump
+    // target. In-flow Back/Next do not remount, so this mount-only reset never
+    // interrupts a live pass.
+    //
+    // Run it against the HYDRATED store: persist rehydrates onboarding.step
+    // asynchronously on mount, so reading it now (pre-hydration) would see 0,
+    // skip the reset, and leave the visitor on their stale mid-flow step once
+    // hydration lands. hasHydrated() covers the sync case; onFinishHydration the
+    // async one.
+    const applyEntryStep = () => {
+      const entryIdx = fromIntro ? steps.indexOf("name") : 0
+      if (entryIdx >= 0 && useLineageStore.getState().onboarding.step !== entryIdx) {
+        setOnboardingStep(entryIdx)
+      }
+    }
+    if (useLineageStore.persist.hasHydrated()) applyEntryStep()
+    else useLineageStore.persist.onFinishHydration(applyEntryStep)
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   // FTUE funnel: fire each step-shown event once per session (brief D5).
@@ -424,6 +448,14 @@ export function OnboardingFlow() {
     if (step > 0) setOnboardingStep(step - 1)
   }
 
+  // BUG-166 D3/D5: a persistent exit out of the flow, visible on every step
+  // including step 0. Navigates only, so the entered answers survive for a later
+  // return through the CTA. ftue_exited records where the drop-off happened.
+  const exitToBrowsing = () => {
+    trackEvent("ftue", "ftue_exited", { step_id: currentStepId })
+    router.push(`/${activeCommunitySlug}`)
+  }
+
   const displayName = onboarding.display_name?.trim() || "You"
 
   const primaryLabel =
@@ -448,9 +480,18 @@ export function OnboardingFlow() {
 
         {/* Header */}
         <div className="mb-6">
-          <div className="flex items-center gap-2 mb-8">
-            <BrandMark size={20} className="text-accent" />
-            <span className="font-semibold text-foreground">Linestry</span>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-2">
+              <BrandMark size={20} className="text-accent" />
+              <span className="font-semibold text-foreground">Linestry</span>
+            </div>
+            {/* BUG-166: always-available exit so the flow is never a trap. */}
+            <button
+              onClick={exitToBrowsing}
+              className="text-sm text-muted hover:text-foreground transition-colors"
+            >
+              Back to browsing
+            </button>
           </div>
           <ProgressBar step={step} total={totalSteps} />
         </div>

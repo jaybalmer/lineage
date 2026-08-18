@@ -7,7 +7,17 @@ import type { ProfileLink } from "@/types"
 
 // ── Module-level helper (no hooks — reads/writes store via getState) ──────────
 async function loadProfileAndMembership(uid: string) {
-  const { setProfileOverride, setMembership, membership } = useLineageStore.getState()
+  // BUG-168: if the persisted store belongs to a different auth user (another
+  // account used this browser), clear their per-user slices BEFORE we merge the
+  // new member's profile in. The free-tier branch below is a partial
+  // setMembership() merge, so without this reset a founding predecessor's badge
+  // and token counts would survive under a free account.
+  {
+    const { storeOwnerId, resetPerUserState } = useLineageStore.getState()
+    if (storeOwnerId && storeOwnerId !== uid) resetPerUserState()
+  }
+
+  const { setProfileOverride, setMembership } = useLineageStore.getState()
 
   // Fetch via /api/me which uses the service role key — bypasses RLS entirely.
   // Direct browser-client reads of profiles can silently return null if RLS
@@ -52,7 +62,7 @@ async function loadProfileAndMembership(uid: string) {
       token_balance: {
         founder:      (p.token_founder      as number) ?? 0,
         member:       (p.token_member       as number) ?? 0,
-        contribution: (p.token_contribution as number) ?? membership.token_balance.contribution,
+        contribution: (p.token_contribution as number) ?? useLineageStore.getState().membership.token_balance.contribution,
       },
       stripe_customer_id:      p.stripe_customer_id     as string | undefined ?? undefined,
       stripe_subscription_id:  p.stripe_subscription_id as string | undefined ?? undefined,
@@ -109,7 +119,16 @@ export function CatalogLoader() {
       const uid = user?.id
 
       if (!uid) {
-        // Genuinely no valid session (refresh token also gone or invalid)
+        // Genuinely no valid session (refresh token also gone or invalid).
+        // BUG-168: if a previous auth user's state is still persisted in this
+        // browser, clear it so their membership/tokens don't linger for the next
+        // person. Guarded on storeOwnerId so an anonymous onboarding visitor
+        // (never signed in, storeOwnerId "") keeps their in-progress answers.
+        const { storeOwnerId, resetPerUserState } = useLineageStore.getState()
+        if (storeOwnerId) {
+          resetPerUserState()
+          useLineageStore.setState({ storeOwnerId: "" })
+        }
         setActivePersonId("")
         setProfileOverride({})
         setAuthReady(true)
@@ -136,7 +155,16 @@ export function CatalogLoader() {
       // We deliberately ignore INITIAL_SESSION with null — it fires before
       // the Supabase client has had a chance to use the refresh token,
       // so reacting to it would sign out users with valid refresh tokens.
+      //
+      // BUG-168 D4: no cross-tab coordination. If two tabs are signed into
+      // different accounts they each own their own render; the persisted store
+      // is reconciled per tab on its next auth event or mount, not via a
+      // storage-event listener that could yank a tab out mid-interaction.
       if (event === "SIGNED_OUT") {
+        // BUG-168: signing out must not leave a membership tier, founding badge
+        // or token counts in localStorage for the next person on this machine.
+        useLineageStore.getState().resetPerUserState()
+        useLineageStore.setState({ storeOwnerId: "" })
         setActivePersonId("")
         setProfileOverride({})
         return

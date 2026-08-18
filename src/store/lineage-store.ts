@@ -36,6 +36,35 @@ type UserEntities = {
 // add while not signed in. Everywhere else, an anonymous add is a no-op (BUG-161).
 type AddUserOpts = { anonymousOk?: boolean }
 
+// ── Per-user default slices (BUG-168) ─────────────────────────────────────────
+// The store persists to a single browser-wide key (`lineage-store-v2`). These
+// are the empty defaults for every slice that belongs to one member. When a
+// different auth user signs in on the same browser, resetPerUserState() puts
+// these back so the new account never inherits the previous member's identity,
+// membership tier, founding badge or token counts. Everything here is updated
+// only through immutable spreads elsewhere, so the shared references are safe.
+const FREE_MEMBERSHIP: MembershipState = {
+  tier: "free",
+  status: "active",
+  founding_badge: false,
+  token_balance: { founder: 0, member: 0, contribution: 0 },
+  gift_codes: [],
+  pending_credit: 0,
+  is_editor: false,
+}
+
+const EMPTY_ONBOARDING: OnboardingState = {
+  step: 0,
+  early_orgs: [],
+  crew_ids: [],
+  board_ids: [],
+  event_ids: [],
+}
+
+const EMPTY_USER_ENTITIES: UserEntities = {
+  places: [], boards: [], orgs: [], events: [], eventSeries: [], people: [],
+}
+
 interface LineageStore {
   // Onboarding
   onboardingComplete: boolean
@@ -114,6 +143,15 @@ interface LineageStore {
   // Active view state
   activePersonId: string
   setActivePersonId: (id: string) => void
+
+  // BUG-168: the persisted store lives under one browser-wide key with no owner
+  // scoping. storeOwnerId stamps which auth user the persisted per-user slices
+  // belong to (written whenever setActivePersonId receives a real auth uid), so
+  // a different account signing in on the same browser can detect the mismatch
+  // and clear the stale identity instead of inheriting it. resetPerUserState
+  // returns every per-user slice to its empty default.
+  storeOwnerId: string
+  resetPerUserState: () => void
 
   // True once the server-validated getUser() check has resolved on mount.
   // Protected pages must not redirect until this is true, to avoid kicking
@@ -341,13 +379,7 @@ export const useLineageStore = create<LineageStore>()(
       },
 
       onboardingComplete: false,
-      onboarding: {
-        step: 0,
-        early_orgs: [],
-        crew_ids: [],
-        board_ids: [],
-        event_ids: [],
-      },
+      onboarding: EMPTY_ONBOARDING,
       setOnboardingStep: (step) =>
         set((s) => ({ onboarding: { ...s.onboarding, step } })),
       setOnboardingField: (field, value) =>
@@ -568,7 +600,7 @@ export const useLineageStore = create<LineageStore>()(
       deletedClaimIds: [],
       claimOverrides: {},
 
-      userEntities: { places: [], boards: [], orgs: [], events: [], eventSeries: [], people: [] },
+      userEntities: EMPTY_USER_ENTITIES,
       addUserPlace: async (place, opts) => {
         const authed = isAuthUser(get().activePersonId)
         // Signed out: no optimistic insert, honest failure (BUG-161). Onboarding
@@ -963,7 +995,30 @@ export const useLineageStore = create<LineageStore>()(
         })),
 
       activePersonId: "",
-      setActivePersonId: (id) => set({ activePersonId: id }),
+      // BUG-168: stamp the persisted store's owner whenever a real auth user
+      // becomes active. A sign-out ("") leaves the stamp for catalog-loader to
+      // clear explicitly, and mock/dev ids never claim ownership.
+      setActivePersonId: (id) =>
+        set(id && isAuthUser(id) ? { activePersonId: id, storeOwnerId: id } : { activePersonId: id }),
+
+      // BUG-168: which auth user the persisted per-user slices belong to.
+      storeOwnerId: "",
+      resetPerUserState: () =>
+        set({
+          membership: FREE_MEMBERSHIP,
+          profileOverride: {},
+          sessionClaims: [],
+          dbClaims: [],
+          deletedClaimIds: [],
+          claimOverrides: {},
+          userEntities: EMPTY_USER_ENTITIES,
+          ridingDays: [],
+          onboarding: EMPTY_ONBOARDING,
+          onboardingComplete: false,
+          triggerPrefs: {},
+          pendingTagCount: 0,
+          editorQueuePendingCount: 0,
+        }),
 
       authReady: false,
       setAuthReady: (ready) => set({ authReady: ready }),
@@ -1009,15 +1064,7 @@ export const useLineageStore = create<LineageStore>()(
           .catch(() => { /* silent — badge can stay stale */ })
       },
 
-      membership: {
-        tier: "free",
-        status: "active",
-        founding_badge: false,
-        token_balance: { founder: 0, member: 0, contribution: 0 },
-        gift_codes: [],
-        pending_credit: 0,
-        is_editor: false,
-      },
+      membership: FREE_MEMBERSHIP,
       setMembership: (updates) =>
         set((s) => ({ membership: { ...s.membership, ...updates } })),
       addContributionToken: (amount = 1) =>
