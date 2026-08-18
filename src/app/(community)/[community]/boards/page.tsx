@@ -334,8 +334,10 @@ function BoardsPageInner() {
               The Snowboard Catalog
             </h1>
             <p className="text-sm text-muted mt-1 max-w-md">
-              Built together by the community. {totalBoards.toLocaleString()} boards across{" "}
-              {totalBrands.toLocaleString()} brands mapped so far — help us catalog every board ever ridden.
+              The full list of boards ever made does not sit in one place. It is spread across closets,
+              collections, and old catalogs. Add the boards you rode and the ones in your collection.
+              {" "}{totalBoards.toLocaleString()} boards across {totalBrands.toLocaleString()} brands so far,
+              and together we can build the whole thing.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-center gap-3 shrink-0">

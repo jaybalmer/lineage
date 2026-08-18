@@ -149,17 +149,25 @@ function PlacesPageInner() {
     <div className="min-h-screen bg-background">
       <Nav />
       <div className="max-w-3xl mx-auto px-4 py-8">
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Places</h1>
-            <p className="text-sm text-muted mt-1">Resorts, shops, and zones in the linestry</p>
+        <div className="bg-surface border border-border-default rounded-xl p-5 mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-wordmark)" }}>
+              The Places We Rode
+            </h1>
+            <p className="text-sm text-muted mt-1 max-w-md">
+              Every rider has their own list. Home hills, the shop that sponsored you, the road trips.
+              It is all out there, just scattered across a few thousand memories. Add the resorts, shops,
+              and spots from your riding. Help map the places that connect us.
+            </p>
           </div>
-          <button
-            onClick={() => setAddOpen(true)}
-            className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-all"
-          >
-            + Add place
-          </button>
+          <div className="flex shrink-0">
+            <button
+              onClick={() => setAddOpen(true)}
+              className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-all whitespace-nowrap"
+            >
+              + Add place
+            </button>
+          </div>
         </div>
 
         {/* Search — standard list-page control (matches Riders/Boards/Events/Brands), BUG-006 */}

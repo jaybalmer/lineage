@@ -303,17 +303,24 @@ function EventsPageInner() {
       <div className="max-w-3xl mx-auto px-4 py-8">
 
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Events</h1>
-            <p className="text-sm text-muted mt-1">Contests, trips, film shoots, and gatherings</p>
+        <div className="bg-surface border border-border-default rounded-xl p-5 mb-6 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-wordmark)" }}>
+              The Events That Brought Us Together
+            </h1>
+            <p className="text-sm text-muted mt-1 max-w-md">
+              Contests, sessions, and trips, all remembered in pieces. You have your half of the day
+              and someone else has the rest. Add an event you were at. Help fill in who was actually there.
+            </p>
           </div>
-          <button
-            onClick={() => setAddOpen(true)}
-            className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-all"
-          >
-            + Add event
-          </button>
+          <div className="flex shrink-0">
+            <button
+              onClick={() => setAddOpen(true)}
+              className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-all whitespace-nowrap"
+            >
+              + Add event
+            </button>
+          </div>
         </div>
 
         {/* Search */}
