@@ -1,82 +1,46 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServiceClient } from "@/lib/auth"
 
-// ─── Era definitions (5-era system) ──────────────────────────────────────────
+// ─── Era copy (5-era system) ─────────────────────────────────────────────────
+// The era BOUNDARIES live in src/lib/eras.ts, shared with the FTUE so the era a
+// rider is told during signup matches the one their profile reports afterwards.
+// Only the rotating context lines are owned here.
 
-type Era = {
-  key: string
-  label: string
-  lines: string[]
+import { eraForYear, type EraKey } from "@/lib/eras"
+
+const ERA_LINES: Record<EraKey, string[]> = {
+  pioneers: [
+    "You were riding before most resorts even allowed it.",
+    "You were riding before snowboarding had rules. You helped write them.",
+    "The mountains weren't ready for you yet. You went anyway.",
+  ],
+  boom: [
+    "You were part of the wave that made snowboarding legit.",
+    "Burton ads in every magazine. Halfpipes going Olympic. You were in the middle of it.",
+    "The sport exploded in the 90s and you were already strapped in.",
+  ],
+  golden_age: [
+    "You grew up in the golden age. Forum, Robot Food, Kingpin.",
+    "Park laps, video premieres, crew trips. The culture peaked and you were in it.",
+    "The golden age of snowboarding shaped a generation. Yours.",
+  ],
+  evolution: [
+    "You watched the culture shift from park to pow.",
+    "Backcountry, splitboards, and a new definition of style. You rode through the evolution.",
+    "The sport grew up in the 2010s. So did the riders who stuck with it.",
+  ],
+  modern: [
+    "You're riding in the most connected era ever.",
+    "Social media, global crews, and endless terrain. The modern era is yours.",
+    "More access, more progression, more ways to ride. You're writing the next chapter.",
+  ],
 }
 
-const ERAS: { maxYear: number; era: Era }[] = [
-  {
-    maxYear: 1989,
-    era: {
-      key: "pioneers",
-      label: "the Pioneer Era",
-      lines: [
-        "You were riding before most resorts even allowed it.",
-        "You were riding before snowboarding had rules. You helped write them.",
-        "The mountains weren't ready for you yet. You went anyway.",
-      ],
-    },
-  },
-  {
-    maxYear: 1997,
-    era: {
-      key: "boom",
-      label: "the Boom Era",
-      lines: [
-        "You were part of the wave that made snowboarding legit.",
-        "Burton ads in every magazine. Halfpipes going Olympic. You were in the middle of it.",
-        "The sport exploded in the 90s and you were already strapped in.",
-      ],
-    },
-  },
-  {
-    maxYear: 2006,
-    era: {
-      key: "golden_age",
-      label: "the Golden Age",
-      lines: [
-        "You grew up in the golden age. Forum, Robot Food, Kingpin.",
-        "Park laps, video premieres, crew trips. The culture peaked and you were in it.",
-        "The golden age of snowboarding shaped a generation. Yours.",
-      ],
-    },
-  },
-  {
-    maxYear: 2015,
-    era: {
-      key: "evolution",
-      label: "the Evolution Era",
-      lines: [
-        "You watched the culture shift from park to pow.",
-        "Backcountry, splitboards, and a new definition of style. You rode through the evolution.",
-        "The sport grew up in the 2010s. So did the riders who stuck with it.",
-      ],
-    },
-  },
-  {
-    maxYear: Infinity,
-    era: {
-      key: "modern",
-      label: "the Modern Era",
-      lines: [
-        "You're riding in the most connected era ever.",
-        "Social media, global crews, and endless terrain. The modern era is yours.",
-        "More access, more progression, more ways to ride. You're writing the next chapter.",
-      ],
-    },
-  },
-]
+type Era = { key: EraKey; label: string; lines: string[] }
 
 function getEra(ridingSince: number): Era {
-  for (const entry of ERAS) {
-    if (ridingSince <= entry.maxYear) return entry.era
-  }
-  return ERAS[ERAS.length - 1].era
+  const bound = eraForYear(ridingSince)
+  return { key: bound.key, label: bound.label, lines: ERA_LINES[bound.key] }
 }
 
 function pickContextLine(era: Era): string {

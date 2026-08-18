@@ -67,3 +67,17 @@ next-env.d.ts
 
 # review pages built from seeds (regenerate with the skill script)
 /podcast-seeds/*.html
+
+# design-sync (claude.ai/design) — staged scripts, build output, machine state.
+# Durable sources under .design-sync/ (config.json, NOTES.md, conventions.md,
+# entry.ts, shims/, tsconfig.sync.json, build/styles.src.css, build/brand-fonts.css,
+# previews/) ARE committed; generated/scratch below are not.
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+.design-sync/build/compiled.css
+
+# Retired FTUE components staged for deletion (see _to_delete/README.md)
+_to_delete/

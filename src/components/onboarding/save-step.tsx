@@ -24,7 +24,8 @@ function buildOnboardingPayload() {
 }
 
 const inputCls =
-  "w-full bg-surface border border-border-default rounded-lg px-4 py-3 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500 transition-colors"
+  "w-full bg-surface-2 border border-border-default rounded-2xl px-4 py-4 text-[17px] text-foreground " +
+  "outline-none transition-colors placeholder:text-muted/60 focus:border-accent"
 
 // Coarse, PII-free bucket for a signup failure, so the auth-gate cliff can be
 // diagnosed in PostHog without logging raw error strings (D6). Auth error
@@ -53,7 +54,16 @@ function GoogleGlyph() {
 
 // Final FTUE step: a one-tap OAuth gate or a one-link email auth. Saving is what
 // migrates the user's session claims into real, durable claims (handled at /auth/complete).
-export function SaveStep() {
+export function SaveStep({
+  firstName = "",
+  startYear = null,
+  ridersWaiting = null,
+}: {
+  firstName?: string
+  startYear?: number | null
+  /** Null when the community stats fetch failed — the tile is dropped, never faked. */
+  ridersWaiting?: number | null
+} = {}) {
   const [showEmail, setShowEmail] = useState(false)
   const [email, setEmail] = useState("")
   const [sending, setSending] = useState(false)
@@ -163,16 +173,30 @@ export function SaveStep() {
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-bold text-foreground mb-1">Save your linestry</h2>
-        <p className="text-muted text-sm leading-relaxed">
-          Pick how you want to sign in. Your moments are waiting on the other side.
+        <div className="text-[10.5px] font-semibold uppercase tracking-[0.16em] text-accent-strong">
+          Last step
+        </div>
+        <h2 className="ftue-h1 mt-3">Save it before it scatters again.</h2>
+        <p className="ftue-body mt-3.5">
+          Your timeline is built and waiting{firstName ? `, ${firstName}` : ""}. Sign in and it&apos;s
+          yours — including every story anyone else adds that mentions you.
         </p>
       </div>
+
+      {(startYear !== null || ridersWaiting !== null) && (
+        <div className="flex gap-2">
+          {startYear !== null && <RecapTile value={String(startYear)} label="Anchored" />}
+          <RecapTile value="1" label="Card ready" tone="#8b5cf6" />
+          {ridersWaiting !== null && (
+            <RecapTile value={ridersWaiting.toLocaleString()} label="Riders waiting" tone="#06b6d4" />
+          )}
+        </div>
+      )}
 
       <div className="space-y-3">
         <button
           onClick={continueWithGoogle}
-          className="w-full px-4 py-3 rounded-lg bg-white text-[#1C1917] text-sm font-medium hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2.5 border border-border-default"
+          className="w-full px-4 py-4 rounded-full bg-[#F6F6F5] text-[#1C1917] text-[15px] font-semibold hover:bg-white transition-colors flex items-center justify-center gap-2.5"
         >
           <GoogleGlyph />
           Continue with Google
@@ -181,7 +205,7 @@ export function SaveStep() {
         {!showEmail ? (
           <button
             onClick={() => { setShowEmail(true); setError(null) }}
-            className="w-full px-4 py-3 rounded-lg bg-[#1C1917] text-white text-sm font-medium hover:bg-[#292524] transition-colors"
+            className="w-full px-4 py-4 rounded-full border border-border-default text-foreground text-[15px] font-semibold hover:bg-surface-hover transition-colors"
           >
             Continue with email
           </button>
@@ -200,10 +224,10 @@ export function SaveStep() {
               onClick={sendMagicLink}
               disabled={sending}
               className={cn(
-                "w-full px-4 py-3 rounded-lg text-sm font-medium transition-colors",
+                "w-full px-4 py-4 rounded-full text-[15px] font-semibold transition-colors",
                 sending
                   ? "bg-surface-active text-muted cursor-not-allowed"
-                  : "bg-[#1C1917] text-white hover:bg-[#292524]"
+                  : "bg-accent text-white hover:bg-accent-strong"
               )}
             >
               {sending ? "Sending…" : "Send me a sign-in link"}
@@ -213,10 +237,39 @@ export function SaveStep() {
       </div>
 
       {error && (
-        <p className="text-sm text-red-400 bg-red-950/30 border border-red-900/40 rounded-lg px-4 py-3">
+        <p className="text-sm text-red-400 bg-red-950/30 border border-red-900/40 rounded-2xl px-4 py-3">
           {error}
         </p>
       )}
+
+      <p className="text-center text-[11px] text-muted">
+        One tap. No password. Your two answers come with you.
+      </p>
+    </div>
+  )
+}
+
+/** A single recap tile on the auth screen. Mirrors StatTile in ftue-bits, but
+ *  takes a pre-formatted string because one of the three ("1 card ready") is a
+ *  statement about the flow rather than a fetched count. */
+function RecapTile({ value, label, tone }: { value: string; label: string; tone?: string }) {
+  return (
+    <div className="flex-1 bg-surface border border-border-default rounded-2xl px-2.5 py-3 text-center">
+      <div
+        className="tabular-nums"
+        style={{
+          fontFamily: "var(--font-display)",
+          fontWeight: 800,
+          fontSize: 21,
+          letterSpacing: "-0.02em",
+          color: tone ?? "var(--foreground)",
+        }}
+      >
+        {value}
+      </div>
+      <div className="mt-1 text-[9.5px] font-medium uppercase tracking-[0.1em] text-muted">
+        {label}
+      </div>
     </div>
   )
 }

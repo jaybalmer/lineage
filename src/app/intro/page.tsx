@@ -1,17 +1,14 @@
-import type { Metadata } from "next"
-import { IntroSlideshow } from "@/components/onboarding/intro-slideshow"
+import { redirect } from "next/navigation"
 
-// Public, chromeless pre-signup slideshow (brief D1). A static top-level route
-// wins over the (community)/[community] dynamic route, matching /equity, /word,
-// and /founding. No proxy change is needed; the proxy only gates
-// /[community]/timeline and /me/*.
-
-export const metadata: Metadata = {
-  title: "Welcome to Linestry",
-  description:
-    "A living, community-authored history of snowboarding. See how your stories connect before you start your timeline.",
-}
+// /intro used to be a standalone pre-signup slideshow that handed off to the
+// wizard at /onboarding. The two merged into a single story (the pitch beats
+// and the two questions are now one flow), so this route only survives as a
+// redirect: the link is in the wild, in emails and posts, and must keep
+// landing somewhere sensible.
+//
+// The from=intro tag is preserved so the existing PostHog funnel can still tell
+// an /intro arrival apart from a direct one.
 
 export default function IntroPage() {
-  return <IntroSlideshow />
+  redirect("/onboarding?from=intro")
 }

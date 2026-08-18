@@ -168,3 +168,99 @@ body {
     animation: ftue-intro-fade 0.2s ease both !important;
   }
 }
+
+/* ─── FTUE (merged /intro + /onboarding) ────────────────────────────────────
+   The first-run flow always renders dark, whatever theme the visitor has, and
+   hands back to their own theme the moment they land on the app. Same
+   mechanism as .postcard above: redeclare the raw tokens AND the Tailwind
+   @theme-layer --color-* aliases so utilities resolve inside the scope. Doing
+   it as a scope rather than toggling `.dark` on <html> means no first-paint
+   flash, no write to the persisted theme, and nothing to restore on unmount. */
+.ftue-dark {
+  --background:            #161413;
+  --bg-nav:                #161413;
+  --surface:               #211E1B;
+  --surface-hover:         #2A2622;
+  --surface-active:        #332D29;
+  --surface-2:             #1C1916;
+  --border:                #3A3632;
+  --foreground:            #F6F6F5;
+  --muted:                 #A8A29E;
+  --accent:                #3B82F6;
+  --accent-strong:         #60A5FA;
+  --accent-tint:           #1E293B;
+
+  /* Tailwind v4 @theme inline aliases */
+  --color-background:      #161413;
+  --color-bg-nav:          #161413;
+  --color-surface:         #211E1B;
+  --color-surface-hover:   #2A2622;
+  --color-surface-active:  #332D29;
+  --color-surface-2:       #1C1916;
+  --color-border-default:  #3A3632;
+  --color-foreground:      #F6F6F5;
+  --color-muted:           #A8A29E;
+  --color-accent:          #3B82F6;
+  --color-accent-strong:   #60A5FA;
+  --color-accent-tint:     #1E293B;
+
+  background-color: #161413;
+  color: #F6F6F5;
+  color-scheme: dark;
+}
+
+/* Scattered-post tiles falling in, and the settle into the woven grid. */
+/* Rotation lives on the wrapper element, so this keyframe only owns the drop
+   and the scale. That keeps the reduced-motion override below from flattening
+   a tile's angle when it replaces the transform. */
+@keyframes ftue-tile-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.9); }
+  to   { opacity: 1; transform: translateY(0)    scale(1); }
+}
+@keyframes ftue-row-in {
+  from { opacity: 0; transform: translateX(-10px); }
+  to   { opacity: 1; transform: none; }
+}
+
+.ftue-tile-in {
+  opacity: 0;
+  animation: ftue-tile-in 0.6s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+.ftue-row-in {
+  opacity: 0;
+  animation: ftue-row-in 0.55s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ftue-tile-in,
+  .ftue-row-in {
+    transform: none !important;
+    animation: ftue-intro-fade 0.3s ease both !important;
+  }
+}
+
+/* FTUE type. The repo has no named type scale yet (see docs/design-system.md
+   "Gaps"), so rather than scatter more arbitrary values across the flow these
+   three classes name the only sizes it uses. */
+.ftue-h1 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.85rem;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--foreground);
+}
+.ftue-h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.5rem;
+  line-height: 1.14;
+  letter-spacing: -0.018em;
+  color: var(--foreground);
+}
+.ftue-body {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.62;
+  font-weight: 300;
+}

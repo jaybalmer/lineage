@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Retired FTUE components staged for deletion; see _to_delete/README.md.
+    "_to_delete/**",
   ]),
 ]);
 
