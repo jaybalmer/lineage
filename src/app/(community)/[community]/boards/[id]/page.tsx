@@ -17,6 +17,7 @@ import { clearBoardImageCache } from "@/hooks/use-board-image"
 import { StoryCard as RichStoryCard } from "@/components/feed/story-card"
 import { EntityMentions } from "@/components/feed/entity-mentions"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
+import { SignInPrompt } from "@/components/ui/sign-in-prompt"
 import { BrandMark } from "@/components/ui/brand-mark"
 import type { Story } from "@/types"
 
@@ -189,6 +190,8 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
   const sameBrand = catalog.boards.filter((b) => b.brand === board.brand && b.id !== board.id).sort((a, b) => b.model_year - a.model_year)
   const brandOrg = catalog.orgs.find((o) => o.name.toLowerCase().startsWith(boardBrand.toLowerCase()))
 
+  // BUG-162: the "+ Add to my profile" CTA is shown signed out; gate it.
+  const [signinPromptOpen, setSigninPromptOpen] = useState(false)
   // ── Community content state ──────────────────────────────────────────────
   const [stories, setStories] = useState<BoardStory[]>([])
   const [links, setLinks] = useState<BoardLink[]>([])
@@ -460,6 +463,8 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
           defaults={{ boardId: board.id }}
         />
       )}
+
+      {signinPromptOpen && <SignInPrompt onClose={() => setSigninPromptOpen(false)} />}
 
       {/* Image lightbox */}
       {lightboxOpen && displayImageUrl && (
@@ -928,11 +933,20 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
             <div className="bg-surface border border-border-default rounded-xl p-4">
               <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">Add to profile</div>
               <p className="text-xs text-muted mb-3">Did you ride this board?</p>
-              <CommunityLink href="/profile">
-                <button className="w-full px-3 py-2 bg-[#1C1917] rounded-lg text-xs text-white font-medium hover:bg-[#292524] transition-colors">
+              {isAuth ? (
+                <CommunityLink href="/profile">
+                  <button className="w-full px-3 py-2 bg-[#1C1917] rounded-lg text-xs text-white font-medium hover:bg-[#292524] transition-colors">
+                    + Add to my profile
+                  </button>
+                </CommunityLink>
+              ) : (
+                <button
+                  onClick={() => setSigninPromptOpen(true)}
+                  className="w-full px-3 py-2 bg-[#1C1917] rounded-lg text-xs text-white font-medium hover:bg-[#292524] transition-colors"
+                >
                   + Add to my profile
                 </button>
-              </CommunityLink>
+              )}
             </div>
           </div>
         </div>

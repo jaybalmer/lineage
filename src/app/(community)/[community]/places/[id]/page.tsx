@@ -18,6 +18,7 @@ import { supabase } from "@/lib/supabase"
 import { StoryCard } from "@/components/feed/story-card"
 import { EntityMentions } from "@/components/feed/entity-mentions"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
+import { SignInPrompt } from "@/components/ui/sign-in-prompt"
 import type { Story } from "@/types"
 
 type PlaceTab = "all" | "riders" | "events" | "stories"
@@ -79,6 +80,8 @@ function PlacePageInner({ params }: { params: Promise<{ community: string; id: s
   const [photoError, setPhotoError] = useState<string | null>(null)
   const [placeStories, setPlaceStories] = useState<Story[]>([])
   const [addingStory, setAddingStory] = useState(false)
+  // BUG-162: the "+ Add to my profile" CTA is shown signed out; gate it.
+  const [signinPromptOpen, setSigninPromptOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const fetchedForPlace = useRef<string | null>(null)
   // BUG-078: default to the Stories tab once stories load, but never override a
@@ -285,6 +288,8 @@ function PlacePageInner({ params }: { params: Promise<{ community: string; id: s
           defaults={{ linkedPlaceId: place.id }}
         />
       )}
+
+      {signinPromptOpen && <SignInPrompt onClose={() => setSigninPromptOpen(false)} />}
 
       {/* Image lightbox */}
       {lightboxOpen && displayImageUrl && (
@@ -770,11 +775,20 @@ function PlacePageInner({ params }: { params: Promise<{ community: string; id: s
             <div className="bg-bg-nav border border-border-default rounded-xl p-4">
               <div className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">Add a claim</div>
               <p className="text-xs text-muted mb-3">Did you ride here? Work here? Compete here?</p>
-              <CommunityLink href="/profile">
-                <button className="w-full px-3 py-2 bg-[#1C1917] rounded-lg text-xs text-white font-medium hover:bg-[#292524] transition-colors">
+              {isAuth ? (
+                <CommunityLink href="/profile">
+                  <button className="w-full px-3 py-2 bg-[#1C1917] rounded-lg text-xs text-white font-medium hover:bg-[#292524] transition-colors">
+                    + Add to my profile
+                  </button>
+                </CommunityLink>
+              ) : (
+                <button
+                  onClick={() => setSigninPromptOpen(true)}
+                  className="w-full px-3 py-2 bg-[#1C1917] rounded-lg text-xs text-white font-medium hover:bg-[#292524] transition-colors"
+                >
                   + Add to my profile
                 </button>
-              </CommunityLink>
+              )}
             </div>
 
           </div>

@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { placeSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
+import { SignInPrompt } from "@/components/ui/sign-in-prompt"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
@@ -95,8 +96,11 @@ function PlacesPageInner() {
   const [sort, setSort] = useState<PlaceSort>("az")
   const [myOnly, setMyOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
+  // BUG-161: a signed-out add is a no-op, so gate at press time and prompt.
+  const [signinPromptOpen, setSigninPromptOpen] = useState(false)
   const { catalog, activePersonId } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
+  const openAdd = () => (isAuth ? setAddOpen(true) : setSigninPromptOpen(true))
 
   // Unique riders per place (rode_at) — the "entries" count shown on each card.
   const placeRiderCounts = useMemo(() => {
@@ -162,7 +166,7 @@ function PlacesPageInner() {
           </div>
           <div className="flex shrink-0">
             <button
-              onClick={() => setAddOpen(true)}
+              onClick={openAdd}
               className="px-4 py-2 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-all whitespace-nowrap"
             >
               + Add place
@@ -244,7 +248,7 @@ function PlacesPageInner() {
           {sorted.length === 0 && (
             <div className="col-span-full text-center text-muted py-12 text-sm">
               No places found.{" "}
-              <button onClick={() => setAddOpen(true)} className="text-blue-500 hover:text-blue-400">Add one.</button>
+              <button onClick={openAdd} className="text-blue-500 hover:text-blue-400">Add one.</button>
             </div>
           )}
         </div>
@@ -257,6 +261,7 @@ function PlacesPageInner() {
           onAdded={() => setAddOpen(false)}
         />
       )}
+      {signinPromptOpen && <SignInPrompt onClose={() => setSigninPromptOpen(false)} />}
     </div>
   )
 }
