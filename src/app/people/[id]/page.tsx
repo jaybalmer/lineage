@@ -106,6 +106,16 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   // reached via a UUID or stale slug. Falls back to the id for colliding names.
   useCanonicalPath(resolvedPerson ? personHref(resolvedPerson, allPeople) : null)
 
+  // BUG-156: set the browser-tab title from the resolved display name. The server
+  // generateMetadata humanizes the raw route param, so a page reached by UUID or
+  // generated-id falls back to "Rider profile · Linestry" and the canonical
+  // rewrite never re-runs server metadata. Fix it client-side once resolved; the
+  // server fallback stays as the no-JS / crawler default.
+  const resolvedName = resolvedPerson?.display_name
+  useEffect(() => {
+    if (resolvedName) document.title = `${resolvedName} · Linestry`
+  }, [resolvedName])
+
   // Reset the public-Stack availability when switching to a different rider, during
   // render rather than with a synchronous setState in the claims effect below
   // (react-hooks/set-state-in-effect). The effect's profiles read then repopulates it.
