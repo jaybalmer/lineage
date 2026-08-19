@@ -124,9 +124,16 @@ export default function CommunityHome() {
   // ── Community play feature (Phase 2 PR2) ─────────────────────────────────
   const [playing, setPlaying] = useState(false)
 
-  // CTA buttons — shared between the hero and color-dot header variants.
+  // CTA buttons + context line — shared between the hero and color-dot header
+  // variants. BUG-164: the landing arrived with a photo and CTAs but no words
+  // explaining what the linestry is, so add a context sentence above the row.
   const ctas = (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-col gap-3">
+      <p className="text-sm text-muted max-w-2xl">
+        This is the snowboarding linestry. Members map their own timelines, and together those
+        timelines become the history of the sport. Add yours, or browse what is here.
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
       {isAuth ? (
         <CommunityLink
           href="/profile"
@@ -156,6 +163,7 @@ export default function CommunityHome() {
           <span aria-hidden>▶</span> Play
         </button>
       )}
+      </div>
     </div>
   )
 
