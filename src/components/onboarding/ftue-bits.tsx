@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 
 // Small shared pieces for the FTUE. Kept out of the flow file so the flow reads
@@ -21,11 +21,16 @@ export function BigNumber({
   grouped?: boolean
 }) {
   const [shown, setShown] = useState(0)
-  const doneRef = useRef(false)
 
+  // No "already animated" ref on purpose. A ref guard set before the rAF is
+  // scheduled breaks under React's dev strict-mode double-invoke: the first pass
+  // arms the ref and starts the loop, the paired cleanup cancels that loop, and
+  // the second pass then bails on the ref, so the number never leaves 0. Letting
+  // the effect run fully on each pass (idempotent, cleanup cancels in flight)
+  // makes both dev and prod land on the value. The effect only re-runs when the
+  // value changes, so there is no spurious re-count on unrelated re-renders.
   useEffect(() => {
-    if (value === null || value === 0 || doneRef.current) return
-    doneRef.current = true
+    if (value === null || value === 0) return
 
     // Show the final value immediately when we cannot run a frame loop: a
     // reduced-motion preference, or a page that is not currently visible.
@@ -38,10 +43,6 @@ export function BigNumber({
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
     if (reduced || (typeof document !== "undefined" && document.hidden)) {
-      // Land the final value now. This is a one-shot assignment guarded by
-      // doneRef, not a render loop; a deferred timer/rAF is the wrong tool here
-      // because it is paused (rAF) or cleared by the dev strict-mode remount
-      // (timer), either of which would leave the number stuck on 0.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setShown(value)
       return
