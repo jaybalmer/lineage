@@ -305,7 +305,14 @@ export function OnboardingFlow() {
     >
       {/* Chrome */}
       <header className="flex items-center justify-between pt-4 pb-2.5 shrink-0">
-        <Lockup />
+        <button
+          type="button"
+          onClick={exitToBrowsing}
+          aria-label="Leave setup and go back to browsing"
+          className="rounded-md transition-opacity hover:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+        >
+          <Lockup />
+        </button>
         {showSkip ? (
           <button
             onClick={() => {
