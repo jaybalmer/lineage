@@ -18,6 +18,8 @@
 
 import { useEffect, useState } from "react"
 import { MentionRow } from "@/components/feed/mention-row"
+import { MentionEpisodeGroup } from "@/components/feed/mention-episode-group"
+import { groupMentionsByEpisode } from "@/lib/mentions"
 import type { Mention, MentionSubjectType } from "@/types"
 
 export function EntityMentions({
@@ -60,9 +62,15 @@ export function EntityMentions({
       <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">
         Talked about on the podcast
       </h2>
-      {mentions.map((m) => (
-        <MentionRow key={m.id} mention={m} context="timeline" />
-      ))}
+      {/* Same episode grouping as a rider timeline (BUG-172); the newest-episode
+          -first sort above is preserved because grouping keeps input order. */}
+      {groupMentionsByEpisode(mentions).map((g) =>
+        g.items.length === 1 ? (
+          <MentionRow key={`mention-${g.items[0].id}`} mention={g.items[0]} context="timeline" />
+        ) : (
+          <MentionEpisodeGroup key={g.key} mentions={g.items} />
+        )
+      )}
     </section>
   )
 }

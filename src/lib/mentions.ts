@@ -84,6 +84,50 @@ export function groupMentionsByMoment<
   return order.map((key) => byKey.get(key)!)
 }
 
+export type EpisodeGroup<T> = {
+  key: string
+  /** The episode all rows share, or null for a solo (episode-less) row. */
+  episode_event_id: string | null
+  items: T[]
+}
+
+/**
+ * Fold mentions that come from the same episode into one group (BUG-172).
+ *
+ * On a person's timeline every mention already belongs to that one person, so a
+ * run of N mentions from FNRad #142 renders as N near-identical stacked rows on
+ * the same episode date. Grouping on `episode_event_id` collapses that run into
+ * one card while leaving a lone mention untouched (the caller renders a group of
+ * 1 as a bare row).
+ *
+ * This is deliberately a different key from `groupMentionsByMoment`, which folds
+ * one story written once per subject and folds nothing on a single person's
+ * timeline. A row with no `episode_event_id` is always its own group.
+ *
+ * Input order is preserved, so a caller that pre-sorted (episode date, then
+ * listening order) keeps that order both across groups and within one.
+ */
+export function groupMentionsByEpisode<
+  T extends { episode_event_id?: string | null },
+>(rows: T[]): EpisodeGroup<T>[] {
+  const order: string[] = []
+  const byKey = new Map<string, EpisodeGroup<T>>()
+
+  rows.forEach((row, index) => {
+    const epId = row.episode_event_id ?? null
+    const key = epId === null ? `solo:${index}` : `ep:${epId}`
+    let group = byKey.get(key)
+    if (!group) {
+      group = { key, episode_event_id: epId, items: [] }
+      byKey.set(key, group)
+      order.push(key)
+    }
+    group.items.push(row)
+  })
+
+  return order.map((key) => byKey.get(key)!)
+}
+
 /** Seconds to `mm:ss`, or `h:mm:ss` past the hour mark. */
 export function formatTimestamp(seconds: number): string {
   const s = Math.max(0, Math.floor(seconds))

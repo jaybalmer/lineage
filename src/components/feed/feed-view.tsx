@@ -6,6 +6,8 @@ import { PostCard } from "@/components/feed/post-card"
 import { DayPostCard } from "@/components/feed/day-post-card"
 import { StoryCard } from "@/components/feed/story-card"
 import { MentionRow } from "@/components/feed/mention-row"
+import { MentionEpisodeGroup } from "@/components/feed/mention-episode-group"
+import { groupMentionsByEpisode } from "@/lib/mentions"
 import { StartCard } from "@/components/feed/start-card"
 import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
@@ -65,7 +67,7 @@ type FeedItem =
   | { kind: "claim"; claim: Claim; sortDate: number }
   | { kind: "day"; day: RidingDay; sortDate: number }
   | { kind: "story"; story: Story; sortDate: number }
-  | { kind: "mention"; mention: Mention; sortDate: number }
+  | { kind: "mention"; mentions: Mention[]; sortDate: number }
   | { kind: "riding_start"; year: number; sortDate: number }
 
 // Timeline node color keyed to predicate category
@@ -216,12 +218,14 @@ export function FeedView({
         }))
       : []
 
-    // Mentions sit on the episode's date, padded like every other partial date.
+    // Mentions from the same episode fold into one card (BUG-172), sitting on
+    // the shared episode date, padded like every other partial date. A lone
+    // mention stays a bare row (the render branch renders a group of 1 as one).
     const mentionItems: FeedItem[] = filter === "all" || filter === "mentions"
-      ? mentions.map((mention) => ({
+      ? groupMentionsByEpisode(mentions).map((g) => ({
           kind: "mention" as const,
-          mention,
-          sortDate: dateToSortNum(mention.episode?.start_date),
+          mentions: g.items,
+          sortDate: dateToSortNum(g.items[0].episode?.start_date),
         }))
       : []
 
@@ -386,7 +390,7 @@ export function FeedView({
                       const key = item.kind === "claim" ? item.claim.id
                         : item.kind === "day" ? item.day.id
                         : item.kind === "story" ? `story-${item.story.id}`
-                        : item.kind === "mention" ? `mention-${item.mention.id}`
+                        : item.kind === "mention" ? `mention-${item.mentions[0]?.id}`
                         : `riding-start-${item.year}`
                       return (
                         <div key={key} className={cn("relative pl-9", entranceClass())} style={entranceStyle()}>
@@ -413,7 +417,11 @@ export function FeedView({
                           ) : item.kind === "story" ? (
                             <StoryCard story={item.story} isOwn={isOwn} onDelete={onStoryDeleted} />
                           ) : item.kind === "mention" ? (
-                            <MentionRow mention={item.mention} context="timeline" />
+                            item.mentions.length === 1 ? (
+                              <MentionRow mention={item.mentions[0]} context="timeline" />
+                            ) : (
+                              <MentionEpisodeGroup mentions={item.mentions} />
+                            )
                           ) : person ? (
                             <StartCard person={person} claims={claims} isOwn={isOwn} />
                           ) : null}
