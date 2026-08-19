@@ -364,7 +364,7 @@ export function OnboardingFlow() {
               there you can see how it connects to everyone else&apos;s.
             </p>
 
-            {stats.riders !== null && (
+            {(stats.riders ?? 0) > 0 && (
               <div className="mt-6">
                 <BigNumber value={stats.riders} tone="violet" />
                 <p className="mt-2 text-[14px] font-medium text-foreground leading-snug">
@@ -431,12 +431,12 @@ export function OnboardingFlow() {
               </p>
             </div>
 
-            {stats.riders !== null && (
+            {(stats.riders ?? 0) > 0 && (
               <div className="mt-5">
                 <Callout>
                   Right now{" "}
                   <b className="text-foreground font-semibold">
-                    {stats.riders.toLocaleString()} riders
+                    {(stats.riders ?? 0).toLocaleString()} riders
                   </b>{" "}
                   are named in other people&apos;s stories. Adding your name is how yours stops
                   being someone else&apos;s footnote.

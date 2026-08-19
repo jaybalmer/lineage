@@ -24,22 +24,34 @@ export function BigNumber({
   const doneRef = useRef(false)
 
   useEffect(() => {
-    if (value === null || doneRef.current) return
+    if (value === null || value === 0 || doneRef.current) return
     doneRef.current = true
 
-    // Respect the same reduced-motion contract as the CSS. Rather than setting
-    // state straight from the effect body (react-hooks/set-state-in-effect), a
-    // zero duration lands the full number on the very first frame, inside the
-    // rAF callback.
+    // Show the final value immediately when we cannot run a frame loop: a
+    // reduced-motion preference, or a page that is not currently visible.
+    // requestAnimationFrame is paused while the tab is hidden, so a pure rAF
+    // count-up would otherwise leave the number stuck on its initial 0 (the beat
+    // rendered in a background tab, a preview pane, or before first paint). The
+    // count-up is a flourish; it must never be the thing that decides whether the
+    // real number appears.
     const reduced =
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    if (reduced || (typeof document !== "undefined" && document.hidden)) {
+      // Land the final value now. This is a one-shot assignment guarded by
+      // doneRef, not a render loop; a deferred timer/rAF is the wrong tool here
+      // because it is paused (rAF) or cleared by the dev strict-mode remount
+      // (timer), either of which would leave the number stuck on 0.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setShown(value)
+      return
+    }
 
-    const duration = reduced ? 0 : 950
+    const duration = 950
     const start = performance.now()
     let frame = 0
     const tick = (now: number) => {
-      const p = duration === 0 ? 1 : Math.min(1, (now - start) / duration)
+      const p = Math.min(1, (now - start) / duration)
       const eased = 1 - Math.pow(1 - p, 3)
       setShown(Math.round(value * eased))
       if (p < 1) frame = requestAnimationFrame(tick)
@@ -48,7 +60,7 @@ export function BigNumber({
     return () => cancelAnimationFrame(frame)
   }, [value])
 
-  if (value === null) return null
+  if (value === null || value === 0) return null
 
   const gradient =
     tone === "accent"
