@@ -26,6 +26,10 @@ import type { Board } from "@/types"
 
 const TILE_COUNT = 8
 
+/** The Linestry brand blue (--accent), used for the woven grid's connecting
+ *  threads so the "everything connects" line reads as the brand, not a tier. */
+const THREAD_COLOR = "#3B82F6"
+
 /** Tints used for slots the catalog cannot fill. */
 const FALLBACK_TINTS = ["#14b8a6", "#8b5cf6", "#f59e0b", "#10b981", "#06b6d4"]
 
@@ -166,9 +170,13 @@ function pickTiles(storyImages: StoryImage[], boards: Board[], offset: number): 
 export function FtueMosaic({ mode }: { mode: "scatter" | "woven" }) {
   const catalog = useLineageStore((s) => s.catalog)
   const [storyImages, setStoryImages] = useState<StoryImage[]>([])
+  const [loaded, setLoaded] = useState(false)
 
-  // Real story photos are fetched client-side, so the first paint uses the
-  // generated fallback below and real photos swap in when the request lands.
+  // Real story photos are fetched client-side. Until the request settles the
+  // empty slots stay blank (a plain dark frame), NOT a generated graphic tile,
+  // so the opening beat never flashes abstract placeholders before the real
+  // photos land. Generated tiles only appear once loaded, to backfill a slot the
+  // archive genuinely cannot fill.
   useEffect(() => {
     let alive = true
     fetch("/api/stats/community-images")
@@ -177,6 +185,9 @@ export function FtueMosaic({ mode }: { mode: "scatter" | "woven" }) {
         if (alive && Array.isArray(d?.images)) setStoryImages(d.images as StoryImage[])
       })
       .catch(() => {})
+      .finally(() => {
+        if (alive) setLoaded(true)
+      })
     return () => {
       alive = false
     }
@@ -212,7 +223,7 @@ export function FtueMosaic({ mode }: { mode: "scatter" | "woven" }) {
               y1={centres[a].y}
               x2={centres[b].x}
               y2={centres[b].y}
-              stroke={TIER.story}
+              stroke={THREAD_COLOR}
               strokeWidth={1.4}
               strokeLinecap="round"
               pathLength={1}
@@ -240,6 +251,10 @@ export function FtueMosaic({ mode }: { mode: "scatter" | "woven" }) {
 
       {layout.map((t, i) => {
         const tile = tiles[i]
+        // A real photo shows straight away; a generated fallback only once the
+        // fetch has settled. Until then the slot is a plain dark frame, so the
+        // beat never flashes abstract graphics before the photos arrive.
+        const hasImage = !!tile.src || loaded
         return (
           // Outer element owns the angle; inner owns the drop-in animation, so
           // the reduced-motion override cannot flatten a tile's rotation.
@@ -261,14 +276,17 @@ export function FtueMosaic({ mode }: { mode: "scatter" | "woven" }) {
                 boxShadow: "0 10px 26px -10px rgba(0,0,0,.9)",
               }}
             >
-              <img
-                src={tile.src ?? fallbackPhoto(i)}
-                alt=""
-                className="w-full h-full object-cover"
-                style={{ filter: "saturate(.75) contrast(1.05)" }}
-              />
+              {hasImage && (
+                <img
+                  src={tile.src ?? fallbackPhoto(i)}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  style={{ filter: "saturate(.75) contrast(1.05)" }}
+                />
+              )}
 
-              {mode === "scatter" ? (
+              {hasImage &&
+                (mode === "scatter" ? (
                 <>
                   {/* Generic post chrome: no handle, no count, nothing invented. */}
                   <div
@@ -305,7 +323,7 @@ export function FtueMosaic({ mode }: { mode: "scatter" | "woven" }) {
                     {tile.caption}
                   </div>
                 )
-              )}
+                ))}
             </div>
           </div>
         )
