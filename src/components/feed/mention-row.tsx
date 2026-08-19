@@ -46,7 +46,7 @@ function watchLink(mention: Mention): { href: string; seeks: boolean } | null {
 }
 
 /** "FNRad #142" when both are known, degrading to whatever we do have. */
-function episodeLabel(mention: Mention): string {
+export function episodeLabel(mention: Mention): string {
   const ep = mention.episode
   if (!ep) return "an episode"
   const show = ep.show_name
@@ -60,18 +60,39 @@ export function MentionRow({
   mention,
   context,
   isEditor = false,
+  nested = false,
+  openSignal,
   onEdit,
   onRemove,
 }: {
   mention: Mention
   context: "episode" | "timeline"
   isEditor?: boolean
+  /**
+   * BUG-172: rendered as a line inside a MentionEpisodeGroup. Drops the
+   * episode-leading header (the group already named the episode) and the outer
+   * card chrome, so it reads as a line in one card rather than a card in a card.
+   * Un-nested rows render byte-identically to before.
+   */
+  nested?: boolean
+  /** Group-level "Expand all" / "Collapse all" driver; only used when nested. */
+  openSignal?: { open: boolean; n: number }
   onEdit?: (mention: Mention) => void
   onRemove?: (mention: Mention) => void
 }) {
   const [expanded, setExpanded] = useState(false)
   const catalog = useLineageStore((s) => s.catalog)
   const personHref = usePersonHref()
+
+  // Sync to the group's Expand all / Collapse all during render (not in an
+  // effect) to stay clear of react-hooks/set-state-in-effect, matching the
+  // prev-state pattern used elsewhere. The row keeps its own toggle below, so a
+  // reader can still open or close one line after a group action.
+  const [prevSignalN, setPrevSignalN] = useState(openSignal?.n)
+  if (nested && openSignal && openSignal.n !== prevSignalN) {
+    setPrevSignalN(openSignal.n)
+    setExpanded(openSignal.open)
+  }
 
   const stamp = mention.timestamp_seconds != null ? formatTimestamp(mention.timestamp_seconds) : null
   const watch = watchLink(mention)
@@ -87,7 +108,7 @@ export function MentionRow({
       : resolveEntityName(catalog, mention)
 
   return (
-    <div className="rounded-xl border border-border-default bg-surface px-4 py-3 mb-2">
+    <div className={nested ? "px-1 py-2" : "rounded-xl border border-border-default bg-surface px-4 py-3 mb-2"}>
       <div className="flex items-start justify-between gap-3">
         <button
           type="button"
@@ -98,7 +119,19 @@ export function MentionRow({
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs text-fuchsia-500" aria-hidden>🎙</span>
 
-            {context === "timeline" ? (
+            {nested ? (
+              // The group header already named the episode. Lead with what this
+              // particular mention is: its story title, else a clamped excerpt.
+              <span className="text-sm text-foreground line-clamp-1">
+                {mention.story_title ? (
+                  <span className="font-semibold">{mention.story_title}</span>
+                ) : mention.excerpt ? (
+                  mention.excerpt
+                ) : (
+                  "Mentioned"
+                )}
+              </span>
+            ) : context === "timeline" ? (
               <span className="text-sm text-foreground">
                 Mentioned on <span className="font-semibold">{episodeLabel(mention)}</span>
               </span>
@@ -123,7 +156,7 @@ export function MentionRow({
             )}
           </div>
 
-          {context === "timeline" ? (
+          {!nested && context === "timeline" ? (
             <>
               {mention.story_title && (
                 <p className="text-sm font-semibold text-foreground mt-1 leading-snug">{mention.story_title}</p>
