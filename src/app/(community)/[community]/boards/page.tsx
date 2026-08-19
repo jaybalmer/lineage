@@ -73,7 +73,7 @@ function BoardsPageInner() {
   // BUG-161: a signed-out add is a no-op, so gate at press time and prompt.
   const [signinPromptOpen, setSigninPromptOpen] = useState(false)
 
-  const { catalog, activePersonId, communities, activeCommunitySlug } = useLineageStore()
+  const { catalog, activePersonId } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
   const openAdd = () => (isAuth ? setAddOpen(true) : setSigninPromptOpen(true))
   const openAddBrand = () => (isAuth ? setAddBrandOpen(true) : setSigninPromptOpen(true))
@@ -116,9 +116,6 @@ function BoardsPageInner() {
       cancelled = true
     }
   }, [])
-
-  const community = communities.find((c) => c.slug === activeCommunitySlug)
-  const bannerUrl = community?.boards_banner_url
 
   // Display totals for the intro card — always the full catalog, never filtered.
   const totalBoards = catalog.boards.length
@@ -318,18 +315,6 @@ function BoardsPageInner() {
   return (
     <div className="min-h-screen bg-background">
       <Nav />
-
-      {/* Admin-set boards-page banner band (optional) */}
-      {bannerUrl && (
-        <div className="w-full relative h-36 sm:h-44 overflow-hidden">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
-          <div
-            className="absolute inset-0"
-            style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0) 45%, rgba(0,0,0,0.30) 100%)" }}
-          />
-        </div>
-      )}
 
       <div className="max-w-5xl mx-auto px-4 py-8">
         {/* Intro card */}

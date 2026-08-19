@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation"
 import { Nav } from "@/components/ui/nav"
 import { StoryCard } from "@/components/feed/story-card"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
+import { SignInPrompt } from "@/components/ui/sign-in-prompt"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import type { Story } from "@/types"
@@ -71,6 +72,10 @@ function StoriesPageBody() {
   const [offset, setOffset]     = useState(0)
   const [hasMore, setHasMore]   = useState(true)
   const [addOpen, setAddOpen]   = useState(false)
+  const [signinPromptOpen, setSigninPromptOpen] = useState(false)
+  // BUG-164 D3: show the add-story invitation signed out too, but route to
+  // sign-in at press time rather than opening a modal that would no-op.
+  const openAdd = () => (isAuth ? setAddOpen(true) : setSigninPromptOpen(true))
 
   // Fetch a page and return the rows; callers apply the result from a .then
   // callback so the mount/refetch effect performs no synchronous setState
@@ -127,20 +132,25 @@ function StoriesPageBody() {
       <Nav />
       <div className="max-w-2xl mx-auto px-4 py-8">
 
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-foreground">Stories</h1>
-            <p className="text-sm text-muted mt-1">Firsthand accounts from the community</p>
+        {/* Intro card (BUG-164): matches the catalog-page treatment from PR #190 */}
+        <div className="bg-surface border border-border-default rounded-xl p-5 mb-6 flex flex-col gap-4">
+          <div className="min-w-0">
+            <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-wordmark)" }}>
+              Firsthand Accounts
+            </h1>
+            <p className="text-sm text-muted mt-1 max-w-md">
+              The stories that made this community are told in parking lots and on chairlifts and
+              then they are gone. Write down the ones you were there for. What you remember is the record.
+            </p>
           </div>
-          {isAuth && (
+          <div>
             <button
-              onClick={() => setAddOpen(true)}
-              className="px-4 py-2 rounded-lg bg-violet-700 text-sm font-medium text-white hover:bg-violet-600 transition-all"
+              onClick={openAdd}
+              className="px-4 py-2.5 rounded-lg bg-violet-700 text-sm font-medium text-white hover:bg-violet-600 transition-all whitespace-nowrap"
             >
               ✍ Add story
             </button>
-          )}
+          </div>
         </div>
 
         {/* Search */}
@@ -211,9 +221,9 @@ function StoriesPageBody() {
             <div className="text-sm text-muted mb-2">
               {search ? "No stories match your search." : filter === "mine" ? "You haven't written any stories yet." : "No stories yet."}
             </div>
-            {isAuth && !search && (
+            {!search && (
               <button
-                onClick={() => setAddOpen(true)}
+                onClick={openAdd}
                 className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
               >
                 Share the first one →
@@ -248,6 +258,13 @@ function StoriesPageBody() {
         <AddStoryModal
           onClose={() => setAddOpen(false)}
           onSaved={(s) => { setStories((prev) => [s, ...prev]); setAddOpen(false) }}
+        />
+      )}
+
+      {signinPromptOpen && (
+        <SignInPrompt
+          message="Writing a story on Linestry needs an account, so it is credited to you. Takes about a minute."
+          onClose={() => setSigninPromptOpen(false)}
         />
       )}
     </div>

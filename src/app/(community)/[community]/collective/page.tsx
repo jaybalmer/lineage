@@ -430,6 +430,17 @@ export default function CollectivePage() {
             </div>
           </div>
 
+          {/* ── Intro card (BUG-164): explain the surface to an arriving visitor ── */}
+          <div className="bg-surface border border-border-default rounded-xl p-5 mb-6">
+            <h1 className="text-2xl font-bold text-foreground" style={{ fontFamily: "var(--font-wordmark)" }}>
+              The Collective Timeline
+            </h1>
+            <p className="text-sm text-muted mt-1 max-w-md">
+              Every member&apos;s timeline, laid over one another by year. The more people who add
+              theirs, the more the shape of the sport shows up. Pick a year to see who was where.
+            </p>
+          </div>
+
           {/* ── Controls row ─────────────────────────────────────────────── */}
           <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
             {/* Type filter pills */}
