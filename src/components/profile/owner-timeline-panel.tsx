@@ -727,18 +727,29 @@ export function OwnerTimelinePanel() {
             owner's cross-link to their public Stack at /t/[slug] (shown only when
             a public timeline is enabled), matching the public profile's top row. */}
         <div className="flex items-center justify-between gap-3 mb-6">
-          <div className="text-xs text-muted">
+          <div className="text-xs text-muted min-w-0 truncate">
             <Link href="/people" className="hover:text-foreground">Riders</Link>
             <span className="mx-2">/</span>
             <span className="text-muted">{person?.display_name ?? "You"}</span>
           </div>
-          {publicTimeline?.enabled && publicTimeline.slug && (
-            <StackTimelineToggle
-              active="timeline"
-              stackHref={`/t/${publicTimeline.slug}`}
-              variant="light"
-            />
-          )}
+          {/* BUG-160: the Stack manage surface (/me/public-view) was linked from
+              exactly one settings page and findable nowhere the owner naturally
+              is. Surface it here, labelled by whether a Stack is set up yet. */}
+          <div className="flex items-center gap-3 shrink-0">
+            <Link
+              href="/me/public-view"
+              className="text-xs text-accent-strong hover:underline whitespace-nowrap"
+            >
+              {publicTimeline?.enabled && publicTimeline.slug ? "Edit my Stack" : "Set up my Stack"}
+            </Link>
+            {publicTimeline?.enabled && publicTimeline.slug && (
+              <StackTimelineToggle
+                active="timeline"
+                stackHref={`/t/${publicTimeline.slug}`}
+                variant="light"
+              />
+            )}
+          </div>
         </div>
 
         {/* PB-009 Phase 2: pending-tag pill, owner-only by virtue of this
