@@ -23,7 +23,7 @@ import { OwnerTimelinePanel } from "@/components/profile/owner-timeline-panel"
 import { MemberCuratedSections } from "@/components/profile/member-curated-sections"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import { HelpConnectCard } from "@/components/ui/help-connect-card"
-import { isInvitableNodeStatus, trackInviteEvent } from "@/lib/invite-tracking"
+import { isInvitableNodeStatus, isInvitablePerson, trackInviteEvent } from "@/lib/invite-tracking"
 import { EQUITY_SNAPSHOT_LABEL } from "@/lib/equity-offer"
 import { isAuthUser } from "@/store/lineage-store"
 import { notFound } from "next/navigation"
@@ -271,12 +271,18 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
     nodeIsClaimable &&
     !userHasOpenClaim(openClaimRequests, activePersonId)
   const showVouchSurface = isAuth && openClaimRequests.length > 0
+  // Claim-first invite gate: an invitable node_status AND no bound account behind
+  // it. Every email-invite affordance on this page hangs off this, so a rider who
+  // already has an account (even one whose node_status lags) is never offered an
+  // invite. The claim ("This is me / That's me") CTAs stay on nodeIsClaimable.
+  const inviteEligible = isInvitablePerson(person)
   // node-claim-by-admin-invite: a NOT-logged-in visitor on a claimable node gets
   // the email-first claim path (the logged-in path keeps ClaimRequestModal).
   const showThatsMeAnon = !isAuth && !isCurrentUser && nodeIsClaimable
   // Editor-only proactive invite: send this node's rider an account-creating
   // claim link by email. Editors are the identity gate, so no review queue.
-  const canEditorInvite = isAuth && membership.is_editor === true && !isCurrentUser && nodeIsClaimable
+  const canEditorInvite =
+    isAuth && membership.is_editor === true && !isCurrentUser && nodeIsClaimable && inviteEligible
   const invitedEmail = invitedEmailOverride ?? (person as Person).invite_email ?? null
 
   return (
@@ -344,7 +350,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                 <span className="text-foreground font-bold">{personClaims.length}</span> claims
               </span>
               <div className="flex gap-2">
-                {isInvitableNodeStatus(person.node_status) && isAuthUser(activePersonId) && (
+                {inviteEligible && isAuthUser(activePersonId) && (
                   <button
                     onClick={() => {
                       trackInviteEvent("invite_prompt_clicked", {
@@ -443,30 +449,33 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
                 })()}
               </p>
               {isAuthUser(activePersonId) && (
-                <div className="flex items-center gap-3 mt-2">
+                <div className="flex items-center gap-3 mt-3 flex-wrap">
+                  {/* Claim-first: the consensual "This is me" claim leads as the
+                      primary filled CTA; the email invite is the quieter
+                      secondary action beside it (and only when eligible). */}
                   {showThisIsMe && (
                     <button
                       onClick={() => setShowClaimModal(true)}
-                      className="text-xs font-semibold transition-colors hover:opacity-80"
-                      style={{ color: "#3b82f6" }}
+                      className="px-3 py-2 rounded-lg bg-blue-600 text-white text-xs font-semibold hover:bg-blue-500 transition-colors"
                     >
                       This is me →
                     </button>
                   )}
-                  <button
-                    onClick={() => {
-                      trackInviteEvent("invite_prompt_clicked", {
-                        surface: "person_profile_banner",
-                        person_id: resolvedId,
-                        node_status: person.node_status,
-                      })
-                      setShowInviteModal(true)
-                    }}
-                    className="text-xs font-medium transition-colors hover:opacity-80"
-                    style={{ color: "#3b82f6" }}
-                  >
-                    Invite to Linestry →
-                  </button>
+                  {inviteEligible && (
+                    <button
+                      onClick={() => {
+                        trackInviteEvent("invite_prompt_clicked", {
+                          surface: "person_profile_banner",
+                          person_id: resolvedId,
+                          node_status: person.node_status,
+                        })
+                        setShowInviteModal(true)
+                      }}
+                      className="text-xs font-medium text-muted transition-colors hover:text-foreground"
+                    >
+                      Invite them instead
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -520,7 +529,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
             Shown to any authed visitor (not the subject themselves) when the
             profile is invitable. Sits alongside "This is me" — copy-link and
             email-share are always visible, no extra click required. */}
-        {!isCurrentUser && isAuth && isInvitableNodeStatus(person.node_status) && (
+        {!isCurrentUser && isAuth && inviteEligible && (
           <HelpConnectCard
             personId={resolvedId}
             personName={person.display_name}

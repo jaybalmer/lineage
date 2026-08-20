@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAuth, getServiceClient } from "@/lib/auth"
 import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO } from "@/lib/emails/shared-header"
 import { listUnsubscribeHeaders, isEmailSuppressed } from "@/lib/email-suppression"
+import { personHasBoundAccount } from "@/lib/invite-tracking-server"
 
 function escapeHtml(str: string): string {
   return str
@@ -91,6 +92,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
+    const supabase = getServiceClient()
+
+    // Claim-first guard: never send an invite to someone who already has a
+    // bound account, even if a stale client still shows the affordance or the
+    // node_status lags. Server-authoritative so the UI guard cannot be bypassed.
+    if (await personHasBoundAccount(supabase, person_id)) {
+      return NextResponse.json(
+        { error: "That person already has a Linestry account." },
+        { status: 409 },
+      )
+    }
+
     // Escape user-supplied names before using in HTML email
     const safeInviterName = escapeHtml(inviter_name || "Someone")
     const safePersonName = escapeHtml(person_name || "a rider")
@@ -100,7 +113,6 @@ export async function POST(req: NextRequest) {
     const link = `${origin}/claim/${token}`
 
     // Insert invite record -- use authenticated user's ID
-    const supabase = getServiceClient()
     const { error: insertError } = await supabase.from("invites").insert({
       id: token,
       person_id,

@@ -129,8 +129,8 @@ export function HelpConnectCard({ personId, personName, profileUrl, inviterName 
               <button
                 type="submit"
                 disabled={sending || !email.trim()}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all disabled:opacity-50"
-                style={{ background: "#1C1917", color: "#FFFFFF" }}
+                className="px-3 py-1.5 rounded-lg border text-xs font-medium transition-all disabled:opacity-50"
+                style={{ borderColor: "#3b82f640", color: "#3b82f6", background: "#3b82f610" }}
               >
                 {sending ? "Sending…" : sent ? "Sent" : "Send invite"}
               </button>

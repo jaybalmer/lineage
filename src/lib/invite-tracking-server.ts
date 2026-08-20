@@ -1,6 +1,33 @@
-import { createClient } from "@supabase/supabase-js"
+import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO } from "@/lib/emails/shared-header"
 import { listUnsubscribeHeaders, isEmailSuppressed } from "@/lib/email-suppression"
+
+/**
+ * Server-authoritative twin of hasBoundAccount (src/lib/invite-tracking.ts).
+ * True when a real auth account already stands behind this person id, so an
+ * invite must never be sent — even if a stale client still shows the affordance.
+ *
+ * Checks both tables because the id can point at either: a profiles row means a
+ * registered account (this also catches the orphan case where the account's
+ * node_status still reads catalog/unclaimed), and a people row is bound when
+ * claimed_by is set or its status is already claimed/verified.
+ */
+export async function personHasBoundAccount(
+  db: SupabaseClient,
+  personId: string,
+): Promise<boolean> {
+  const [profileRes, peopleRes] = await Promise.all([
+    db.from("profiles").select("id").eq("id", personId).maybeSingle(),
+    db.from("people").select("claimed_by, node_status").eq("id", personId).maybeSingle(),
+  ])
+  if (profileRes.data) return true
+  const people = peopleRes.data as { claimed_by: string | null; node_status: string | null } | null
+  if (people) {
+    if (people.claimed_by) return true
+    if (people.node_status === "claimed" || people.node_status === "verified") return true
+  }
+  return false
+}
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 

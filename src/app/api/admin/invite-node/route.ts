@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireEditor, getServiceClient } from "@/lib/auth"
 import { verificationTierFor, vouchesRequiredForTier } from "@/lib/claim-request-helpers"
 import { applyNodeInvite } from "@/lib/node-invite"
+import { personHasBoundAccount } from "@/lib/invite-tracking-server"
 import type { Person } from "@/types"
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
@@ -95,6 +96,14 @@ export async function POST(req: NextRequest) {
   if (person.node_status !== "catalog" && person.node_status !== "unclaimed") {
     return NextResponse.json(
       { error: "This profile is not eligible for an invite (already claimed)." },
+      { status: 409 },
+    )
+  }
+  // Claim-first guard: also reject a node that is bound to an account despite a
+  // lagging node_status (legacy claimed_by, or a profiles row behind the id).
+  if (await personHasBoundAccount(db, nodeId)) {
+    return NextResponse.json(
+      { error: "This profile already has a Linestry account." },
       { status: 409 },
     )
   }

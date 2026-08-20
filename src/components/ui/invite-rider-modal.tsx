@@ -172,6 +172,12 @@ export function InviteRiderModal({ personId, personName, predicate, onClose, sur
                   <p className="text-xs text-red-400">{error}</p>
                 )}
 
+                {/* Consent reminder: a surprised recipient marking the invite as
+                    spam hurts sending reputation for everyone, so keep invites warm. */}
+                <p className="text-[11px] text-muted leading-relaxed">
+                  Only invite people you know and have given a heads-up. A surprised recipient marking this as spam hurts delivery for everyone.
+                </p>
+
                 {/* Actions */}
                 <div className="space-y-2 pt-1">
                   <button
