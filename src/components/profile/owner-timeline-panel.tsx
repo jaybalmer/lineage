@@ -756,7 +756,7 @@ export function OwnerTimelinePanel() {
               href="/me/public-view"
               className="text-xs text-accent-strong hover:underline whitespace-nowrap"
             >
-              {publicTimeline?.enabled && publicTimeline.slug ? "Edit my Stack" : "Set up my Stack"}
+              {publicTimeline?.enabled && publicTimeline.slug ? "Edit my Mini timeline" : "Set up my Mini timeline"}
             </Link>
             {publicTimeline?.enabled && publicTimeline.slug && (
               <StackTimelineToggle

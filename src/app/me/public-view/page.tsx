@@ -318,12 +318,12 @@ export default function MePublicViewPage() {
         }),
       })
       const data = await res.json()
-      if (!res.ok) { addToast(data?.error ?? "Could not save your stack.", "error"); return }
+      if (!res.ok) { addToast(data?.error ?? "Could not save your Mini timeline.", "error"); return }
       setSaved((data.entries ?? []) as PublicStackEntry[])
       setIsStarter(false)
-      addToast(enabled ? "Stack saved. Share your link below." : "Stack saved. Turn on your public timeline to share it.")
+      addToast(enabled ? "Mini timeline saved. Share your link below." : "Mini timeline saved. Turn on your public timeline to share it.")
     } catch {
-      addToast("Could not save your stack.", "error")
+      addToast("Could not save your Mini timeline.", "error")
     } finally {
       setSaving(false)
     }
@@ -358,7 +358,7 @@ export default function MePublicViewPage() {
       <MeSubNav />
       <main className="max-w-5xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between gap-3 flex-wrap mb-1">
-          <h1 className="text-2xl font-semibold text-foreground">Your public view (Stack)</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Your Mini timeline</h1>
           <Link href="/me/settings/public-timeline" className="text-xs text-accent-strong hover:underline">
             ← Public timeline settings
           </Link>
@@ -372,13 +372,13 @@ export default function MePublicViewPage() {
           <div className="mb-5 rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm">
             <span className="text-foreground">Your public timeline is off.</span>{" "}
             <Link href="/me/settings/public-timeline" className="text-accent-strong hover:underline">Turn it on</Link>{" "}
-            <span className="text-muted">so your shareable link works. You can still curate your stack here.</span>
+            <span className="text-muted">so your shareable link works. You can still curate your Mini timeline here.</span>
           </div>
         )}
 
         {isStarter && (
           <div className="mb-5 rounded-xl border border-blue-500/30 bg-blue-500/5 p-4 text-sm text-muted">
-            <span className="text-foreground font-medium">Here&apos;s a starter stack we drafted for you.</span>{" "}
+            <span className="text-foreground font-medium">Here&apos;s a starter Mini timeline we drafted for you.</span>{" "}
             Trim it, reorder it, then Save — or clear it and start fresh.
           </div>
         )}
@@ -388,7 +388,7 @@ export default function MePublicViewPage() {
           <section>
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-sm font-semibold text-foreground">
-                Your stack <span className="text-muted font-normal">({count})</span>
+                Your Mini timeline <span className="text-muted font-normal">({count})</span>
               </h2>
               <div className="flex items-center gap-2">
                 {count > 1 && (
@@ -463,16 +463,16 @@ export default function MePublicViewPage() {
             )}
 
             {count > 0 && count < TARGET_MIN && (
-              <p className="text-xs text-muted mt-3">Add a few more — stacks land best around {TARGET_MIN}–12 cards.</p>
+              <p className="text-xs text-muted mt-3">Add a few more. It lands best around {TARGET_MIN}-12 cards.</p>
             )}
             {count > TARGET_SOFT_MAX && (
-              <p className="text-xs text-amber-600 mt-3">Getting long. The tightest stacks stay near {TARGET_MIN}–12 ({HARD_MAX} max).</p>
+              <p className="text-xs text-amber-600 mt-3">Getting long. The tightest ones stay near {TARGET_MIN}-12 ({HARD_MAX} max).</p>
             )}
 
             <div className="mt-4 flex items-center gap-3">
               <button onClick={save} disabled={saving}
                 className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-500 disabled:opacity-50 transition-colors">
-                {saving ? "Saving…" : "Save stack"}
+                {saving ? "Saving…" : "Save Mini timeline"}
               </button>
               {slug && enabled && (
                 <a href={`/t/${slug}?view=stack`} target="_blank" rel="noopener noreferrer"
