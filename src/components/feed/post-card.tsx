@@ -608,6 +608,12 @@ export function PostCard({ claim, isOwn, readOnly, explicitCompanionIds }: { cla
   const [verifyGateShownThisSession, setVerifyGateShownThisSession] = useState(false)
 
   const isMember = membership.tier !== "free"
+  // BUG-155: "Edit event" opens the shared catalog editor, which saves through
+  // POST /api/admin (requireEditor). Gate the affordance to match that write
+  // permission (is_editor OR founding), so a non-editor no longer sees a button
+  // that 403s on save and that implies they can rename a shared catalog event
+  // from their own personal timeline claim.
+  const isEditor = membership.is_editor === true || membership.tier === "founding"
 
   const predicateLabel = PREDICATE_LABELS[claim.predicate] ?? claim.predicate
   const dateRange = formatDateRange(claim.start_date, claim.end_date)
@@ -740,7 +746,7 @@ export function PostCard({ claim, isOwn, readOnly, explicitCompanionIds }: { cla
                           >
                             <span>✏️</span> Edit claim
                           </button>
-                          {userEvent && (
+                          {userEvent && isEditor && (
                             <button
                               onClick={() => { setMenuOpen(false); setEditingEvent(true) }}
                               className="w-full text-left px-4 py-2.5 text-xs text-muted hover:bg-surface-active hover:text-foreground transition-colors flex items-center gap-2"
