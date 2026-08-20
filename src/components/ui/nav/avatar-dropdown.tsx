@@ -7,7 +7,7 @@ import { getInitials } from "@/components/ui/rider-avatar"
 import { useLineageStore } from "@/store/lineage-store"
 import { useTheme } from "@/lib/theme"
 import { supabase } from "@/lib/supabase"
-import { ReportBugModal } from "@/components/ui/report-bug-modal"
+import { FeedbackModal } from "@/components/ui/feedback-modal"
 import { memberBadgeFor } from "@/components/ui/member-badge"
 
 export interface AvatarDropdownProps {
@@ -199,14 +199,14 @@ export function AvatarDropdown({ displayName, tier, totalTokens, pendingTagCount
             Settings
           </Link>
 
-          {/* Report a bug */}
+          {/* Send feedback */}
           <button
             type="button"
             onClick={() => { setOpen(false); setBugOpen(true) }}
             className="w-full flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
             style={{ fontSize: 11 }}
           >
-            Report a bug
+            Send feedback
           </button>
 
           <div className="border-t border-border-default" />
@@ -221,7 +221,7 @@ export function AvatarDropdown({ displayName, tier, totalTokens, pendingTagCount
         </div>
       )}
 
-      <ReportBugModal open={bugOpen} onClose={() => setBugOpen(false)} includeAccount />
+      <FeedbackModal open={bugOpen} onClose={() => setBugOpen(false)} includeAccount />
     </div>
   )
 }

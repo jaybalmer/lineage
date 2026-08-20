@@ -2,24 +2,29 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServiceClient, ensureProfile } from "@/lib/auth"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
 import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO } from "@/lib/emails/shared-header"
+import type { FeedbackKind } from "@/types"
 
 // POST /api/bug-report  (multipart/form-data)
 //
-// In-app bug widget intake. On submit:
+// In-app feedback intake (the "Send feedback" widget; the route keeps its
+// bug-report path name). Takes a bug report OR a feature idea, split by `kind`.
+// On submit:
 //   1. Persist a bug_reports row (durable record, future de-dup).
-//   2. Send a structured [Linestry Bug] email to the triage inbox. An optional
-//      screenshot rides along as an email attachment, so the existing
-//      Gmail-to-Drive bridge files it into the "Linestry Bug Attachments" Drive
-//      folder that daily triage already reviews. No new storage to maintain.
+//   2. Send a structured email to the triage inbox, subject-prefixed
+//      [Linestry Bug] or [Linestry Idea] by kind. An optional screenshot rides
+//      along as an email attachment, so the existing Gmail-to-Drive bridge files
+//      it into the Drive folder that daily triage already reviews. No new
+//      storage to maintain.
 //
 // Auth is OPTIONAL: signed-in reporters are identified from their session (never
-// the payload, so it cannot be spoofed), and logged-out visitors can still report
-// browsing bugs (reporter_id null). Because this is a public, unauthenticated,
-// email-sending endpoint, every text field is length-capped and the image is
-// type/size-checked server-side. Add real rate limiting before launch scale.
+// the payload, so it cannot be spoofed), and logged-out visitors can still send
+// feedback (reporter_id null). Because this is a public, unauthenticated,
+// email-sending endpoint, every text field is length-capped, `kind` is
+// whitelisted, and the image is type/size-checked server-side. Add real rate
+// limiting before launch scale.
 //
-// The subject MUST keep the exact "[Linestry Bug]" prefix: the whole downstream
-// pipeline (bridge + triage) keys on it.
+// The "[Linestry Bug]" subject prefix MUST stay byte-identical: the whole
+// downstream pipeline (bridge + triage) keys on it. Ideas use "[Linestry Idea]".
 
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024 // 8 MB ceiling (client compresses well below)
 const IMAGE_MIME_EXT: Record<string, string> = {
@@ -69,6 +74,7 @@ function parseReplayAnchor(url: string): string | null {
 }
 
 function bugReportEmailHtml(p: {
+  kind: FeedbackKind
   note: string
   expected: string
   url: string
@@ -80,10 +86,12 @@ function bugReportEmailHtml(p: {
   posthogSessionUrl: string | null
   hasImage: boolean
 }): string {
+  const isIdea = p.kind === "idea"
   const noteHtml = esc(p.note).replace(/\n/g, "<br>")
+  const expectedHeading = isIdea ? "What this would make possible" : "What they expected"
   const expectedBlock = p.expected
     ? `
-      <p style="margin:18px 0 6px;font-size:12px;font-weight:600;color:#a1a1aa;">What they expected</p>
+      <p style="margin:18px 0 6px;font-size:12px;font-weight:600;color:#a1a1aa;">${expectedHeading}</p>
       <p style="margin:0;font-size:14px;color:#e5e5e5;line-height:1.6;">${esc(p.expected).replace(/\n/g, "<br>")}</p>`
     : ""
   const pageRow = p.url
@@ -111,15 +119,15 @@ function bugReportEmailHtml(p: {
   <div style="max-width:560px;margin:40px auto;background:#141414;border-radius:16px;border:1px solid #2a2a2a;overflow:hidden;">
     ${emailHeaderHtml()}
     <div style="padding:32px;">
-      <h1 style="margin:0 0 4px;font-size:20px;font-weight:700;color:#e5e5e5;">New bug report</h1>
+      <h1 style="margin:0 0 4px;font-size:20px;font-weight:700;color:#e5e5e5;">${isIdea ? "New idea" : "New bug report"}</h1>
       <p style="margin:0 0 20px;font-size:13px;color:#71717a;">Submitted from inside Linestry.</p>
 
-      <p style="margin:0 0 6px;font-size:12px;font-weight:600;color:#a1a1aa;">What happened</p>
+      <p style="margin:0 0 6px;font-size:12px;font-weight:600;color:#a1a1aa;">${isIdea ? "The idea" : "What happened"}</p>
       <p style="margin:0;font-size:14px;color:#e5e5e5;line-height:1.6;">${noteHtml}</p>
       ${expectedBlock}
 
       <div style="border-top:1px solid #2a2a2a;margin:24px 0 8px;"></div>
-      <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">${pageRow}${metaRow("Reported by", esc(p.reportedBy))}${metaRow("Timestamp", esc(p.timestamp))}${startedRow}${metaRow("Viewport", esc(p.viewport || "unknown"))}${metaRow("Browser", esc(p.userAgent || "unknown"))}${replayRow}${anchorRow}${screenshotRow}
+      <table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;">${metaRow("Type", isIdea ? "Idea" : "Bug report")}${pageRow}${metaRow("Reported by", esc(p.reportedBy))}${metaRow("Timestamp", esc(p.timestamp))}${startedRow}${metaRow("Viewport", esc(p.viewport || "unknown"))}${metaRow("Browser", esc(p.userAgent || "unknown"))}${replayRow}${anchorRow}${screenshotRow}
       </table>
     </div>
     ${emailFooterHtml()}
@@ -159,6 +167,10 @@ export async function POST(req: NextRequest) {
     rawReportStartedAt && Number.isFinite(Date.parse(rawReportStartedAt))
       ? rawReportStartedAt
       : null
+  // Feedback type. Whitelisted, never passed through raw: this endpoint is
+  // public and the value reaches a CHECK constraint and the email subject.
+  // Anything that is not the exact string "idea" becomes "bug".
+  const kind: FeedbackKind = asString(form.get("kind")).trim() === "idea" ? "idea" : "bug"
   const reporterId = user?.id ?? null
   const reporterEmail = user?.email ?? null
   const reportedBy = user ? (reporterEmail ?? `signed-in user ${user.id}`) : "Anonymous (logged out)"
@@ -205,17 +217,21 @@ export async function POST(req: NextRequest) {
     user_agent: userAgent || null,
     posthog_session_url: posthogSessionUrl,
   }
+  // Optional columns added by later migrations (report_started_at,
+  // 20260819000001_feedback_kind's kind). baseRow above is the always-safe set.
   let { error: insertError } = await db.from("bug_reports").insert({
     ...baseRow,
     report_started_at: reportStartedAt,
+    kind,
   })
-  // Deploy-order guard: if migration-011 hasn't run yet, the column doesn't
-  // exist. PostgREST reports that as PGRST204 (schema cache miss) before
-  // Postgres would return 42703; cover both. The bug intake must never break
-  // over a telemetry field, so retry without it rather than 500ing every
-  // report until the migration runs.
+  // Deploy-order guard: if a pending migration hasn't run yet, one of the
+  // optional columns doesn't exist. PostgREST reports that as PGRST204 (schema
+  // cache miss) before Postgres would return 42703; cover both. Feedback intake
+  // must never break over an optional column, so retry with only baseRow rather
+  // than 500ing every submission until the migration runs. The trade-off is that
+  // kind silently defaults to 'bug' and report_started_at is dropped in the gap.
   if (insertError?.code === "PGRST204" || insertError?.code === "42703") {
-    console.warn("bug-report: report_started_at column missing, run migration-011")
+    console.warn("bug-report: an optional column (report_started_at/kind) is missing, run the pending migration")
     ;({ error: insertError } = await db.from("bug_reports").insert(baseRow))
   }
   if (insertError) {
@@ -240,8 +256,12 @@ export async function POST(req: NextRequest) {
       from: "Linestry <noreply@linestry.com>",
       to: "jay@lineage.community",
       replyTo: EMAIL_REPLY_TO,
-      subject: `[Linestry Bug] ${firstLine}`,
+      // The [Linestry Bug] string must stay byte-identical: the whole downstream
+      // pipeline (Gmail-to-Drive bridge + daily triage sweep) keys on it. Ideas
+      // get their own [Linestry Idea] lane.
+      subject: `${kind === "idea" ? "[Linestry Idea]" : "[Linestry Bug]"} ${firstLine}`,
       html: bugReportEmailHtml({
+        kind,
         note,
         expected,
         url,
@@ -255,7 +275,7 @@ export async function POST(req: NextRequest) {
       }),
       // Internal triage email; a plaintext part keeps the whole account's send
       // profile consistent for filters. No List-Unsubscribe on an internal email.
-      text: `New bug report${reportedBy ? ` from ${reportedBy}` : ""}.\n\nWhat happened:\n${note}\n\nExpected:\n${expected || "(not provided)"}\n\nURL: ${url || "(none)"}\nViewport: ${viewport || "(none)"}\nUser agent: ${userAgent || "(none)"}\n${posthogSessionUrl ? `Session replay: ${posthogSessionUrl}\n` : ""}${attachment ? "Screenshot attached.\n" : ""}`,
+      text: `New ${kind === "idea" ? "idea" : "bug report"}${reportedBy ? ` from ${reportedBy}` : ""}.\n\n${kind === "idea" ? "The idea" : "What happened"}:\n${note}\n\n${kind === "idea" ? "What this would make possible" : "Expected"}:\n${expected || "(not provided)"}\n\nURL: ${url || "(none)"}\nViewport: ${viewport || "(none)"}\nUser agent: ${userAgent || "(none)"}\n${posthogSessionUrl ? `Session replay: ${posthogSessionUrl}\n` : ""}${attachment ? "Screenshot attached.\n" : ""}`,
       attachments: attachment ? [attachment] : undefined,
     })
     if (sendError) {

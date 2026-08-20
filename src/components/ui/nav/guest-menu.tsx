@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useTheme } from "@/lib/theme"
-import { ReportBugModal } from "@/components/ui/report-bug-modal"
+import { FeedbackModal } from "@/components/ui/feedback-modal"
 import { signInHref } from "@/lib/safe-redirect"
 
 /**
@@ -85,14 +85,14 @@ export function GuestMenu() {
 
           <div className="border-t border-border-default" />
 
-          {/* Report a bug */}
+          {/* Send feedback */}
           <button
             type="button"
             onClick={() => { setOpen(false); setBugOpen(true) }}
             className="w-full flex items-center px-4 py-2.5 text-muted hover:text-foreground hover:bg-surface-hover transition-colors"
             style={{ fontSize: 11 }}
           >
-            Report a bug
+            Send feedback
           </button>
 
           {/* Theme toggle */}
@@ -118,7 +118,7 @@ export function GuestMenu() {
         </div>
       )}
 
-      <ReportBugModal open={bugOpen} onClose={() => setBugOpen(false)} />
+      <FeedbackModal open={bugOpen} onClose={() => setBugOpen(false)} />
     </div>
   )
 }
