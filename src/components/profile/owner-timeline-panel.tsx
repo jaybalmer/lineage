@@ -130,7 +130,7 @@ function getMilestoneCelebration(count: number) {
     icon: "🌱",
     title: "Your first entry: timeline started",
     body: "Every epic timeline starts with a single entry. Yours is now on the record.",
-    nextThread: "Add 4 more to unlock your founding rider badge.",
+    nextThread: "Add 4 more and the shape of your timeline starts to show.",
     accentColor: "#22c55e",
     contentType: "milestone" as const,
   }
