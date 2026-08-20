@@ -623,6 +623,9 @@ export interface ResolvedStackEntry {
 export interface PublicStackPayload {
   owner: PublicTimelineOwner
   entries: ResolvedStackEntry[]
+  /** BUG-174: true when `entries` is an auto-derived starter (the owner has not
+   *  curated a Stack yet), false/absent for a curated or empty stack. */
+  derived?: boolean
 }
 
 const ACCENT_BY_TYPE: Record<Exclude<PublicStackEntryType, "category_summary">, StackAccent> = {
@@ -664,9 +667,96 @@ function pushSpan(agg: YearAgg, start?: string, end?: string) {
   if (start && !end) agg.ongoing = true
 }
 
+/** BUG-174: how many items an auto-derived starter Stack surfaces. */
+const STARTER_SIZE = 3
+
+/** BUG-174 starter derivation. Public Stack is on by default for every member, so
+ *  an uncurated owner (no saved public_stack_entries) still needs a real Stack at
+ *  the shared /t/[slug]. Surface their most recent PUBLIC timeline items: stories
+ *  are preferred, claims fill the remaining slots when there are fewer than
+ *  STARTER_SIZE stories, and the result is ordered newest-first (Decision 1).
+ *
+ *  Returned as synthetic public_stack_entries so they flow through the SAME
+ *  resolveRow pipeline as a curated stack (identical kicker/meta, and the same
+ *  drop-if-gone behaviour). Only claims that map to a Stack card type are
+ *  eligible (place via rode_at/worked_at, board via owned_board, event via the
+ *  attendance predicates, rider via rode_with), deduped per entity keeping the
+ *  most recent, mirroring the candidate rule on /me/public-view.
+ *
+ *  The input claims/stories are already visibility-filtered by the caller
+ *  (claims_public + the public story reads), so a private story or a
+ *  pending-hidden tag can never reach a starter. */
+function deriveStarterEntries(
+  ownerId: string,
+  claims: Claim[],
+  stories: Story[],
+  entities: PublicTimelineEntities,
+): PublicStackEntry[] {
+  type Pick = { date: string; type: PublicStackEntryType; refId: string }
+
+  const storyPicks: Pick[] = stories
+    .slice()
+    .sort((a, b) => (b.story_date ?? "").localeCompare(a.story_date ?? ""))
+    .slice(0, STARTER_SIZE)
+    .map((s) => ({ date: s.story_date ?? "", type: "story" as const, refId: s.id }))
+
+  const claimPicks: Pick[] = []
+  const need = STARTER_SIZE - storyPicks.length
+  if (need > 0) {
+    // Eligible claims → a Stack card type, deduped per entity keeping the most
+    // recent. Skip refs that did not resolve, so the resolver never drops one
+    // and leaves the starter short.
+    const bestByKey = new Map<string, Pick>()
+    for (const c of claims) {
+      if (!c.object_id) continue
+      let type: PublicStackEntryType | null = null
+      if (c.object_type === "place" && (c.predicate === "rode_at" || c.predicate === "worked_at")) type = "place"
+      else if (c.object_type === "board" && c.predicate === "owned_board") type = "board"
+      else if (c.object_type === "event" && EVENT_PREDICATES.has(c.predicate)) type = "event"
+      else if (c.object_type === "person" && c.predicate === "rode_with") type = "rider"
+      if (!type) continue
+      const resolved =
+        (type === "place" && entities.places[c.object_id]) ||
+        (type === "board" && entities.boards[c.object_id]) ||
+        (type === "event" && entities.events[c.object_id]) ||
+        (type === "rider" && entities.people[c.object_id])
+      if (!resolved) continue
+      const key = `${type}:${c.object_id}`
+      const date = c.start_date ?? ""
+      const cur = bestByKey.get(key)
+      if (!cur || date.localeCompare(cur.date) > 0) {
+        bestByKey.set(key, { date, type, refId: c.object_id })
+      }
+    }
+    claimPicks.push(
+      ...Array.from(bestByKey.values())
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, need),
+    )
+  }
+
+  const picks = [...storyPicks, ...claimPicks].sort((a, b) => b.date.localeCompare(a.date))
+
+  return picks.map((p, idx) => ({
+    id: `derived:${p.type}:${p.refId}`,
+    owner_type: "profile",
+    owner_id: ownerId,
+    owner_profile_id: ownerId,
+    entry_type: p.type,
+    entry_ref_id: p.refId,
+    category_key: null,
+    position: idx,
+    custom_title: null,
+    custom_summary: null,
+    created_at: "",
+    updated_at: "",
+  }))
+}
+
 /** Resolve the owner's public_stack_entries against the already-read timeline.
  *  Returns null when the slug is disabled/unknown (the caller 404s, matching the
- *  timeline route). */
+ *  timeline route). An uncurated owner gets an auto-derived starter (BUG-174)
+ *  rather than an empty stack. */
 export async function readPublicStack(
   slug: string,
   pre?: PublicTimelinePayload | null,
@@ -683,7 +773,13 @@ export async function readPublicStack(
     .eq("owner_profile_id", owner.id)
     .order("position", { ascending: true })
   const rows = (rowData ?? []) as PublicStackEntry[]
-  if (rows.length === 0) return { owner, entries: [] }
+  // BUG-174: no curated rows → derive a starter from the timeline. Curating
+  // replaces it entirely (Decision 3): the first save writes real rows, so this
+  // branch stops firing. Derived rows run through the same resolver below.
+  const isDerived = rows.length === 0
+  const effectiveRows = isDerived
+    ? deriveStarterEntries(owner.id, claims, stories, entities)
+    : rows
 
   // ── Pre-aggregate the owner's claim set, once, for summaries + per-entity meta.
   const storiesById = new Map(stories.map((s) => [s.id, s]))
@@ -909,8 +1005,8 @@ export async function readPublicStack(
     }
   }
 
-  const entries = rows.map(resolveRow).filter((e): e is ResolvedStackEntry => e !== null)
-  return { owner, entries }
+  const entries = effectiveRows.map(resolveRow).filter((e): e is ResolvedStackEntry => e !== null)
+  return { owner, entries, derived: isDerived && entries.length > 0 }
 }
 
 /** Human label for a category_summary card title, e.g. "Rode at 12 places". */

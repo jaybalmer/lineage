@@ -2,6 +2,7 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js"
 import { NextResponse } from "next/server"
 import { redirect } from "next/navigation"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { ensureUniquePublicSlug } from "@/lib/public-slug"
 
 export function getServiceClient(): SupabaseClient {
   return createClient(
@@ -29,6 +30,37 @@ export async function ensureProfile(userId: string, email?: string): Promise<voi
     )
   if (error) {
     console.error("ensureProfile failed:", { userId, error })
+    return
+  }
+
+  // BUG-174: Public Stack is on by default for every member. New rows are born
+  // enabled via the profiles.public_timeline_enabled DB default, but public_slug
+  // has no default, so mint one the first time we see a member without it. This
+  // covers both new-user creation paths without touching them: the anon-key
+  // client upsert in /auth/complete (which cannot mint server-side) and this
+  // orphan-auth auto-create. Idempotent: once a slug exists this is a no-op read.
+  const { data: prof } = await db
+    .from("profiles")
+    .select("public_slug, display_name")
+    .eq("id", userId)
+    .maybeSingle()
+  const row = prof as { public_slug: string | null; display_name: string | null } | null
+  if (!row || row.public_slug) return
+
+  try {
+    const slug = await ensureUniquePublicSlug(row.display_name, userId, db)
+    // Only fill a still-null slug, so a concurrent mint cannot double-write; a
+    // 23505 on the partial unique index means another request won the race.
+    const { error: slugErr } = await db
+      .from("profiles")
+      .update({ public_slug: slug })
+      .eq("id", userId)
+      .is("public_slug", null)
+    if (slugErr && slugErr.code !== "23505") {
+      console.error("ensureProfile slug mint failed:", { userId, error: slugErr })
+    }
+  } catch (e) {
+    console.error("ensureProfile slug mint threw:", { userId, error: e })
   }
 }
 

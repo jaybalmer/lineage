@@ -59,8 +59,8 @@ export function StackTimelineToggle({
       role="tablist"
       aria-label="View"
     >
-      {seg("stack", "Stack", stackHref)}
-      {seg("timeline", "Timeline", timelineHref)}
+      {seg("stack", "Mini", stackHref)}
+      {seg("timeline", "Full", timelineHref)}
     </div>
   )
 }

@@ -130,7 +130,7 @@ export default function MePublicTimelinePage() {
               Share my timeline publicly
             </div>
             <p className="text-xs text-muted mt-1">
-              When on, your timeline is reachable at a shareable link. When off (default),
+              When on, your timeline is reachable at a shareable link. When off,
               the link returns nothing and your timeline stays inside Linestry.
             </p>
           </div>
@@ -142,7 +142,7 @@ export default function MePublicTimelinePage() {
           className="mt-4 flex items-center justify-between gap-3 rounded-xl border border-border-default bg-surface p-4 hover:border-blue-600 transition-colors"
         >
           <div className="min-w-0">
-            <div className="text-sm font-medium text-foreground">Curate your Stack View</div>
+            <div className="text-sm font-medium text-foreground">Curate your Mini timeline</div>
             <p className="text-xs text-muted mt-1">
               Pick a short, scannable set of highlight cards to lead with when you share your link.
             </p>
