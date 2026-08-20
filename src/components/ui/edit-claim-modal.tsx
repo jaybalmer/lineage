@@ -81,13 +81,23 @@ export function EditClaimModal({ claim, entityName, onClose }: EditClaimModalPro
       <div className="absolute inset-0 bg-black/60" />
       <div className="relative w-full max-w-md bg-surface border border-border-default rounded-2xl p-6 shadow-2xl">
         {/* Header */}
-        <div className="mb-5">
-          <div className="flex items-center gap-2 mb-1">
-            <span>{icon}</span>
-            <span className="text-xs text-muted">{label}</span>
-            <span className="font-semibold text-foreground">{entityName}</span>
+        <div className="mb-5 flex items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span>{icon}</span>
+              <span className="text-xs text-muted">{label}</span>
+              <span className="font-semibold text-foreground">{entityName}</span>
+            </div>
+            <p className="text-xs text-muted">Edit the details of this claim</p>
           </div>
-          <p className="text-xs text-muted">Edit the details of this claim</p>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="text-muted hover:text-foreground transition-colors text-xl leading-none"
+          >
+            ×
+          </button>
         </div>
 
         <div className="space-y-4">
