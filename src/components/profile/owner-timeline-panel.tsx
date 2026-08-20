@@ -21,7 +21,7 @@ import { PeopleInTimeline } from "@/components/timeline/people-in-timeline"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { StackTimelineToggle } from "@/components/public-timeline/stack-timeline-toggle"
-import { readSeenIds, writeSeenIds } from "@/lib/seen-celebrations"
+import { readSeenIds, writeSeenIds, isRecentlyCreated } from "@/lib/seen-celebrations"
 import { groupRodeAtCompanions, countTimelineEntries } from "@/lib/companion-grouping"
 import { estimateShares } from "@/lib/equity-offer"
 import type { Claim, CelebrationPayload, Mention, PrivacyLevel, Story } from "@/types"
@@ -513,22 +513,29 @@ export function OwnerTimelinePanel() {
       // offline session), the rest are still marked seen above so they won't
       // replay later. We just don't spam a stack of toasts.
       const newClaim = unseen[unseen.length - 1]
-      const boardCount = personClaims.filter((c) => c.predicate === "owned_board").length
-      if (newClaim.predicate === "owned_board" && boardCount <= 2) {
-        // First or second board lands the Tier-4 timeline-framing modal. It is
-        // async (the overlap stat comes from the stats route), so fire and
-        // forget; the celebration queue tolerates the short delay.
-        void queueBoardMilestoneCelebration(newClaim, activePersonId, catalog.boards, person?.riding_since, queueCelebration)
-      } else {
-        // BUG-104: show the number the user actually sees for this entry, not the
-        // raw claim total. A board reads the distinct-board "Boards" pill (so a
-        // 3rd+ board never reports "Entry #0" when the timeline is otherwise
-        // empty); every timeline claim reads the "All" pill. Both come from the
-        // same helpers the pills use, so the celebration can't overstate.
-        const celebrationCount = newClaim.predicate === "owned_board"
-          ? new Set(personClaims.filter((c) => c.predicate === "owned_board").map((c) => c.object_id)).size
-          : timelineEntryCount
-        queueCelebration(getCelebrationForNewClaim(newClaim, celebrationCount, catalog))
+      // BUG-167: only celebrate an entry that is actually new. The unseen-set is
+      // a localStorage high-water mark, so any read-path change that surfaces an
+      // old row (a limit=100 boundary, a newly-approved tag) adds an old id that
+      // reads as fresh. Recency (created_at within the window) gates that out;
+      // the id is still marked seen above so it never re-fires.
+      if (isRecentlyCreated(newClaim.created_at)) {
+        const boardCount = personClaims.filter((c) => c.predicate === "owned_board").length
+        if (newClaim.predicate === "owned_board" && boardCount <= 2) {
+          // First or second board lands the Tier-4 timeline-framing modal. It is
+          // async (the overlap stat comes from the stats route), so fire and
+          // forget; the celebration queue tolerates the short delay.
+          void queueBoardMilestoneCelebration(newClaim, activePersonId, catalog.boards, person?.riding_since, queueCelebration)
+        } else {
+          // BUG-104: show the number the user actually sees for this entry, not the
+          // raw claim total. A board reads the distinct-board "Boards" pill (so a
+          // 3rd+ board never reports "Entry #0" when the timeline is otherwise
+          // empty); every timeline claim reads the "All" pill. Both come from the
+          // same helpers the pills use, so the celebration can't overstate.
+          const celebrationCount = newClaim.predicate === "owned_board"
+            ? new Set(personClaims.filter((c) => c.predicate === "owned_board").map((c) => c.object_id)).size
+            : timelineEntryCount
+          queueCelebration(getCelebrationForNewClaim(newClaim, celebrationCount, catalog))
+        }
       }
 
       // FTUE step tracking, driven by the newest claim's predicate.
@@ -606,16 +613,25 @@ export function OwnerTimelinePanel() {
       if (!triggerPrefs.ftue_shared_story) {
         setTriggerPrefs({ ftue_shared_story: true })
       }
-      // stories[] is sorted desc by story_date, so unseen[0] is the newest.
-      const latestStory = unseen[0]
-      queueCelebration({
-        tier: 2,
-        icon: "📖",
-        title: latestStory?.title ? `"${latestStory.title}" is now on the record` : "Your story is part of the permanent record",
-        body: "Stories are what bring the history to life. Thank you for adding yours.",
-        nextThread: "Tag people, a board, or a place to connect your story to the collective.",
-        contentType: "story",
-      })
+      // BUG-167: celebrate only a story that was actually just written. stories[]
+      // is sorted by story_date (which can be 1993), so gate on created_at and
+      // pick the newest-created among the recently-created unseen rows. Old rows
+      // that surfaced unseen (own non-public stories from PR #188, a newly
+      // approved tag) are already marked seen above and never fire a toast.
+      const recentUnseen = unseen.filter((s) => isRecentlyCreated(s.created_at))
+      if (recentUnseen.length > 0) {
+        const latestStory = recentUnseen.reduce((a, b) =>
+          Date.parse(b.created_at) > Date.parse(a.created_at) ? b : a,
+        )
+        queueCelebration({
+          tier: 2,
+          icon: "📖",
+          title: latestStory?.title ? `"${latestStory.title}" is now on the record` : "Your story is part of the permanent record",
+          body: "Stories are what bring the history to life. Thank you for adding yours.",
+          nextThread: "Tag people, a board, or a place to connect your story to the collective.",
+          contentType: "story",
+        })
+      }
     }
 
     prevStoriesCountRef.current = count
