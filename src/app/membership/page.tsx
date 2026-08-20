@@ -43,10 +43,12 @@ const TIERS = [
     tagline: "Verified co-owner of the community's history.",
     benefits: [
       "Everything in Rider",
+      "A curated member page, the way the brands get one",
+      "Your member mark on every story and comment",
+      "A member card worth sharing",
       "Verify timeline entries",
       "Community governance & voting",
       "Share of the founding community equity offer pool",
-      "Member badge on public profile",
       "20 tokens per year",
     ],
   },
@@ -490,8 +492,8 @@ export default function MembershipPage() {
 
           {/* ── Footer copy note ──────────────────────────────────────────── */}
           <div className="mt-10 text-center text-muted" style={{ fontSize: 9, lineHeight: 2, letterSpacing: 0.5 }}>
-            Membership is community ownership — not a subscription.<br />
-            Free riders have full access. The only member-exclusive feature is entry verification.
+            Membership is community ownership, not a subscription.<br />
+            Free riders have full access. Membership adds standing: verify the record, and get the brand treatment on your own page.
           </div>
         </div>
       </div>
