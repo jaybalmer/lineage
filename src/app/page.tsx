@@ -29,8 +29,8 @@ export default function Home() {
       )}
 
       {/* Hero */}
-      <div className={cn("max-w-3xl mx-auto px-6 pb-10 text-center", banner ? "pt-10" : "pt-20")}>
-        <div className="mb-8 select-none">
+      <div className={cn("max-w-3xl mx-auto px-6 pb-10 text-center", banner ? "pt-6 sm:pt-10" : "pt-12 sm:pt-20")}>
+        <div className="mb-5 sm:mb-8 select-none">
           <div
             className="font-bold text-foreground leading-none tracking-tight"
             style={{ fontSize: "clamp(4rem, 14vw, 7.5rem)", letterSpacing: "-0.03em" }}
@@ -47,7 +47,7 @@ export default function Home() {
           </div>
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-snug mb-5 mt-8 max-w-2xl mx-auto">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-snug mb-5 mt-5 sm:mt-8 max-w-2xl mx-auto">
           Our history is real, but scattered. Let&rsquo;s weave our stories together.
         </h1>
 
@@ -56,6 +56,34 @@ export default function Home() {
           memories. Linestry is where your story gets kept, and our individual timelines
           get woven together into our community story.
         </p>
+
+        {/* BUG-017: on a 414px screen the primary CTA sits well below the fold,
+            behind the intro copy and the focus card. Surface it in the first
+            hero screen on mobile only. The full card below keeps both actions
+            for desktop and for the scroll, so desktop is unchanged. */}
+        <div className="sm:hidden mt-6 flex flex-col items-center gap-3">
+          {isAuth ? (
+            <Link
+              href="/snowboarding/profile"
+              className="px-6 py-2.5 rounded-lg bg-[#1C1917] text-white font-semibold text-sm hover:bg-[#292524] transition-colors"
+            >
+              My Timeline
+            </Link>
+          ) : (
+            <Link
+              href="/onboarding"
+              className="px-6 py-2.5 rounded-lg bg-[#1C1917] text-white font-semibold text-sm hover:bg-[#292524] transition-colors"
+            >
+              Start Your Timeline
+            </Link>
+          )}
+          <Link
+            href="/snowboarding"
+            className="text-sm text-muted font-medium hover:text-foreground transition-colors"
+          >
+            Browse Snowboarding
+          </Link>
+        </div>
       </div>
 
       {/* Snowboarding focus + primary CTAs */}
