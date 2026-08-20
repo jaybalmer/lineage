@@ -507,11 +507,12 @@ function EntityBlock({ claim, entityName, isOwn, readOnly }: EntityBlockProps) {
         ) : isBoardImageLoading ? (
           // Shimmer while board image search is in-flight
           <div className="w-14 h-14 rounded-lg border border-border-default flex-shrink-0 bg-surface-hover animate-pulse" />
-        ) : isOwn ? (
-          <div className="w-14 h-14 rounded-lg border border-dashed border-border-default flex items-center justify-center flex-shrink-0">
-            <span className="text-[10px] text-muted text-center leading-tight">Add<br />photo</span>
-          </div>
         ) : null}
+        {/* BUG-072: the owner-only dashed "Add photo" box was a non-interactive
+            div that implied an action it never performed, and it stole ~56px
+            from the header on the owner view, truncating the entity name
+            ("Grouse Mou...") that the signed-out view shows in full (BUG-158
+            candidate 1). Removed; adding a claim photo is not wired here. */}
       </div>
     </>
   )
@@ -717,7 +718,11 @@ export function PostCard({ claim, isOwn, readOnly, explicitCompanionIds }: { cla
               <div className="relative">
                 <button
                   onClick={() => { setMenuOpen((o) => !o); setConfirmDelete(false) }}
-                  className="opacity-0 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-muted hover:text-foreground hover:bg-border-default transition-all text-sm"
+                  // BUG-158: hover-reveal only works with a mouse, so on touch
+                  // the owner options menu was invisible (the BUG-044 / BUG-084
+                  // pattern, missed on this card). Keep it hidden-until-hover on
+                  // pointer devices but visible (muted) on touch.
+                  className="[@media(hover:hover)]:opacity-0 [@media(hover:none)]:opacity-100 group-hover:opacity-100 w-6 h-6 flex items-center justify-center rounded text-muted hover:text-foreground hover:bg-border-default transition-all text-sm"
                   title="Options"
                 >
                   ⋯

@@ -304,8 +304,13 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
 
     <div className="postcard group bg-surface border-2 border-violet-700 rounded-xl p-5 mb-4 transition-all">
 
-      {/* ── Header row ── */}
-      <div className="flex items-start justify-between gap-2 mb-3">
+      {/* ── Header row ──
+          BUG-158: at 414px the right badge group (Only you + Story + date + menu)
+          filled the row, and because the author name carried no truncate the left
+          group overflowed its min-w-0 box and the Lifetime MemberBadge overlapped
+          the "Only you" badge. Truncate the name, keep the badge whole, and let
+          the row wrap so the metadata group drops to its own line when tight. */}
+      <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1 mb-3">
         <div className="flex items-center gap-2 min-w-0">
           {/* Author avatar */}
           {displayStory.author?.avatar_url ? (
@@ -320,10 +325,10 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
             </div>
           )}
           <div className="min-w-0 flex items-center gap-1.5">
-            <span className="text-xs font-medium text-muted">
+            <span className="text-xs font-medium text-muted truncate">
               {displayStory.author?.display_name ?? "Rider"}
             </span>
-            <MemberBadge tier={authorTier} className="text-[9px] px-1 py-0" />
+            <MemberBadge tier={authorTier} className="text-[9px] px-1 py-0 flex-shrink-0" />
           </div>
         </div>
 
