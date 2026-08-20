@@ -102,8 +102,8 @@ export function FeedbackModal({ open, onClose, includeAccount = false }: Feedbac
   const replayUrlAtOpenRef = useRef<string | null>(null)
   useEffect(() => {
     if (!open) return
-    // Fresh open starts on "Something's broken" (acceptance #9): a closed and
-    // reopened widget must not carry the previous session's type.
+    // Fresh open starts on "Report a Bug": a closed and reopened widget must
+    // not carry the previous session's type.
     setKind("bug")
     reportStartedAtRef.current = new Date().toISOString()
     try {
@@ -211,8 +211,8 @@ export function FeedbackModal({ open, onClose, includeAccount = false }: Feedbac
             are keyboard-reachable. */}
         <div className="flex gap-2 mb-4">
           {([
-            ["bug", "Something's broken"],
-            ["idea", "An idea"],
+            ["bug", "Report a Bug"],
+            ["idea", "Suggest an Idea"],
           ] as [FeedbackKind, string][]).map(([value, label]) => {
             const active = kind === value
             return (
