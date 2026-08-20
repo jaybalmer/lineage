@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import {
-  isInvitableNodeStatus,
+  isInvitablePerson,
   trackInviteEvent,
   type InviteSurface,
 } from "@/lib/invite-tracking"
@@ -64,7 +64,9 @@ function collectUnclaimedRiders({
   for (const [id, counts] of refs) {
     const person = byId.get(id)
     if (!person) continue
-    if (!isInvitableNodeStatus(person.node_status)) continue
+    // Never surface an invite for someone who already has a bound account, even
+    // if their node_status lags at catalog/unclaimed (claim-first guard).
+    if (!isInvitablePerson(person)) continue
     result.push({ person, refs: counts.claims + counts.stories, origins: counts })
   }
   // Most-referenced first — highest viral leverage at the top

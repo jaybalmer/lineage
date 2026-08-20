@@ -83,3 +83,36 @@ export function trackInviteErrorServer(origin: string, tag: InviteErrorTag, payl
 export function isInvitableNodeStatus(status: string | null | undefined): boolean {
   return status === "catalog" || status === "unclaimed"
 }
+
+// A person "has a bound account" when a real auth account already stands behind
+// the node, even if node_status still lags at catalog/unclaimed (the orphan
+// case flagged in the claim-first brief). Client-side the only catalog people
+// carrying membership_tier are those merged from profiles — the people table
+// has no such column — so its presence marks a registered account. claimed_by
+// (legacy ghost binding) and a claimed/verified status are the other signals.
+// The invite surfaces must never offer an invite to someone who already has an
+// account, so this gate is subtracted from isInvitableNodeStatus below.
+export function hasBoundAccount(
+  person: Pick<InvitablePerson, "node_status" | "membership_tier" | "claimed_by">,
+): boolean {
+  if (person.membership_tier) return true
+  if (person.claimed_by) return true
+  return person.node_status === "claimed" || person.node_status === "verified"
+}
+
+// Minimal shape the invite gates read off a Person. Keeps the helpers importable
+// from client components without pulling the whole Person type through.
+interface InvitablePerson {
+  node_status?: string | null
+  membership_tier?: string | null
+  claimed_by?: string | null
+}
+
+// Composed gate every invite surface should use: an invitable node_status AND
+// not already bound to an account. Prefer this over a bare isInvitableNodeStatus
+// check wherever the full person object is in hand.
+export function isInvitablePerson(
+  person: Pick<InvitablePerson, "node_status" | "membership_tier" | "claimed_by">,
+): boolean {
+  return isInvitableNodeStatus(person.node_status) && !hasBoundAccount(person)
+}

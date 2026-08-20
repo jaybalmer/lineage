@@ -109,6 +109,11 @@ export function InviteToClaimSheet({
               </p>
             )}
             {error && <p className="mt-2 text-xs text-red-600">{error}</p>}
+            {/* Consent reminder: keep invites warm so a surprised recipient does
+                not mark it as spam and hurt sending reputation for everyone. */}
+            <p className="mt-3 text-[11px] leading-relaxed text-gray-500">
+              Only invite people you know and have given a heads-up. A surprised recipient marking this as spam hurts delivery for everyone.
+            </p>
             <div className="mt-4 flex items-center gap-2">
               <button
                 type="submit"

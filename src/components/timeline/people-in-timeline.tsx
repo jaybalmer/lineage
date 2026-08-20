@@ -6,7 +6,7 @@ import { CommunityLink } from "@/components/ui/community-link"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { personHref } from "@/lib/entity-links"
-import { isInvitableNodeStatus } from "@/lib/invite-tracking"
+import { isInvitablePerson } from "@/lib/invite-tracking"
 import type { Claim, Person, Story } from "@/types"
 
 const MAX_VISIBLE = 6
@@ -77,7 +77,7 @@ export function PeopleInTimeline({
       {partners.length > 0 && (
         <div className="space-y-2">
           {visible.map((person) => {
-            const invitable = isInvitableNodeStatus(person.node_status)
+            const invitable = isInvitablePerson(person)
             return (
               <div
                 key={person.id}
