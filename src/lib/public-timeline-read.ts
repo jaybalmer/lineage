@@ -14,6 +14,7 @@
 import { getServiceClient } from "@/lib/auth"
 import { readPublishedMentions } from "@/lib/mentions-server"
 import { eventSlug, placeSlug, boardSlug } from "@/lib/mock-data"
+import { nameToSlug } from "@/lib/utils"
 import type {
   Claim, Story, EntityType, Predicate, MentionSubjectType,
   PublicStackEntry, PublicStackEntryType, PublicStackCategoryKey,
@@ -514,6 +515,51 @@ export async function readPublicTimelineOwner(slug: string): Promise<PublicTimel
     riding_since: profile.riding_since ?? null,
     era_start,
     membership_tier: profile.membership_tier ?? null,
+  }
+}
+
+// Curated Member Profile Phase 3: minimal resolve for the member OG image
+// routes (the public card page and /people/[id]). Only PAID members get a
+// tier-specific unfurl; everyone else falls back to the neutral brand
+// treatment, so this only needs to resolve the small paid-member set. Accepts
+// either a UUID id or a name-based slug (profile detail URLs canonicalize to
+// nameToSlug(display_name); the card page resolves the same way), matching on
+// id, public_slug, or the derived name slug. A miss returns null and the caller
+// renders the neutral card. Archived profiles are excluded.
+export interface MemberOgTarget {
+  display_name: string
+  membership_tier: string
+  founding_member_number: number | null
+}
+
+export async function readMemberOgTarget(idOrSlug: string): Promise<MemberOgTarget | null> {
+  if (!idOrSlug) return null
+  const db = getServiceClient()
+  const { data } = await db
+    .from("profiles")
+    .select("id, display_name, membership_tier, founding_member_number, public_slug, is_archived")
+    .in("membership_tier", ["annual", "lifetime", "founding"])
+  const rows = (data ?? []) as Array<{
+    id: string
+    display_name: string | null
+    membership_tier: string | null
+    founding_member_number: number | null
+    public_slug: string | null
+    is_archived: boolean | null
+  }>
+  const match = rows.find(
+    (r) =>
+      r.is_archived !== true &&
+      r.display_name != null &&
+      (r.id === idOrSlug ||
+        r.public_slug === idOrSlug ||
+        nameToSlug(r.display_name) === idOrSlug),
+  )
+  if (!match || !match.display_name || !match.membership_tier) return null
+  return {
+    display_name: match.display_name,
+    membership_tier: match.membership_tier,
+    founding_member_number: match.founding_member_number ?? null,
   }
 }
 

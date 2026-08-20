@@ -89,7 +89,8 @@ export default function MemberCardPage({ params }: { params: Promise<{ username:
       {/* Tagline */}
       <p className="text-muted mt-6 text-xs text-center max-w-xs leading-relaxed">
         {person.display_name} is a verified member of the Linestry community,
-        part of the collective history of snowboarding.
+        part of the collective history of snowboarding. Members get a curated
+        page, the way the brands get one.
       </p>
 
       {/* CTA */}
