@@ -46,6 +46,34 @@ export function readSeenIds(userId: string, kind: SeenKind): Set<string> | null 
   }
 }
 
+/**
+ * How recent an entry's created_at must be for a celebration to fire (BUG-167).
+ * The seen-set alone is a localStorage high-water mark: any read-path change
+ * that surfaces previously hidden rows (PR #188 own-non-public stories, a trust
+ * auto-approve, a limit=100 boundary crossing) adds OLD ids that are legitimately
+ * absent from the set, and they then read as fresh adds and replay their toast.
+ * Gating on recency kills that whole class regardless of why an id showed up
+ * unseen. 10 minutes covers a slow add plus an accidental reload; nothing
+ * historical can slip through.
+ */
+export const CELEBRATION_RECENCY_MS = 10 * 60 * 1000
+
+/**
+ * True when `iso` (a row's created_at) is within `withinMs` of now. Missing or
+ * unparseable timestamps return false: a celebration should never fire for an
+ * entry we cannot prove is recent. Compare against created_at, never story_date
+ * (which can be 1993).
+ */
+export function isRecentlyCreated(
+  iso: string | null | undefined,
+  withinMs: number = CELEBRATION_RECENCY_MS,
+): boolean {
+  if (!iso) return false
+  const t = Date.parse(iso)
+  if (Number.isNaN(t)) return false
+  return Date.now() - t <= withinMs
+}
+
 export function writeSeenIds(userId: string, kind: SeenKind, ids: Set<string>): void {
   if (typeof window === "undefined") return
   try {
