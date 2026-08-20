@@ -5,12 +5,33 @@ import posthog from "posthog-js"
 import { cn } from "@/lib/utils"
 import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 import { useLineageStore } from "@/store/lineage-store"
+import type { FeedbackKind } from "@/types"
 
-interface ReportBugModalProps {
+interface FeedbackModalProps {
   open: boolean
   onClose: () => void
   /** When true, the helper line notes that the signed-in account is attached too. */
   includeAccount?: boolean
+}
+
+// Type-driven copy (D3 + D5 of the general-feedback-form brief). Kept as data so
+// the apostrophes render through JSX expressions and never trip the
+// no-unescaped-entities lint rule. No em dashes.
+const KIND_COPY: Record<FeedbackKind, {
+  notePlaceholder: string
+  expectedLabel: string
+  expectedPlaceholder: string
+}> = {
+  bug: {
+    notePlaceholder: "Describe what went wrong",
+    expectedLabel: "What did you expect?",
+    expectedPlaceholder: "What should have happened instead",
+  },
+  idea: {
+    notePlaceholder: "Describe what you'd like to see",
+    expectedLabel: "What would this make possible?",
+    expectedPlaceholder: "Why it matters, or where it would help",
+  },
 }
 
 const ACCEPTED_IMAGE_TYPES = "image/png,image/jpeg,image/webp,image/gif"
@@ -54,14 +75,17 @@ async function compressImage(file: File, maxDim = 1920, quality = 0.85): Promise
 }
 
 /**
- * "Report a bug" modal, opened from the avatar dropdown (signed-in) and the guest
- * menu (logged-out). Captures the current page, viewport, browser, and PostHog
- * session replay link automatically. An optional screenshot is sent along as an
- * email attachment so triage can see the bug without scanning a session replay.
- * Reporter identity is added server-side from the session, never sent from here.
+ * "Send feedback" modal, opened from the avatar dropdown (signed-in) and the
+ * guest menu (logged-out). Takes a bug report OR a feature idea (a two-chip type
+ * toggle), sorted downstream by email subject prefix. Captures the current page,
+ * viewport, browser, and PostHog session replay link automatically. An optional
+ * screenshot is sent along as an email attachment so triage can see it without
+ * scanning a session replay. Reporter identity is added server-side from the
+ * session, never sent from here.
  */
-export function ReportBugModal({ open, onClose, includeAccount = false }: ReportBugModalProps) {
+export function FeedbackModal({ open, onClose, includeAccount = false }: FeedbackModalProps) {
   const addToast = useLineageStore((s) => s.addToast)
+  const [kind, setKind] = useState<FeedbackKind>("bug")
   const [note, setNote] = useState("")
   const [expected, setExpected] = useState("")
   const [image, setImage] = useState<File | null>(null)
@@ -78,6 +102,9 @@ export function ReportBugModal({ open, onClose, includeAccount = false }: Report
   const replayUrlAtOpenRef = useRef<string | null>(null)
   useEffect(() => {
     if (!open) return
+    // Fresh open starts on "Something's broken" (acceptance #9): a closed and
+    // reopened widget must not carry the previous session's type.
+    setKind("bug")
     reportStartedAtRef.current = new Date().toISOString()
     try {
       replayUrlAtOpenRef.current =
@@ -144,6 +171,7 @@ export function ReportBugModal({ open, onClose, includeAccount = false }: Report
 
     try {
       const form = new FormData()
+      form.append("kind", kind)
       form.append("note", note.trim())
       if (expected.trim()) form.append("expected", expected.trim())
       form.append("url", window.location.href)
@@ -156,7 +184,8 @@ export function ReportBugModal({ open, onClose, includeAccount = false }: Report
       // No Content-Type header: the browser sets the multipart boundary itself.
       const res = await fetch("/api/bug-report", { method: "POST", body: form })
       if (!res.ok) throw new Error("request failed")
-      addToast("Thanks. Bug report sent.", "info")
+      addToast(kind === "idea" ? "Thanks. Idea sent." : "Thanks. Bug report sent.", "info")
+      setKind("bug")
       setNote("")
       setExpected("")
       clearImage()
@@ -170,30 +199,60 @@ export function ReportBugModal({ open, onClose, includeAccount = false }: Report
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <div className="bg-surface border border-border-default rounded-xl max-w-md w-full p-5 shadow-xl">
-        <h2 className="text-lg font-semibold text-foreground mb-1">Report a bug</h2>
+        <h2 className="text-lg font-semibold text-foreground mb-1">Send feedback</h2>
         <p className="text-sm text-muted mb-4">
           {includeAccount
-            ? "Your current page, browser, and account are attached automatically so we can reproduce it."
-            : "Your current page and browser are attached automatically so we can reproduce it."}
+            ? "Your current page, browser, and account come along automatically, so you can just describe what you mean."
+            : "Your current page and browser come along automatically, so you can just describe what you mean."}
         </p>
 
-        <label className="block text-xs font-medium text-foreground mb-1">What happened?</label>
+        {/* Type toggle. The only routing key: it sets the email subject prefix
+            ([Linestry Bug] vs [Linestry Idea]) downstream. Real buttons so both
+            are keyboard-reachable. */}
+        <div className="flex gap-2 mb-4">
+          {([
+            ["bug", "Something's broken"],
+            ["idea", "An idea"],
+          ] as [FeedbackKind, string][]).map(([value, label]) => {
+            const active = kind === value
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => setKind(value)}
+                className={cn(
+                  "px-3 py-1 rounded-full text-xs font-medium border transition-all",
+                  active
+                    ? "bg-[#1C1917] border-[#1C1917] text-white"
+                    : "border-border-default text-muted hover:text-foreground",
+                )}
+              >
+                {label}
+              </button>
+            )
+          })}
+        </div>
+
+        <label className="block text-xs font-medium text-foreground mb-1">
+          {"What's on your mind?"}
+        </label>
         <textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          placeholder="Describe what went wrong"
+          placeholder={KIND_COPY[kind].notePlaceholder}
           autoFocus
           rows={4}
           className="w-full p-2 rounded-lg border border-border-default bg-background text-foreground text-sm mb-4"
         />
 
         <label className="block text-xs font-medium text-foreground mb-1">
-          What did you expect? <span className="text-muted font-normal">(optional)</span>
+          {KIND_COPY[kind].expectedLabel} <span className="text-muted font-normal">(optional)</span>
         </label>
         <textarea
           value={expected}
           onChange={(e) => setExpected(e.target.value)}
-          placeholder="What should have happened instead"
+          placeholder={KIND_COPY[kind].expectedPlaceholder}
           rows={3}
           className="w-full p-2 rounded-lg border border-border-default bg-background text-foreground text-sm mb-4"
         />

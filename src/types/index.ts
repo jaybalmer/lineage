@@ -839,6 +839,11 @@ export interface AnalyticsEvent {
 
 export type BugReportStatus = "new" | "triaged" | "resolved" | "wontfix"
 
+// General Feedback Form: one widget takes a bug report or a feature idea. The
+// two are sorted at the email-subject level; this records the same split on the
+// durable row. Table is still named bug_reports (see 20260819000001_feedback_kind).
+export type FeedbackKind = "bug" | "idea"
+
 export interface BugReport {
   id: string
   created_at: string
@@ -852,5 +857,7 @@ export interface BugReport {
   posthog_session_url: string | null
   /** Widget-open time (reporter-supplied, see migration-011); created_at minus this is roughly the time spent typing. */
   report_started_at: string | null
+  /** Bug report vs feature idea. Defaults to 'bug'. */
+  kind: FeedbackKind
   status: BugReportStatus
 }
