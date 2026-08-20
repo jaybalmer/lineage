@@ -593,15 +593,17 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
         style={{ background: ctaColor, borderColor: ctaColor }}
         className="px-4 py-2.5 rounded-lg text-sm font-medium text-white border inline-flex items-center gap-1.5 hover:opacity-90 transition-opacity"
       >
-        <span aria-hidden>✎</span> Contribute a story
+        Contribute a story
       </button>
       <button
         onClick={() => openClaim()}
-        className="px-4 py-2.5 rounded-lg text-sm font-medium text-foreground border border-border-default bg-background hover:bg-surface-hover transition-colors"
+        className="px-4 py-2.5 rounded-lg text-sm font-medium bg-foreground text-background border border-transparent hover:opacity-90 transition-opacity"
       >
         + Add a claim
       </button>
-      {org.website && (
+      {/* Promoted website CTA is a curated/founding partner affordance. Non-curated
+          brands already surface the weblink twice (header block + details rail). */}
+      {isCurated && org.website && (
         <a
           href={org.website}
           target="_blank"

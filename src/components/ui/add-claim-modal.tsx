@@ -768,9 +768,19 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
         <div className="absolute inset-0 bg-black/60" />
         <div className="relative w-full max-w-lg bg-surface border border-border-default rounded-2xl shadow-2xl flex flex-col max-h-[calc(100dvh-2rem)]">
           {/* Header */}
-          <div className="px-6 pt-5 pb-4 border-b border-border-default flex-shrink-0">
-            <h2 className="text-base font-bold text-foreground">Add to your linestry</h2>
-            <p className="text-xs text-muted mt-0.5">Build your snowboarding history, one claim at a time</p>
+          <div className="px-6 pt-5 pb-4 border-b border-border-default flex-shrink-0 flex items-start justify-between gap-3">
+            <div>
+              <h2 className="text-base font-bold text-foreground">Add to your linestry</h2>
+              <p className="text-xs text-muted mt-0.5">Build your snowboarding history, one claim at a time</p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="text-muted hover:text-foreground transition-colors text-xl leading-none"
+            >
+              ×
+            </button>
           </div>
 
           <div className="overflow-y-auto flex-1 px-6 py-4 space-y-5">
