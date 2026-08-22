@@ -4,9 +4,10 @@
 //
 // On a person's timeline (and the entity mention lists) a rider named six times
 // on FNRad #142 used to render as six near-identical stacked rows on one date.
-// This card carries the episode identity once in its header and lists each
-// mention beneath it, keeping every row's own "Read the line" expand and adding
-// a group-level "Expand all" / "Collapse all".
+// This card carries the episode identity once in its header. Collapsed it is
+// header-only (BUG-175); opening it lists each mention beneath, keeping every
+// row's own "Read the line" expand and adding a group-level "Expand all" /
+// "Collapse all".
 //
 // It does not re-implement a row: each line is a MentionRow with `nested`, so
 // the excerpt, timestamp, and watch/episode links stay exactly as they are on a
@@ -20,11 +21,10 @@ import { entityHref } from "@/lib/entity-links"
 import { formatSmartDate } from "@/lib/utils"
 import type { Mention } from "@/types"
 
-// Collapsed, the card previews this many lines before "Show all N".
-const PREVIEW_COUNT = 3
-
 export function MentionEpisodeGroup({ mentions }: { mentions: Mention[] }) {
   const catalog = useLineageStore((s) => s.catalog)
+  // BUG-175: collapsed means header-only. No mention lines are previewed, so the
+  // card reads as one quiet summary until the reader opens it.
   const [showAll, setShowAll] = useState(false)
   // Group-level Expand all / Collapse all. `n` bumps on every click so a row can
   // re-sync even when `open` did not change (e.g. after the reader closed a line
@@ -36,8 +36,12 @@ export function MentionEpisodeGroup({ mentions }: { mentions: Mention[] }) {
   const date = first.episode?.start_date
   const episodeId = first.episode?.id
 
-  const visible = showAll ? mentions : mentions.slice(0, PREVIEW_COUNT)
-  const hidden = mentions.length - visible.length
+  // Closing the list also resets the group toggle, so "Expand all" never comes
+  // back reading "Collapse all" against freshly remounted (closed) rows.
+  const toggleList = () => {
+    if (showAll) setAllOpen((s) => ({ open: false, n: s.n + 1 }))
+    setShowAll((v) => !v)
+  }
 
   return (
     <div className="rounded-xl border border-border-default bg-surface px-4 py-3 mb-2">
@@ -50,39 +54,42 @@ export function MentionEpisodeGroup({ mentions }: { mentions: Mention[] }) {
           </span>
           {date && <span className="text-xs text-muted">{formatSmartDate(date)}</span>}
         </div>
-        <button
-          type="button"
-          onClick={() => setAllOpen((s) => ({ open: !s.open, n: s.n + 1 }))}
-          className="text-[11px] text-muted hover:text-foreground transition-colors flex-shrink-0"
-        >
-          {allOpen.open ? "Collapse all" : "Expand all"}
-        </button>
+        {/* Expand all only means something once the lines are on screen. */}
+        {showAll && (
+          <button
+            type="button"
+            onClick={() => setAllOpen((s) => ({ open: !s.open, n: s.n + 1 }))}
+            className="text-[11px] text-muted hover:text-foreground transition-colors flex-shrink-0"
+          >
+            {allOpen.open ? "Collapse all" : "Expand all"}
+          </button>
+        )}
       </div>
 
-      {/* One line per mention */}
-      <div className="mt-2 divide-y divide-border-default">
-        {visible.map((mention) => (
-          <MentionRow
-            key={`mention-${mention.id}`}
-            mention={mention}
-            context="timeline"
-            nested
-            openSignal={allOpen}
-          />
-        ))}
-      </div>
-
-      {/* Show all N / Show less */}
-      {mentions.length > PREVIEW_COUNT && (
-        <button
-          type="button"
-          onClick={() => setShowAll((v) => !v)}
-          className="mt-2 text-[11px] font-medium text-accent-strong hover:underline"
-        >
-          {showAll ? "Show less" : `Show all ${mentions.length}`}
-          {!showAll && hidden > 0 ? ` (${hidden} more)` : ""}
-        </button>
+      {/* One line per mention, only once expanded */}
+      {showAll && (
+        <div className="mt-2 divide-y divide-border-default">
+          {mentions.map((mention) => (
+            <MentionRow
+              key={`mention-${mention.id}`}
+              mention={mention}
+              context="timeline"
+              nested
+              openSignal={allOpen}
+            />
+          ))}
+        </div>
       )}
+
+      {/* The only way into the list, so it renders for every group size */}
+      <button
+        type="button"
+        onClick={toggleList}
+        aria-expanded={showAll}
+        className="mt-2 text-[11px] font-medium text-accent-strong hover:underline"
+      >
+        {showAll ? "Show less" : `Show the ${mentions.length} mentions`}
+      </button>
 
       {/* Episode link */}
       {episodeId && (
