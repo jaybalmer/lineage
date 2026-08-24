@@ -4,8 +4,13 @@ import { useEffect, useRef, useState, useCallback } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { nameToSlug } from "@/lib/utils"
 import { getInitials } from "@/components/ui/rider-avatar"
+import { TIER_LABEL } from "@/lib/tiers"
 
 // ─── Tier config ─────────────────────────────────────────────────────────────
+// The tier word comes from the canonical map in src/lib/tiers.ts, so the card
+// reads just the tier word ("Annual"), not the longer two-word form (BUG-137).
+// Everything else here (the card ground, accents and copy) is specific to this
+// card.
 
 type Tier = "annual" | "lifetime" | "founding"
 
@@ -22,7 +27,7 @@ const TIER_CONFIG: Record<Tier, {
   btnColor:   string
 }> = {
   annual: {
-    label:      "Annual member",
+    label:      TIER_LABEL.annual,
     cardBg:     "#1a1f4e",
     accentLine: "#3B5BA5",
     ringColor:  "#378ADD",
@@ -35,7 +40,7 @@ const TIER_CONFIG: Record<Tier, {
     btnColor: "#fff",
   },
   lifetime: {
-    label:      "Lifetime member",
+    label:      TIER_LABEL.lifetime,
     cardBg:     "#0c2340",
     accentLine: "#185FA5",
     ringColor:  "#185FA5",
@@ -48,7 +53,7 @@ const TIER_CONFIG: Record<Tier, {
     btnColor: "#fff",
   },
   founding: {
-    label:      "Founding member",
+    label:      TIER_LABEL.founding,
     cardBg:     "#412402",
     accentLine: "#854F0B",
     ringColor:  "#EF9F27",
