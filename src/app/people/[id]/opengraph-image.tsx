@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og"
 import { brandMarkSvgString } from "@/components/ui/brand-mark"
 import { readMemberOgTarget } from "@/lib/public-timeline-read"
 import { loadGeologica, loadCalendula } from "@/lib/og-fonts"
+import { tierMetaFor } from "@/lib/tiers"
 
 // Curated Member Profile Phase 3 (T14): share card for /people/[id]. A paid
 // member's profile unfurls carrying their tier (name + tier line + accent
@@ -21,14 +22,10 @@ const MUTED     = "#A8A29E"
 const BLUE      = "#60A5FA"  // neutral accent text on dark (AA-legible)
 const MARK_BLUE = "#3B82F6"
 
-// Canonical tier colours / labels (mirror member-badge.tsx). Local so this
-// server route never imports the "use client" badge module. Badge symbols are
-// omitted (Geologica has no glyph for them); the accent colour carries the tier.
-const TIER = {
-  annual:   { color: "#3b82f6", label: "Annual" },
-  lifetime: { color: "#8b5cf6", label: "Lifetime" },
-  founding: { color: "#f59e0b", label: "Founding" },
-} as const
+// Tier colours / labels come from src/lib/tiers.ts, which carries no
+// "use client" directive, so this server route shares the canonical map without
+// pulling in the badge component. Badge symbols are unused here (Geologica has
+// no glyph for them); the accent colour carries the tier.
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const GENERATED_ID_RE = /^[a-z]{1,8}[_-]\d{9,}([_-][a-z0-9]+)*$/i
@@ -47,7 +44,7 @@ export default async function OpengraphImage(
   const { id } = await params
   const member = await readMemberOgTarget(id)
 
-  const tierMeta = member ? TIER[member.membership_tier as keyof typeof TIER] : undefined
+  const tierMeta = member ? tierMetaFor(member.membership_tier) : null
   const accent = tierMeta?.color ?? BLUE
   const name = member?.display_name ?? humanizeSlug(id) ?? "Linestry"
   const tierLine = tierMeta ? `${tierMeta.label} member` : null
