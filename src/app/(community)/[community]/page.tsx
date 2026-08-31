@@ -319,6 +319,11 @@ export default function CommunityHome() {
 
       {/* Footer */}
       <div className="text-center py-8">
+        <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 mb-3">
+          <Link href="/privacy" className="text-muted text-xs hover:text-foreground transition-colors">Privacy</Link>
+          <Link href="/terms" className="text-muted text-xs hover:text-foreground transition-colors">Terms</Link>
+          <Link href="/data-deletion" className="text-muted text-xs hover:text-foreground transition-colors">Data deletion</Link>
+        </nav>
         <p className="text-muted text-xs">
           Lineage Community Technologies Inc.
         </p>
