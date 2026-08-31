@@ -32,6 +32,17 @@ function GoogleGlyph() {
   )
 }
 
+function FacebookGlyph() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="#1877F2"
+        d="M24 12.073C24 5.405 18.627 0 12 0S0 5.405 0 12.073C0 18.1 4.388 23.094 10.125 24v-8.437H7.078v-3.49h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.49h-2.796V24C19.612 23.094 24 18.1 24 12.073z"
+      />
+    </svg>
+  )
+}
+
 type View = "choices" | "email" | "password"
 
 export default function SignInPage() {
@@ -44,17 +55,20 @@ export default function SignInPage() {
   const [sent, setSent]         = useState(false)
   const [error, setError]       = useState<string | null>(null)
 
-  const continueWithGoogle = async () => {
+  const continueWithOAuth = async (provider: "google" | "facebook") => {
     setError(null)
-    trackEvent("auth", "signin_started", { method: "google" })
+    trackEvent("auth", "signin_started", { method: provider })
     const rt = currentReturnTo()
     const redirectTo = `${window.location.origin}/auth/callback${rt ? `?returnTo=${encodeURIComponent(rt)}` : ""}`
     const { error: oauthError } = await supabase.auth.signInWithOAuth({
-      provider: "google",
+      provider,
       options: { redirectTo },
     })
     if (oauthError) setError(oauthError.message)
   }
+
+  const continueWithGoogle = () => continueWithOAuth("google")
+  const continueWithFacebook = () => continueWithOAuth("facebook")
 
   const sendMagicLink = async () => {
     const e = email.trim().toLowerCase()
@@ -189,6 +203,16 @@ export default function SignInPage() {
             >
               <GoogleGlyph />
               Continue with Google
+            </button>
+
+            {/* Facebook */}
+            <button
+              onClick={continueWithFacebook}
+              className="w-full px-4 py-3 rounded-xl bg-white text-[#1C1917] font-semibold hover:bg-zinc-100 transition-colors flex items-center justify-center gap-2.5 border border-border-default"
+              style={{ fontSize: 13 }}
+            >
+              <FacebookGlyph />
+              Continue with Facebook
             </button>
 
             {/* Magic link */}
