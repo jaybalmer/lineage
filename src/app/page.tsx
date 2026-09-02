@@ -48,13 +48,12 @@ export default function Home() {
         </div>
 
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-snug mb-5 mt-5 sm:mt-8 max-w-2xl mx-auto">
-          Our history is real, but scattered. Let&rsquo;s weave our stories together.
+          Our history is real, but scattered. Let&rsquo;s weave it together.
         </h1>
 
         <p className="text-muted text-base leading-relaxed max-w-xl mx-auto">
-          Our stories, crews, and events are scattered across social feeds and fading
-          memories. Linestry is where your story gets kept, and our individual timelines
-          get woven together into our community story.
+          Our stories, crews, and events live across social feeds and fading memories.
+          Linestry keeps them, and weaves our timelines into one.
         </p>
 
         {/* BUG-017: on a 414px screen the primary CTA sits well below the fold,
@@ -90,10 +89,10 @@ export default function Home() {
       <div className="max-w-3xl mx-auto px-6 pb-8">
         <div className="rounded-2xl border-2 border-foreground/20 bg-surface p-6 sm:p-8 text-center">
           <p className="text-foreground text-lg font-semibold leading-snug mb-3">
-            Linestry is starting with the snowboarding community to bring our stories together.
+            We&rsquo;re starting with snowboarding.
           </p>
           <p className="text-muted text-base leading-relaxed max-w-xl mx-auto mb-6">
-            Add your stories, your boards, the places you rode and the people you ride
+            Add the boards you rode, the places you rode them, and the people you rode
             with. Build your timeline, and help build the linestry of snowboarding.
           </p>
           <div className="flex flex-wrap items-center justify-center gap-3">
