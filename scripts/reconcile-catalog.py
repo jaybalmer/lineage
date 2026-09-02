@@ -206,6 +206,39 @@ def load_existing(path: Path) -> list[dict]:
             f"{path}: could not find a brand column. Headers seen: {list(raw[0].keys())}.\n"
             f"Accepted brand headers: {sorted(EXISTING_HEADER_ALIASES['brand'])}."
         )
+    return _dedup_existing(mapped)
+
+
+def load_existing_brands(path: Path) -> list[str]:
+    """Read a brands export (e.g. Supabase `orgs`) and return board-brand names.
+
+    Only rows whose brand_category names a board brand count as existing board
+    brands; outerwear/bindings/boots/media orgs are out of scope for a board
+    catalog.
+    """
+    if not path.exists():
+        sys.exit(f"Missing --existing-brands file {path}.")
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        rows = list(csv.DictReader(f))
+    names: list[str] = []
+    for r in rows:
+        lower = {(k or "").strip().lower(): (v or "") for k, v in r.items()}
+        name = (lower.get("name") or lower.get("brand_name") or lower.get("brand") or "").strip()
+        if not name:
+            continue
+        category = (lower.get("brand_category") or "").strip().lower()
+        org_type = (lower.get("org_type") or "").strip().lower()
+        # Keep board brands. If neither column is present, keep everything.
+        is_board = (
+            ("board" in category)
+            or (category == "" and org_type in ("", "brand"))
+        )
+        if is_board:
+            names.append(name)
+    return names
+
+
+def _dedup_existing(mapped: list[dict]) -> list[dict]:
     # Dedup board rows to one per (brand, model), keeping the earliest year and
     # the first source seen. A real export with one row per board-year (e.g. the
     # same model across several model_years) collapses to a distinct model.
@@ -572,7 +605,8 @@ def data_quality_notes(catalog_brands, catalog_models, existing_rows) -> list[st
     return notes
 
 
-def write_summary(results, year_conflicts, ctx, catalog_brands, catalog_models, existing_rows, is_demo=True) -> None:
+def write_summary(results, year_conflicts, ctx, catalog_brands, catalog_models, existing_rows,
+                  is_demo=True, extra_notes=None) -> None:
     from collections import Counter
 
     bucket_counts = Counter(r["bucket"] for r in results)
@@ -680,15 +714,16 @@ def write_summary(results, year_conflicts, ctx, catalog_brands, catalog_models, 
     lines.append("## Data quality notes")
     lines.append("")
     dq = data_quality_notes(catalog_brands, catalog_models, existing_rows)
+    dq.extend(extra_notes or [])
     if dq:
         for n in dq:
             lines.append(f"- {n}")
     else:
         lines.append("- No duplicate model_ids, blank names, or duplicate existing rows detected.")
-    lines.append("- The existing demo set includes yearly Barfoot entries (one row per production")
-    lines.append("  year); these are deduplicated to distinct brand+model before matching, so the")
-    lines.append("  first_year_existing shown is the earliest production year on record.")
-    lines.append("- Linestry's `ORGS` also carries non-board brands (outerwear, bindings, boots,")
+    if is_demo:
+        lines.append("- The demo set includes yearly Barfoot entries (one row per production year);")
+        lines.append("  these are deduplicated to distinct brand+model before matching.")
+    lines.append("- Linestry's `orgs` also carries non-board brands (outerwear, bindings, boots,")
     lines.append("  media). Those are out of scope for a board catalog and are not counted as")
     lines.append("  existing board brands here.")
     lines.append("")
@@ -731,6 +766,12 @@ def main() -> None:
              "Headers are mapped tolerantly (brand/brand_name, model/model_name, "
              "first_year/model_year, source/note). Default: data/catalog/existing-export.csv",
     )
+    ap.add_argument(
+        "--existing-brands",
+        default=None,
+        help="Optional path to a brands export (e.g. Supabase `orgs`). Board brands from it "
+             "with no board models are added as brand-only rows so brand-level gaps are complete.",
+    )
     args = ap.parse_args()
 
     if args.build_existing:
@@ -742,14 +783,67 @@ def main() -> None:
 
     catalog_brands, catalog_models = load_catalog()
     existing_rows = load_existing(existing_path)
+
+    if args.existing_brands:
+        brand_names = load_existing_brands(Path(args.existing_brands))
+        have = {canonical_brand(r["brand"])[0] for r in existing_rows if r["model"]}
+        added = 0
+        for name in brand_names:
+            canon = canonical_brand(name)[0]
+            if canon not in have:
+                existing_rows.append({"brand": name, "model": "", "first_year": "", "source": ""})
+                have.add(canon)
+                added += 1
+        print(f"Existing brands: {len(brand_names)} board brands from {Path(args.existing_brands).name}, "
+              f"{added} added as brand-only (no board models).")
     print(f"Catalog: {len(catalog_brands)} brands, {len(catalog_models)} models.")
     print(f"Existing ({'DEMO baseline' if is_demo else existing_path.name}): "
           f"{sum(1 for r in existing_rows if (r.get('model') or '').strip())} board rows, "
           f"{len(existing_rows)} total rows.")
 
+    extra_notes = existing_data_quality(existing_path, existing_rows, is_demo)
+
     results, year_conflicts, ctx = reconcile(catalog_brands, catalog_models, existing_rows)
     write_reconciliation(results)
-    write_summary(results, year_conflicts, ctx, catalog_brands, catalog_models, existing_rows, is_demo)
+    write_summary(results, year_conflicts, ctx, catalog_brands, catalog_models, existing_rows,
+                  is_demo, extra_notes)
+
+
+def existing_data_quality(existing_path: Path, existing_rows: list[dict], is_demo: bool) -> list[str]:
+    """Data-quality notes about the EXISTING side, computed from the raw export so
+    duplicates collapsed during dedup are still reported."""
+    from collections import Counter
+
+    notes: list[str] = []
+    # Duplicates in the raw export (dedup would otherwise hide these).
+    try:
+        with open(existing_path, newline="", encoding="utf-8-sig") as f:
+            raw = [_map_existing_row(r) for r in csv.DictReader(f)]
+    except OSError:
+        raw = []
+    pair_counts = Counter((r["brand"], r["model"]) for r in raw if r["model"])
+    dups = [f"{b} {m}" for (b, m), n in pair_counts.items() if n > 1]
+    if dups:
+        notes.append(
+            f"Existing data: {len(dups)} duplicate brand+model row(s) that should be merged: "
+            f"{', '.join(sorted(dups))}."
+        )
+    # Blank model names in the raw export.
+    blanks = sum(1 for r in raw if not r["model"] and not r["brand"])
+    if blanks:
+        notes.append(f"Existing data: {blanks} row(s) with no brand or model.")
+    # Placeholder-year pattern: one year dominating dated board rows is suspicious.
+    years = [r["first_year"] for r in existing_rows if r["model"] and str(r["first_year"]).strip()]
+    if years:
+        yc = Counter(years)
+        top_year, top_n = yc.most_common(1)[0]
+        if top_n >= 8 and top_n >= 0.15 * len(years):
+            notes.append(
+                f"Existing data: {top_n} of {len(years)} dated boards carry the same year "
+                f"({top_year}) - likely a placeholder/default `model_year`, not a real first year. "
+                f"Many of the year conflicts above stem from this. Worth a data cleanup pass."
+            )
+    return notes
 
 
 if __name__ == "__main__":
