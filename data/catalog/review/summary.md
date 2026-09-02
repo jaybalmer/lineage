@@ -1,7 +1,7 @@
 # Snowboard catalog reconciliation, summary
 
 Catalog: `data/catalog/v0.2/` (brands.csv, models.csv).
-Existing: `data/catalog/existing-export.csv`.
+Existing: the demo baseline
 
 > DEMO BASELINE. The existing side here is Linestry's demo/seed data
 > (`src/lib/mock-data.ts`), NOT the production Supabase catalog. It holds only
@@ -205,8 +205,7 @@ not a conflict, and is not listed here.
 
 1. Replace the demo baseline with a real Supabase `boards`/`orgs` export and re-run,
    so CATALOG_ONLY reflects genuine gaps rather than the demo set's small size.
-2. Which EXISTING_ONLY rows to keep (they carry no source in the demo data, so all
-   are flagged `needs_source`).
+2. Which EXISTING_ONLY rows to keep vs. retire (rows with no source are flagged `needs_source`).
 3. Which FUZZY pairs are the same board and should merge (none are auto-merged).
 4. Whether to adopt the catalog's `model_id` slug (`brand-slug--model-slug`) as the
    canonical board key going forward.

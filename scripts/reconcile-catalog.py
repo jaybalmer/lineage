@@ -166,15 +166,74 @@ def load_catalog() -> tuple[list[dict], list[dict]]:
     return brands, models
 
 
-def load_existing() -> list[dict]:
-    if not EXISTING_EXPORT.exists():
+# Header spellings we accept from a real export, mapped to the fields the
+# reconciler uses. A real Supabase `boards` export (brand, model, model_year)
+# or a hand-rolled CSV both load without renaming columns.
+EXISTING_HEADER_ALIASES = {
+    "brand": {"brand", "brand_name", "make", "manufacturer"},
+    "model": {"model", "model_name", "name", "board"},
+    "first_year": {"first_year", "model_year", "year", "year_first", "first_seen"},
+    "source": {"source", "sources", "source_url", "url", "note", "notes"},
+}
+
+
+def _map_existing_row(row: dict) -> dict:
+    """Map an arbitrary export row onto brand/model/first_year/source."""
+    lower = {(k or "").strip().lower(): (v if v is not None else "") for k, v in row.items()}
+    out = {"brand": "", "model": "", "first_year": "", "source": ""}
+    for field, aliases in EXISTING_HEADER_ALIASES.items():
+        for a in aliases:
+            if a in lower and str(lower[a]).strip() != "":
+                out[field] = str(lower[a]).strip()
+                break
+    return out
+
+
+def load_existing(path: Path) -> list[dict]:
+    if not path.exists():
         sys.exit(
-            f"Missing {EXISTING_EXPORT}.\n"
-            "Run with --build-existing to generate it from the demo mock-data baseline, "
-            "or drop a real Supabase export there."
+            f"Missing {path}.\n"
+            "Run with --build-existing to generate the demo baseline at "
+            f"{EXISTING_EXPORT}, or point --existing at a real Supabase export."
         )
-    with open(EXISTING_EXPORT, newline="", encoding="utf-8") as f:
-        return list(csv.DictReader(f))
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        raw = list(csv.DictReader(f))
+    if not raw:
+        return raw
+    mapped = [_map_existing_row(r) for r in raw]
+    if not any(r["brand"] for r in mapped):
+        sys.exit(
+            f"{path}: could not find a brand column. Headers seen: {list(raw[0].keys())}.\n"
+            f"Accepted brand headers: {sorted(EXISTING_HEADER_ALIASES['brand'])}."
+        )
+    # Dedup board rows to one per (brand, model), keeping the earliest year and
+    # the first source seen. A real export with one row per board-year (e.g. the
+    # same model across several model_years) collapses to a distinct model.
+    board_rows: dict[tuple[str, str], dict] = {}
+    brand_only: list[dict] = []
+    for r in mapped:
+        if not r["model"]:
+            brand_only.append(r)
+            continue
+        key = (r["brand"], r["model"])
+        yr = None
+        try:
+            yr = int(r["first_year"]) if r["first_year"] else None
+        except ValueError:
+            yr = None
+        cur = board_rows.get(key)
+        if cur is None:
+            board_rows[key] = dict(r)
+        else:
+            try:
+                cur_yr = int(cur["first_year"]) if cur["first_year"] else None
+            except ValueError:
+                cur_yr = None
+            if yr is not None and (cur_yr is None or yr < cur_yr):
+                cur["first_year"] = r["first_year"]
+            if not cur["source"] and r["source"]:
+                cur["source"] = r["source"]
+    return list(board_rows.values()) + brand_only
 
 
 # ─── --build-existing: extract the demo baseline from mock-data.ts ──────────
@@ -513,7 +572,7 @@ def data_quality_notes(catalog_brands, catalog_models, existing_rows) -> list[st
     return notes
 
 
-def write_summary(results, year_conflicts, ctx, catalog_brands, catalog_models, existing_rows) -> None:
+def write_summary(results, year_conflicts, ctx, catalog_brands, catalog_models, existing_rows, is_demo=True) -> None:
     from collections import Counter
 
     bucket_counts = Counter(r["bucket"] for r in results)
@@ -530,13 +589,18 @@ def write_summary(results, year_conflicts, ctx, catalog_brands, catalog_models, 
     lines.append("# Snowboard catalog reconciliation, summary")
     lines.append("")
     lines.append("Catalog: `data/catalog/v0.2/` (brands.csv, models.csv).")
-    lines.append("Existing: `data/catalog/existing-export.csv`.")
+    lines.append("Existing: the demo baseline" if is_demo else "Existing: a real board export.")
     lines.append("")
-    lines.append("> DEMO BASELINE. The existing side here is Linestry's demo/seed data")
-    lines.append("> (`src/lib/mock-data.ts`), NOT the production Supabase catalog. It holds only")
-    lines.append("> a small hand-picked board set, so almost every catalog model reads as")
-    lines.append("> CATALOG_ONLY. Re-run against a real Supabase export before treating any")
-    lines.append("> CATALOG_ONLY row as a genuine addition. Nothing here was written to the database.")
+    if is_demo:
+        lines.append("> DEMO BASELINE. The existing side here is Linestry's demo/seed data")
+        lines.append("> (`src/lib/mock-data.ts`), NOT the production Supabase catalog. It holds only")
+        lines.append("> a small hand-picked board set, so almost every catalog model reads as")
+        lines.append("> CATALOG_ONLY. Re-run against a real Supabase export before treating any")
+        lines.append("> CATALOG_ONLY row as a genuine addition. Nothing here was written to the database.")
+    else:
+        lines.append("> Reconciled against a real board export. CATALOG_ONLY rows are genuine")
+        lines.append("> candidate additions; EXISTING_ONLY rows are boards you hold that the catalog")
+        lines.append("> lacks. This is a review pass only. Nothing was written to the database.")
     lines.append("")
 
     lines.append("## Counts per bucket")
@@ -631,12 +695,19 @@ def write_summary(results, year_conflicts, ctx, catalog_brands, catalog_models, 
 
     lines.append("## Decisions that need a human")
     lines.append("")
-    lines.append("1. Replace the demo baseline with a real Supabase `boards`/`orgs` export and re-run,")
-    lines.append("   so CATALOG_ONLY reflects genuine gaps rather than the demo set's small size.")
-    lines.append("2. Which EXISTING_ONLY rows to keep (they carry no source in the demo data, so all")
-    lines.append("   are flagged `needs_source`).")
-    lines.append("3. Which FUZZY pairs are the same board and should merge (none are auto-merged).")
-    lines.append("4. Whether to adopt the catalog's `model_id` slug (`brand-slug--model-slug`) as the")
+    n = 1
+    if is_demo:
+        lines.append(f"{n}. Replace the demo baseline with a real Supabase `boards`/`orgs` export and re-run,")
+        lines.append("   so CATALOG_ONLY reflects genuine gaps rather than the demo set's small size.")
+        n += 1
+    else:
+        lines.append(f"{n}. Which CATALOG_ONLY rows to import as new boards (these are the genuine additions).")
+        n += 1
+    lines.append(f"{n}. Which EXISTING_ONLY rows to keep vs. retire (rows with no source are flagged `needs_source`).")
+    n += 1
+    lines.append(f"{n}. Which FUZZY pairs are the same board and should merge (none are auto-merged).")
+    n += 1
+    lines.append(f"{n}. Whether to adopt the catalog's `model_id` slug (`brand-slug--model-slug`) as the")
     lines.append("   canonical board key going forward.")
     lines.append("")
 
@@ -651,22 +722,34 @@ def main() -> None:
     ap.add_argument(
         "--build-existing",
         action="store_true",
-        help="Regenerate data/catalog/existing-export.csv from the demo mock-data.ts baseline before reconciling.",
+        help="Regenerate the demo mock-data.ts baseline at existing-export.csv before reconciling.",
+    )
+    ap.add_argument(
+        "--existing",
+        default=str(EXISTING_EXPORT),
+        help="Path to the existing board list (a real Supabase export, or the demo baseline). "
+             "Headers are mapped tolerantly (brand/brand_name, model/model_name, "
+             "first_year/model_year, source/note). Default: data/catalog/existing-export.csv",
     )
     args = ap.parse_args()
 
     if args.build_existing:
         build_existing_from_mock()
 
+    existing_path = Path(args.existing)
+    # "Demo" = we are reading the mock-data-derived baseline, not a real export.
+    is_demo = existing_path.resolve() == EXISTING_EXPORT.resolve()
+
     catalog_brands, catalog_models = load_catalog()
-    existing_rows = load_existing()
+    existing_rows = load_existing(existing_path)
     print(f"Catalog: {len(catalog_brands)} brands, {len(catalog_models)} models.")
-    print(f"Existing: {sum(1 for r in existing_rows if (r.get('model') or '').strip())} board rows, "
+    print(f"Existing ({'DEMO baseline' if is_demo else existing_path.name}): "
+          f"{sum(1 for r in existing_rows if (r.get('model') or '').strip())} board rows, "
           f"{len(existing_rows)} total rows.")
 
     results, year_conflicts, ctx = reconcile(catalog_brands, catalog_models, existing_rows)
     write_reconciliation(results)
-    write_summary(results, year_conflicts, ctx, catalog_brands, catalog_models, existing_rows)
+    write_summary(results, year_conflicts, ctx, catalog_brands, catalog_models, existing_rows, is_demo)
 
 
 if __name__ == "__main__":
