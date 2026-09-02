@@ -7,6 +7,30 @@ import { PLACES, ORGS, BOARDS, EVENTS, EVENT_SERIES, PEOPLE, CLAIMS } from "@/li
 import { supabase } from "@/lib/supabase"
 import { trackEvent } from "@/lib/analytics"
 
+// PostgREST caps a single select at 1000 rows. Catalog tables (boards especially)
+// have grown past that, so page through with .range() until a short page returns.
+// Resolves to the same { data, error } shape as a plain supabase select so call
+// sites are unchanged.
+const PAGE_SIZE = 1000
+// Returns any[] to match this project's untyped supabase client, so call sites
+// that read .data (already cast with `as Board[]` etc.) are unchanged.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function selectAll(table: string, columns = "*"): Promise<{ data: any[]; error: unknown }> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const all: any[] = []
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const { data, error } = await supabase
+      .from(table)
+      .select(columns)
+      .range(from, from + PAGE_SIZE - 1)
+    if (error) return { data: all, error }
+    const rows = data ?? []
+    all.push(...rows)
+    if (rows.length < PAGE_SIZE) break
+  }
+  return { data: all, error: null }
+}
+
 type Catalog = {
   places: Place[]
   orgs: Org[]
@@ -231,18 +255,19 @@ export const useLineageStore = create<LineageStore>()(
       catalogLoaded: false,
       loadCatalog: () => {
         Promise.all([
-          supabase.from("places").select("*"),
-          supabase.from("orgs").select("*"),
-          supabase.from("boards").select("*"),
-          supabase.from("events").select("*"),
-          supabase.from("event_series").select("*"),
-          supabase.from("people").select("*"),
+          selectAll("places"),
+          selectAll("orgs"),
+          selectAll("boards"),
+          selectAll("events"),
+          selectAll("event_series"),
+          selectAll("people"),
           // PB-009 Phase 1: read through claims_public to filter to approved
           // (or grandfathered NULL tag_event_id) rows. Writes go through the
           // /api/claims route family via addClaim/updateClaim/removeClaim.
-          supabase.from("claims_public").select("*"),
+          selectAll("claims_public"),
           // Registered users live in profiles, not people — fetch both and merge
-          supabase.from("profiles").select(
+          selectAll(
+            "profiles",
             "id, display_name, birth_year, riding_since, privacy_level, bio, links, home_resort_id, membership_tier, node_status, avatar_url, card_bg_url, is_archived, profile_statement, profile_milestones"
           ),
           // Junction tables fetched via service-role API route (RLS blocks anon reads)
@@ -858,10 +883,10 @@ export const useLineageStore = create<LineageStore>()(
         if (!isAuthUser(activePersonId)) return
         // Load shared entity catalog (all user-contributed entities, visible to everyone)
         Promise.all([
-          supabase.from("places").select("*"),
-          supabase.from("boards").select("*"),
-          supabase.from("orgs").select("*"),
-          supabase.from("events").select("*"),
+          selectAll("places"),
+          selectAll("boards"),
+          selectAll("orgs"),
+          selectAll("events"),
         ]).then(([placesRes, boardsRes, orgsRes, eventsRes]) => {
           set({
             userEntities: {
