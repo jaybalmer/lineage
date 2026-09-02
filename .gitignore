@@ -41,11 +41,11 @@ yarn-error.log*
 next-env.d.ts
 .env.local
 
-# bug triage docs (local-only: contains reporter emails + session ids)
-/bugs/
-
-# feature session docs (local-only working tracker, mirrors /bugs/)
-/features/
+# Bug + feature session trackers ARE committed, so Claude Code (cloud) and
+# Cowork (local) share one source of truth. Raw reporter PII (email addresses,
+# PostHog session ids) stays OUT of git under the private/ subfolders.
+/bugs/private/
+/features/private/
 
 # podcast mention seeds (local-only: proposed catalog data pending review).
 # The committed EXAMPLE.json is the format reference; real seeds stay out.
