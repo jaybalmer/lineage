@@ -83,7 +83,11 @@ def main() -> None:
     catalog_only_ids = {r["model_id_catalog"] for r in recon if r["bucket"] == "CATALOG_ONLY"}
 
     with open(CAT / "models.csv", newline="", encoding="utf-8-sig") as f:
-        models = [r for r in csv.DictReader(f) if r["model_id"] in catalog_only_ids]
+        all_models = [r for r in csv.DictReader(f) if r["model_id"] in catalog_only_ids]
+    # boards.model_year is NOT NULL, so rows with no first_year cannot be imported.
+    # Skip them (do not invent a placeholder year) and report them separately.
+    models = [m for m in all_models if str(m.get("first_year") or "").strip()]
+    skipped_no_year = [m for m in all_models if not str(m.get("first_year") or "").strip()]
     with open(CAT / "brands.csv", newline="", encoding="utf-8-sig") as f:
         brands = list(csv.DictReader(f))
     with open(ROOT / "data/catalog/existing-boards-export.csv", newline="", encoding="utf-8-sig") as f:
@@ -118,16 +122,9 @@ def main() -> None:
     org_cols = ("id, name, org_type, brand_category, founded_year, country, website, "
                 "wikidata_qid, community_status, added_by, description")
     b_lines = [
-        "-- STEP 5: insert missing board brands into orgs (additive).",
-        "-- Only brands referenced by the imported boards that are not already in orgs.",
-        "-- Run before STEP 6 is optional (boards.brand is text), but recommended.",
-        "",
-        "do $$ begin",
-        f"  if exists (select 1 from orgs where name = {q(missing_brands[0]['brand_name']) if missing_brands else 'NULL'}"
-        + " and org_type = 'brand') then",
-        "    raise notice 'Some catalog brands may already exist; ON CONFLICT-free insert, review first.';",
-        "  end if;",
-        "end $$;",
+        "-- STEP 5: insert missing board brands into orgs (additive, IDEMPOTENT).",
+        "-- Each insert is guarded by NOT EXISTS on (name, org_type='brand'), so running",
+        "-- this more than once will not create duplicates.",
         "",
         "begin;",
         "",
@@ -146,7 +143,10 @@ def main() -> None:
             "NULL",  # added_by
             q(b.get("notes")),
         ])
-        b_lines.append(f"insert into orgs ({org_cols}) values ({vals});")
+        b_lines.append(
+            f"insert into orgs ({org_cols})\n  select {vals}\n"
+            f"  where not exists (select 1 from orgs where name = {q(b['brand_name'])} and org_type = 'brand');"
+        )
     b_lines += ["", "commit;"]
     (OUT / "05-import-catalog-brands.sql").write_text("\n".join(b_lines) + "\n", encoding="utf-8")
 
@@ -197,10 +197,23 @@ def main() -> None:
                 "-- Verify: select count(*) from boards where external_ref like 'catalog:%';"]
     (OUT / "06-import-catalog-boards.sql").write_text("\n".join(d_lines) + "\n", encoding="utf-8")
 
-    print(f"boards to import: {len(models)}")
+    # Report the no-year rows we could not import (model_year is NOT NULL).
+    if skipped_no_year:
+        sk_lines = [
+            "# CATALOG_ONLY boards skipped from the import: no year at all, and",
+            "# boards.model_year is NOT NULL. Add a year (or make model_year nullable)",
+            "# to import these. model_id | brand | model",
+            "",
+        ]
+        for m in sorted(skipped_no_year, key=lambda r: (r["brand_name"], r["model_name"])):
+            sk_lines.append(f"{m['model_id']} | {m['brand_name']} | {m['model_name']}")
+        (OUT / "06-skipped-no-year.txt").write_text("\n".join(sk_lines) + "\n", encoding="utf-8")
+
+    print(f"boards to import: {len(models)}  (skipped {len(skipped_no_year)} with no year)")
     print(f"missing board brands -> orgs: {len(missing_brands)}")
     print(f"  {', '.join(b['brand_name'] for b in missing_brands)}")
-    print(f"Wrote {OUT}/05-import-catalog-brands.sql and 06-import-catalog-boards.sql")
+    print(f"Wrote {OUT}/05-import-catalog-brands.sql, 06-import-catalog-boards.sql"
+          + (", 06-skipped-no-year.txt" if skipped_no_year else ""))
 
 
 if __name__ == "__main__":
