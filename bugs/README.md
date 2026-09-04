@@ -19,5 +19,17 @@ committed files. It lives under `bugs/private/`, which stays gitignored.
   in `bugs/private/BUG-NNN.md` (or a per-bug file) and reference it by id.
 - `bugs/private/` is created on demand and never committed.
 
-Before the first commit of any pre-existing file here, move inline reporter
-emails and session URLs into `bugs/private/` so they do not enter git history.
+The pre-existing files were migrated on September 4, 2026: reporter addresses
+became `R1`..`R4` / `OWNER`, PostHog replay URLs and session ids became `S-01`..`S-52`,
+and the keys live in `bugs/private/reporters.md` and `bugs/private/session-ids.md`.
+
+## Scrubbing before you commit
+
+`python3 bugs/scrub-pii.py` rewrites any raw reporter address or PostHog session
+id in `bugs/` and `features/` into its token and appends newly seen session ids
+to the key. `--check` reports without writing and exits 1, so the daily triage
+can gate on it. A new reporter is never guessed: add them to
+`bugs/private/reporters.md` first, then re-run.
+
+Cloud sessions have no `bugs/private/`, so the script exits 1 there rather than
+reporting a false clean. Scrub on the machine that holds the keys.

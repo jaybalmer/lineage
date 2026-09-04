@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linestry Feature Queue</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #ffffff; color: #1c1a17; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 20px 18px 48px; }
+  header h1 { font-size: 19px; margin: 0 0 2px; letter-spacing: -0.01em; }
+  .sub { font-size: 12.5px; color: #78716c; margin: 0 0 14px; }
+  .counts { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
+  .count { font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: #f5f5f4; color: #44403c; border: 1px solid #e7e5e4; }
+  .count b { font-weight: 800; }
+  .controls { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 16px; }
+  .chip { font-size: 12.5px; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: 1px solid #d6d3d1; background: #fff; color: #44403c; cursor: pointer; }
+  .chip.active { background: #1c1a17; color: #fff; border-color: #1c1a17; }
+  #q { flex: 1; min-width: 160px; font-size: 13px; padding: 8px 11px; border: 1px solid #d6d3d1; border-radius: 9px; }
+  .group { margin: 18px 0 6px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #78716c; }
+  .card { border: 1px solid #e7e5e4; border-radius: 11px; padding: 12px 14px; margin: 8px 0; background: #fff; }
+  .card.lead { border-color: #f59e0b; box-shadow: 0 0 0 1px #f59e0b inset; }
+  .row1 { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .name { font-weight: 800; font-size: 13.5px; color: #292524; }
+  .what { font-size: 12.5px; color: #57534e; margin: 6px 0 0; line-height: 1.45; }
+  .size { font-size: 12px; color: #115e59; margin: 6px 0 0; line-height: 1.4; }
+  .note { font-size: 12.5px; color: #57534e; margin: 5px 0 0; line-height: 1.45; }
+  .badges { display: flex; gap: 5px; flex-wrap: wrap; margin-left: auto; }
+  .b { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .ready { background: #ccfbf1; color: #115e59; }
+  .dec { background: #f3e8ff; color: #6b21a8; }
+  .park { background: #f5f5f4; color: #57534e; }
+  .lead-b { background: #f59e0b; color: #fff; }
+  .brief { font-size: 11.5px; color: #2563eb; margin-top: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .empty { color: #a8a29e; font-size: 13px; padding: 20px 0; text-align: center; }
+  details.shipped { margin-top: 26px; border-top: 1px solid #e7e5e4; padding-top: 12px; }
+  details.shipped summary { font-size: 12.5px; font-weight: 700; color: #78716c; cursor: pointer; }
+  .ship { font-size: 12.5px; color: #57534e; margin: 7px 0; line-height: 1.45; }
+  .ship b { color: #292524; }
+  footer { margin-top: 22px; font-size: 11.5px; color: #a8a29e; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Linestry Feature Queue</h1>
+    <p class="sub" id="sub">Snapshot. Source: features/feature-queue.md.</p>
+  </header>
+  <div class="counts" id="counts"></div>
+  <div class="controls">
+    <button class="chip active" data-f="all">All</button>
+    <button class="chip" data-f="ready">Ready</button>
+    <button class="chip" data-f="decision">Needs decision</button>
+    <button class="chip" data-f="parked">Parked</button>
+    <input id="q" placeholder="Search name, note...">
+  </div>
+  <div id="list"></div>
+
+  <details class="shipped">
+    <summary>Recently shipped (context)</summary>
+    <div id="shipped"></div>
+  </details>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+  const SNAPSHOT = "August 27, 2026";
+  const LEAD = "Facebook Login + Public Legal Pages";
+  const FEATURES = [{"name": "Facebook Login + Public Legal Pages", "group": "ready", "lead": true, "brief": "features/facebook-login-legal-pages-brief.md", "size": "~2 to 3 hr, ONE PR, NO migration. Contains an OPS GATE (Jay in the Meta App Dashboard + Supabase) that takes a migration gate's place in the Ship sequence.", "what": "Part A, three public logged-out pages /privacy, /terms, /data-deletion off a shared shell, with the full copy locked in the brief's Appendix A, linked from the home footer, the community footer, and a consent line on both auth surfaces. Part B, \"Continue with Facebook\" on BOTH signInWithOAuth sites (/auth/signin AND the FTUE save step, which a one-surface brief would miss). DECISIONS D1 to D8 with shippable defaults.", "note": ""}, {"name": "PB-010 Phase 5: Announced / Future Events", "group": "ready", "lead": false, "brief": "features/pb010-phase5-announced-events-brief.md", "size": "~3 to 4 hr. First PB-010 migration since Phase 1.", "what": "forward-facing public timeline. Announced events render distinctly (outlined, countdown chip), auto-roll to historical at date, visitor \"mark interest\" via the Phase 4 tag loop. Post-MVP. (Was lead until July 20, and again briefly on Aug 19.) Brief drafted June 16, so re-verify against main before building.", "note": ""}, {"name": "PB-010 Phase 6 - Distribution (4 independent sub-phases)", "group": "ready", "lead": false, "brief": "features/pb010-phase6-distribution-brief.md", "size": "each sub-phase its own session + PR. 6a Embed + oEmbed (~3 hr, recommend first), 6b Custom subdomain (~2 hr + OPS-GATED on Vercel wildcard DNS), 6c Theming (~3 to 4 hr, one migration), 6d Owner analytics (~3 to 5 hr, PostHog). None blocks another; none depends on Phase 5.", "what": "", "note": ""}, {"name": "A way to verify another rider's claim and clear the \"unverified\" tag", "group": "decision", "lead": false, "brief": "", "size": "", "what": "", "note": "(from the in-app feedback widget, August 25, 2026): \"How can I verify other riders claims to remove the unverified tag? Is there an option somewhere I am missing?\" Sent by R1 (signed-in member) from /snowboarding/brands/Westbeach on iPhone Safari 26.4 at 414x433; no screenshot on this one, the widget recorded none. He is not missing anything: there is no corroboration affordance anywhere in the product today, while the brand page tells him in two places that \"Claims are unverified until corroborated by multiple members\" (brands/[slug]/page.tsx:340 and :1451). The copy promises a mechanic that does not exist. What it would touch if built: a new claim-corroboration path (who may corroborate, how many, what it changes) sitting on the existing claims.confidence and community_status fields, plus the badge surfaces BUG-177 and BUG-178 are already cleaning up, plus whatever notifies the claim's owner. Direct sibling of the parked BUG-152 part (1), the community date-verification ask, and probably the same build. Worth noting the ask arrived unprompted from a member, which is the strongest signal yet on this thread. NEEDS A DRAFTING PASS"}, {"name": "Trim the duplicated calls to action on the landing page", "group": "decision", "lead": false, "brief": "", "size": "", "what": "", "note": "(from the in-app feedback widget, August 25, 2026): \"Let's trim the redundancy on the landing page. There are 2 my timeline and browse snowboarding buttons and the text above these buttons are quite similar as well and should likely be consolidated to one.\" Sent by R1 (signed-in member, hence the \"My Timeline\" variant of the CTA) from https://linestry.com/ on iPhone Safari 26.4 at 414x750. A screenshot WAS attached but never reached the Drive bridge folder (see the bridge-filter note at the top of this file), so this bullet is from the email text alone. What it would touch if built: src/app/page.tsx only, the hero CTA pair plus the snowboarding-section CTA pair that PR #199 moved above the fold, and the two blocks of intro copy above them. Small, copy and layout only. Overlaps the parked BUG-135 (landing copy too wordy, over-uses \"stories\"), and they should almost certainly be one landing-page copy pass rather than two. NEEDS A DRAFTING PASS"}, {"name": "Snowboard catalog page as the destination for boards and collections", "group": "decision", "lead": false, "brief": "", "size": "", "what": "", "note": "(from the in-app feedback widget, August 20, 2026; the FIRST arrival through the new [Linestry Idea] lane shipped in PR #205): \"Snowboard catalog page - make it the best place to list your boards and your collections.\" Sent by OWNER (signed-in member) from /snowboarding/boards (desktop Chrome, 857x822; replay S-47; no screenshot claimed, none in Drive). If built, this is an elevation of the /snowboarding/boards catalog index from a browse list into the community's canonical board registry: richer board cards, collection surfacing (the claims.board_relationship rode/own/both data from the June BoardShelf work already exists to power it), and probably who-rode-it / who-collects-it rollups per board. Adjacent open items: BUG-093 (board-page edit affordance) and the parked gear-noun rename. NEEDS A DRAFTING PASS."}, {"name": "Podcast pass content follow-up", "group": "decision", "lead": false, "brief": "", "size": "", "what": "", "note": "(NOT code): the full podcast workflow (Sessions A to D) shipped as PR #167/#168/#169/#170. Remaining is the content + integrated test: hand Jay's ep-21 transcript to the podcast-mentions skill for the real A1 pass, then delete and recreate the ep-21 page (/snowboarding/events/FNRad_Jay_Balmer) end to end through the workflow as the acceptance test."}, {"name": "PB-012 Groups & Meetups", "group": "decision", "lead": false, "brief": "", "size": "", "what": "", "note": "(product initiative): group page + roster + timeline, recurring meetups with RSVP + auto-roll, question of the week, community challenge. Spec at Drive Product/PB-012-Groups-and-Meetups.docx (direction capture, NOT build-ready). Erik Traulsen is the driver; December is aspirational not committed. Needs endorse + sequence, then pre-flight Phases 1-2 into a build brief."}, {"name": "BUG-025", "group": "decision", "lead": false, "brief": "", "size": "", "what": "", "note": "(feature gap): admin surface to manage unclaimed members (people view by node_status). Needs a Cowork drafting pass."}, {"name": "BUG-093", "group": "decision", "lead": false, "brief": "", "size": "", "what": "", "note": "(feature gap): editor/admin \"Edit\" affordance on a board page. Small; needs a brief."}, {"name": "BUG-133", "group": "decision", "lead": false, "brief": "", "size": "", "what": "", "note": "(feature gap): editor/admin \"Edit\" affordance on a place page + extend the admin Places edit to cover website / description / first-snowboard-year. Direct sibling of BUG-093; could ship together as one entity-page-edit session. Small; needs a brief."}, {"name": "BUG-131", "group": "decision", "lead": false, "brief": "", "size": "", "what": "", "note": "(feature): split comma-separated brand input in the signup \"What brand do you ride?\" step into one brand per name (keep the add-a-brand flow simple). Small; needs a brief."}, {"name": "BUG-075", "group": "decision", "lead": false, "brief": "", "size": "", "what": "", "note": "(product decision): broaden the event role beyond \"Competed at\". Decide the role set first."}, {"name": "BUG-076", "group": "decision", "lead": false, "brief": "", "size": "", "what": "", "note": "(design decision): aggregate same-event person-tags onto one feed card."}, {"name": "BUG-057", "group": "decision", "lead": false, "brief": "", "size": "", "what": "", "note": "(parked): leaderboard / shares-distribution view."}, {"name": "PB-011 Phase 3 remaining", "group": "parked", "lead": false, "brief": "", "size": "", "what": "", "note": "(Operations/pb011-phase3-chrome-completion-brief.md): 3A shipped (PR #39); search + Cmd-K + FAB action sheet deferred."}, {"name": "Board catalog seed merge", "group": "parked", "lead": false, "brief": "", "size": "", "what": "", "note": "(Operations/board-seed-merge-brief.md): a one-off DATA op (pure DML, no PR), not a feature session."}];
+  const SHIPPED = [{"name": "Claim-First Invite Flow", "pr": "#204", "note": "Shifted the invite/tag/claim loop toward the consensual claim (\"that's me\") and away from the outbound email invite (young-domain deliverability): claim CTA primary and email invite secondary on the connect surfaces, a hard bound-account..."}, {"name": "General Feedback Form (Send feedback: bug or idea)", "pr": "#205/#206", "note": "kind migration applied migrate-then-merge) + copy follow-up PR #206 (7bc874e, type chips renamed \"Report a Bug\" / \"Suggest an Idea\"). One widget now takes bug reports AND feature ideas, sorted at the email-subject level ([Linestry Bug] /..."}, {"name": "Curated Member Profile, Phase 3 (OG images + membership sell copy)", "pr": "#203/#164", "note": "Closed out the paid differentiator that Phases 1+2 opened (PR #164, July 27): next/og cards for the public member card page and member profiles so unfurls carry the tier treatment, plus the /membership sell-copy pass pointing at the now-..."}, {"name": "FTUE merged dark story", "pr": "#194/#193", "note": "Merged /intro and /onboarding into one forced-dark seven-beat story (scatter, weave, name, year, era, welcome, save); /intro now redirects to /onboarding?from=intro, the pre-auth path is name plus start year only, and the save step lands..."}, {"name": "Category page calls to action", "pr": "#190", "note": "Gave Places, Events, Riders, and Brands the intro-card treatment the Boards page already shipped: wordmark-font heading, a StoryBrand problem-then-plan copy block, and the page's existing add button moved into the card; Boards got a matc..."}, {"name": "Podcast mention import page", "pr": "#182/#184", "note": "An editor-gated /admin/podcast/import page that completes the portable half of the podcast workflow: paste a mention seed (produced by the podcast-mentions skill anywhere, no keys), resolve it against the catalog, review/trim per story i..."}, {"name": "Podcast pass Session D: transcript-to-mentions skill", "pr": "#170/#2", "note": "Tooling only, no route/component/schema changes. Three artifacts: (1) .claude/skills/podcast-mentions/SKILL.md, the authoring skill (transcript + episode identity in, reviewable seed out, importer only on explicit go-ahead, hard rules: n..."}, {"name": "Podcast pass Session C: episode page as a public destination + scheduled release", "pr": "#169", "note": "sql applied pre-merge, HARD PRE-MERGE GATE cleared, 0 rows scheduled). Three things reach the public chromeless /t/[slug] episode page plus the first scheduling primitive: (1) published mentions render via a store-free PublicMentionRow (..."}];
+
+  const GROUPS = [["ready","Ready to build (value-ordered)"],["decision","Needs a decision / drafting pass"],["parked","Deferred / parked"]];
+  let filter = "all", query = "";
+
+  function badge(g){ return g==="ready"?'<span class="b ready">ready</span>':g==="decision"?'<span class="b dec">decision</span>':'<span class="b park">parked</span>'; }
+
+  function render(){
+    const counts = { ready:0, decision:0, parked:0 };
+    FEATURES.forEach(f => counts[f.group]++);
+    document.getElementById("counts").innerHTML =
+      '<span class="count"><b>'+counts.ready+'</b> ready</span>' +
+      '<span class="count">decisions <b>'+counts.decision+'</b></span>' +
+      '<span class="count">parked <b>'+counts.parked+'</b></span>' +
+      '<span class="count">shipped (recent) <b>'+SHIPPED.length+'</b></span>';
+    document.getElementById("sub").textContent = "Snapshot as of "+SNAPSHOT+". Source: features/feature-queue.md. Lead: "+LEAD+". Regenerated by the morning digest.";
+
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+    let shown = 0;
+    GROUPS.forEach(([g,label]) => {
+      if (filter !== "all" && filter !== g) return;
+      const items = FEATURES.filter(f => f.group===g && match(f));
+      if (!items.length) return;
+      const h = document.createElement("div"); h.className="group"; h.textContent=label; list.appendChild(h);
+      items.forEach(f => { list.appendChild(card(f)); shown++; });
+    });
+    if (!shown) list.innerHTML = '<div class="empty">No features match.</div>';
+
+    document.getElementById("shipped").innerHTML = SHIPPED.map(s =>
+      '<div class="ship"><b>'+s.name+'</b>'+(s.pr?' ('+s.pr+')':'')+' '+s.note+'</div>').join("");
+    document.getElementById("foot").innerHTML =
+      "This is a snapshot dashboard generated from features/feature-queue.md by the morning digest (features/render-features.py). Features have no BUG id; they reconcile off bugs/SHIP-LOG.md type:feature + git.";
+  }
+
+  function match(f){
+    if (!query) return true;
+    const s = (f.name+" "+f.what+" "+f.note).toLowerCase();
+    return s.includes(query);
+  }
+
+  function card(f){
+    const d = document.createElement("div");
+    d.className = "card" + (f.lead ? " lead" : "");
+    let inner = '<div class="row1"><span class="name">'+f.name+'</span>'+
+      '<div class="badges">'+(f.lead?'<span class="b lead-b">lead</span>':'')+badge(f.group)+'</div></div>';
+    if (f.what) inner += '<div class="what">'+f.what+'</div>';
+    if (f.note) inner += '<div class="note">'+f.note+'</div>';
+    if (f.size) inner += '<div class="size">'+f.size+'</div>';
+    if (f.brief) inner += '<div class="brief">'+f.brief+'</div>';
+    d.innerHTML = inner;
+    return d;
+  }
+
+  document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+    document.querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
+    c.classList.add("active"); filter = c.dataset.f; render();
+  }));
+  document.getElementById("q").addEventListener("input", e => { query = e.target.value.trim().toLowerCase(); render(); });
+
+  render();
+</script>
+</body>
+</html>

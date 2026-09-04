@@ -47,6 +47,12 @@ next-env.d.ts
 /bugs/private/
 /features/private/
 
+# local-only artifacts that live inside the shared trackers:
+# device write-probes, auto-bug-fix runner state, Cowork scratch drafts.
+/bugs/.auto-verdict.json
+/bugs/.w*
+/features/_cowork-scratch/
+
 # podcast mention seeds (local-only: proposed catalog data pending review).
 # The committed EXAMPLE.json is the format reference; real seeds stay out.
 /podcast-seeds/*.json

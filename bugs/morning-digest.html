@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Linestry morning digest, September 2, 2026</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #ffffff; color: #1c1a17; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 20px 18px 48px; }
+  header h1 { font-size: 19px; margin: 0 0 2px; letter-spacing: -0.01em; }
+  .sub { font-size: 12.5px; color: #78716c; margin: 0 0 14px; }
+  .headline { font-size: 14px; line-height: 1.5; background: #fffbeb; border: 1px solid #fde68a; border-left: 3px solid #f59e0b; border-radius: 10px; padding: 12px 14px; margin: 0 0 18px; color: #44403c; }
+  .headline strong { color: #1c1a17; }
+  .card { border: 1px solid #e7e5e4; border-radius: 11px; padding: 12px 16px 14px; margin: 10px 0; background: #fff; }
+  .card.suggest { border-color: #f59e0b; box-shadow: 0 0 0 1px #f59e0b inset; background: #fffdf7; }
+  .card.needs { border-color: #fca5a5; background: #fffafa; }
+  .card.balance { background: #f6fdfb; border-color: #99f6e4; }
+  .card h2 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #78716c; margin: 0 0 8px; }
+  .card.suggest h2 { color: #92400e; }
+  .card.needs h2 { color: #991b1b; }
+  .card.balance h2 { color: #115e59; }
+  .card p { font-size: 13px; line-height: 1.5; color: #44403c; margin: 8px 0; }
+  .card p:first-of-type { margin-top: 0; }
+  .card ul, .card ol { font-size: 13px; line-height: 1.5; color: #44403c; margin: 8px 0; padding-left: 22px; }
+  .card li { margin: 5px 0; }
+  .card.suggest ol { padding-left: 20px; }
+  .card.suggest li { margin: 8px 0; }
+  code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; background: #f5f5f4; color: #2563eb; padding: 1px 5px; border-radius: 5px; }
+  strong { font-weight: 700; }
+  footer { margin-top: 22px; font-size: 11.5px; color: #a8a29e; line-height: 1.5; }
+  a { color: #2563eb; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Linestry Morning Digest</h1>
+    <p class="sub">September 2, 2026. Source: bugs/MORNING-DIGEST.md.</p>
+  </header>
+  <div class="headline"><p><strong>Triage did not complete today (bug-triage.md still dated September 1, 2026). Nothing merged on either side; the 05:00 auto-fix aborted for the third morning running on the same dirty tree, and the finished BUG-177 / BUG-178 badge cluster is still sitting uncommitted.</strong></p></div>
+  <section class="card triage"><h2>Triage run</h2><p><strong>Did not complete.</strong> <code>bugs/bug-triage.md</code> is still dated September 1, 2026 (re-verified 12:06 PDT), so today&#x27;s 04:06 run either did not fire or did not finish. There is no dated hand-off note for September 2.</p>
+<ul><li>New-report intake counts for today are <strong>unavailable</strong>. Anything reported since midday September 1 is unprocessed, in both the bug lane and the idea lane.</li><li>Recommended: say &quot;run bug triage&quot; in Cowork so the day&#x27;s Gmail intake gets processed.</li><li>The STEP 1 reconcile ran anyway as the safety net and found nothing unreconciled (see Reconcile below), so no PR is rotting.</li></ul></section>
+  <section class="card auto"><h2>Auto-fix run</h2><p>Fired at <strong>05:02 PDT</strong> and <strong>aborted</strong>: &quot;working tree has uncommitted changes to tracked files, leaving your work alone.&quot; That is the third consecutive abort for the same reason (August 31, September 1, September 2). The pipeline is behaving correctly and refusing to clobber work; it cannot clear itself.</p>
+<p>The blocker is concrete and small:</p>
+<ul><li>The repo is checked out on <code>auto/bugfix-20260830-2122</code>, sitting at <code>f6ec7f8</code> with <strong>zero commits above main</strong>.</li><li>Nine tracked files are modified: 50 insertions, 17 deletions, most of it in <code>src/components/ui/badge.tsx</code>.</li><li>That diff is the <strong>finished</strong> BUG-177 / BUG-178 unverified-badge build from the August 30 21:22 run, which recorded <code>empty</code> because its commit filter staged nothing.</li><li>No PR exists. The branch is not on origin. Its SHIP-LOG entry correctly stays <code>status: pending</code>.</li></ul>
+<p>Four nights of unattended capacity have now been lost to a missing <code>git commit</code>. There is also no pipeline-safe brief left in the slot behind it, so even a clean tree gives the 05:00 run nothing it is allowed to build.</p></section>
+  <section class="card plain"><h2>Reconcile</h2><ul><li><code>git log main --since=2026-09-01</code> is empty. Nothing has merged since <strong>PR #211</strong> (<code>f6ec7f8</code>, August 28).</li><li>Bug side: nothing moved to Shipped, no SHIP-LOG status flips, no brief archived, lead unchanged.</li><li>Feature side: no feature PR merged, so no brief matched, archived, or repointed. No Drive brief was moved and none was skipped on an uncertain match. <code>features/</code> is readable and the queue is intact.</li></ul></section>
+  <section class="card feature"><h2>Feature side</h2><p>No feature PR merged overnight or since the last run. The most recent feature ship is <strong>PR #206</strong>, August 19, fourteen days ago.</p>
+<p>Lead unchanged: <strong>Facebook Login + Public Legal Pages</strong> (<code>features/facebook-login-legal-pages-brief.md</code>), staged August 31. Roughly 2 to 3 hours, one PR, no migration, but it carries an OPS GATE in section 4: Jay pastes three URLs plus the Supabase callback into the Meta App Dashboard, then enables the Facebook provider in Supabase. Copy is locked in Appendix A and is not lawyer reviewed.</p>
+<p>Feature queue: 3 ready, 12 needing a Jay decision, 2 parked, 8 shipped.</p></section>
+  <section class="card balance"><h2>Feature and bug balance</h2><p><strong>Last 7 days: 1 bug ship (PR #211, August 28), 0 feature ships.</strong> Last 14 days: 4 bug ships and 4 feature ships, with all four features landing on August 19. Queued: 36 open bugs behind a P1 lead, 3 ready feature briefs. Leads: bug = BUG-179 (P1), feature = Facebook Login + Public Legal Pages.</p>
+<p>Nudge: this reads as slow overall rather than lopsided. One merge in the last two weeks on either side, and the throughput that did exist came from the nightly pipeline, which has now been stalled for four days. An open P1 means the bug lead owns today; the feature lead is the natural second session.</p></section>
+  <section class="card suggest"><h2>Suggested today</h2><p><strong>1. START HERE. Attended bug session: clear the tree, then build BUG-179 (P1).</strong> The one open P1 and the only thing outranking everything else. A signed-in member&#x27;s own timeline at <code>/people/&lt;own-uuid&gt;</code> flips into the anonymous public view and offers &quot;Is this you? Claim this profile&quot;. Reported August 31, desktop Chrome, flagged Urgent. Open the session by committing and shipping the already-built badge cluster (BUG-177, BUG-178) so the nightly pipeline can run again tonight; that is roughly 15 minutes and it is item 0 in NEXT-SESSION for a reason. Then take BUG-179. Briefs: <code>bugs/2026-08-27-unverified-badge-consistency.md</code> (built, needs commit) then <code>bugs/2026-09-01-owner-profile-claim-flip.md</code>. Diagnosis-first: start at PostHog replay <code>S-49</code>. Attended only, auth adjacent. Size: 15 min plus 2 to 3 hr.</p>
+<p><strong>2. Rescue BUG-174, thirteen days built and unmerged.</strong> Still the highest-value finished work in the repo and it has not moved since August 20. Public Stack on by default for every member, sitting on <code>origin/claude/public-stack-default-gating-6tzvvg</code> (<code>b75c000</code>), now four PRs behind main. Needs a rebase, the brief&#x27;s pre-flight SQL, a GATED <code>profiles</code> backfill applied with the full ship-sequence printout, a merge, and a SHIP-LOG entry. Brief: <code>bugs/2026-08-20-public-stack-default-on.md</code>. Attended or human reviewed. Size: 1 to 2 hr, mostly rebase and deploy discipline.</p>
+<p><strong>3. Feature lead: Facebook Login + Public Legal Pages.</strong> Only if the P1 closes early. Fourteen days without a feature ship, and this one is first-experience value with no migration. Read section 3 before touching anything: there are two <code>signInWithOAuth</code> call sites with different button shapes, telemetry verbs, and error handling. The OPS GATE needs Jay at a keyboard in the Meta App Dashboard, so it cannot be handed off unattended. Brief: <code>features/facebook-login-legal-pages-brief.md</code>. Size: 2 to 3 hr.</p></section>
+  <section class="card needs"><h2>Needs you today</h2><ul><li><strong>Commit or discard the nine-file badge diff.</strong> This is the single highest-leverage minute of the day. Until the tree is clean the 05:00 slot aborts again tomorrow morning, for the fourth time.</li><li><strong>No draft PR is awaiting review.</strong> The August 30 work never reached a PR at all, which is the actual problem.</li><li><strong>Re-run the daily triage</strong> so the September 1 to 2 intake is processed.</li><li><strong>Refill the pipeline-safe slot.</strong> Once the badge cluster merges, the unattended run has nothing eligible left. Every remaining &quot;also ready&quot; brief was drafted June 17 to July 5 and is unverified, and most are diagnosis-first or human-run. Nearest candidates on value, each needing a re-grep against tip: BUG-120 / BUG-123 (Compare), BUG-117 (collective default frame), BUG-108 (Earned Today).</li><li>Decisions still parked and blocking drafting: <strong>BUG-169</strong> (membership page repositioning, needs your wording; note PR #203 changed that page), <strong>BUG-135</strong> (landing copy too wordy), <strong>BUG-170</strong> (riders list should surface actual connections). On the feature side, 12 items are sitting in the needs-a-decision column.</li><li>Housekeeping, unchanged for two weeks: <code>.design-sync/</code> and <code>docs/design-system.md</code> are still untracked and un-gitignored, the <code>[Linestry Idea]</code> attachment bridge is still unwired, and six stale local plus four stale remote <code>auto/bugfix-*</code> branches are prunable.</li></ul></section>
+  <section class="card leads"><h2>Today&#x27;s leads</h2><ul><li><strong>Bug lead</strong> (<code>bugs/NEXT-SESSION.md</code>, status BUILD-READY): <code>bugs/2026-09-01-owner-profile-claim-flip.md</code>, BUG-179, P1, attended and diagnosis-first. Pipeline-safe slot: <code>bugs/2026-08-27-unverified-badge-consistency.md</code>, built but stranded uncommitted.</li><li><strong>Feature lead</strong> (<code>features/NEXT-FEATURE.md</code>, status BUILD-READY LEAD): <code>features/facebook-login-legal-pages-brief.md</code>, Facebook Login + Public Legal Pages, with an ops gate.</li><li>Queue snapshot: 36 open bugs, next free id BUG-180, snapshot dated September 1. Feature queue: 3 ready, 12 decisions, 2 parked.</li></ul></section>
+  <footer>Browser view generated from bugs/MORNING-DIGEST.md by bugs/render-digest.py (the morning-digest run). Last generated 2026-09-02 08:58.</footer>
+</div>
+</body>
+</html>

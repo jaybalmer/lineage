@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #ffffff; color: #1c1a17; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 20px 18px 48px; }
+  header h1 { font-size: 19px; margin: 0 0 2px; letter-spacing: -0.01em; }
+  .sub { font-size: 12.5px; color: #78716c; margin: 0 0 14px; }
+  .counts { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 14px; }
+  .count { font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 999px; background: #f5f5f4; color: #44403c; border: 1px solid #e7e5e4; }
+  .count b { font-weight: 800; }
+  .controls { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0 0 16px; }
+  .chip { font-size: 12.5px; font-weight: 600; padding: 6px 12px; border-radius: 999px; border: 1px solid #d6d3d1; background: #fff; color: #44403c; cursor: pointer; }
+  .chip.active { background: #1c1a17; color: #fff; border-color: #1c1a17; }
+  #q { flex: 1; min-width: 160px; font-size: 13px; padding: 8px 11px; border: 1px solid #d6d3d1; border-radius: 9px; }
+  .group { margin: 18px 0 6px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em; color: #78716c; }
+  .card { border: 1px solid #e7e5e4; border-radius: 11px; padding: 12px 14px; margin: 8px 0; background: #fff; }
+  .card.lead { border-color: #f59e0b; box-shadow: 0 0 0 1px #f59e0b inset; }
+  .row1 { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .id { font-weight: 800; font-size: 13.5px; }
+  .title { font-size: 13.5px; color: #292524; }
+  .note { font-size: 12.5px; color: #57534e; margin: 6px 0 0; line-height: 1.45; }
+  .badges { display: flex; gap: 5px; flex-wrap: wrap; margin-left: auto; }
+  .b { font-size: 10.5px; font-weight: 700; padding: 2px 7px; border-radius: 999px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .p1 { background: #fef3c7; color: #92400e; }
+  .p2 { background: #e0f2fe; color: #075985; }
+  .dec { background: #f3e8ff; color: #6b21a8; }
+  .feat { background: #ccfbf1; color: #115e59; }
+  .lead-b { background: #f59e0b; color: #fff; }
+  .needsinfo { background: #fee2e2; color: #991b1b; }
+  .tag { background: #f5f5f4; color: #57534e; }
+  .brief { font-size: 11.5px; color: #2563eb; margin-top: 6px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+  .empty { color: #a8a29e; font-size: 13px; padding: 20px 0; text-align: center; }
+  details.shipped { margin-top: 26px; border-top: 1px solid #e7e5e4; padding-top: 12px; }
+  details.shipped summary { font-size: 12.5px; font-weight: 700; color: #78716c; cursor: pointer; }
+  .ship { font-size: 12.5px; color: #57534e; margin: 7px 0; }
+  .ship b { color: #292524; }
+  footer { margin-top: 22px; font-size: 11.5px; color: #a8a29e; line-height: 1.5; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Linestry Bug Queue</h1>
+    <p class="sub" id="sub">Snapshot. Source: bugs/bug-triage.md.</p>
+  </header>
+  <div class="counts" id="counts"></div>
+  <div class="controls">
+    <button class="chip active" data-f="all">All</button>
+    <button class="chip" data-f="P1">P1</button>
+    <button class="chip" data-f="P2">P2</button>
+    <button class="chip" data-f="decision">Needs decision</button>
+    <button class="chip" data-f="feature">Features</button>
+    <input id="q" placeholder="Search id, title, note...">
+  </div>
+  <div id="list"></div>
+
+  <details class="shipped">
+    <summary>Recently shipped (context)</summary>
+    <div id="shipped"></div>
+  </details>
+
+  <footer id="foot"></footer>
+</div>
+
+<script>
+  const SNAPSHOT = "September 1, 2026";
+  const LEAD = "BUG-179";
+  const NEXTID = "BUG-180";
+  const BUGS = [{"id": "BUG-179", "group": "decision", "title": "Your own timeline flips into the anonymous public view and asks you to claim your own profile", "tags": ["diagnosis-first", "human-run", "auto-merge", "launch-facing"], "note": "", "brief": ""}, {"id": "BUG-177", "group": "P2", "title": "The \"unverified\" chip renders in three different visual treatments", "tags": ["reproducible", "consistency"], "note": "\"The unverified tag appearance is different in the Feed section vs other sections.\"", "brief": ""}, {"id": "BUG-178", "group": "P2", "title": "A rider's claims show \"unverified\" on some entries and not others, with nothing to explain why", "tags": ["reproducible", "consistency"], "note": "\"Geoff Peterson added a bunch of Rode At to his timeline. In the feeds area for Geoff. Some are tagged unverified while others are not. Just double checking if this right?\"", "brief": ""}, {"id": "BUG-152", "group": "feature", "title": "Community date-verification ask + admin cannot edit story dates/connections", "tags": [], "note": "", "brief": ""}, {"id": "BUG-149", "group": "P2", "title": "Sign-in (magic-link) email shows a fallback-font wordmark and no logo", "tags": ["reproducible"], "note": "\"Signing in with email and request an email link. The email image has the Linestry work mark using old font and missing new logo.\"", "brief": ""}, {"id": "BUG-143", "group": "P2", "title": "Adding a photo to an event makes the event info formatting go wonky", "tags": ["reproducible", "diagnosis-first"], "note": "\"Trying to add a photo to an event can make the info formatting wonky.\" Adding a photo to an event page disrupts the info/detail layout.", "brief": ""}, {"id": "BUG-139", "group": "P2", "title": "Place detail page repeats country / region / weblink already shown on the title card", "tags": ["reproducible"], "note": "\"Design: the specific place page may have redundant information when the country, region, and weblink is already on the title card.\" The place detail page shows the same country/region/weblink twice (title card plus a second block).", "brief": ""}, {"id": "BUG-135", "group": "P2", "title": "Landing page copy is too wordy and over-uses \"stories\"/\"story\"", "tags": ["reproducible"], "note": "\"Landing page text may be too wordy and have too many references to the word 'stories' and 'story'.\"", "brief": ""}, {"id": "BUG-133", "group": "feature", "title": "No \"Edit\" affordance on an individual place page; admin Dataset Editor edits places but only core fields", "tags": ["reproducible", "feature-gap"], "note": "as reported, there is no way to edit a Place, even as an admin.", "brief": ""}, {"id": "BUG-131", "group": "feature", "title": "Adding multiple comma-separated brands during signup creates one brand", "tags": ["reproducible"], "note": "Ken entered his brands as a comma-separated list (\"Winterstick, Amplid, Burton, AK, Analog, Green Clothing, Beaver Wax\") in the signup \"What brand do you ride?\" step; they all saved as a single brand with that literal comma-joined name.", "brief": ""}, {"id": "BUG-130", "group": "P2", "title": "\"Add a brand\" during onboarding defaults the entity Type to a non-brand value and exposes the full type dropdown", "tags": ["reproducible"], "note": "in the signup \"What brand do you ride?\" step, the \"Add a brand\" modal showed the default Type as \"event series\" instead of \"brand\".", "brief": ""}, {"id": "BUG-127", "group": "P2", "title": "Boards main page defaults to the Brands frame and lists Brands as the first filter", "tags": ["reproducible"], "note": "\"This is the Boards page and the default frame highlight should be on boards and the filter should move to the 1st position All Boards to match.\"", "brief": ""}, {"id": "BUG-123", "group": "P2", "title": "Compare score changes when riders A and B are swapped (50 pts vs 42 pts)", "tags": ["reproducible", "diagnosis-first"], "note": "\"If you put Sean A and Jay in B. You have 50 compare points. If you flip the Positions there is only 42 compare points. I expected the compare points would be the same.\"", "brief": ""}, {"id": "BUG-121", "group": "P2", "title": "Main page headings should use the Linestry wordmark font", "tags": ["reproducible"], "note": "\"Let's change the main head font to be the Linestry font to make things more consistent.\" (He flagged it as \"likely reported\".)", "brief": ""}, {"id": "BUG-120", "group": "P2", "title": "Compare button on a rider page does not prepopulate that rider", "tags": ["reproducible"], "note": "tapping Compare on another rider's page lands on /compare without that rider prepopulated in slot A or B, despite the URL carrying ?b=<id>.", "brief": ""}, {"id": "BUG-117", "group": "P2", "title": "Collective timeline \"frame view\" does not include the viewer's own year by default", "tags": ["reproducible", "diagnosis-first"], "note": "on the collective timeline, the viewer's own year (\"your years\") is not shown in the default frame view; toggling 10Y and back to 1Y does not bring it into view.", "brief": ""}, {"id": "BUG-108", "group": "P2", "title": "\"Earned Today\" bar reads 0/20 while the breakdown shows a \"Showing up +1 token\" was earned", "tags": ["reproducible", "diagnosis-first"], "note": "the \"Earned Today\" bar shows \"0/20 tokens\" while the expanded breakdown lists \"Showing up +1 token\". The visit token is earned but the headline reads zero, looking like it did not register.", "brief": ""}, {"id": "BUG-109", "group": "P2", "title": "A curated/verified brand shows \"unverified\" on its own timeline entries", "tags": ["reproducible", "diagnosis-first"], "note": "Westbeach is curated and \"verified\" in its header, but the entries on its own timeline still show \"unverified\".", "brief": ""}, {"id": "BUG-113", "group": "P2", "title": "Public stack / timeline view renders light when it previously read dark", "tags": ["reproducible", "diagnosis-first", "human-run"], "note": "the stack view was showing with the proper layout and a dark theme and now renders differently in a light theme.", "brief": ""}, {"id": "BUG-114", "group": "P2", "title": "Filters are not remembered when navigating back to a page (resets every time)", "tags": [], "note": "the filter you were on is not remembered when you go back to a page; it resets every time, in every area that has filters. Reporter notes most shopping sites remember the applied filter.", "brief": ""}, {"id": "BUG-095", "group": "P2", "title": "Board catalog tiles on a brand drill-down do not show the large cover image (the smaller brand-card thumbnail does)", "tags": ["reproducible", "diagnosis-first", "human-run"], "note": "on the Arbor brand drill-down the large board cover images do not show on the product tiles, even though the smaller thumbnail (on the brand index card / when you click into the board) does show.", "brief": "bugs/2026-06-22-boards-arbor-covers.md"}, {"id": "BUG-096", "group": "P2", "title": "\"Invite a rider\" button on the connections screen cannot be pressed (no visible criteria for it to activate)", "tags": ["reproducible", "diagnosis-first"], "note": "on the connections screen the \"invite a rider\" button cannot be pressed; the reporter does not know what criteria make it active.", "brief": "bugs/2026-06-22-connections-invite-button.md"}, {"id": "BUG-075", "group": "decision", "title": "\"Competed at\" is too narrow for an event role; add participated / event staff / spectator", "tags": ["reproducible"], "note": "when adding an event to a timeline, the only role reads as \"competed\", but many modern events are participation-only, so \"competed\" feels wrong. Erik suggests adding \"participated\" or a role dropdown (competitor / event staff / spectator).", "brief": ""}, {"id": "BUG-076", "group": "decision", "title": "/snowboarding/feed shows every individual person-tag as its own card, burying stories", "tags": ["reproducible"], "note": "each person added to an event or story posts its own feed card, which floods the feed and buries actual stories. Jay wants per-person tags for the same event accumulated onto one card.", "brief": ""}, {"id": "BUG-085", "group": "decision", "title": "Inconsistent capitalisation of the second word across the site", "tags": ["reproducible"], "note": "the first letter of the second word is sometimes upper-case and sometimes lower-case in labels throughout the site; Cory wants it consistent.", "brief": ""}, {"id": "BUG-089", "group": "P2", "title": "Editing your own \"Riding since\" year is not reflected in the Riders list", "tags": ["reproducible", "diagnosis-first"], "note": "after editing the profile \"Riding since\" date (changed 2002 to 1999), the Riders list still shows the old value for that rider.", "brief": "bugs/2026-06-19-riding-since-staleness.md"}, {"id": "BUG-093", "group": "feature", "title": "No editor / admin \"Edit\" affordance on an individual board page (parity with the admin Dataset Editor)", "tags": ["reproducible", "feature-gap"], "note": "on an individual snowboard page, an editor/admin has no way to edit the board entry; Jay expects editors to be able to edit catalog entries inline, the way they can in the admin Dataset Editor.", "brief": ""}, {"id": "BUG-069", "group": "P2", "title": "Community nav header disappears on the membership page and does not return when tapping My Timeline", "tags": ["reproducible", "diagnosis-first"], "note": "entering the membership screen makes the main Snowboarding community header (the lens row \"Community / Feed / My Timeline\" and the category row) go away; tapping \"My Timeline\" does not bring it back; the user has to tap another header button like \"Community\" and navigate back to restore it.", "brief": ""}, {"id": "BUG-070", "group": "P2", "title": "Community timeline player's final slide shows \"Start Your Timeline\" even when the viewer is signed in", "tags": ["reproducible", "auto-merge"], "note": "after playing the community timeline, the last slide has a \"Start Your Timeline\" button. The reporter is already signed in and has a timeline, so the CTA is wrong for them.", "brief": ""}, {"id": "BUG-071", "group": "P2", "title": "Bug-report popup buttons (Cancel / Send / Attach) do not register taps on mobile", "tags": ["reproducible", "diagnosis-first"], "note": "the in-app bug-reporting popup has trouble registering the Cancel and Send buttons and the attach-screenshot button on mobile.", "brief": ""}, {"id": "BUG-074", "group": "decision", "title": "Person pages do not offer the compact stack view a visitor expects", "tags": ["reproducible"], "note": "looking at a rider page, the reporter expected to toggle to the compact \"stack\" view and expected it on by default and available even when logged out, since it shows the same info as the timeline in a compact chromeless view.", "brief": ""}, {"id": "BUG-063", "group": "P2", "title": "Tapping to select a year on the collective timeline breaks after scrolling", "tags": ["reproducible", "diagnosis-first", "human-run"], "note": "tapping the collective timeline to select a year works at first, but after scrolling the selected year advances forward on its own and tapping to select a year becomes unreliable.", "brief": ""}, {"id": "BUG-053", "group": "P2", "title": "\"My Timeline\" element is confusing on the community landing page", "tags": ["reproducible"], "note": "the reporter finds the \"My Timeline\" element on the Snowboarding landing page confusing and asks for it to be removed at this stage.", "brief": ""}, {"id": "BUG-057", "group": "feature", "title": "Leaderboard / shares-distribution visibility request", "tags": ["reproducible"], "note": "the reporter wants a leaderboard or more information on shares: the current distribution, the target for end of September, and a way to estimate the final distribution from member and entry targets.", "brief": ""}, {"id": "BUG-058", "group": "feature", "title": "Connecting riders to brands/events is too heavy (Add Claim) versus story connections", "tags": ["reproducible"], "note": "connecting riders to brands is difficult. The reporter expected to add connections on brand and event pages the way stories can be connected (\"I was there\" / who was there and their connection), but the only path is Add Claim, which asks for a lot of information.", "brief": ""}, {"id": "BUG-025", "group": "feature", "title": "Admin has no surface to manage unclaimed members", "tags": ["reproducible", "consistency", "launch-facing", "feature-gap"], "note": "as admin, Jay cannot see or manage unclaimed member profiles from the admin section. He wants them listed there for cleanup and editing, especially given the same-night BUG-022 flow created a malformed unclaimed rider he could not repair.", "brief": ""}];
+  const SHIPPED = [{"id": "BUG-176", "pr": "#211", "note": "BUG-176: claim cards on /[community]/feed could paint with the rider's name silently missing. The cause was a catalog-load race, not missing data: authorForClaim resolves names only from the unpersisted, async catalog.people, and the feed was the one public..."}, {"id": "BUG-137 / BUG-134", "pr": "#210", "note": "BUG-137: the Annual member card printed the friendly word \"Member\" while the canonical memberBadgeFor() map already said \"Annual\". A new non-client src/lib/tiers.ts now holds the single tier label / colour / symbol map, and four surfaces were repointed at i..."}, {"id": "BUG-175", "pr": "#209", "note": "BUG-175: the BUG-172 podcast episode-group card previewed three full MentionRow lines when collapsed, which Jay reported as still crowded on a card he is looking at daily during the FNRad traffic week. Collapsed now renders header only (mic glyph, mention c..."}, {"id": "BUG-144 / BUG-145 / BUG-146 / BUG-147", "pr": "#207/#159", "note": "BUG-144: brand-page \"+ Add a claim\" CTA rerouted from a white-in-light-mode treatment to the standard solid dark add-button (bg-foreground / text-background), legible in both themes; the quiet sidebar instance left as designed."}, {"id": "BUG-155", "pr": "#202", "note": "BUG-155: a claim card on your own timeline offered \"Edit event\", which opens the shared catalog EditEventModal saving through POST /api/admin (requireEditor). The affordance was gated on claim ownership, not editor permission, so CY 2 (is_editor=false, annu..."}, {"id": "BUG-158 / BUG-072", "pr": "#201", "note": "BUG-158: the reporter screenshot pinned the collision to the STORY card header, not the claim card the triage brief had guessed: the \"Lifetime\" MemberBadge overlapped the \"Only you\" visibility badge at 414px. Fixed at the header layout."}];
+
+  const GROUPS = [["P1","P1 - Broken"],["P2","P2 - Polish and edge"],["decision","Needs a decision"],["feature","Features"]];
+  let filter = "all", query = "";
+
+  function badge(g){ return g==="P1"?'<span class="b p1">P1</span>':g==="P2"?'<span class="b p2">P2</span>':g==="decision"?'<span class="b dec">decision</span>':'<span class="b feat">feature</span>'; }
+  function tagBadges(b){
+    return b.tags.map(t => {
+      const cls = t==="needs-info"?"needsinfo":"tag";
+      return '<span class="b '+cls+'">'+t+'</span>';
+    }).join("");
+  }
+
+  function render(){
+    const counts = { P1:0,P2:0,decision:0,feature:0 };
+    BUGS.forEach(b => counts[b.group]++);
+    document.getElementById("counts").innerHTML =
+      '<span class="count"><b>'+BUGS.length+'</b> open</span>' +
+      '<span class="count">P0 <b>0</b></span>' +
+      '<span class="count">P1 <b>'+counts.P1+'</b></span>' +
+      '<span class="count">P2 <b>'+counts.P2+'</b></span>' +
+      '<span class="count">decisions <b>'+counts.decision+'</b></span>' +
+      '<span class="count">features <b>'+counts.feature+'</b></span>';
+    document.getElementById("sub").textContent = "Snapshot as of "+SNAPSHOT+". Source: bugs/bug-triage.md. Lead: "+LEAD+". Regenerated by the daily triage.";
+
+    const list = document.getElementById("list");
+    list.innerHTML = "";
+    let shown = 0;
+    GROUPS.forEach(([g,label]) => {
+      if (filter !== "all" && filter !== g) return;
+      const items = BUGS.filter(b => b.group===g && match(b));
+      if (!items.length) return;
+      const h = document.createElement("div"); h.className="group"; h.textContent=label; list.appendChild(h);
+      items.forEach(b => { list.appendChild(card(b)); shown++; });
+    });
+    if (!shown) list.innerHTML = '<div class="empty">No bugs match.</div>';
+
+    document.getElementById("shipped").innerHTML = SHIPPED.map(s =>
+      '<div class="ship"><b>'+s.id+'</b> ('+s.pr+') '+s.note+'</div>').join("");
+    document.getElementById("foot").innerHTML =
+      "This is a snapshot dashboard generated from bugs/bug-triage.md by the daily triage (bugs/render-queue.py). Next free id: "+NEXTID+".";
+  }
+
+  function match(b){
+    if (!query) return true;
+    const s = (b.id+" "+b.title+" "+b.note).toLowerCase();
+    return s.includes(query);
+  }
+
+  function card(b){
+    const d = document.createElement("div");
+    d.className = "card" + (b.id===LEAD ? " lead" : "");
+    d.innerHTML =
+      '<div class="row1"><span class="id">'+b.id+'</span>'+
+        '<div class="badges">'+(b.id===LEAD?'<span class="b lead-b">lead</span>':'')+badge(b.group)+tagBadges(b)+'</div></div>'+
+      '<div class="title">'+b.title+'</div>'+
+      '<div class="note">'+b.note+'</div>'+
+      (b.brief ? '<div class="brief">'+b.brief+'</div>' : '');
+    return d;
+  }
+
+  document.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+    document.querySelectorAll(".chip").forEach(x => x.classList.remove("active"));
+    c.classList.add("active"); filter = c.dataset.f; render();
+  }));
+  document.getElementById("q").addEventListener("input", e => { query = e.target.value.trim().toLowerCase(); render(); });
+
+  render();
+</script>
+</body>
+</html>
