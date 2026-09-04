@@ -548,6 +548,7 @@ Burton,Iguchi,1995,catalog:burton--iguchi
 Burton,Indie,2003,catalog:burton--indie
 Burton,Instigator,2018,catalog:burton--instigator
 Burton,Jeff Brushie 53,1996,catalog:burton--jeff-brushie-53
+Burton,Jeff Brushie DJ,1994,https://retrosnow.com/shop/burton/burton-94/burton-jeff-brushie-dj/
 Burton,Jeremy Jones,2004,catalog:burton--jeremy-jones
 Burton,Jim Rippey 54,1996,catalog:burton--jim-rippey-54
 Burton,Johan,1999,catalog:burton--johan
@@ -2439,16 +2440,8 @@ Raven,Supreme White,2026,catalog:raven--supreme-white
 Raven,Trench Carbon Navy/Orange,2026,catalog:raven--trench-carbon-navy-orange
 RDS,,,
 Retro Snow,,,
-Ride,Algorythm,2010,seed:linestry-research-2026-06
-Ride,Berzerker,2019,seed:linestry-research-2026-06
-Ride,Jason Ford Sylvester,1995,https://retrosnow.com/shop/ride/libtech-95-ride/ride-jason-ford-sylvester/
-Ride,Magic Stick,2026,catalog:ride--magic-stick
-Ride,Reid Pro Benchwarmer,2026,catalog:ride--reid-pro-benchwarmer
-Ride,Saturday,2026,catalog:ride--saturday
-Ride,Twinpig,2010,seed:linestry-research-2026-06
-Ride,Warpig,2016,seed:linestry-research-2026-06
 Ride Snowboards,Agenda,2023,catalog:ride--agenda
-Ride Snowboards,Algorythm,2020,catalog:ride--algorythm
+Ride Snowboards,Algorythm,2010,seed:linestry-research-2026-06
 Ride Snowboards,Benchwarmer,2023,catalog:ride--benchwarmer
 Ride Snowboards,Berzerker,2006,catalog:ride--berzerker
 Ride Snowboards,Brushie,2000,catalog:ride--brushie
@@ -2473,11 +2466,13 @@ Ride Snowboards,Havoc,2006,catalog:ride--havoc
 Ride Snowboards,Heartbreaker,2026,catalog:ride--heartbreaker
 Ride Snowboards,Helix,2015,catalog:ride--helix
 Ride Snowboards,Jason Ford,1995,catalog:ride--jason-ford
+Ride Snowboards,Jason Ford Sylvester,1995,https://retrosnow.com/shop/ride/libtech-95-ride/ride-jason-ford-sylvester/
 Ride Snowboards,Jennie,1999,catalog:ride--jennie
 Ride Snowboards,Kashmir,2004,catalog:ride--kashmir
 Ride Snowboards,Kink,2003,catalog:ride--kink
 Ride Snowboards,Lowride,2000,catalog:ride--lowride
 Ride Snowboards,Machete,2010,catalog:ride--machete
+Ride Snowboards,Magic Stick,2026,catalog:ride--magic-stick
 Ride Snowboards,Mahaffey,2000,catalog:ride--mahaffey
 Ride Snowboards,Manic,2026,catalog:ride--manic
 Ride Snowboards,Mecca,2003,catalog:ride--mecca
@@ -2492,8 +2487,10 @@ Ride Snowboards,Peace Seeker,2023,catalog:ride--peace-seeker
 Ride Snowboards,Profile,2000,catalog:ride--profile
 Ride Snowboards,Prophet,2004,catalog:ride--prophet
 Ride Snowboards,Psychocandy,2022,catalog:ride--psychocandy
+Ride Snowboards,Reid Pro Benchwarmer,2026,catalog:ride--reid-pro-benchwarmer
 Ride Snowboards,RJ,1994,catalog:ride--rj
 Ride Snowboards,Ruckus,2007,catalog:ride--ruckus
+Ride Snowboards,Saturday,2026,catalog:ride--saturday
 Ride Snowboards,Serum,2002,catalog:ride--serum
 Ride Snowboards,Shadowban,2023,catalog:ride--shadowban
 Ride Snowboards,Smokescreen,2022,catalog:ride--smokescreen
@@ -2504,11 +2501,11 @@ Ride Snowboards,System,2000,catalog:ride--system
 Ride Snowboards,Tempest,2000,catalog:ride--tempest
 Ride Snowboards,Theory,2004,catalog:ride--theory
 Ride Snowboards,Timeless,2000,catalog:ride--timeless
-Ride Snowboards,Twinpig,2019,catalog:ride--twinpig
+Ride Snowboards,Twinpig,2010,seed:linestry-research-2026-06
 Ride Snowboards,Verona,2007,catalog:ride--verona
 Ride Snowboards,Vista,2002,catalog:ride--vista
 Ride Snowboards,Waara,2000,catalog:ride--waara
-Ride Snowboards,Warpig,2017,catalog:ride--warpig
+Ride Snowboards,Warpig,2016,seed:linestry-research-2026-06
 Ride Snowboards,Wild Life,2013,catalog:ride--wild-life
 Ride Snowboards,Yukon,2000,catalog:ride--yukon
 Ride Snowboards,Zero,2000,catalog:ride--zero
