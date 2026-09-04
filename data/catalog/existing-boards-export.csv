@@ -547,6 +547,7 @@ a9e89fdc-3b28-458f-ad06-b12067d5d2e5,Burton,Idiom Select,2008,,,catalog:burton--
 94508ec7-18d1-4db5-814b-23bb2fcc1da0,Burton,Indie,2003,,,catalog:burton--indie,unverified,,2026-09-02T23:05:13.572077+00:00
 ebf35c6f-6af4-4d95-a326-6eee9bd0512a,Burton,Instigator,2018,,,catalog:burton--instigator,verified,,2026-09-02T23:05:13.572077+00:00
 cf117e51-e9d1-4915-94f0-83cf2993b141,Burton,Jeff Brushie 53,1996,,,catalog:burton--jeff-brushie-53,unverified,,2026-09-04T18:50:01.363043+00:00
+85922776-f042-4d60-99b3-bda36e321ced,Burton,Jeff Brushie DJ,1994,,,https://retrosnow.com/shop/burton/burton-94/burton-jeff-brushie-dj/,verified,,2026-09-04T20:53:35.228147+00:00
 c8c5e519-5b97-417b-be03-5300c6dc2590,Burton,Jeremy Jones,2004,,,catalog:burton--jeremy-jones,verified,,2026-09-02T23:05:13.572077+00:00
 e84bf75e-3c9e-49f6-bfbc-cce34b401365,Burton,Jim Rippey 54,1996,,,catalog:burton--jim-rippey-54,unverified,,2026-09-04T18:50:01.363043+00:00
 b318877b-e4ca-49a9-b8f1-ef0684199b79,Burton,Johan,1999,,,catalog:burton--johan,unverified,,2026-09-02T23:05:13.572077+00:00
@@ -2433,18 +2434,12 @@ cc661128-81de-4668-9ac8-a2e561991b2b,Raven,Supreme Black,2026,,,catalog:raven--s
 8eac8ccf-ea84-4c3e-9b7c-df4f738074b6,Raven,Supreme Green B,2026,,,catalog:raven--supreme-green-b,unverified,,2026-09-04T18:50:02.182686+00:00
 15e70257-762c-4f70-a29f-a79d3db1da13,Raven,Supreme White,2026,,,catalog:raven--supreme-white,unverified,,2026-09-04T18:50:02.290726+00:00
 20f11e65-70ed-457d-a913-aeb8f52716ec,Raven,Trench Carbon Navy/Orange,2026,,,catalog:raven--trench-carbon-navy-orange,unverified,,2026-09-04T18:50:02.290726+00:00
-ed6ebd1b-261e-434d-8544-3bf1c3b507ff,Ride,Algorythm,2010,,,seed:linestry-research-2026-06,verified,,2026-06-19T05:24:20.410856+00:00
-b24,Ride,Berzerker,2019,,,seed:linestry-research-2026-06,verified,,2026-03-13T00:16:16.048193+00:00
-81ff70c9-a625-4e7a-91dc-38f5d561d19c,Ride,Jason Ford Sylvester,1995,,,https://retrosnow.com/shop/ride/libtech-95-ride/ride-jason-ford-sylvester/,verified,,2026-09-04T20:38:46.266408+00:00
-c066c2f4-fe9e-4a03-a009-7c71458fc9ec,Ride,Magic Stick,2026,,,catalog:ride--magic-stick,unverified,,2026-09-04T18:50:01.888127+00:00
-0119bb8a-e183-4fda-b3dd-0eb77b887eed,Ride,Reid Pro Benchwarmer,2026,,,catalog:ride--reid-pro-benchwarmer,unverified,,2026-09-04T18:50:01.888127+00:00
-c3c3e9fe-8cc8-49dc-bda7-c80b3b305ef2,Ride,Saturday,2026,,,catalog:ride--saturday,unverified,,2026-09-04T18:50:01.888127+00:00
-d83fb132-346b-4395-bd17-49a5417ecf42,Ride,Twinpig,2010,,,seed:linestry-research-2026-06,verified,,2026-06-19T05:24:20.410856+00:00
-4e53929a-5eb8-489d-99e3-004f76fc10a4,Ride,Warpig,2016,,,seed:linestry-research-2026-06,verified,,2026-06-19T05:24:20.410856+00:00
 512cdf13-b76a-4e9b-8257-fa48393737a2,Ride Snowboards,Agenda,2023,,,catalog:ride--agenda,verified,,2026-09-02T23:05:13.572077+00:00
+ed6ebd1b-261e-434d-8544-3bf1c3b507ff,Ride Snowboards,Algorythm,2010,,,seed:linestry-research-2026-06,verified,,2026-06-19T05:24:20.410856+00:00
 f3acc703-056b-4ea1-a755-8facf03a2b8d,Ride Snowboards,Algorythm,2020,,,catalog:ride--algorythm,unverified,,2026-09-02T23:05:13.572077+00:00
 381c2c06-ce5d-42af-82e6-293cb281c814,Ride Snowboards,Benchwarmer,2023,,,catalog:ride--benchwarmer,verified,,2026-09-02T23:05:13.572077+00:00
 1fca93c8-c907-40fc-8efb-fe34023f5eb8,Ride Snowboards,Berzerker,2006,,,catalog:ride--berzerker,verified,,2026-09-02T23:05:13.572077+00:00
+b24,Ride Snowboards,Berzerker,2019,,,seed:linestry-research-2026-06,verified,,2026-03-13T00:16:16.048193+00:00
 ec18a330-4556-4cfb-954b-a70b6d9cc623,Ride Snowboards,Brushie,2000,,,catalog:ride--brushie,verified,,2026-09-02T23:05:13.572077+00:00
 01de2a4e-62ae-4f2a-8b61-d8bd204c7b1e,Ride Snowboards,Burnout,2026,,,catalog:ride--burnout,unverified,,2026-09-02T23:05:13.572077+00:00
 70aa4b1f-668c-4c06-9db4-1882089a1061,Ride Snowboards,Business,2006,,,catalog:ride--business,unverified,,2026-09-02T23:05:13.572077+00:00
@@ -2467,11 +2462,13 @@ d2fcf05d-cdd3-46ea-b979-24f0e4f588b7,Ride Snowboards,Havoc,2006,,,catalog:ride--
 fa1f1368-e2bf-4c53-8785-9047315cb35b,Ride Snowboards,Heartbreaker,2026,,,catalog:ride--heartbreaker,unverified,,2026-09-02T23:05:13.572077+00:00
 36f12cec-9451-4823-a481-6c5d9005c7c5,Ride Snowboards,Helix,2015,,,catalog:ride--helix,unverified,,2026-09-02T23:05:13.572077+00:00
 5ecb7376-c033-4df1-87c7-2bfc7e2f160e,Ride Snowboards,Jason Ford,1995,,,catalog:ride--jason-ford,unverified,,2026-09-02T23:05:13.572077+00:00
+81ff70c9-a625-4e7a-91dc-38f5d561d19c,Ride Snowboards,Jason Ford Sylvester,1995,,,https://retrosnow.com/shop/ride/libtech-95-ride/ride-jason-ford-sylvester/,verified,,2026-09-04T20:38:46.266408+00:00
 9831c477-018c-413d-90c8-b112b37dc7ab,Ride Snowboards,Jennie,1999,,,catalog:ride--jennie,verified,,2026-09-02T23:05:13.572077+00:00
 2760d72c-b3bb-4008-bd5a-6a1f643702cb,Ride Snowboards,Kashmir,2004,,,catalog:ride--kashmir,unverified,,2026-09-02T23:05:13.572077+00:00
 c5dda79a-ff0c-4d69-bb8d-48a2ace63bf1,Ride Snowboards,Kink,2003,,,catalog:ride--kink,verified,,2026-09-02T23:05:13.572077+00:00
 88d2c615-ef3c-4154-bcb1-9746ea2db45d,Ride Snowboards,Lowride,2000,,,catalog:ride--lowride,unverified,,2026-09-02T23:05:13.572077+00:00
 2990114d-3b9c-472c-b705-221a5bc50fd4,Ride Snowboards,Machete,2010,,,catalog:ride--machete,unverified,,2026-09-02T23:05:13.572077+00:00
+c066c2f4-fe9e-4a03-a009-7c71458fc9ec,Ride Snowboards,Magic Stick,2026,,,catalog:ride--magic-stick,unverified,,2026-09-04T18:50:01.888127+00:00
 238a161b-0caa-4e98-9072-cb73ceea4f02,Ride Snowboards,Mahaffey,2000,,,catalog:ride--mahaffey,unverified,,2026-09-02T23:05:13.572077+00:00
 5078a008-d8c8-488b-9807-0d31d3f1dcb9,Ride Snowboards,Manic,2026,,,catalog:ride--manic,unverified,,2026-09-02T23:05:13.572077+00:00
 5e0f9c73-ed14-4ed9-99e9-77d6729b3b2e,Ride Snowboards,Mecca,2003,,,catalog:ride--mecca,unverified,,2026-09-02T23:05:13.572077+00:00
@@ -2486,8 +2483,10 @@ e9a0d553-58eb-429c-8da9-549f8ead5ceb,Ride Snowboards,Peace Seeker,2023,,,catalog
 6b0fb948-bdd0-4a75-9d41-91613e7643a3,Ride Snowboards,Profile,2000,,,catalog:ride--profile,verified,,2026-09-02T23:05:13.572077+00:00
 c7dd61bb-b11f-43dd-baf8-8bde8d162e96,Ride Snowboards,Prophet,2004,,,catalog:ride--prophet,unverified,,2026-09-02T23:05:13.572077+00:00
 1ad74d56-e38d-4eb3-b276-2e4e7464b03c,Ride Snowboards,Psychocandy,2022,,,catalog:ride--psychocandy,verified,,2026-09-02T23:05:13.572077+00:00
+0119bb8a-e183-4fda-b3dd-0eb77b887eed,Ride Snowboards,Reid Pro Benchwarmer,2026,,,catalog:ride--reid-pro-benchwarmer,unverified,,2026-09-04T18:50:01.888127+00:00
 a089a9ed-64d9-44e0-a2bb-1ba7fb781462,Ride Snowboards,RJ,1994,,,catalog:ride--rj,verified,,2026-09-02T23:05:13.572077+00:00
 76a58f96-5114-4000-ae52-2acf27c061d1,Ride Snowboards,Ruckus,2007,,,catalog:ride--ruckus,unverified,,2026-09-02T23:05:13.572077+00:00
+c3c3e9fe-8cc8-49dc-bda7-c80b3b305ef2,Ride Snowboards,Saturday,2026,,,catalog:ride--saturday,unverified,,2026-09-04T18:50:01.888127+00:00
 eac9755f-851b-4e8d-89e1-6d86b0801462,Ride Snowboards,Serum,2002,,,catalog:ride--serum,unverified,,2026-09-02T23:05:13.572077+00:00
 752e2dcf-d4eb-475c-b8cc-7eb31c5d9047,Ride Snowboards,Shadowban,2023,,,catalog:ride--shadowban,verified,,2026-09-02T23:05:13.572077+00:00
 1d127c43-5bfd-43d5-ac12-c76a5ff14ac8,Ride Snowboards,Smokescreen,2022,,,catalog:ride--smokescreen,unverified,,2026-09-02T23:05:13.572077+00:00
@@ -2498,10 +2497,12 @@ b2433b75-de70-47ab-bce2-ef5bc83fc24e,Ride Snowboards,System,2000,,,catalog:ride-
 f73625cb-f943-433b-bae0-cba012ec29a6,Ride Snowboards,Tempest,2000,,,catalog:ride--tempest,unverified,,2026-09-02T23:05:13.572077+00:00
 3c523e37-e474-4ef5-b67f-e41fd1cfc5fd,Ride Snowboards,Theory,2004,,,catalog:ride--theory,unverified,,2026-09-02T23:05:13.572077+00:00
 24f60173-462f-443a-939d-c7bfd4a9942e,Ride Snowboards,Timeless,2000,,,catalog:ride--timeless,verified,,2026-09-02T23:05:13.572077+00:00
+d83fb132-346b-4395-bd17-49a5417ecf42,Ride Snowboards,Twinpig,2010,,,seed:linestry-research-2026-06,verified,,2026-06-19T05:24:20.410856+00:00
 55a0ed63-a615-4d3a-92f2-51bff4427403,Ride Snowboards,Twinpig,2019,,,catalog:ride--twinpig,verified,,2026-09-02T23:05:13.572077+00:00
 8ac2c854-69bf-4b49-9099-4fe3a5209aba,Ride Snowboards,Verona,2007,,,catalog:ride--verona,unverified,,2026-09-02T23:05:13.572077+00:00
 087219ec-d75e-431e-b14a-6fb865f3b467,Ride Snowboards,Vista,2002,,,catalog:ride--vista,unverified,,2026-09-02T23:05:13.572077+00:00
 443959bd-1ad9-40ac-9270-283d36fb4814,Ride Snowboards,Waara,2000,,,catalog:ride--waara,unverified,,2026-09-02T23:05:13.572077+00:00
+4e53929a-5eb8-489d-99e3-004f76fc10a4,Ride Snowboards,Warpig,2016,,,seed:linestry-research-2026-06,verified,,2026-06-19T05:24:20.410856+00:00
 f1052b05-942c-4aeb-b33b-2472198bb04b,Ride Snowboards,Warpig,2017,,,catalog:ride--warpig,verified,,2026-09-02T23:05:13.572077+00:00
 6939335f-67b9-4a13-8dd9-d29ccf38dd28,Ride Snowboards,Wild Life,2013,,,catalog:ride--wild-life,unverified,,2026-09-02T23:05:13.572077+00:00
 fc2b0143-aedf-489b-8e8b-a2123ac54d21,Ride Snowboards,Yukon,2000,,,catalog:ride--yukon,verified,,2026-09-02T23:05:13.572077+00:00
