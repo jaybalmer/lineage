@@ -40,7 +40,7 @@ from pathlib import Path
 
 # ─── Paths ──────────────────────────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parent.parent
-CATALOG_DIR = ROOT / "data" / "catalog" / "v0.2"
+CATALOG_DIR = ROOT / "data" / "catalog" / "v0.3"
 REVIEW_DIR = ROOT / "data" / "catalog" / "review"
 EXISTING_EXPORT = ROOT / "data" / "catalog" / "existing-export.csv"
 MOCK_DATA = ROOT / "src" / "lib" / "mock-data.ts"

@@ -1,0 +1,42 @@
+bucket,brand,live_model,live_year,catalog_model,catalog_first_year,match,note,reviewer_decision,likely_explanation
+NAME_VARIANT,Barfoot,161 twintip,1990,Twin Tip,1987,fuzzy,Same board under a different name in the live DB. Align names or add as an alias.,,
+NAME_VARIANT,Lib Tech,Grocer,1991,Grocer Shalom,1995,phrase,Same board under a different name in the live DB. Align names or add as an alias.,,
+NAME_VARIANT,Palmer,Carbon,1990,Carbon Circle,2002,phrase,Same board under a different name in the live DB. Align names or add as an alias.,,
+NAME_VARIANT,Palmer,Channel,1990,Channel Titanium,2002,phrase,Same board under a different name in the live DB. Align names or add as an alias.,,
+NAME_VARIANT,Ride,Algorhythm,2010,Algorythm,2020,fuzzy,Same board under a different name in the live DB. Align names or add as an alias.,,
+NAME_VARIANT,Sims,Noah Salasnek,1990,Noah Salasnek Nub,1993,fuzzy,Same board under a different name in the live DB. Align names or add as an alias.,,
+NAME_VARIANT,Sims,Shaun Palmer Clown,1991,Shaun Palmer,1993,phrase,Same board under a different name in the live DB. Align names or add as an alias.,,
+NAME_VARIANT,Sims,Shaun Palmer Pimp,1993,Shaun Palmer,1993,phrase,Same board under a different name in the live DB. Align names or add as an alias.,,
+NAME_VARIANT,Sims,Terry Kidwell 1635,1989,Terry Kidwell,1985,exact,Same board under a different name in the live DB. Align names or add as an alias.,,
+NAME_VARIANT,Sims,Terry Kidwell 1650,1986,Terry Kidwell,1985,exact,Same board under a different name in the live DB. Align names or add as an alias.,,
+NAME_VARIANT,Sims,Terry Kidwell RT2,2018,Terry Kidwell,1985,fuzzy,Same board under a different name in the live DB. Align names or add as an alias.,,
+NAME_VARIANT,Sims,Ultimate Swallow Tail,1987,Ultimate 1700,1987,phrase,Same board under a different name in the live DB. Align names or add as an alias.,,
+NAME_VARIANT,YES,The Basic,2020,Basic,2010,phrase,Same board under a different name in the live DB. Align names or add as an alias.,,
+RESEARCH_GAP,Barfoot,Barfoot Snoboards 1981,1981,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Barfoot,Kloek,1983,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Burton,Terje Haakonsen,1994,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Gentemstick,Flock,2000,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Gnu,Space Case,2019,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Lib Tech,Douhboy Shredder,1991,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,"""Douhboy"" is a typo for Doughboy, which the catalog already has. Fix the LIVE row, do not add."
+RESEARCH_GAP,Lib Tech,Innercourse Asymmetrical,1991,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Lib Tech,Lost Rocket,2020,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Lib Tech,MC,1993,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Lib Tech,MC Bus,1991,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Never Summer,Snowtrooper,2010,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,"Catalog has ""Trooper""; confirm whether these are distinct boards."
+RESEARCH_GAP,Outland,Roundtail,1986,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Outland,Swallowtail,1986,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Rome,Mod Rocker,2021,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,"Catalog has ""Mod""; Mod Rocker may be a construction variant to fold in."
+RESEARCH_GAP,Rome,National,2010,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Salomon,Super 8,2010,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Sims,Dealer's Choice,2016,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Sims,Juice,2015,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Sims,Kinetic,2006,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Sims,Noah's Ark,1995,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,"Confirmed by a RetroSnow photo (sims-93). Genuine addition, verified."
+RESEARCH_GAP,Sims,Quest,2009,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Sims,SoFun,2016,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Sims,Tom Sims Pro,2017,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,"Catalog has ""T. Sims""; check whether these are the same board before adding."
+RESEARCH_GAP,Snurfer,Snurfer,1967,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,"1967 Snurfer is the origin artifact. Catalog has brands Snurf and Snurfer; likely needs one model row, high provenance value."
+RESEARCH_GAP,Storm Snowboards,Cyclone,1988,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,Storm Snowboards,Shredder,1988,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,
+RESEARCH_GAP,YES,PYL,2010,,,,"Live in boards, no catalog row. Research and add, or confirm it is member-created.",,"PYL = Pick Your Line, which the catalog already has. Abbreviation, not a gap."
+BRAND_MISSING,Korua,Tugboat,2014,,,,Brand itself is absent from the catalog; add a brand row first.,,"Brand IS in the catalog as ""Korua Shapes"". Alias miss, not a missing brand."

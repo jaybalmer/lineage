@@ -1,0 +1,39 @@
+sendit_brand,models,earliest_year,latest_year,sendit_url,needs_brand_row,reviewer_decision
+gilson,90,2025,2027,https://www.senditdb.com/brands/gilson,yes,keep
+raven,33,2026,2026,https://www.senditdb.com/brands/raven,yes,keep
+ltb,30,2022,2026,https://www.senditdb.com/brands/ltb,yes,keep
+sandy-shapes,30,2026,2026,https://www.senditdb.com/brands/sandy-shapes,yes,keep
+fiveforty,22,2023,2026,https://www.senditdb.com/brands/fiveforty,yes,keep (priority: Canadian or historic)
+blackhole-snowboards,19,2024,2026,https://www.senditdb.com/brands/blackhole-snowboards,yes,keep
+allian,18,2015,2027,https://www.senditdb.com/brands/allian,yes,keep
+november,17,2026,2026,https://www.senditdb.com/brands/november,yes,keep
+amicss,16,2020,2027,https://www.senditdb.com/brands/amicss,yes,keep
+drake,16,2024,2025,https://www.senditdb.com/brands/drake,yes,keep
+elevated,14,2019,2026,https://www.senditdb.com/brands/elevated,yes,keep
+borealis,13,2025,2027,https://www.senditdb.com/brands/borealis,yes,keep
+ame-snowboard,12,2026,2026,https://www.senditdb.com/brands/ame-snowboard,yes,keep
+goodboards,11,2026,2026,https://www.senditdb.com/brands/goodboards,yes,keep
+moonchild,11,2026,2026,https://www.senditdb.com/brands/moonchild,yes,keep
+stone,11,2026,2026,https://www.senditdb.com/brands/stone,yes,hold: verify origin and whether still active before adding
+nobaday,10,2024,2027,https://www.senditdb.com/brands/nobaday,yes,keep
+pathron,10,2021,2024,https://www.senditdb.com/brands/pathron,yes,keep
+thrive-snowboards,10,2026,2026,https://www.senditdb.com/brands/thrive-snowboards,yes,keep
+trapper,10,2026,2026,https://www.senditdb.com/brands/trapper,yes,keep (priority: Canadian or historic)
+gara,9,2023,2025,https://www.senditdb.com/brands/gara,yes,hold: verify origin and whether still active before adding
+javatron-dream-machines,9,2025,2026,https://www.senditdb.com/brands/javatron-dream-machines,yes,keep (custom shaper)
+whitespace,8,2026,2026,https://www.senditdb.com/brands/whitespace,yes,keep
+the-boards-company,7,2026,2026,https://www.senditdb.com/brands/the-boards-company,yes,hold: verify origin and whether still active before adding
+chimera,6,2026,2026,https://www.senditdb.com/brands/chimera,yes,keep
+dreamscape,6,2026,2026,https://www.senditdb.com/brands/dreamscape,yes,hold: verify origin and whether still active before adding
+furlan-snowboards,6,2025,2025,https://www.senditdb.com/brands/furlan-snowboards,yes,keep
+dope,5,2026,2026,https://www.senditdb.com/brands/dope,yes,keep
+furberg,5,2026,2026,https://www.senditdb.com/brands/furberg,yes,keep
+monument-snowboards,5,2017,2017,https://www.senditdb.com/brands/monument-snowboards,yes,hold: verify origin and whether still active before adding
+pallas,5,2026,2026,https://www.senditdb.com/brands/pallas,yes,keep
+verdad,5,2024,2026,https://www.senditdb.com/brands/verdad,yes,keep
+nttb-snowboards,4,2026,2026,https://www.senditdb.com/brands/nttb-snowboards,yes,hold: verify origin and whether still active before adding
+the-bakery,3,2024,2024,https://www.senditdb.com/brands/the-bakery,yes,hold: verify origin and whether still active before adding
+aluflex,2,2026,2026,https://www.senditdb.com/brands/aluflex,yes,keep (priority: Canadian or historic)
+snoplanks,2,2026,2026,https://www.senditdb.com/brands/snoplanks,yes,keep
+high-society-freeride,1,2026,2026,https://www.senditdb.com/brands/high-society-freeride,yes,keep
+line,1,2026,2026,https://www.senditdb.com/brands/line,yes,skip: Line is a ski brand; the single Send It entry is almost certainly misfiled.

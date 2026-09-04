@@ -1,34 +1,130 @@
-id,name,org_type,brand_category,founded_year,country,website,logo_url,wikidata_qid,community_status,added_by,created_at,description,brand_color,banner_url,curation_tier,heritage_statement,brand_milestones,featured_rider_ids,brand_media,brand_links,partner_label,public_slug,public_enabled
-o9,Arbor Snowboards,brand,board_brand,1995,USA,https://www.arborcollective.com,null,null,verified,null,2026-03-13 00:15:29.009125+00,Known for sustainably sourced wood cores and bamboo topsheets. Arbor blends environmental values with high-performance shapes.,null,null,standard,null,null,null,null,null,null,null,false
-o60,Barfoot,brand,board_brand,1981,US,https://barfoot.com,https://auth.linestry.com/storage/v1/object/public/board-images/orgs/o60-logo-1787250813128.png,null,unverified,null,2026-03-14 07:59:32.261092+00,"Founded by Chuck Barfoot in Santa Barbara CA after leaving Sims in 1981. Pioneered the twin-tip design. Known for Freestyle, Freakstyle, Mark Partain and Jon Boyer pro models. Produced 1981-2003, relaunched 2013.",null,null,standard,null,[],[],[],[],null,null,false
-o13,Bataleon Snowboards,brand,board_brand,2003,Netherlands,https://www.bataleon.com,null,null,verified,null,2026-03-13 00:15:29.009125+00,"Dutch brand famous for inventing Triple Base Technology (TBT), a 3D base shaping that reduces edge catch and improves float.",null,null,standard,null,null,null,null,null,null,null,false
-o1,Burton Snowboards,brand,board_brand,1977,USA,https://www.burton.com,null,null,verified,null,2026-03-13 00:15:29.009125+00,"The most influential snowboard company in history, founded by Jake Burton Carpenter. Burton helped legitimize snowboarding as a sport and continues to shape the industry.",null,null,standard,null,null,null,null,null,null,null,false
-o2,Capita Snowboards,brand,board_brand,2000,USA,https://www.capitasnowboarding.com,null,null,verified,null,2026-03-13 00:15:29.009125+00,An independent snowboard brand known for progressive shapes and environmentally conscious manufacturing at their Mothership factory in Austria.,null,null,standard,null,null,null,null,null,null,null,false
-org_1787685353771_lcsah,Crazy Banana,brand,null,null,null,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-08-25 19:15:54.32955+00,null,null,null,standard,null,null,null,null,null,null,null,false
-org_1785771324917_34etu,DC,brand,null,null,null,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-08-03 15:35:24.93418+00,null,null,null,standard,null,null,null,null,null,null,null,false
-org_1783092169661_1mh7b,Elan Snowboards,brand,null,null,null,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-07-03 15:22:50.144532+00,null,null,null,standard,null,null,null,null,null,null,null,false
-org_1781706558575_5tjcu,Endeavor Snowboards,brand,null,2002,Canada,https://endeavordesigninc.com/pages/endeavor-official-website,null,null,unverified,3a467197-cfe2-436a-824d-4e67a8f65394,2026-06-17 14:29:19.197882+00,"At Endeavor Design Inc., we bring together our four brands united by a single mission: to elevate snowboarding through design, innovation, and style.",null,null,standard,null,null,null,null,null,null,null,false
-org_1785771324396_sgagt,Forum,brand,null,null,null,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-08-03 15:35:24.418386+00,null,null,null,standard,null,null,null,null,null,null,null,false
-o6,Gnu Snowboards,brand,board_brand,1987,USA,https://www.gnusnowboards.com,null,null,verified,null,2026-03-13 00:15:29.009125+00,Sister brand to Lib Tech under Mervin Manufacturing. Known for eccentric graphics and innovative construction like C2 and C3 profiles.,null,null,standard,null,null,null,null,null,null,null,false
-o8,Jones Snowboards,brand,board_brand,2009,USA,https://www.jonessnowboards.com,null,null,verified,null,2026-03-13 00:15:29.009125+00,"Founded by pro Jeremy Jones, focused on backcountry and splitboard performance with a sustainability mission.",null,null,standard,null,null,null,null,null,null,null,false
-o12,K2 Snowboarding,brand,board_brand,1987,USA,https://www.k2snow.com,null,null,verified,null,2026-03-13 00:15:29.009125+00,null,null,null,standard,null,null,null,null,null,null,null,false
-org_1788237336644_u6ap5,Kemper Snowboards,brand,null,1987,Canada,https://en.wikipedia.org/wiki/Kemper_Snowboards,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-09-01 04:35:37.118127+00,"Kemper Snowboards is an American snowboard manufacturer. The first Kemper Snowboards were handmade in Ontario, Canada by David Kemper in 1983 and the company became officially incorporated in 1987.",null,null,standard,null,null,null,null,null,null,null,false
-o3,Lib Tech,brand,board_brand,1988,USA,https://www.lib-tech.com,null,null,verified,null,2026-03-13 00:15:29.009125+00,"Founded by Mike Olson in Sequim, WA. Known for the Banana Technology rocker profile and magnetraction edge, Lib Tech pushes creative boundaries in board construction.",null,null,standard,null,null,null,null,null,null,null,false
-org_1781563635837_e1n25,Linestry.com,brand,media,2026,Canada,Linestry.com,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-15 22:47:16.625592+00,A platform for weaving together our individual stories into a community linestry.,null,null,standard,null,null,null,null,null,null,null,false
-o5,Never Summer Industries,brand,board_brand,1991,USA,https://www.neversummer.com,null,null,verified,null,2026-03-13 00:15:29.009125+00,Family-owned Colorado manufacturer that makes every board in the USA. Known for bombproof construction and rocker-camber hybrid profiles.,null,null,standard,null,null,null,null,null,null,null,false
-o17,Oakley,brand,outerwear,1975,USA,https://www.oakley.com,null,null,verified,null,2026-03-13 00:15:29.009125+00,null,null,null,standard,null,null,null,null,null,null,null,false
-org_1781461039365_63z0p,Outland Snowboards,brand,board_brand,1986,Canada,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-14 18:17:20.020269+00,null,null,null,standard,null,null,null,null,null,null,null,false
-o18,Quiksilver / Roxy,brand,outerwear,1969,Australia,https://www.quiksilver.com,null,null,verified,null,2026-03-13 00:15:29.009125+00,null,null,null,standard,null,null,null,null,null,null,null,false
-org_1785771325122_ck0a9,RDS,brand,null,null,null,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-08-03 15:35:25.140632+00,null,null,null,standard,null,null,null,null,null,null,null,false
-org_1783175411541_wrzgc,Retro Snow,brand,null,null,null,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-07-04 14:30:11.980883+00,"The Snowboard Catalog - Dedicated to documenting every single snowboard model ever made from every brand, from every year possible.",null,null,standard,null,null,null,null,null,null,null,false
-o11,Ride Snowboards,brand,board_brand,1992,USA,https://www.ridesnowboards.com,null,null,verified,null,2026-03-13 00:15:29.009125+00,null,null,null,standard,null,null,null,null,null,null,null,false
-o4,Rome Snowboards,brand,board_brand,2001,USA,https://www.romesnowboards.com,null,null,verified,null,2026-03-13 00:15:29.009125+00,"Vermont-based independent brand known for rider-driven design and durable, no-nonsense snowboards.",null,null,standard,null,null,null,null,null,null,null,false
-o7,Salomon Snowboards,brand,board_brand,1997,France,https://www.salomonsnowboards.com,null,null,verified,null,2026-03-13 00:15:29.009125+00,"French equipment giant with a strong snowboard division, known for soft flex freestyle boards and advanced binding systems.",null,null,standard,null,null,null,null,null,null,null,false
-org_1785771325441_xkibc,Shorty's,brand,null,null,null,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-08-03 15:35:25.45857+00,null,null,null,standard,null,null,null,null,null,null,null,false
-o10,Sims Snowboards,brand,board_brand,1976,USA,null,null,null,verified,null,2026-03-13 00:15:29.009125+00,"One of the original snowboard companies, founded by Tom Sims. Played a pivotal role in the early development of the sport alongside Burton.",null,null,standard,null,null,null,null,null,null,null,false
-org_1785771324280_02zdv,Special Blend,brand,null,null,null,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-08-03 15:35:24.317039+00,null,null,null,standard,null,null,null,null,null,null,null,false
-org_1781753704407_3rmkh,Storm Snowboards,brand,null,null,null,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-18 03:35:04.882053+00,null,null,null,standard,null,null,null,null,null,null,null,false
-o16,Volcom,brand,outerwear,1991,USA,https://www.volcom.com,null,null,verified,null,2026-03-13 00:15:29.009125+00,null,null,null,standard,null,null,null,null,null,null,null,false
-o15,Westbeach,brand,outerwear,1979,Canada,https://westbeach.com,https://auth.linestry.com/storage/v1/object/public/board-images/orgs/o15-logo-1782239295282.png,null,verified,null,2026-03-13 00:15:29.009125+00,"Pioneering Canadian snowboard and surf brand from Vancouver, one of the earliest dedicated snowboard outerwear companies.",#db5226,https://auth.linestry.com/storage/v1/object/public/board-images/orgs/o15-banner-1782239419472.png,founding,"Westbeach began as a hustle selling surf shorts out of a garage in Calgary. Then it became a vision to bring a SoCal surf vibe to the Vancouver coastline. From day one, we’ve embraced the fringe.","[{""year"":1979,""label"":""Founded by Chip Wilson. Surf and skate roots out of California, board shop beginnings.""},{""year"":1987,""label"":""Among the first companies to make snowboard-specific outerwear. Westbeach Vancouver store established.""},{""year"":1989,""label"":""First Westbeach Classic. Ross Rebagliati wins the halfpipe and lands the Transworld cover.""},{""year"":1990,""label"":""The Classic moves to Whistler and becomes the spring contest that defines the Whistler scene.""},{""year"":1996,""label"":""The Westbeach Classic folds into the new World Ski & Snowboard Festival in Whistler.""},{""year"":1997,""label"":""Morrow Snowboards buys the Westbeach apparel business""},{""year"":2025,""label"":""Chip brings the brand home and relaunches in Vancouver. New store with a skate ramp and coffee bar. \""Since 79,\"" the Classic 79 line.""}]","[""60e46be9-a299-41bc-8030-5d205407f713"",""c3fe8fb7-8c75-4f0a-a97f-0abcadca07de"",""250976e8-f29a-4484-a7d5-c23c7f79a3b1"",""a0319cab-040e-42da-bc42-9fb38a78c50a"",""f4865620-d64a-4beb-8409-f8c492b6e259"",""9b5be052-a489-45d1-8373-e7d0bf84d47e"",""0394914d-6ffd-4a18-aa1f-1aafee7ce53a"",""d15c38b9-eba5-4e21-b9bd-fa95c2f907c2"",""6d81c69a-34c5-43fd-87f4-43c51ccbc1f3"",""06fc2b45-0ddf-4836-b367-e50cfd1cc6e7""]",[],"[{""url"":""https://www.instagram.com/westbeach79"",""label"":""Westbeach79""},{""url"":""https://westbeach.com/collections/all"",""label"":""Shop Westbeach""}]",null,null,false
-org_1785771324839_807p1,Wired,brand,null,null,null,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-08-03 15:35:24.855619+00,null,null,null,standard,null,null,null,null,null,null,null,false
-o14,YES Snowboards,brand,board_brand,2009,Switzerland,https://www.yessnowboards.com,null,null,verified,null,2026-03-13 00:15:29.009125+00,Founded by pro riders including JP Solberg and Romain de Marchi. Known for playful shapes and rider-owned ethos.,null,null,standard,null,null,null,null,null,null,null,false
+id,name,org_type,brand_category,founded_year,country,website,community_status,added_by,created_at
+e8f34f6f-119b-4441-be59-23d872456cfa,Academy,brand,board_brand,,USA,,unverified,,2026-09-04T18:43:45.202881+00:00
+23bd09e7-ad8d-45b2-a2a3-16ef4bd6489a,Aggression,brand,board_brand,1983,USA,,verified,,2026-09-02T23:00:20.412355+00:00
+06f60377-dc93-47a1-bb25-bd096c38dea4,Airwalk,brand,board_brand,1986,USA,,unverified,,2026-09-02T23:00:20.412355+00:00
+d5f06ace-6bf9-4a34-85ee-1ca8acab8e8b,Allian,brand,board_brand,1999,USA,,unverified,,2026-09-04T18:43:45.202881+00:00
+df78b64e-2a03-4cdd-afa6-0334a0428b9a,Aluflex,brand,board_brand,1954,France,,unverified,,2026-09-04T18:43:45.202881+00:00
+1a1d5374-2d16-4a76-be84-e3276d1c00fb,AME Snowboard,brand,board_brand,,France,,unverified,,2026-09-04T18:43:45.202881+00:00
+e7244b1a-7774-46fe-85d9-9cda82742b81,AMICSS,brand,board_brand,2015,Japan,,unverified,,2026-09-04T18:43:45.202881+00:00
+a2a7517f-5b62-42ec-840a-ee170d9289c1,Amplid,brand,board_brand,2004,Germany,,verified,,2026-09-02T23:00:20.412355+00:00
+694b947d-faf9-431b-969b-c1f0f28a631e,Apocalypse / A Snowboards / APO,brand,board_brand,1986,France,,verified,,2026-09-04T18:43:45.202881+00:00
+o9,Arbor Snowboards,brand,board_brand,1995,USA,https://www.arborcollective.com,verified,,2026-03-13T00:15:29.009125+00:00
+68eb1e8b-150b-4e13-8e2e-958b26f2bd01,Atlantis,brand,board_brand,,,,unverified,,2026-09-04T18:43:45.202881+00:00
+2803c06d-7c28-434f-8254-09c36429cb51,Atomic,brand,board_brand,,Austria,,verified,,2026-09-02T23:00:20.412355+00:00
+999e61f2-2b57-4baa-aa77-82733cc138cd,Avalanche,brand,board_brand,1982,USA,,verified,,2026-09-02T23:00:20.412355+00:00
+o60,Barfoot,brand,board_brand,1981,US,https://barfoot.com,unverified,,2026-03-14T07:59:32.261092+00:00
+o13,Bataleon Snowboards,brand,board_brand,2003,Netherlands,https://www.bataleon.com,verified,,2026-03-13T00:15:29.009125+00:00
+7a75c246-d1ec-47ac-b2bf-3d3d545df9ef,BC Stream,brand,board_brand,,Japan,,unverified,,2026-09-02T23:00:20.412355+00:00
+0a166ed0-f27a-4f9c-a177-e4934ca9de78,Black Pearl,brand,board_brand,,Switzerland,,unverified,,2026-09-04T18:43:45.202881+00:00
+a65f6996-5d97-44f5-8995-65e09646ac47,Blackhole Snowboards,brand,board_brand,1992,Italy,,unverified,,2026-09-04T18:43:45.202881+00:00
+d7adbd9b-5bc8-4238-bd48-8e794978f373,Borealis,brand,board_brand,2013,France,,unverified,,2026-09-04T18:43:45.202881+00:00
+o1,Burton Snowboards,brand,board_brand,1977,USA,https://www.burton.com,verified,,2026-03-13T00:15:29.009125+00:00
+o2,Capita Snowboards,brand,board_brand,2000,USA,https://www.capitasnowboarding.com,verified,,2026-03-13T00:15:29.009125+00:00
+fa6aa272-9b4d-44fc-9802-d2cb64062130,Cardiff,brand,board_brand,,USA,,unverified,,2026-09-02T23:00:20.412355+00:00
+b79f656f-a1bd-4343-b898-5e3ec741a712,Checker Pig,brand,board_brand,1983,Germany,,verified,,2026-09-02T23:00:20.412355+00:00
+71187c36-6d90-40e3-9ffc-b356e8994c26,Chimera,brand,board_brand,2009,USA,,unverified,,2026-09-04T18:43:45.202881+00:00
+e3ab65a6-93f4-4739-8963-bed128938766,Coiler,brand,board_brand,1995,Canada,,verified,,2026-09-02T23:00:20.412355+00:00
+org_1787685353771_lcsah,Crazy Banana,brand,,,,,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-08-25T19:15:54.32955+00:00
+58d6009f-c2a8-4cec-8c5a-0cd35549607b,D.O.P.E.,brand,board_brand,,Canada,,unverified,,2026-09-04T18:43:45.202881+00:00
+org_1785771324917_34etu,DC,brand,,,,,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-08-03T15:35:24.93418+00:00
+53758a6f-72e2-4080-9520-f69fa9ad0060,Division 23,brand,board_brand,1993,Canada,,unverified,,2026-09-02T23:00:20.412355+00:00
+d3adba61-0a7e-4b53-921b-ebfdc0203186,Donek,brand,board_brand,1987,USA,,verified,,2026-09-02T23:00:20.412355+00:00
+ca61f6b0-9f25-4546-86c3-4f6e1744bb0c,Drake,brand,board_brand,,Italy,,unverified,,2026-09-04T18:43:45.202881+00:00
+b30b2489-c2f2-4734-8040-dc7bb0fc05e6,Dupraz,brand,board_brand,2004,France,,verified,,2026-09-02T23:00:20.412355+00:00
+org_1783092169661_1mh7b,Elan Snowboards,brand,,,,,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-07-03T15:22:50.144532+00:00
+a21b1d6e-5fd6-4bf8-922b-81793dc69e8e,Elevated Surfcraft,brand,board_brand,,USA,,unverified,,2026-09-04T18:43:45.202881+00:00
+org_1781706558575_5tjcu,Endeavor Snowboards,brand,,2002,Canada,https://endeavordesigninc.com/pages/endeavor-official-website,unverified,3a467197-cfe2-436a-824d-4e67a8f65394,2026-06-17T14:29:19.197882+00:00
+3e1f2902-135a-4fab-937d-4e4b0740a647,F2,brand,board_brand,1979,Germany,,verified,,2026-09-02T23:00:20.412355+00:00
+0ff5cb68-7fba-4cb5-915c-77c1c62b11d0,Fanatic,brand,board_brand,1981,Germany,,unverified,,2026-09-02T23:00:20.412355+00:00
+f72d1d20-2a09-4504-99cd-7df421c58ed2,FiveForty,brand,board_brand,,Canada,,unverified,,2026-09-04T18:43:45.202881+00:00
+bd27b009-3fad-44dc-9b1d-8203bf6aee0a,Flite,brand,board_brand,,USA,,verified,,2026-09-02T23:00:20.412355+00:00
+a69942b5-9bb9-4b0c-89e4-8b2ed7d0dfae,Flow,brand,board_brand,1996,USA,,verified,,2026-09-02T23:00:20.412355+00:00
+org_1785771324396_sgagt,Forum,brand,,,,,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-08-03T15:35:24.418386+00:00
+2908de2b-0c00-4892-813c-926823411219,Furberg,brand,board_brand,2009,Norway,,unverified,,2026-09-04T18:43:45.202881+00:00
+ddbb688e-e945-4c91-91e0-f7ee9752f342,Furlan Snowboards,brand,board_brand,2008,France,,unverified,,2026-09-04T18:43:45.202881+00:00
+dc404468-514e-4361-b662-801dbde32666,Gilson,brand,board_brand,2013,USA,,unverified,,2026-09-04T18:43:45.202881+00:00
+fc1b7fe2-551a-452e-964e-a4f7802991bc,Glissade,brand,board_brand,,USA,,unverified,,2026-09-04T18:43:45.202881+00:00
+o6,Gnu Snowboards,brand,board_brand,1987,USA,https://www.gnusnowboards.com,verified,,2026-03-13T00:15:29.009125+00:00
+469f8553-1d67-4341-bb63-b6b00f5b16a0,Goodboards,brand,board_brand,,Germany,,unverified,,2026-09-04T18:43:45.202881+00:00
+c7b343f2-9622-4ec4-8d7c-05a09bcddc26,Gray,brand,board_brand,,Japan,,unverified,,2026-09-04T18:43:45.202881+00:00
+9157b9bf-c65f-47d2-965b-34b7e9d8220e,Head,brand,board_brand,,Austria,,verified,,2026-09-02T23:00:20.412355+00:00
+bc2b7587-634b-41a1-9523-beb36e1313e0,High Society Freeride,brand,board_brand,2003,USA,,unverified,,2026-09-04T18:43:45.202881+00:00
+a01cf751-56c4-4ff9-a5af-b621b7246344,Hooger Booger,brand,board_brand,1983,Switzerland,,verified,,2026-09-02T23:00:20.412355+00:00
+8abd169f-a50b-4acd-b149-a541c78a913e,HOT,brand,board_brand,1984,Switzerland,,verified,,2026-09-02T23:00:20.412355+00:00
+61a0980f-8bcd-468a-9e20-0ea235adc471,Javatron Dream Machines,brand,board_brand,,USA,,unverified,,2026-09-04T18:43:45.202881+00:00
+o8,Jones Snowboards,brand,board_brand,2009,USA,https://www.jonessnowboards.com,verified,,2026-03-13T00:15:29.009125+00:00
+f730b26b-bca6-4cb0-9bf9-c98e1a558f69,Joyride,brand,board_brand,,Canada,,unverified,,2026-09-02T23:00:20.412355+00:00
+o12,K2 Snowboarding,brand,board_brand,1987,USA,https://www.k2snow.com,verified,,2026-03-13T00:15:29.009125+00:00
+org_1788237336644_u6ap5,Kemper Snowboards,brand,,1987,Canada,https://en.wikipedia.org/wiki/Kemper_Snowboards,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-09-01T04:35:37.118127+00:00
+d51bce04-1021-46e5-aea6-51577e4bf4a6,Kessler,brand,board_brand,1988,Switzerland,,verified,,2026-09-04T18:43:45.202881+00:00
+daa0cc74-a4a3-46c4-bdd9-dbbe3ca00710,Lamar,brand,board_brand,1989,USA,,verified,,2026-09-02T23:00:20.412355+00:00
+o3,Lib Tech,brand,board_brand,1988,USA,https://www.lib-tech.com,verified,,2026-03-13T00:15:29.009125+00:00
+org_1781563635837_e1n25,Linestry.com,brand,media,2026,Canada,Linestry.com,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-15T22:47:16.625592+00:00
+66b2a8f3-7858-4d97-9d8a-98f8a91a2d2e,Lobster,brand,board_brand,2011,Iceland,,verified,,2026-09-02T23:00:20.412355+00:00
+c2412978-355a-4512-b98f-aa25b298f77f,Look,brand,board_brand,1986,France,,verified,,2026-09-02T23:00:20.412355+00:00
+fbc7dd1f-05ec-4b69-a6fa-22e37b247479,LTB,brand,board_brand,1986,Czechia,,unverified,,2026-09-04T18:43:45.202881+00:00
+dc884434-a2ac-4c14-b233-fef95592a0a8,Mistral,brand,board_brand,,Netherlands,,unverified,,2026-09-02T23:00:20.412355+00:00
+994ec353-b29b-4b66-be2c-5347acc07ac7,Moonchild,brand,board_brand,2015,Spain,,unverified,,2026-09-04T18:43:45.202881+00:00
+59ab15b7-6b15-403d-8d77-4bc71288a72f,Moss Snowstick,brand,board_brand,1971,Japan,,verified,,2026-09-02T23:00:20.412355+00:00
+o5,Never Summer Industries,brand,board_brand,1991,USA,https://www.neversummer.com,verified,,2026-03-13T00:15:29.009125+00:00
+98fe1253-c374-4f5d-9de6-5f0b809eaa16,Niche,brand,board_brand,2009,USA,,verified,,2026-09-04T18:43:45.202881+00:00
+11a8948e-8b70-4817-b63e-b19af3a1221c,Nobaday,brand,board_brand,2015,USA,,unverified,,2026-09-04T18:43:45.202881+00:00
+5a8851e3-0221-4ad9-802d-8e619ef0997e,Nobile,brand,board_brand,1994,Poland,,verified,,2026-09-02T23:00:20.412355+00:00
+af137eaa-9f0e-4a51-94d7-44254957c1f5,November,brand,board_brand,2002,Japan,,unverified,,2026-09-04T18:43:45.202881+00:00
+o17,Oakley,brand,outerwear,1975,USA,https://www.oakley.com,verified,,2026-03-13T00:15:29.009125+00:00
+0990129b-38ba-416d-9901-a17a948c8f1e,Ogasaka,brand,board_brand,,Japan,,verified,,2026-09-02T23:00:20.412355+00:00
+e8221803-c420-474d-bea7-d551f1ce9111,Option,brand,board_brand,1992,Canada,,verified,,2026-09-02T23:00:20.412355+00:00
+6938fd3b-aa74-4a13-8e02-d50750a75906,Original Sin,brand,board_brand,,USA,,unverified,,2026-09-02T23:00:20.412355+00:00
+org_1781461039365_63z0p,Outland Snowboards,brand,board_brand,1986,Canada,,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-14T18:17:20.020269+00:00
+128e3b41-84ae-47fd-93bb-130dabcd3509,Oxess,brand,board_brand,1993,Switzerland,,verified,,2026-09-02T23:00:20.412355+00:00
+c350c0e5-270e-4a08-a43c-6d06eb77b117,Oxygen,brand,board_brand,,Austria,,unverified,,2026-09-02T23:00:20.412355+00:00
+28a45aa7-bd44-444a-86ab-0057fadfdd7f,Pallas,brand,board_brand,2013,USA,,unverified,,2026-09-04T18:43:45.202881+00:00
+e537b4be-a2b9-4c20-bbff-45c528c3d26f,Palmer,brand,board_brand,1995,USA,,unverified,,2026-09-02T23:00:20.412355+00:00
+fc554b93-6afa-48e7-82a1-525cb2395cb8,Pathron,brand,board_brand,2011,Poland,,unverified,,2026-09-04T18:43:45.202881+00:00
+828f2f5b-e282-4acd-b41d-c4656dfc2973,Prior,brand,board_brand,1989,Canada,,verified,,2026-09-02T23:00:20.412355+00:00
+03db9cd4-e6bd-43e4-9b28-33f8186ec76b,Public,brand,board_brand,2015,USA,,verified,,2026-09-02T23:00:20.412355+00:00
+o18,Quiksilver / Roxy,brand,outerwear,1969,Australia,https://www.quiksilver.com,verified,,2026-03-13T00:15:29.009125+00:00
+2d3c40c3-d8d5-4f2d-b763-d219cb7dec15,Rad Air,brand,board_brand,1991,Switzerland,,verified,,2026-09-02T23:00:20.412355+00:00
+444820a8-4058-480f-be2d-e4f1965fbd26,Raven,brand,board_brand,2005,Poland,,unverified,,2026-09-04T18:43:45.202881+00:00
+org_1785771325122_ck0a9,RDS,brand,,,,,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-08-03T15:35:25.140632+00:00
+org_1783175411541_wrzgc,Retro Snow,brand,,,,,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-07-04T14:30:11.980883+00:00
+o11,Ride Snowboards,brand,board_brand,1992,USA,https://www.ridesnowboards.com,verified,,2026-03-13T00:15:29.009125+00:00
+o4,Rome Snowboards,brand,board_brand,2001,USA,https://www.romesnowboards.com,verified,,2026-03-13T00:15:29.009125+00:00
+b0591272-26db-44fb-a253-d40e80f49d0b,Rossignol,brand,board_brand,,France,,verified,,2026-09-02T23:00:20.412355+00:00
+f040d6bb-a23f-400b-a962-b73fe3a71f1a,Roxy,brand,board_brand,1990,USA,,verified,,2026-09-02T23:00:20.412355+00:00
+o7,Salomon Snowboards,brand,board_brand,1997,France,https://www.salomonsnowboards.com,verified,,2026-03-13T00:15:29.009125+00:00
+b9939aaf-574c-4bf1-acfa-a5e79f352558,Sandy Shapes,brand,board_brand,2016,Italy,,unverified,,2026-09-04T18:43:45.202881+00:00
+ac917901-2b03-4fd9-9968-a826c4ab7e2d,Santa Cruz,brand,board_brand,1989,USA,,verified,,2026-09-02T23:00:20.412355+00:00
+4a883371-7e88-476f-9877-93de1119adaa,Season Eqpt,brand,board_brand,2020,USA,,verified,,2026-09-02T23:00:20.412355+00:00
+e73117d2-dabc-4b94-b9e6-45d7fc59b3dd,SG Snowboards,brand,board_brand,,Austria,,unverified,,2026-09-02T23:00:20.412355+00:00
+org_1785771325441_xkibc,Shorty's,brand,,,,,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-08-03T15:35:25.45857+00:00
+47bea342-98a5-45c1-911d-8b5e836ca341,Signal,brand,board_brand,2004,USA,,verified,,2026-09-02T23:00:20.412355+00:00
+o10,Sims Snowboards,brand,board_brand,1976,USA,,verified,,2026-03-13T00:15:29.009125+00:00
+89d11944-b54a-41c6-893b-29f81a19ac32,Slash,brand,board_brand,2012,Austria,,verified,,2026-09-02T23:00:20.412355+00:00
+23cf309b-09b8-4a71-b7c7-6a992e77bd84,SnoPlanks,brand,board_brand,2012,USA,,unverified,,2026-09-04T18:43:45.202881+00:00
+org_1785771324280_02zdv,Special Blend,brand,,,,,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-08-03T15:35:24.317039+00:00
+69e830cf-dcd5-4587-aa9a-193fc7933152,Stepchild,brand,board_brand,2000,,,unverified,,2026-09-02T23:00:20.412355+00:00
+org_1781753704407_3rmkh,Storm Snowboards,brand,,,,,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-18T03:35:04.882053+00:00
+b84ed3bb-f04a-47fa-9446-ac9da649a760,Stranda,brand,board_brand,,Sweden,,unverified,,2026-09-04T18:43:45.202881+00:00
+83fc945f-b2ce-46f0-b862-5bb7c76a5ad6,Technine,brand,board_brand,1994,USA,,verified,,2026-09-04T18:43:45.202881+00:00
+c2897aff-13d1-4bbd-801b-5ece794fe0eb,Telos,brand,board_brand,2018,USA,,verified,,2026-09-02T23:00:20.412355+00:00
+136e84f5-64c3-4c4f-a72e-eacc118b9539,ThirtyTwo,brand,board_brand,1995,USA,,verified,,2026-09-04T18:43:45.202881+00:00
+8ea26a0a-8dbb-4955-8779-c7e60f566ecb,Thrive Snowboards,brand,board_brand,2012,USA,,unverified,,2026-09-04T18:43:45.202881+00:00
+2ce8df80-0ac1-475d-9bd4-a5af2c3f8239,Trapper,brand,board_brand,2011,Canada,,unverified,,2026-09-04T18:43:45.202881+00:00
+e94290d5-dd7b-4f06-b5da-d77f776af925,United Shapes,brand,board_brand,,USA,,unverified,,2026-09-02T23:00:20.412355+00:00
+65334ff7-a2da-47b1-827a-41b754507ddf,Unity,brand,board_brand,1995,USA,,verified,,2026-09-02T23:00:20.412355+00:00
+39229838-fbe5-4ab8-b6d5-61d4b33d7ff7,Venture,brand,board_brand,1999,USA,,verified,,2026-09-04T18:43:45.202881+00:00
+5f2f23b0-e08f-4e43-aa85-993b6628f5fd,Verdad,brand,board_brand,2011,France,,unverified,,2026-09-04T18:43:45.202881+00:00
+e3493bb5-9a54-444d-a670-69b6756cb869,Virus,brand,board_brand,,Switzerland,,unverified,,2026-09-04T18:43:45.202881+00:00
+afe3e985-5bc3-4713-b69b-0032a47b6f1e,Vision,brand,board_brand,,USA,,unverified,,2026-09-02T23:00:20.412355+00:00
+8945a638-0112-435e-8ace-4f7ec5102b57,Voile,brand,board_brand,1980,USA,,verified,,2026-09-04T18:43:45.202881+00:00
+o16,Volcom,brand,outerwear,1991,USA,https://www.volcom.com,verified,,2026-03-13T00:15:29.009125+00:00
+0a3a87dd-9b67-4891-8ef2-9825e00c620e,Völkl,brand,board_brand,,Germany,,verified,,2026-09-02T23:00:20.412355+00:00
+d25a2bdc-941d-4a1c-9d72-86b56461c243,WEST,brand,board_brand,,Switzerland,,unverified,,2026-09-04T18:43:45.202881+00:00
+o15,Westbeach,brand,outerwear,1979,Canada,https://westbeach.com,verified,,2026-03-13T00:15:29.009125+00:00
+118f7c6b-ce2c-49f7-ab18-82509a19ed17,Weston,brand,board_brand,2012,USA,,verified,,2026-09-02T23:00:20.412355+00:00
+771c6574-7aa8-4787-aed0-bcf3044cd285,Whitespace,brand,board_brand,2022,USA,,unverified,,2026-09-04T18:43:45.202881+00:00
+6b304443-87a4-45de-af24-fb5a2a72ffc3,Winterstick,brand,board_brand,1972,USA,,verified,,2026-09-02T23:00:20.412355+00:00
+org_1785771324839_807p1,Wired,brand,,,,,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-08-03T15:35:24.855619+00:00
+o14,YES Snowboards,brand,board_brand,2009,Switzerland,https://www.yessnowboards.com,verified,,2026-03-13T00:15:29.009125+00:00
+f7e6e92f-62e0-4303-bb77-a6e298fca00e,Yonex,brand,board_brand,,Japan,,verified,,2026-09-02T23:00:20.412355+00:00
