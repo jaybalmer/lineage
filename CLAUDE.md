@@ -410,7 +410,7 @@ membership table. `token_events` is the append-only ledger behind the token coun
 
 ## Bug-fix sessions
 
-Bug tracking lives in `bugs/` (local-only, gitignored: it holds reporter emails and PostHog session ids). The daily Cowork triage maintains it.
+Bug tracking lives in `bugs/`, which is committed to git so Claude Code (cloud sessions) and Cowork (local triage) share one source of truth. Raw reporter PII (email addresses, PostHog session ids) stays OUT of git under `bugs/private/` (gitignored); committed docs reference a bug by its `BUG-NNN` id and link the private file. See `bugs/README.md`. The daily Cowork triage maintains it.
 
 **To start a bug-fix session, the user only needs to say "start a bug-fix session" (no file names required). On that cue:**
 
@@ -433,7 +433,7 @@ Historical one-off briefs from before this convention live at the repo root (e.g
 
 ## Feature sessions
 
-Feature work (new product capability, not bug repairs) lives in `features/` (local-only, gitignored, mirroring `bugs/`). Cowork stages build-ready feature briefs there; Drive `Operations/` is the authoring/archive home. This is the feature-side mirror of the bug-fix loop.
+Feature work (new product capability, not bug repairs) lives in `features/`, committed to git and mirroring `bugs/` (anything sensitive stays under the gitignored `features/private/`; see `features/README.md`). Cowork stages build-ready feature briefs there; Drive `Operations/` is the authoring/archive home. This is the feature-side mirror of the bug-fix loop.
 
 **To start a feature session, the user only needs to say "start a feature session" (no file names required). On that cue:**
 

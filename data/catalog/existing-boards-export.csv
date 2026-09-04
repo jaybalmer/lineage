@@ -1,0 +1,101 @@
+id,brand,model,model_year,shape,image_url,external_ref,community_status,added_by,created_at
+8cac327e-e937-404f-ac5b-33a3967c5eb6,Arbor,A-Frame,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+d66a0928-2f9f-41a2-b571-462c89d96b48,Arbor,Coda,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+b25,Arbor,Element,2020,null,null,seed:linestry-research-2026-06,verified,null,2026-03-13 00:16:16.048193+00
+b1468b5c-1ae6-4995-b066-db692ac5bb69,Arbor,Westmark,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+board_1781901029974_sgl1h,Barfoot,161 twintip,1990,null,https://auth.linestry.com/storage/v1/object/public/board-images/boards/board_1781901029974_sgl1h/06fc2b45-0ddf-4836-b367-e50cfd1cc6e7-1781901118434.jpg,null,unverified,06fc2b45-0ddf-4836-b367-e50cfd1cc6e7,2026-06-19 20:32:09.359142+00
+board_1781889568346_nk0ls,Barfoot,Barfoot Snoboards 1981,1981,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-19 17:19:28.924857+00
+bf1981,Barfoot,Freestyle,1981,directional,null,null,unverified,null,2026-03-14 07:59:32.261092+00
+board_1772833525919_63isk,Barfoot,Freestyle,1987,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-03-06 21:45:26.101871+00
+board_1781887884408_9zu47,Barfoot,Kloek,1983,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-19 16:51:24.965088+00
+b26,Bataleon,Disaster,2021,null,null,seed:linestry-research-2026-06,verified,null,2026-03-13 00:16:16.048193+00
+4d03fed5-8dfd-415f-9572-f9d38a8f418e,Bataleon,Evil Twin,2007,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+47866924-f399-4058-9d0e-c5d40cabfb40,Bataleon,Goliath,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+98a431c2-d515-4515-892c-3d27f14ca531,Burton,Air,1988,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+84b5baa6-2078-4a1f-b7ce-1fa2534691e7,Burton,Backhill,1980,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+9530e3e1-7f6e-47dc-a4fc-d53ac291076a,Burton,Cruzer,1980,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+b1,Burton,Custom,2018,null,null,seed:linestry-research-2026-06,verified,null,2026-03-13 00:16:16.048193+00
+board_1788135239727_1o3mr,Burton,Elite 140,1985,null,null,null,unverified,d644c90b-fe03-4148-b477-dc1a3aa3ad84,2026-08-31 00:14:40.811346+00
+board_1781891034048_vjah5,Burton,Elite 150,1986,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-19 17:43:54.766758+00
+b2,Burton,Fish,2015,null,null,null,verified,null,2026-03-13 00:16:16.048193+00
+b4,Burton,Flight Attendant,2019,null,null,seed:linestry-research-2026-06,verified,null,2026-03-13 00:16:16.048193+00
+ec706bfd-7a5a-46bc-bfca-8c7c4ebe3ad8,Burton,Hometown Hero,2018,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+bd2514f6-ab44-4018-8dbd-a69625b5011e,Burton,Kilroy,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+833f8a5b-7d17-4c8e-a507-87070dc6d8b5,Burton,Mystery Air,1989,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+ce984abe-3be2-49e7-93c6-35fcde96678b,Burton,Name Dropper,2014,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+2db45218-23db-4d91-afcb-9a833051534f,Burton,Performer,1985,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+board_1787783875784_3su,Burton,Performer Elite,1986,null,null,null,unverified,76c3b77e-0f0e-4478-9494-b0b1f5d6188f,2026-08-26 22:37:56.236205+00
+ad180384-b164-4842-be1f-226c1a2af5d5,Burton,Performer Elite,1985,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+b3,Burton,Process,2020,null,null,seed:linestry-research-2026-06,verified,null,2026-03-13 00:16:16.048193+00
+124c81c8-b02c-4ae7-8fa0-bfaf6038d363,Burton,Talent Scout,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+board_1781891802077_5zmkn,Burton,Terje Haakonsen,1994,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-19 17:56:42.621731+00
+board_1782795147595_d3j80,Burton,Woody 135,1987,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-30 04:53:13.331167+00
+b28,Capita,Black Snowboard of Death,2022,null,null,seed:linestry-research-2026-06,verified,null,2026-03-13 00:16:16.048193+00
+a14c2553-442a-4741-91b1-0a38234bf0d6,Capita,Defenders of Awesome,2013,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+b5,Capita,DOA,2021,null,null,null,verified,null,2026-03-13 00:16:16.048193+00
+c4eedfd4-2be0-412d-8b1a-1f6a32dcda64,Capita,Mega Mercury,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+b6,Capita,Mercury,2019,null,null,seed:linestry-research-2026-06,verified,null,2026-03-13 00:16:16.048193+00
+2be6253d-20ea-4aa9-9035-c71aa6b42f81,Capita,Spring Break,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+b7,Capita,Ultrafear,2022,null,null,null,verified,null,2026-03-13 00:16:16.048193+00
+board_1788060224263_33wh3,Capita Snowboards,"Photo Fetish 160 ""Pendygrasse""",2008,null,https://auth.linestry.com/storage/v1/object/public/board-images/boards/board_1788060224263_33wh3/76c3b77e-0f0e-4478-9494-b0b1f5d6188f-1788060335690.webp,null,unverified,76c3b77e-0f0e-4478-9494-b0b1f5d6188f,2026-08-30 03:26:04.925564+00
+board_1787849145205_v0ps8,Crazy Banana,Chili Willi,1989,null,https://auth.linestry.com/storage/v1/object/public/board-images/boards/board_1787849145205_v0ps8/76c3b77e-0f0e-4478-9494-b0b1f5d6188f-1787849230599.jpg,null,unverified,76c3b77e-0f0e-4478-9494-b0b1f5d6188f,2026-08-27 16:47:18.157154+00
+af24408e-53aa-40f7-bb2c-35653e15e91b,Gentemstick,Flock,2000,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+1786a006-b8bf-46fb-b1de-af94b44c7267,Gentemstick,Mantaray,2000,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+4c44c137-77b8-4947-beca-d8a1352f707a,Gentemstick,Stingray,2000,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+72a6fb96-7c85-4523-a58a-6b5004f3fd3e,Gentemstick,TT,2000,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+board_1787669361279_8xhw7,Gnu,Antigravity,1988,null,null,null,unverified,76c3b77e-0f0e-4478-9494-b0b1f5d6188f,2026-08-25 14:49:57.839704+00
+board_1781820560522_a2q2b,Gnu,Bas,1994,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-18 22:09:21.225615+00
+b17,Gnu,Carbon Credit,2021,null,null,null,verified,null,2026-03-13 00:16:16.048193+00
+159e5b42-5d95-4bba-a932-2969c62e8d57,Gnu,Ladies Choice,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+6276d840-aead-4d1a-89b5-8110860aa9fd,Gnu,Money,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+6f5f31ec-fd4f-4361-94d6-0af83d470782,Gnu,Riders Choice,2008,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+b18,Gnu,Space Case,2019,null,null,null,verified,null,2026-03-13 00:16:16.048193+00
+board_1781820591038_udkjs,Gnu,Temple Cummings,1999,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-18 22:09:51.514161+00
+b15,Jones,Explorer,2021,null,null,null,verified,null,2026-03-13 00:16:16.048193+00
+b16,Jones,Flagship,2020,null,null,seed:linestry-research-2026-06,verified,null,2026-03-13 00:16:16.048193+00
+7ab11450-b3f6-47aa-96ff-d8cd01089fb8,Jones,Frontier,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+76a50e90-3a80-456a-8b94-5eb2b0fcde28,Jones,Hovercraft,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+47bdcd4b-0882-4330-b2fe-475640015e43,Jones,Mountain Twin,2013,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+63540c26-3242-40ad-8279-2541a180f6e6,Jones,Solution,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+acc12b77-1305-44cd-a7d6-8095a8f36ea5,Jones,Stratos,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+06b2ddc3-3dae-4978-8255-5c5902df6cb4,K2,Antidote,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+f7dc3b85-3d82-4731-a8cd-3dcedd6f933c,K2,Broadcast,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+4fd9db14-e106-476f-b010-e2328190be8e,K2,Gyrator,1988,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+bac26e81-3a34-4540-b288-d0654d30c29d,K2,Manifest,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+b23,K2,Party Platter,2020,null,null,null,verified,null,2026-03-13 00:16:16.048193+00
+b22,K2,Raygun,2018,null,null,seed:linestry-research-2026-06,verified,null,2026-03-13 00:16:16.048193+00
+e7cfb454-0cdd-48f0-880c-4f221b722b52,Korua,Cafe Racer,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+452fd83d-f81b-4f49-9f63-30f097203d98,Korua,Dart,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+6adcfb33-5199-4708-8cdc-3ec01ee231cc,Korua,Otto,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+f6e5d4e5-8fa1-42ee-a593-ffa17d14ebfe,Korua,Pencil,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+21383be4-f5fa-4b03-9072-44afc3a1136b,Korua,Tugboat,2014,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+51aafd5f-a816-4266-862f-b86deec78231,Lib Tech,Box Scratcher,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+696a5e1a-d488-489a-af67-479298c03360,Lib Tech,Cold Brew,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+board_1781818685125_g78xz,Lib Tech,Douhboy Shredder,1991,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-18 21:38:05.556032+00
+board_1781818739676_h45vp,Lib Tech,Emma Peele,1991,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-18 21:39:00.450265+00
+board_1772833958120_hx3ek,Lib Tech,Emma Peele,1995,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-03-06 21:52:38.402028+00
+board_1772834066604_dfh8o,Lib Tech,Emmagator,1996,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-03-06 21:54:27.230868+00
+board_1781818718916_c1e2p,Lib Tech,Grocer,1991,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-18 21:38:39.440093+00
+board_1781818863509_4u2lx,Lib Tech,Innercourse Asymmetrical,1991,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-18 21:41:04.043127+00
+board_1781819028297_3ctg4,Lib Tech,Jamie Lynn Wahle,1994,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-18 21:43:48.827599+00
+board_1781822252681_37fh6,Lib Tech,Litigator,2000,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-18 22:37:33.205272+00
+board_1773697967869_3hrbq,Lib Tech,Lost Rocket,2020,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-03-16 21:52:49.180263+00
+board_1772833907186_sdat4,Lib Tech,MC,1993,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-03-06 21:51:47.390127+00
+board_1781818815912_mt7oy,Lib Tech,MC Bus,1991,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-06-18 21:40:16.397527+00
+b10,Lib Tech,Orca,2021,null,null,seed:linestry-research-2026-06,verified,null,2026-03-13 00:16:16.048193+00
+b8,Lib Tech,Skate Banana,2017,null,null,seed:linestry-research-2026-06,verified,null,2026-03-13 00:16:16.048193+00
+69cfcfb0-a7d3-4736-bb36-cee6f5d8a3a5,Lib Tech,T.Rice Pro,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+b9,Lib Tech,TRS,2020,null,null,null,verified,null,2026-03-13 00:16:16.048193+00
+9b3b976b-ea3d-4e04-9b15-d53f77fcfb0d,Morrow,Lunchtray,1990,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+1cddb69d-816f-4303-a9fa-3d239d0ce682,Never Summer,Harpoon,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+66366d6b-9eaf-4317-b24d-d0d09d5f240a,Never Summer,Proto FR,2014,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+b19,Never Summer,Proto Type Two,2020,null,null,seed:linestry-research-2026-06,verified,null,2026-03-13 00:16:16.048193+00
+e050b6a9-e69e-41a0-bb83-5dd151cf04b4,Never Summer,Snowtrooper,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+d8748998-5da6-456c-bfcc-93f44e7e3bd5,Never Summer,West,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+b1bb4cbc-0a8e-48b7-8d86-acc1bb064ffa,Nidecker,Alpha,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+5465cdbe-942e-4c2d-9c43-0ab9c21dd38a,Nidecker,Escape,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+9905ee81-d4f7-4ea0-a5a5-2169a8241bb6,Nidecker,Merc,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+d9cc385a-0fd7-4d04-bb43-edf0c905c0c9,Nidecker,Sensor,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+6a1962d8-0c52-4416-a2c8-8fc831a877b9,Nidecker,Thruster,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+3eaffd99-bde3-48ef-8bbf-cad6301cd423,Nitro,Beast,2010,null,null,seed:linestry-research-2026-06,verified,null,2026-06-19 05:24:20.410856+00
+board_1772833835002_h6pny,Nitro,Fusion,1989,null,null,null,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-03-06 21:50:35.278399+00

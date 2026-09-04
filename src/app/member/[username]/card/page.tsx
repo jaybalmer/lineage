@@ -7,20 +7,11 @@ import { useLineageStore } from "@/store/lineage-store"
 import { MemberCardTile, type MemberCardData } from "@/components/ui/member-card-overlay"
 import { nameToSlug } from "@/lib/utils"
 import { BrandMark } from "@/components/ui/brand-mark"
+import { TIER_LABEL, TIER_COLOR, TIER_SYMBOL } from "@/lib/tiers"
 
-// ─── Tier badge labels ────────────────────────────────────────────────────────
-
-const TIER_LABEL: Record<string, string> = {
-  annual:   "Member",
-  lifetime: "Lifetime Member",
-  founding: "Founding Member",
-}
-
-const TIER_COLOR: Record<string, string> = {
-  annual:   "#3b82f6",
-  lifetime: "#8b5cf6",
-  founding: "#f59e0b",
-}
+// Tier badge labels/colours/symbols come from the canonical map in
+// src/lib/tiers.ts, so this page prints the tier word ("Annual") rather than
+// the generic "Member" (BUG-137).
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
@@ -59,7 +50,7 @@ export default function MemberCardPage({ params }: { params: Promise<{ username:
 
   const tierLabel = TIER_LABEL[tier] ?? "Member"
   const tierColor = TIER_COLOR[tier] ?? "#3b82f6"
-  const symbol    = tier === "founding" ? "✦" : tier === "lifetime" ? "◆" : "◈"
+  const symbol    = TIER_SYMBOL[tier] ?? "◈"
 
   return (
     <div

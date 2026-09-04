@@ -116,8 +116,14 @@ function ContextLine({ name, href, action, ago }: {
   )
 }
 
+// BUG-176: shown when a claim's subject cannot be resolved from a catalog that
+// HAS finished loading (an archived profile, or a person outside the active
+// community scope). Never used as a placeholder for the load race below, which
+// the render gate covers instead.
+const UNKNOWN_RIDER = "A rider"
+
 export default function FeedPage() {
-  const { catalog, activePersonId } = useLineageStore()
+  const { catalog, catalogLoaded, catalogError, activePersonId } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
   const [filter, setFilter] = useState<FeedFilter>("all")
   const [sort, setSort] = useState<FeedSort>("added")
@@ -290,7 +296,15 @@ export default function FeedPage() {
         </div>
 
         {/* Feed */}
-        {loading ? (
+        {/* BUG-176: hold the list until the catalog has landed as well as the
+            fetch. A claim card takes its rider name only from catalog.people,
+            which is not persisted and arrives async, so painting early left the
+            action line with no subject. Same gate every sibling public detail
+            page uses; the catalog loads without a session, so a signed-out
+            visitor still gets the full feed. If the catalog load FAILED we drop
+            the gate rather than stall on "Loading…" forever, and unresolved
+            names fall back to UNKNOWN_RIDER below. */}
+        {loading || (!catalogLoaded && !catalogError) ? (
           <div className="py-24 text-center text-muted animate-pulse">Loading…</div>
         ) : entries.length === 0 ? (
           <div className="py-24 text-center">
@@ -325,13 +339,14 @@ export default function FeedPage() {
               }
 
               const author = authorForClaim(entry.claim)
+              const authorName = author?.display_name
               const ago = timeAgo(entry.claim.created_at)
               const action = claimAction(entry.claim)
               return (
                 <div key={`claim-${entry.claim.id}`}>
                   <ContextLine
-                    name={author?.display_name}
-                    href={author ? `/people/${nameToSlug(author.display_name)}` : undefined}
+                    name={authorName || UNKNOWN_RIDER}
+                    href={authorName ? `/people/${nameToSlug(authorName)}` : undefined}
                     action={action}
                     ago={ago}
                   />

@@ -1,0 +1,64 @@
+# CATALOG_ONLY boards skipped from the import: no year at all, and
+# boards.model_year is NOT NULL. Add a year (or make model_year nullable)
+# to import these. model_id | brand | model
+
+amplid--milligram | Amplid | Milligram
+bataleon--placebo | Bataleon | Placebo
+bataleon--stereo | Bataleon | Stereo
+burton--counterbalance | Burton | Counterbalance
+burton--cultivator | Burton | Cultivator
+burton--smooth-operator | Burton | Smooth Operator
+capita--space-metal-fantasy | CAPiTA | Space Metal Fantasy
+capita--spring-break-slush-slasher | CAPiTA | Spring Break Slush Slasher
+coiler--angrry | Coiler | Angrry
+coiler--bx | Coiler | BX
+coiler--contra | Coiler | Contra
+coiler--extremecarve | Coiler | ExtremeCarve
+coiler--monster | Coiler | Monster
+coiler--nirvana | Coiler | Nirvana
+coiler--stubby | Coiler | Stubby
+coiler--vsr-am | Coiler | VSR AM
+donek--flux | Donek | Flux
+donek--incline | Donek | Incline
+donek--knapton-twin | Donek | Knapton Twin
+donek--mk | Donek | MK
+donek--nomad | Donek | Nomad
+donek--park-twin | Donek | Park Twin
+donek--pulse | Donek | Pulse
+donek--saber-sbx | Donek | Saber SBX
+donek--secret | Donek | Secret
+dupraz--d-tour | Dupraz | D-Tour
+gentemstick--barracuda | Gentemstick | Barracuda
+gentemstick--big-fish | Gentemstick | Big Fish
+gentemstick--floater | Gentemstick | Floater
+gentemstick--hornet | Gentemstick | Hornet
+gentemstick--impossible | Gentemstick | Impossible
+gentemstick--speedmaster | Gentemstick | Speedmaster
+gentemstick--spoon-fish | Gentemstick | Spoon Fish
+gentemstick--super-fish | Gentemstick | Super Fish
+gentemstick--trinity | Gentemstick | Trinity
+gentemstick--zephyr | Gentemstick | Zephyr
+jones--ultra-flagship | Jones | Ultra Flagship
+k2--ultra-dream | K2 | Ultra Dream
+korua-shapes--apollo | Korua Shapes | Apollo
+korua-shapes--bullet-train | Korua Shapes | Bullet Train
+korua-shapes--nose-rider | Korua Shapes | Nose Rider
+korua-shapes--pin-tonic | Korua Shapes | Pin Tonic
+korua-shapes--pocket-rocket | Korua Shapes | Pocket Rocket
+lib-tech--golden-orca | Lib Tech | Golden Orca
+moss-snowstick--jellyfish | Moss Snowstick | Jellyfish
+moss-snowstick--little-fluffy | Moss Snowstick | Little Fluffy
+moss-snowstick--modern-fish | Moss Snowstick | Modern Fish
+moss-snowstick--pq | Moss Snowstick | PQ
+moss-snowstick--pt | Moss Snowstick | PT
+moss-snowstick--sw | Moss Snowstick | SW
+moss-snowstick--u | Moss Snowstick | U
+moss-snowstick--wing | Moss Snowstick | Wing
+oxess--bx-competition | Oxess | BX Competition
+oxess--cx-pro | Oxess | CX Pro
+oxess--fx | Oxess | FX
+oxess--rs-rg | Oxess | RS / RG
+oxess--sx | Oxess | SX
+oxess--sxr | Oxess | SXR
+season-eqpt--kin | Season Eqpt | Kin
+slash--aurora | Slash | Aurora

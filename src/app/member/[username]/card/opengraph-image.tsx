@@ -2,6 +2,7 @@ import { ImageResponse } from "next/og"
 import { brandMarkSvgString } from "@/components/ui/brand-mark"
 import { readMemberOgTarget } from "@/lib/public-timeline-read"
 import { loadGeologica, loadCalendula } from "@/lib/og-fonts"
+import { tierMetaFor } from "@/lib/tiers"
 
 // Curated Member Profile Phase 3 (T13): share card for /member/[username]/card.
 // Dark brand-guide treatment carrying the tier: the member's name as the hero,
@@ -22,15 +23,11 @@ const WHITE    = "#FAFAF9"  // foreground on dark
 const MUTED     = "#A8A29E"  // muted body on dark
 const MARK_BLUE = "#3B82F6"  // vivid brand blue for the mark body
 
-// Canonical tier colours / labels (mirror member-badge.tsx + the member card
-// page). Kept local so this server route never imports the "use client" badge
-// module. The badge symbols (◈ ◆ ✦) are intentionally omitted: Geologica has no
-// glyph for them, so the accent colour carries the tier here instead.
-const TIER = {
-  annual:   { color: "#3b82f6", label: "Member" },
-  lifetime: { color: "#8b5cf6", label: "Lifetime Member" },
-  founding: { color: "#f59e0b", label: "Founding Member" },
-} as const
+// Tier colours / labels come from src/lib/tiers.ts, which carries no
+// "use client" directive, so this server route shares the canonical map without
+// pulling in the badge component (BUG-137). The badge symbols (◈ ◆ ✦) are
+// intentionally unused here: Geologica has no glyph for them, so the accent
+// colour carries the tier instead.
 
 export default async function OpengraphImage(
   { params }: { params: Promise<{ username: string }> },
@@ -38,7 +35,7 @@ export default async function OpengraphImage(
   const { username } = await params
   const member = await readMemberOgTarget(username)
 
-  const tierMeta = member ? TIER[member.membership_tier as keyof typeof TIER] : undefined
+  const tierMeta = member ? tierMetaFor(member.membership_tier) : null
   const accent = tierMeta?.color ?? MARK_BLUE
   const name = member?.display_name ?? "Linestry Member"
   const tierLine = tierMeta ? tierMeta.label : "Verified Member"

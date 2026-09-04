@@ -5,6 +5,7 @@ import { CommunityLink } from "@/components/ui/community-link"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { BrandMark } from "@/components/ui/brand-mark"
+import { TIER_LABEL, TIER_COLOR, TIER_SYMBOL } from "@/lib/tiers"
 import { DailyTokenChip } from "@/components/ui/daily-token-chip"
 import { supabase } from "@/lib/supabase"
 import { useEffect, useState, useCallback, Suspense } from "react"
@@ -20,20 +21,20 @@ import {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
+// Paid tiers print their own tier word ("Annual", "Lifetime", "Founding") from
+// the canonical map in src/lib/tiers.ts (BUG-137). `free` is the one word this
+// page owns: the shared map has no `free` entry by design.
 const TIER_LABELS: Record<string, string> = {
   free:     "Rider",
-  annual:   "Member",
-  lifetime: "Lifetime Member",
-  founding: "Founding Member",
+  ...TIER_LABEL,
 }
 const TIER_COLORS: Record<string, string> = {
   free:     "#888",
-  annual:   "#3b82f6",
-  lifetime: "#8b5cf6",
-  founding: "#f59e0b",
+  ...TIER_COLOR,
 }
 const TIER_SYMBOLS: Record<string, string> = {
-  free: "●", annual: "◈", lifetime: "◆", founding: "✦",
+  free: "●",
+  ...TIER_SYMBOL,
 }
 const TIER_TOKENS_LABEL: Record<string, string> = {
   annual:   "20 member tokens",
@@ -209,9 +210,12 @@ function ShareCard({
           boxShadow: `0 0 40px ${color}22`,
         }}
       >
-        {/* Logo row */}
+        {/* Logo row. The card ground is a fixed dark gradient in both themes, so
+            the mark's centre dot is pinned white here rather than inheriting the
+            theme-reactive var(--foreground) default, which vanishes into the
+            dark card in light mode (BUG-137). */}
         <div className="flex items-center gap-2 mb-4">
-          <BrandMark size={20} color={color} />
+          <BrandMark size={20} color={color} dotColor="#ffffff" />
           {/* Wordmark stays mixed-case in the Calendula wordmark font, never
               all-caps, per the brand rule in CLAUDE.md (BUG-087). */}
           <span style={{
