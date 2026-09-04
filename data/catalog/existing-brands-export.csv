@@ -47,6 +47,8 @@ fc1b7fe2-551a-452e-964e-a4f7802991bc,Glissade,brand,board_brand,,USA,,unverified
 o6,Gnu Snowboards,brand,board_brand,1987,USA,https://www.gnusnowboards.com,verified,,2026-03-13T00:15:29.009125+00:00
 469f8553-1d67-4341-bb63-b6b00f5b16a0,Goodboards,brand,board_brand,,Germany,,unverified,,2026-09-04T18:43:45.202881+00:00
 c7b343f2-9622-4ec4-8d7c-05a09bcddc26,Gray,brand,board_brand,,Japan,,unverified,,2026-09-04T18:43:45.202881+00:00
+6d4ef2c2-a707-44e8-8424-1d4b2d9afee3,H-Street,brand,,,,,verified,,2026-09-04T20:38:46.266408+00:00
+7a8b95e5-98c6-48ee-bf85-756175d63ef4,Haz-Mat,brand,,,,,verified,,2026-09-04T20:38:46.266408+00:00
 9157b9bf-c65f-47d2-965b-34b7e9d8220e,Head,brand,board_brand,,Austria,,verified,,2026-09-02T23:00:20.412355+00:00
 bc2b7587-634b-41a1-9523-beb36e1313e0,High Society Freeride,brand,board_brand,2003,USA,,unverified,,2026-09-04T18:43:45.202881+00:00
 a01cf751-56c4-4ff9-a5af-b621b7246344,Hooger Booger,brand,board_brand,1983,Switzerland,,verified,,2026-09-02T23:00:20.412355+00:00
@@ -63,12 +65,13 @@ org_1781563635837_e1n25,Linestry.com,brand,media,2026,Canada,Linestry.com,unveri
 66b2a8f3-7858-4d97-9d8a-98f8a91a2d2e,Lobster,brand,board_brand,2011,Iceland,,verified,,2026-09-02T23:00:20.412355+00:00
 c2412978-355a-4512-b98f-aa25b298f77f,Look,brand,board_brand,1986,France,,verified,,2026-09-02T23:00:20.412355+00:00
 fbc7dd1f-05ec-4b69-a6fa-22e37b247479,LTB,brand,board_brand,1986,Czechia,,unverified,,2026-09-04T18:43:45.202881+00:00
+b7e5da4d-e1cf-4d02-a178-0315ead8e97b,Luxury,brand,,,,,verified,,2026-09-04T20:38:46.266408+00:00
 dc884434-a2ac-4c14-b233-fef95592a0a8,Mistral,brand,board_brand,,Netherlands,,unverified,,2026-09-02T23:00:20.412355+00:00
-994ec353-b29b-4b66-be2c-5347acc07ac7,Moonchild,brand,board_brand,2015,Spain,,unverified,,2026-09-04T18:43:45.202881+00:00
+994ec353-b29b-4b66-be2c-5347acc07ac7,Moonchild,brand,board_brand,2015,Slovenia,,unverified,,2026-09-04T18:43:45.202881+00:00
 59ab15b7-6b15-403d-8d77-4bc71288a72f,Moss Snowstick,brand,board_brand,1971,Japan,,verified,,2026-09-02T23:00:20.412355+00:00
 o5,Never Summer Industries,brand,board_brand,1991,USA,https://www.neversummer.com,verified,,2026-03-13T00:15:29.009125+00:00
 98fe1253-c374-4f5d-9de6-5f0b809eaa16,Niche,brand,board_brand,2009,USA,,verified,,2026-09-04T18:43:45.202881+00:00
-11a8948e-8b70-4817-b63e-b19af3a1221c,Nobaday,brand,board_brand,2015,USA,,unverified,,2026-09-04T18:43:45.202881+00:00
+11a8948e-8b70-4817-b63e-b19af3a1221c,Nobaday,brand,board_brand,2015,China,,unverified,,2026-09-04T18:43:45.202881+00:00
 5a8851e3-0221-4ad9-802d-8e619ef0997e,Nobile,brand,board_brand,1994,Poland,,verified,,2026-09-02T23:00:20.412355+00:00
 af137eaa-9f0e-4a51-94d7-44254957c1f5,November,brand,board_brand,2002,Japan,,unverified,,2026-09-04T18:43:45.202881+00:00
 o17,Oakley,brand,outerwear,1975,USA,https://www.oakley.com,verified,,2026-03-13T00:15:29.009125+00:00
@@ -97,6 +100,7 @@ b9939aaf-574c-4bf1-acfa-a5e79f352558,Sandy Shapes,brand,board_brand,2016,Italy,,
 ac917901-2b03-4fd9-9968-a826c4ab7e2d,Santa Cruz,brand,board_brand,1989,USA,,verified,,2026-09-02T23:00:20.412355+00:00
 4a883371-7e88-476f-9877-93de1119adaa,Season Eqpt,brand,board_brand,2020,USA,,verified,,2026-09-02T23:00:20.412355+00:00
 e73117d2-dabc-4b94-b9e6-45d7fc59b3dd,SG Snowboards,brand,board_brand,,Austria,,unverified,,2026-09-02T23:00:20.412355+00:00
+4bc081cc-9372-40d3-b81d-2f4e4e70bf41,Shift,brand,,,,,verified,,2026-09-04T20:38:46.266408+00:00
 org_1785771325441_xkibc,Shorty's,brand,,,,,unverified,0394914d-6ffd-4a18-aa1f-1aafee7ce53a,2026-08-03T15:35:25.45857+00:00
 47bea342-98a5-45c1-911d-8b5e836ca341,Signal,brand,board_brand,2004,USA,,verified,,2026-09-02T23:00:20.412355+00:00
 o10,Sims Snowboards,brand,board_brand,1976,USA,,verified,,2026-03-13T00:15:29.009125+00:00
@@ -114,7 +118,7 @@ c2897aff-13d1-4bbd-801b-5ece794fe0eb,Telos,brand,board_brand,2018,USA,,verified,
 e94290d5-dd7b-4f06-b5da-d77f776af925,United Shapes,brand,board_brand,,USA,,unverified,,2026-09-02T23:00:20.412355+00:00
 65334ff7-a2da-47b1-827a-41b754507ddf,Unity,brand,board_brand,1995,USA,,verified,,2026-09-02T23:00:20.412355+00:00
 39229838-fbe5-4ab8-b6d5-61d4b33d7ff7,Venture,brand,board_brand,1999,USA,,verified,,2026-09-04T18:43:45.202881+00:00
-5f2f23b0-e08f-4e43-aa85-993b6628f5fd,Verdad,brand,board_brand,2011,France,,unverified,,2026-09-04T18:43:45.202881+00:00
+5f2f23b0-e08f-4e43-aa85-993b6628f5fd,Verdad,brand,board_brand,2011,Belgium,,unverified,,2026-09-04T18:43:45.202881+00:00
 e3493bb5-9a54-444d-a670-69b6756cb869,Virus,brand,board_brand,,Switzerland,,unverified,,2026-09-04T18:43:45.202881+00:00
 afe3e985-5bc3-4713-b69b-0032a47b6f1e,Vision,brand,board_brand,,USA,,unverified,,2026-09-02T23:00:20.412355+00:00
 8945a638-0112-435e-8ace-4f7ec5102b57,Voile,brand,board_brand,1980,USA,,verified,,2026-09-04T18:43:45.202881+00:00
