@@ -1,0 +1,449 @@
+brand,model,first_year,brand_status,confidence,n_sightings,reasons,source_docId,source_url
+Aesthetiker,Gruba Libre,2010,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Alibi,Motive,2016,NEW-BRAND,likely,2,BRAND_NEW,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Alibi,Sicter,2016,NEW-BRAND,likely,2,BRAND_NEW,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Apo Snowboards,Amanite,2005,NEW-BRAND,likely,3,BRAND_NEW,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Apo Snowboards,Arthur Longo,2010,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Apo Snowboards,BCK,2008,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato-snowboardkatalog0708,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0708
+Apo Snowboards,Blend,2016,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Apo Snowboards,Family Series,2007,NEW-BRAND,likely,2,BRAND_NEW,blue-tomato-snowboardkatalog0809,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0809
+Apo Snowboards,Friedl Kolar Signature,2005,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Apo Snowboards,Iconic Eero,2016,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Apo Snowboards,Iconic Sage,2016,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Apo Snowboards,Isis,2006,NEW-BRAND,likely,3,BRAND_NEW,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Apo Snowboards,Line,2006,NEW-BRAND,likely,5,BRAND_NEW,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Apo Snowboards,MTD,2005,NEW-BRAND,likely,6,BRAND_NEW,blue-tomato-snowboardkatalog0809,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0809
+Apo Snowboards,MTD Full Track,2008,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato-snowboardkatalog0708,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0708
+Apo Snowboards,Seed,2007,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Apo Snowboards,Selekta,2005,NEW-BRAND,likely,7,BRAND_NEW,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Apo Snowboards,Source,2008,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato-snowboardkatalog0708,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0708
+Chamonix,Cornu,2023,NEW-BRAND,likely,1,BRAND_NEW,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+Chamonix,Jesse Paul Pro Model,2023,NEW-BRAND,likely,1,BRAND_NEW,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+Chamonix,Route,2023,NEW-BRAND,likely,1,BRAND_NEW,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+Chamonix,Scavenger Hunt,2023,NEW-BRAND,likely,1,BRAND_NEW,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+Dinosaurs Will Die,Brewster,2018,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide
+Dinosaurs Will Die,Perry,2018,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide
+Duotone,RPM,2004,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Duotone,Street,2004,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Evol,Deadstock,2023,NEW-BRAND,likely,1,BRAND_NEW,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+Evol,Mike Skiba Promodel,2023,NEW-BRAND,likely,1,BRAND_NEW,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+Evol,Spacerace,2023,NEW-BRAND,likely,1,BRAND_NEW,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+Evol,Vessel,2023,NEW-BRAND,likely,1,BRAND_NEW,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+FTWO,Alien,2008,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato-snowboardkatalog0708,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0708
+FTWO,Blackdeck,2016,NEW-BRAND,likely,2,BRAND_NEW,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+FTWO,Blackdeck Wood,2016,NEW-BRAND,likely,2,BRAND_NEW,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+FTWO,Bloom,2008,NEW-BRAND,likely,4,BRAND_NEW,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+FTWO,Code,2009,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato-snowboardkatalog0809,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0809
+FTWO,Flush,2009,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato-snowboardkatalog0809,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0809
+FTWO,Gipsy,2008,NEW-BRAND,likely,4,BRAND_NEW,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+FTWO,Prime,2008,NEW-BRAND,likely,3,BRAND_NEW,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+FTWO,Random,2008,NEW-BRAND,likely,3,BRAND_NEW,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+FTWO,Real,2008,NEW-BRAND,likely,2,BRAND_NEW,blue-tomato-snowboardkatalog0809,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0809
+FTWO,Respect,2008,NEW-BRAND,likely,3,BRAND_NEW,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+FTWO,Reverse,2016,NEW-BRAND,likely,2,BRAND_NEW,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+FTWO,Sonic,2008,NEW-BRAND,likely,4,BRAND_NEW,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+FTWO,Summit,2008,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato-snowboardkatalog0708,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0708
+FTWO,T-Ride,2010,NEW-BRAND,likely,2,BRAND_NEW,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+FTWO,TNT,2008,NEW-BRAND,likely,5,BRAND_NEW,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+FTWO,Union,2016,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+FTWO,Whitedeck Wood,2016,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Hammer,Broadline,2005,NEW-BRAND,likely,3,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Hammer,Condense,2005,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Hammer,Contact,2005,NEW-BRAND,likely,3,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Hammer,Hyleyn,2005,NEW-BRAND,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Hammer,Logo,2005,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Hammer,PSM 2,2005,NEW-BRAND,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Hammer,Premium,2005,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Hammer,Private,2005,NEW-BRAND,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Hammer,Seymour,2006,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Hammer,Twenty One,2005,NEW-BRAND,likely,3,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Hammer,Twilight,2005,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Icon,Asgard,2009,NEW-BRAND,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Icon,DS,2009,NEW-BRAND,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Icon,Danny,2010,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Icon,Gummi,2010,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Icon,Heppu Pentti,2010,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Icon,Heppu Pentti Signature,2009,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0809,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0809
+Icon,Revival,2009,NEW-BRAND,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Icon,Wallpaper,2009,NEW-BRAND,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Jeenyus,Eddie,2006,NEW-BRAND,likely,2,BRAND_NEW,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Jeenyus,Rental,2005,NEW-BRAND,likely,3,BRAND_NEW,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Jeenyus,The Broads,2005,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Jeenyus,The Woods,2005,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Jeenyus,Wedge,2007,NEW-BRAND,likely,2,BRAND_NEW,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Light,Bright,2016,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Light,Solar,2016,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Light,Spice,2016,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Light,Trooper,2010,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Light,Twitch,2010,NEW-BRAND,likely,2,BRAND_NEW,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Light,Vice,2016,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Love,Elefantastic,2010,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+O-Matic,Awesome Todd Richards,2009,NEW-BRAND,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+O-Matic,Boron,2009,NEW-BRAND,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+O-Matic,Celebrity Louie Vito,2009,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0809,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0809
+O-Matic,Extr-Eco,2010,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+O-Matic,Extr-emo,2009,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0809,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0809
+O-Matic,Sweet Hampus Mosesson,2009,NEW-BRAND,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Smokin,Jetson,2018,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide
+Smokin,Pillow Monster,2018,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide
+The Degenerati,Model #1,2017,NEW-BRAND,likely,1,BRAND_NEW,buyers_guide_17.1_issuu,https://issuu.com/method_magazine/docs/buyers_guide_17.1_issuu
+The Interior Plain Project,The Honalee,2018,NEW-BRAND,likely,1,BRAND_NEW,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide
+The Interior Plain Project,The Odessa,2018,NEW-BRAND,likely,1,BRAND_NEW,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide
+Trans,CU Lady,2016,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Trans,FE,2016,NEW-BRAND,likely,2,BRAND_NEW,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Trans,FE Lady,2016,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Trans,FR Wood Lady,2016,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Trans,LTD,2016,NEW-BRAND,likely,2,BRAND_NEW,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Trans,LTD Lady,2016,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Trans,Pirate,2016,NEW-BRAND,likely,2,BRAND_NEW,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Trans,Premium,2016,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Trans,Style Surf,2019,NEW-BRAND,likely,1,BRAND_NEW,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Tur,Bubo,2025,NEW-BRAND,likely,1,BRAND_NEW,method_vol_25-buyersguide-single_pages,https://issuu.com/method_magazine/docs/method_vol_25-buyersguide-single_pages
+Tur,Buteo,2025,NEW-BRAND,likely,1,BRAND_NEW,method_vol_25-buyersguide-single_pages,https://issuu.com/method_magazine/docs/method_vol_25-buyersguide-single_pages
+Tur,Korp S. Zebbe Landmark,2025,NEW-BRAND,likely,1,BRAND_NEW,method_vol_25-buyersguide-single_pages,https://issuu.com/method_magazine/docs/method_vol_25-buyersguide-single_pages
+Tur,Pluv,2025,NEW-BRAND,likely,1,BRAND_NEW,method_vol_25-buyersguide-single_pages,https://issuu.com/method_magazine/docs/method_vol_25-buyersguide-single_pages
+Vimana,B-Rage,2018,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide
+Vimana,Ennitime,2025,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,method_vol_25-buyersguide-single_pages,https://issuu.com/method_magazine/docs/method_vol_25-buyersguide-single_pages
+Vimana,The Clone,2017,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,buyers_guide_17.1_issuu,https://issuu.com/method_magazine/docs/buyers_guide_17.1_issuu
+Vimana,The Continental Directional,2018,NEW-BRAND,likely,2,MODEL_NEW_CANDIDATE,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide
+Vimana,The Ennitime,2017,NEW-BRAND,likely,2,MODEL_NEW_CANDIDATE,buyers_guide_17.1_issuu,https://issuu.com/method_magazine/docs/buyers_guide_17.1_issuu
+Vimana,The Meta,2025,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,method_vol_25-buyersguide-single_pages,https://issuu.com/method_magazine/docs/method_vol_25-buyersguide-single_pages
+Vimana,The Motherbrain,2025,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,method_vol_25-buyersguide-single_pages,https://issuu.com/method_magazine/docs/method_vol_25-buyersguide-single_pages
+Vimana,The Vufo,2023,NEW-BRAND,likely,2,MODEL_NEW_CANDIDATE,method_vol_25-buyersguide-single_pages,https://issuu.com/method_magazine/docs/method_vol_25-buyersguide-single_pages
+Vimana,The Werni Stock,2023,NEW-BRAND,likely,1,MODEL_NEW_CANDIDATE,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+Amplid,Declaration,2010,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Amplid,Falconoid,2010,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Amplid,Fenom,2010,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Amplid,Milligram,2019,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboard-catalogue-201,
+Atlantis,Classic DF,2023,existing-brand,likely,1,MODEL_NEW_CANDIDATE,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+Atomic,Cold Smoke,2006,existing-brand,likely,3,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Atomic,Discharger,2005,existing-brand,likely,3,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Atomic,Dreamraider,2005,existing-brand,likely,5,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0809,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0809
+Atomic,Exeter,2005,existing-brand,likely,5,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0809,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0809
+Atomic,Firestarter,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Atomic,Skullz,2008,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0708,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0708
+Atomic,Tuesday,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Bataleon,CT,2019,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Bataleon,Funk Kink,2008,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0708,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0708
+Bataleon,SX Project,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Bataleon,She,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Bataleon,She-W,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Burton,Elite,2007,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0607,
+Burton,G Twin,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Burton,G-Twin,2010,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Burton,Seven,2005,existing-brand,likely,5,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Burton,Un Inc,2007,existing-brand,likely,3,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0809,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0809
+Burton,Un Inc Gigi,2005,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Burton,Un Inc Romain,2005,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Burton,Un Inc Solberg,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Capita,Jess Kimura Pro,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Capita,MHT,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Capita,Mid Life Theory,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Capita,Photo Fetish,2007,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0607,
+Capita,Scott Stevens Pro,2017,existing-brand,likely,3,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Capita,Space Metal Fantasy,2016,existing-brand,verified,2,CONFIRMED_UNRESOLVED,blue-tomato_snowboard_katalog_16,
+Capita,Spring Break Night Hawk,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Capita,Spring Break Powder Hole,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Capita,Spring Break Powder Pill,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Capita,Spring Break Powder Wolf,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Capita,Spring Break Slush Slasher,2017,existing-brand,verified,4,CONFIRMED_UNRESOLVED,blue-tomato_snowboard_katalog1617,
+Capita,Spring Break Tree Hunter,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Capita,Stair Master,2007,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Capita,Stair Master Extreme,2008,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0708,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0708
+Capita,Supernova,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Capita,The Quiver Killers,2010,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Capita,Travis Parker Texas,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Capita,Volcom Stone X Pat Moore Pro,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Capita,Warpspeed,2019,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+DC,EMB,2023,existing-brand,likely,1,MODEL_NEW_CANDIDATE,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+DC,Ikka,2010,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+DC,Lauri,2010,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+DC,Media Blitz,2016,existing-brand,likely,3,MODEL_NEW_CANDIDATE,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide
+DC,Mega,2016,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+DC,Space Echo,2018,existing-brand,likely,1,MODEL_NEW_CANDIDATE,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide
+DC,TH,2019,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+DC,Telegraph,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,buyers_guide_17.1_issuu,https://issuu.com/method_magazine/docs/buyers_guide_17.1_issuu
+DC,The 156,2019,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Elan,Answer,2005,existing-brand,verified,5,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0405,
+Elan,Artec 1.1,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Elan,Artec 1.2,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Elan,Artec 2.1,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Elan,Artec 2.3,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Elan,Artec 3.1,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Elan,Artec 3.3,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Elan,Artec 4.1,2008,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0708,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0708
+Elan,Artec 4.4,2008,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0708,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0708
+Elan,Artec Team,2007,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Elan,Ascent,2006,existing-brand,verified,2,CONFIRMED_UNRESOLVED,blue-tomato-snowboard-katalog0506,
+Elan,Aurora,2007,existing-brand,verified,4,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0607,
+Elan,Crest,2008,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0708,
+Elan,El Grande,2007,existing-brand,verified,4,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0607,
+Elan,Endless,2005,existing-brand,verified,2,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0405,
+Elan,Hifi,2010,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Elan,Inverse,2005,existing-brand,verified,6,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0405,
+Elan,LeeLoo,2009,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0809,
+Elan,Prodigy,2006,existing-brand,verified,5,CONFIRMED_UNRESOLVED,blue-tomato-snowboard-katalog0506,
+Elan,Sense,2006,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboard-katalog0506,
+Elan,Trinity,2006,existing-brand,verified,3,CONFIRMED_UNRESOLVED,blue-tomato-snowboard-katalog0506,
+Elan,Vertigo,2005,existing-brand,verified,6,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0405,
+Elan,Zena,2009,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0809,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0809
+F2,Airbase,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+F2,Eagle,2004,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+F2,El Diablo,2008,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0708,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0708
+F2,Electra,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+F2,Floater,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+F2,Gimpl Pro,2005,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+F2,Gothic,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+F2,Legal,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+F2,Myst,2005,existing-brand,likely,3,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+F2,Random,2006,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+F2,Real,2006,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+F2,Real Gold,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+F2,Revo Airbase,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+F2,Sniper,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+F2,Sonic,2004,existing-brand,likely,4,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+F2,Speedcross,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+F2,Speedster GTS,2007,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+F2,Speedster SX,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+F2,Spin Air,2005,existing-brand,likely,3,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+F2,Summit,2006,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Flow,Blackout,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Flow,Chill,2016,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Flow,Rush,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Flow,Viper,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Flow,Whiteout,2016,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Forum,Jiblet,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Forum,Joni Malmi,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+GNU,Airblaster Pow,2019,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+GNU,CHB,2009,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0809,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0809
+GNU,Eco Choice,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+GNU,Eco Impossible,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+GNU,Finsanity,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,buyers_guide_17.1_issuu,https://issuu.com/method_magazine/docs/buyers_guide_17.1_issuu
+GNU,Forest Bailey Space Case,2017,existing-brand,likely,2,MODEL_NEW_CANDIDATE,buyers_guide_17.1_issuu,https://issuu.com/method_magazine/docs/buyers_guide_17.1_issuu
+GNU,Horror Business,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+GNU,Hyak,2019,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+GNU,RCC3,2023,existing-brand,likely,1,MODEL_NEW_CANDIDATE,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+GNU,Smart Pickle,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+GNU,Space Out,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Head,Disrupt Flocka,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Head,Icon i.,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Head,Reveal Rocka,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Hot,Blast GS,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Hot,Blast SL,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Jones,Apollo,2019,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+K2,Bright Lite,2016,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+K2,Daniel Franck Whales,2018,existing-brand,likely,1,MODEL_NEW_CANDIDATE,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide
+K2,Split Bean,2019,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+K2,Spotlite,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Korua,Uber Egg,2023,existing-brand,likely,1,BRAND_NEW,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+Lib Tech,BRD,2023,existing-brand,likely,1,MODEL_NEW_CANDIDATE,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+Lib Tech,Black Pow Speedodeeps,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Lib Tech,Box Knife,2019,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Lib Tech,Dark Knife,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Lib Tech,Hot Knife,2016,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Lib Tech,Lost Mayhem Rnf,2019,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Lib Tech,Rasman,2025,existing-brand,likely,1,MODEL_NEW_CANDIDATE,method_vol_25-buyersguide-single_pages,https://issuu.com/method_magazine/docs/method_vol_25-buyersguide-single_pages
+Lib Tech,Round Nose Fish,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Lib Tech,SK8 Banana,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Lib Tech,Skunk Ultra Ape,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Lib Tech,Stump Ape,2019,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Lib Tech,Swiss Knife,2017,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Lib Tech,T-Rice Climax,2017,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Lib Tech,T-Rice Gold Member,2016,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Lib Tech,T-Rice Speedodeeps,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Lib Tech,T-Rice Split,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Lib Tech,T.Rice Climax,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,buyers_guide_17.1_issuu,https://issuu.com/method_magazine/docs/buyers_guide_17.1_issuu
+Lib Tech,Travis Rice Pro MTX,2008,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0708,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0708
+Lib Tech,Utility Knife,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Lib Tech,Wingman,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Lib Tech,Woodsmith Coho,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Lobster,Artist Edition Danny Larsen,2019,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Lobster,Artist Edition Schoph,2019,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Lobster,Eiki Board,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Lobster,Eiki Helgason Pro,2017,existing-brand,likely,2,MODEL_NEW_CANDIDATE,buyers_guide_17.1_issuu,https://issuu.com/method_magazine/docs/buyers_guide_17.1_issuu
+Lobster,Halldor Helgason Pro,2017,existing-brand,likely,2,MODEL_NEW_CANDIDATE,buyers_guide_17.1_issuu,https://issuu.com/method_magazine/docs/buyers_guide_17.1_issuu
+Lobster,Jib,2019,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Lobster,Jibb Board,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Lobster,Jibboard,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Lobster,Park,2019,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Lobster,Park Board,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Lobster,Parkboard,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Lobster,The Captain,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Never Summer,Chairman X,2016,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Never Summer,Insta/Gator,2018,existing-brand,likely,1,MODEL_NEW_CANDIDATE,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide
+Never Summer,Twenty Five X,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Nidecker,Ora,2023,existing-brand,likely,1,MODEL_NEW_CANDIDATE,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+Nitro,Ana Rumiha,2016,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Nitro,Anna Gasser Pro Model,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Nitro,Chuck,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Nitro,Dark Horse,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Nitro,Eero Heads Up,2008,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0708,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0708
+Nitro,Eero Pro Model,2010,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Nitro,GT Racing,1997,existing-brand,likely,1,MODEL_NEW_CANDIDATE,96-97-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/96-97-consumer-catalog-eng
+Nitro,Hazard,1997,existing-brand,likely,1,MODEL_NEW_CANDIDATE,96-97-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/96-97-consumer-catalog-eng
+Nitro,Hazard Grom,1997,existing-brand,likely,1,MODEL_NEW_CANDIDATE,96-97-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/96-97-consumer-catalog-eng
+Nitro,Misfit League,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Nitro,Outback,1997,existing-brand,likely,1,MODEL_NEW_CANDIDATE,96-97-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/96-97-consumer-catalog-eng
+Nitro,Pantera LX,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Nitro,Scorpion,1997,existing-brand,likely,1,MODEL_NEW_CANDIDATE,96-97-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/96-97-consumer-catalog-eng
+Nitro,Silje Norendal Pro,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Nitro,Sub Zero,2010,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Nitro,T1 Legacy,2008,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0708,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0708
+Nitro,Team Art Attack,2007,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Nitro,Tour,1997,existing-brand,likely,1,MODEL_NEW_CANDIDATE,96-97-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/96-97-consumer-catalog-eng
+Nitro,V Carbon,1997,existing-brand,likely,1,MODEL_NEW_CANDIDATE,96-97-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/96-97-consumer-catalog-eng
+Nitro,V Series,1997,existing-brand,likely,1,MODEL_NEW_CANDIDATE,96-97-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/96-97-consumer-catalog-eng
+Nitro,Voltage,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Palmer,Clutch,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Palmer,Platinum Freeride DLX,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Ride,Algorhythm,2025,existing-brand,likely,1,MODEL_NEW_CANDIDATE,method_vol_25-buyersguide-single_pages,https://issuu.com/method_magazine/docs/method_vol_25-buyersguide-single_pages
+Ride,Assym Omg,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Ride,Baretta,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Ride,Buck Wild,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Ride,Canvas,2009,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0809,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0809
+Ride,Crook,2016,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Ride,Hellcat,2016,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Ride,Peaceseeker,2023,existing-brand,likely,1,MODEL_NEW_CANDIDATE,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+Ride,Psycocandy,2023,existing-brand,likely,1,MODEL_NEW_CANDIDATE,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+Ride,Rapture,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Ride,Zeta,2009,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0809,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0809
+Rome,Anthem,2006,existing-brand,verified,3,CONFIRMED_UNRESOLVED,blue-tomato-snowboard-katalog0506,
+Rome,Blackjack,2018,existing-brand,likely,1,MODEL_NEW_CANDIDATE,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide
+Rome,Blur,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,buyers_guide_17.1_issuu,https://issuu.com/method_magazine/docs/buyers_guide_17.1_issuu
+Rome,Brigade,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Rome,Buckshot,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,buyers_guide_17.1_issuu,https://issuu.com/method_magazine/docs/buyers_guide_17.1_issuu
+Rome,Crail,2009,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0809,
+Rome,Crossrocket,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Rome,Detail,2007,existing-brand,verified,3,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0607,
+Rome,Factory Rocker,2016,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato_snowboard_katalog_16,
+Rome,Flag,2006,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboard-katalog0506,
+Rome,Gang Plank,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Rome,Garage Rocker,2016,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato_snowboard_katalog_16,
+Rome,Gold,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Rome,Graft,2008,existing-brand,verified,3,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0708,
+Rome,Heist,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Rome,Hype,2025,existing-brand,verified,1,CONFIRMED_UNRESOLVED,method_vol_25-buyersguide-single_pages,
+Rome,Lo-Fi,2010,existing-brand,verified,3,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog_0910,
+Rome,Machine,2010,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog_0910,
+Rome,Manual,2010,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog_0910,
+Rome,Mod,2016,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato_snowboard_katalog_16,
+Rome,Postermania,2010,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog_0910,
+Rome,Reverb,2016,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato_snowboard_katalog_16,
+Rome,Romp,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Rome,Royal,2017,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato_snowboard_katalog1617,
+Rome,Sawtooth,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Rome,Showtime,2009,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0809,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0809
+Rome,Solution,2007,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0607,
+Rome,Stale Fish,2025,existing-brand,verified,1,CONFIRMED_UNRESOLVED,method_vol_25-buyersguide-single_pages,
+Rome,Tour,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Rome,Vinyl,2010,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog_0910,
+Rome,Wildcat,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Rome,Winterland,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Rossignol,Frenemy,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Rossignol,Hellraiser,2010,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Rossignol,J Jackson,2008,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0708,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0708
+Rossignol,Jonas Emery,2006,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Rossignol,Jonas Emery Pro,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Rossignol,Legion,2005,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Rossignol,RPM,2008,existing-brand,likely,3,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Rossignol,RS,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Rossignol,Templar,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Rossignol,Todd Richards Pro,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Rossignol,Travis Rice Pro,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Rossignol,Wanted,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Roxy,Radiance,2016,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Salomon,Abstract,2023,existing-brand,verified,1,CONFIRMED_UNRESOLVED,methodmag_23-product_guide-lo,
+Salomon,Ace,2005,existing-brand,verified,2,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0405,
+Salomon,Arnie 5000,2007,existing-brand,verified,4,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0607,
+Salomon,Burner,2006,existing-brand,verified,5,CONFIRMED_UNRESOLVED,blue-tomato-snowboard-katalog0506,
+Salomon,Craft,2016,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato_snowboard_katalog_16,
+Salomon,David Benedek Series,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Salomon,Fastback,2005,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0405,
+Salomon,Forecast,2005,existing-brand,verified,2,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0405,
+Salomon,Grip,2010,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog_0910,
+Salomon,Gypsy,2016,existing-brand,verified,2,CONFIRMED_UNRESOLVED,blue-tomato_snowboard_katalog_16,
+Salomon,HPS Sickstick,2025,existing-brand,likely,1,MODEL_NEW_CANDIDATE,method_vol_25-buyersguide-single_pages,https://issuu.com/method_magazine/docs/method_vol_25-buyersguide-single_pages
+Salomon,HPS-Taka X Wolle,2019,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Salomon,Highpath,2023,existing-brand,verified,1,CONFIRMED_UNRESOLVED,methodmag_23-product_guide-lo,
+Salomon,Ivy,2007,existing-brand,verified,4,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0607,
+Salomon,Lily,2009,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0809,
+Salomon,Lotus,2016,existing-brand,verified,2,CONFIRMED_UNRESOLVED,blue-tomato_snowboard_katalog_16,
+Salomon,Man's Board,2016,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato_snowboard_katalog_16,
+Salomon,Official,2009,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0809,
+Salomon,Oh Yeah,2016,existing-brand,verified,2,CONFIRMED_UNRESOLVED,blue-tomato_snowboard_katalog_16,
+Salomon,Patrol,2007,existing-brand,verified,2,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0607,
+Salomon,Premiere,2019,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Salomon,Prospect,2005,existing-brand,verified,3,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0405,
+Salomon,Prospect LTD,2006,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboard-katalog0506,
+Salomon,Pulse,2016,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato_snowboard_katalog_16,
+Salomon,Radiant,2008,existing-brand,verified,3,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0708,
+Salomon,Riot,2009,existing-brand,verified,2,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0809,
+Salomon,Rumble Fish,2025,existing-brand,verified,1,CONFIRMED_UNRESOLVED,method_vol_25-buyersguide-single_pages,
+Salomon,Sabotage,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Salomon,Salomonder,2016,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato_snowboard_katalog_16,
+Salomon,Sanchez,2008,existing-brand,verified,4,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0708,
+Salomon,Scotty,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Salomon,Scout,2007,existing-brand,verified,4,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0607,
+Salomon,Sick Stick,2009,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0809,
+Salomon,Sickstick,2018,existing-brand,likely,1,MODEL_NEW_CANDIDATE,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide
+Salomon,Sight,2019,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboard-catalogue-201,
+Salomon,Special,2007,existing-brand,verified,4,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0607,
+Salomon,Super8,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Salomon,Tempest,2007,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0607,
+Salomon,The Ultimate Ride,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,buyers_guide_17.1_issuu,https://issuu.com/method_magazine/docs/buyers_guide_17.1_issuu
+Salomon,Tracker,2008,existing-brand,verified,1,CONFIRMED_UNRESOLVED,blue-tomato-snowboardkatalog0708,
+Salomon,Ultimate Ride,2019,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201
+Salomon,Villain,2016,existing-brand,verified,4,CONFIRMED_UNRESOLVED,blue-tomato_snowboard_katalog_16,
+Salomon,Wonder,2016,existing-brand,verified,2,CONFIRMED_UNRESOLVED,blue-tomato_snowboard_katalog_16,
+Santa Cruz,Cuna Union,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Santa Cruz,GD Kestenholz,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Santa Cruz,GD Stephen Duke,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Santa Cruz,Gian Simmen TT Pro,2008,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0708,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0708
+Santa Cruz,MVP Decal,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Santa Cruz,Muse Tribute,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Santa Cruz,Park TT,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Santa Cruz,Powerply Panther,2004,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Santa Cruz,Rebell,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Santa Cruz,Seth Huot TT,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Santa Cruz,Seth Huot TT Pro,2008,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0708,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0708
+Santa Cruz,TT Pro Seth Huot,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Santa Cruz,TT Revolver,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Santa Cruz,TT Riot,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Santa Cruz,TT Viking,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Sims,Fakie,2025,existing-brand,verified,1,CONFIRMED_UNRESOLVED,method_vol_25-buyersguide-single_pages,
+Slash,Slash Splash,2025,existing-brand,likely,1,MODEL_NEW_CANDIDATE,method_vol_25-buyersguide-single_pages,https://issuu.com/method_magazine/docs/method_vol_25-buyersguide-single_pages
+Volkl,Afc,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Volkl,Alright,2016,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Volkl,Breeze,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Volkl,Dimension,2016,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Volkl,Disturbia,2016,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Volkl,Genix,2016,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Volkl,Pace,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Volkl,Pulse,2007,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Volkl,Savvy,2017,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog1617,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog1617
+Volkl,Sleek,2016,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Volkl,Squad Prime,2007,existing-brand,likely,4,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+Volkl,Steaze,2016,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Volkl,Vibe,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Volkl,Wall AM,2007,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Volkl,Wall Pro,2007,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0607,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0607
+Volkl,Xbreed,2016,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16
+Völkl,Pulse,2005,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Völkl,Search,2005,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Völkl,Squad Flex 3,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Völkl,Squad Flex 4,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Völkl,Squad Prime,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Völkl,Sting,2005,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Völkl,Wall AM,2005,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog0405,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog0405
+Völkl,Wall Am,2006,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+Völkl,Wall Pro,2005,existing-brand,likely,2,MODEL_NEW_CANDIDATE,blue-tomato-snowboard-katalog0506,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-katalog0506
+YES,Asymmetric Rocker Twin Tip,2010,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+YES,Directional Rocker Twin Tip,2010,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+YES,Fridge Master XTRM,2025,existing-brand,likely,1,MODEL_NEW_CANDIDATE,method_vol_25-buyersguide-single_pages,https://issuu.com/method_magazine/docs/method_vol_25-buyersguide-single_pages
+YES,Halldor XTRM,2025,existing-brand,likely,1,MODEL_NEW_CANDIDATE,method_vol_25-buyersguide-single_pages,https://issuu.com/method_magazine/docs/method_vol_25-buyersguide-single_pages
+YES,Jackpot,2023,existing-brand,verified,1,CONFIRMED_UNRESOLVED,methodmag_23-product_guide-lo,
+YES,PYL Uninc DCP,2023,existing-brand,likely,1,MODEL_NEW_CANDIDATE,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo
+YES,Rival,2023,existing-brand,verified,2,CONFIRMED_UNRESOLVED,methodmag_23-product_guide-lo,
+YES,Rocker Twin Tip,2010,existing-brand,likely,1,MODEL_NEW_CANDIDATE,blue-tomato-snowboardkatalog_0910,https://issuu.com/blue-tomato/docs/blue-tomato-snowboardkatalog_0910
+YES,Shifter,2025,existing-brand,verified,1,CONFIRMED_UNRESOLVED,method_vol_25-buyersguide-single_pages,
+YES,Warca,2023,existing-brand,verified,1,CONFIRMED_UNRESOLVED,methodmag_23-product_guide-lo,
