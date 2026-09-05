@@ -1,0 +1,22 @@
+brand,model_ocr,section,catalog_model_name,match_type,confidence,catalog_season,catalog_model_year,source_docId,source_url,note
+Nitro,Darkhorse,mens,Darkhorse,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,Shogun,mens,Shogun,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,Saber,mens,Saber,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,Saber P.O.W.,mens,Saber,QUALIFIED,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,printed 'Saber P.O.W.' ~ catalog 'Saber'
+Nitro,Naturals,mens,Naturals,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,Torque,mens,Torque,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,T2,mens,T2,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,T1,mens,T1,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,Atlas,mens,Atlas,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,Suprateam,mens,Suprateam,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,Shadow,mens,Shadow,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,Shadow Ltd.,mens,TØ,QUALIFIED,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,printed 'Shadow Ltd.' ~ catalog 'TØ'
+Nitro,Suicide,mens,Suicide,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,Team,mens,Team,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,Punisher,mens,Punisher,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,Magnum,mens,Magnum,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,Titan,mens,Titan,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,Future Team,mens,Future Team,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,Black Widow,womens,Black Widow,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,Fate,womens,Fate,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,
+Nitro,Phoenix,womens,Phoenix,EXACT,verified,2003/04,2004,03-04-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/03-04-consumer-catalog-eng,

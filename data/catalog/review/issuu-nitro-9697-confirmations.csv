@@ -1,0 +1,5 @@
+brand,model_ocr,catalog_model_name,match_type,confidence,catalog_season,catalog_model_year,page,category,source_docId,source_url,note
+Nitro,Nova,Nova,EXACT,verified,1996/97,1997,5,freeride,96-97-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/96-97-consumer-catalog-eng,bi-directional freeride series; sizes 48/53/58/63
+Nitro,Spirit,Spirit,EXACT,verified,1996/97,1997,6,freestyle,96-97-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/96-97-consumer-catalog-eng,narrow twin-tip for smaller riders; sizes 39/43/47/51
+Nitro,Storm,Storm,EXACT,verified,1996/97,1997,9,freeride,96-97-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/96-97-consumer-catalog-eng,directional powder/big-mountain series; sizes 56/66/72
+Nitro,Phase,Phase,EXACT,verified,1996/97,1997,10,all-mountain,96-97-consumer-catalog-eng,https://issuu.com/nitrosnowboards/docs/96-97-consumer-catalog-eng,cap-constructed freeride series; sizes 4.2-6.2

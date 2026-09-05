@@ -1,0 +1,131 @@
+section,brand,model_ocr,catalog_model_name,match_type,confidence,catalog_season,catalog_model_year,source_docId,source_url,note
+mens,Capita,The Black Snowboard of Death,Black Snowboard of Death,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'The Black Snowboard of Death' = catalog 'Black Snowboard of Death' + qualifier
+mens,Capita,Charlie Slasher,Charlie Slasher,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Capita,Defenders of Awesome,Defenders of Awesome,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Capita,Indoor Survival,Indoor Survival,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Capita,Outdoor Living,Outdoor Living,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Capita,Horrorscope,Horrorscope,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Lib Tech,Skunk Ape Split,Skunk Ape,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Skunk Ape Split' = catalog 'Skunk Ape' + qualifier
+mens,Lib Tech,Skunk Ape,Skunk Ape,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Lib Tech,T-Rice,T.Rice Pro,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'T-Rice' = catalog 'T.Rice Pro' + qualifier
+mens,Lib Tech,Banana Magic,Banana Magic,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Lib Tech,Attack Banana,Attack Banana,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Lib Tech,La Nina,La Nina MC,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'La Nina' = catalog 'La Nina MC' + qualifier
+mens,Lib Tech,T-Rice Pro,T.Rice Pro,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Lib Tech,TRS,TRS,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Lib Tech,Jamie Lynn Phoenix,Phoenix,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Jamie Lynn Phoenix' = catalog 'Phoenix' + qualifier
+mens,Lib Tech,Skate Banana,Skate Banana,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Lib Tech,Box Scratcher,Box Scratcher,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Burton,Antler,Antler,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Burton,Custom X,Custom X,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Burton,Twc Pro,Shaun White / TWC Pro,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Twc Pro' = catalog 'Shaun White / TWC Pro' + qualifier
+mens,Burton,Custom Twin,Twin,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Custom Twin' = catalog 'Twin' + qualifier
+mens,Burton,Custom,Custom,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Burton,Easy Livin,Easy Livin,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Burton,Trick Pony,Trick Pony,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Burton,Parkitect,Parkitect,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Burton,Nug,Nug,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Burton,Process,Process,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Burton,Name Dropper,Name Dropper,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Burton,Blunt,Blunt,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Burton,Descendant,Descendant,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Burton,Clash,Clash,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,GNU,Riders Choice,Riders Choice,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,GNU,Billy Goat,Billy Goat,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,GNU,Metal Gnuru,Metal Gnuru,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,GNU,Carbon Credit,Carbon Credit,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,DC,Tone,Tone,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,DC,Ply,Ply,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,DC,Focus,Focus,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Head,Force i. Kers,Force,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Force i. Kers' = catalog 'Force' + qualifier
+mens,Head,Daymaker DCT,AK,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Daymaker DCT' = catalog 'AK' + qualifier
+mens,Head,True,True,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Rome,Mod Stale Pro,Mod,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Mod Stale Pro' = catalog 'Mod' + qualifier
+mens,Rome,Agent Rocker,Agent,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Agent Rocker' = catalog 'Agent' + qualifier
+mens,Rome,Reverb Rocker,Reverb,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Reverb Rocker' = catalog 'Reverb' + qualifier
+mens,Rome,Artifact Rocker,Artifact,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Artifact Rocker' = catalog 'Artifact' + qualifier
+mens,Rome,Factory Rocker,Factory Rocker,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Rome,Garage Rocker,Garage Rocker,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Amplid,Hifi,Hifi,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Amplid,Paradigma,Paradigma,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Amplid,Creamer,Creamer,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Amplid,Stereo,Stereo,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Amplid,Pocketknife,Pocketknife,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,K2,WWW,WWW,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,K2,Cool Bean,Cool Bean,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,K2,Raygun,Raygun,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Arbor,Coda Camber,Coda,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Coda Camber' = catalog 'Coda' + qualifier
+mens,Arbor,Sin Nombre,Sin Nombre,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Arbor,Westmark,Westmark,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Arbor,Zygote Twin,Zygote Twin,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Nitro,Pantera,Pantera,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Nitro,The Quiver Mountain,TØ,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'The Quiver Mountain' = catalog 'TØ' + qualifier
+mens,Nitro,Glory Stomper,TØ,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Glory Stomper' = catalog 'TØ' + qualifier
+mens,Nitro,Team Exposure,TØ,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Team Exposure' = catalog 'TØ' + qualifier
+mens,Nitro,Magnum,Magnum,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Nitro,Good Times,TØ,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Good Times' = catalog 'TØ' + qualifier
+mens,Nitro,Addict,Addict,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Nitro,Cinema,Cinema,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Ride,Machete GT,Machete,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Machete GT' = catalog 'Machete' + qualifier
+mens,Ride,Burnout,Burnout,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Ride,Helix,Helix,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Ride,Machete,Machete,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Ride,Wild Life,Wild Life,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Ride,Kink,Kink,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Ride,Manic,Manic,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Rossignol,XV Magtek,XV,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'XV Magtek' = catalog 'XV' + qualifier
+mens,Rossignol,Angus,Angus,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Rossignol,Jibsaw,Jibsaw,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Rossignol,Krypto,Krypto,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Volkl,Squad Prime,Squad,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Squad Prime' = catalog 'Squad' + qualifier
+mens,Volkl,Spade,Spade,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Salomon,Man's Board,Man's Board,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Salomon,Assassin,Assassin,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Salomon,The Villain,Villain,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'The Villain' = catalog 'Villain' + qualifier
+mens,Salomon,Salomonder,Salomonder,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Salomon,Craft,Craft,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Salomon,Sanchez,Sanchez,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Salomon,Pulse,Pulse,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Bataleon,The Jam,The Jam,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Bataleon,Boss,Boss,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Bataleon,Global Warmer,Global Warmer,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Bataleon,Goliath,Goliath,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Bataleon,Evil Twin,Evil Twin,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Bataleon,Whatever,Whatever,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Bataleon,Airobic,Airobic,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Bataleon,Disaster,Disaster,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Bataleon,Fun Kink,Fun.Kink,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Flow,Drifter,Drifter,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Flow,Era,Era,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Flow,Verve,Verve,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Palmer,Honeycomb,Honeycomb,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Palmer,Timeless Freeride,Timeless,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Timeless Freeride' = catalog 'Timeless' + qualifier
+mens,Palmer,Burn,Burn,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Palmer,Flash Twin,Flash,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Flash Twin' = catalog 'Flash' + qualifier
+mens,Never Summer,West,West,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+mens,Never Summer,Proto X,Proto,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Proto X' = catalog 'Proto' + qualifier
+mens,Never Summer,Ripsaw X,Ripsaw,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Ripsaw X' = catalog 'Ripsaw' + qualifier
+mens,Never Summer,Funslinger,SL,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Funslinger' = catalog 'SL' + qualifier
+womens,Capita,Birds of a Feather,Birds of a Feather,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,Capita,Space Metal Fantasy,Space Metal Fantasy,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,Rome,Lo-Fi Rocker,Lo-Fi,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Lo-Fi Rocker' = catalog 'Lo-Fi' + qualifier
+womens,Burton,Feelgood,Feelgood,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,Burton,Deja Vu,Deja Vu,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,Burton,Social,Social,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,Burton,Feather,Feather,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,Burton,Genie,Genie,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,Roxy,Banana Smoothie,Smoothie,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Banana Smoothie' = catalog 'Smoothie' + qualifier
+womens,Roxy,Xoxo Jewel,XOXO,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Xoxo Jewel' = catalog 'XOXO' + qualifier
+womens,Roxy,Ally,Ally,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,Roxy,Sugar Banana,Sugar,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Sugar Banana' = catalog 'Sugar' + qualifier
+womens,Salomon,Gypsy,Gypsy,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,Salomon,Wonder,Wonder,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,Salomon,Oh Yeah,Oh Yeah,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,Salomon,Lotus,Lotus,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,Nitro,Mystique,Mystique,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,K2,Lime Lite,Lime Lite,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,Volkl,Flavor,Flavor,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,Bataleon,Distortia,Distortia,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,Bataleon,Push Up,Push Up,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,Bataleon,Feelbetter,Feelbetter,EXACT,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,
+womens,Ride,Compact,Compact Series,QUALIFIED,verified,2015/16,2016,blue-tomato_snowboard_katalog_16,https://issuu.com/blue-tomato/docs/blue-tomato_snowboard_katalog_16,printed 'Compact' = catalog 'Compact Series' + qualifier

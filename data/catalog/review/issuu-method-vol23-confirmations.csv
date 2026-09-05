@@ -1,0 +1,65 @@
+brand,model_ocr,catalog_model_name,match_type,confidence,catalog_season,catalog_model_year,source_docId,source_url,note
+Atlantis,Riksgransen,Riksgränsen 149,QUALIFIED,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,printed 'Riksgransen' = catalog 'Riksgränsen 149' + edition/size/graphic qualifier
+Atlantis,Nera,Nera 156,QUALIFIED,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,printed 'Nera' = catalog 'Nera 156' + edition/size/graphic qualifier
+Bataleon,Goliath,Goliath,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Bataleon,Party Wave Twin,Party Wave,QUALIFIED,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,printed 'Party Wave Twin' = catalog 'Party Wave' + edition/size/graphic qualifier
+Bataleon,Push Up,Push Up,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Bataleon,Cruiser,Cruiser,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Burton,Family Tree Hometown Hero,Hero,QUALIFIED,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,printed 'Family Tree Hometown Hero' = catalog 'Hero' + edition/size/graphic qualifier
+Burton,Talent Scout,Talent Scout,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Burton,Custom,Custom,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Burton,Blossom,Blossom,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Capita,Defenders of Awesome,Defenders of Awesome,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Capita,Birds of a Feather,Birds of a Feather,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Capita,Slush Slasher,SB SLUSH SLASHERS,QUALIFIED,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,printed 'Slush Slasher' = catalog 'SB SLUSH SLASHERS' + edition/size/graphic qualifier
+DC,PLY,Ply,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+DC,PBJ,PBJ,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Drake,Team,TEAM,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Drake,Battle Rusty,BATTLE RUSTY,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Drake,Tao of Drake,TAO OF DRAKE,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Drake,DFL Pro,DFL PRO,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+GNU,Pro Choice,Pro Choice,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+GNU,4x4 Forest Bailey,4,QUALIFIED,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,printed '4x4 Forest Bailey' = catalog '4' + edition/size/graphic qualifier
+GNU,Essential Service,Essential Service,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Jones,Tweaker,Tweaker,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Jones,Aviator 2.0,Aviator 2.0,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Jones,Stratos,Stratos,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Jones,Airheart 2.0,Airheart 2.0,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+K2,Alchemist,Alchemist,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+K2,Antidote,Antidote,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+K2,Passport,Passport,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+K2,World Peace,World Peace Men's Snowboard 2026,QUALIFIED,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,printed 'World Peace' = catalog 'World Peace Men's Snowboard 2026' + edition/size/graphic qualifier
+Lib Tech,T.Rice Orca,T.Rice Orca,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Lib Tech,T.Rice Pro,T.Rice Pro,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Lobster,Halldor Pro,Halldor Pro,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Lobster,Shifter,Shifter,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Lobster,Stomper,Stomper,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Lobster,Sender,Sender,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Nidecker,Escape Plus,Escape Plus,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Nidecker,Escape,Escape,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Nidecker,Mosquito,Mosquito,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Nitro,Quiver Dinghy,Quiver,QUALIFIED,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,printed 'Quiver Dinghy' = catalog 'Quiver' + edition/size/graphic qualifier
+Nitro,Team Pro X Sam Taxwood,TØ,QUALIFIED,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,printed 'Team Pro X Sam Taxwood' = catalog 'TØ' + edition/size/graphic qualifier
+Nitro,T1,T1,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Nitro,Optisym,Optisym,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Ride,Shadowban,Shadowban,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Ride,Saturday,Saturday,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Rome,Artifact Pro,Artifact Pro,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Rome,Agent 20th Anniversary,Agent,QUALIFIED,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,printed 'Agent 20th Anniversary' = catalog 'Agent' + edition/size/graphic qualifier
+Rome,Muse,Muse,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Rome,Party Mod,Party Mod,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Salomon,Highpath,Highpath,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Salomon,Abstract,Abstract,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Salomon,Dancehaul,Dancehaul,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Salomon,Huck Knife,Huck Knife,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Slash,ATV,ATV,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Slash,Spectrum,Spectrum,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+Slash,Brainstorm Split,Brainstorm,QUALIFIED,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,printed 'Brainstorm Split' = catalog 'Brainstorm' + edition/size/graphic qualifier
+Slash,Portal,ApArtment Portal,QUALIFIED,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,printed 'Portal' = catalog 'ApArtment Portal' + edition/size/graphic qualifier
+West,U7opia,U7opia DLW,QUALIFIED,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,printed 'U7opia' = catalog 'U7opia DLW' + edition/size/graphic qualifier
+West,OG Standard,OG standard,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+West,Cpt Achab,CPT Achab DLW,QUALIFIED,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,printed 'Cpt Achab' = catalog 'CPT Achab DLW' + edition/size/graphic qualifier
+West,Muveran Split,Muveran Splitboard,QUALIFIED,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,printed 'Muveran Split' = catalog 'Muveran Splitboard' + edition/size/graphic qualifier
+YES,Warca Uninc JPS,Warca,QUALIFIED,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,printed 'Warca Uninc JPS' = catalog 'Warca' + edition/size/graphic qualifier
+YES,Jackpot,Jackpot,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,
+YES,Rival,Rival,EXACT,verified,2022/23 (Vol 23),2023,methodmag_23-product_guide-lo,https://issuu.com/method_magazine/docs/methodmag_23-product_guide-lo,

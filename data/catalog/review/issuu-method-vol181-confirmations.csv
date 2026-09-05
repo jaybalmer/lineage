@@ -1,0 +1,15 @@
+brand,model_ocr,catalog_model_name,match_type,confidence,catalog_season,catalog_model_year,source_docId,source_url,note
+Bataleon,Wallie,Wallie,EXACT,verified,2017/18 (18.1),2018,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide,
+Bataleon,Evil Twin,Evil Twin,EXACT,verified,2017/18 (18.1),2018,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide,
+Capita,Defenders of Awesome,Defenders of Awesome,EXACT,verified,2017/18 (18.1),2018,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide,
+Capita,Spring Break Slush Slasher,Spring Break Slush Slasher,EXACT,verified,2017/18 (18.1),2018,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide,
+K2,Bottle Rocket,Bottle Rocket,EXACT,verified,2017/18 (18.1),2018,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide,
+Lobster,Halldor Pro,Halldor Pro,EXACT,verified,2017/18 (18.1),2018,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide,
+Lobster,Sender,Sender,EXACT,verified,2017/18 (18.1),2018,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide,
+Never Summer,Proto Type Two,Proto Type Two,EXACT,verified,2017/18 (18.1),2018,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide,
+Nitro,Quiver Squash,Quiver,QUALIFIED,verified,2017/18 (18.1),2018,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide,printed 'Quiver Squash' = catalog 'Quiver' + qualifier
+Nitro,T1,T1,EXACT,verified,2017/18 (18.1),2018,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide,
+Ride,Helix,Helix,EXACT,verified,2017/18 (18.1),2018,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide,
+Ride,Kink,Kink,EXACT,verified,2017/18 (18.1),2018,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide,
+Salomon,The Villain,Villain,QUALIFIED,verified,2017/18 (18.1),2018,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide,printed 'The Villain' = catalog 'Villain' + qualifier
+YES,420 Powderhull,420,QUALIFIED,verified,2017/18 (18.1),2018,181_boards_guide,https://issuu.com/method_magazine/docs/181_boards_guide,printed '420 Powderhull' = catalog '420' + qualifier
