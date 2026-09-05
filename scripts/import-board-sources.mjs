@@ -121,15 +121,24 @@ async function main() {
   }
   console.log(`boards loaded: ${boards.length} (${byKey.size} distinct brand|model keys)`)
 
-  const files = readdirSync(REVIEW).filter((f) => /^issuu-.*-confirmations\.csv$/.test(f)).sort()
+  // Cite from confirmations AND review-candidates: a review-candidate model that has
+  // since been merged into the live catalog (e.g. the new-brand tranche) now resolves
+  // to a board and should carry its provenance too. Rows that still have no live board
+  // fall through to the unresolved log, unchanged.
+  const files = readdirSync(REVIEW)
+    .filter((f) => /^issuu-.*-(confirmations|review-candidates)\.csv$/.test(f))
+    .sort()
   const resolved = new Map()   // dedup key -> row
   const unresolved = []
   let sightings = 0
 
   for (const f of files) {
     for (const r of readCsvObjects(resolve(REVIEW, f))) {
+      // Never cite a brand-identity-flagged sighting (e.g. US "Artec" vs the catalog's
+      // Slovenian Artec) - it must not attach to the wrong brand's board.
+      if ((r.reason || "").startsWith("BRAND_IDENTITY")) continue
       const brand = r.brand
-      const model = r.catalog_model_name || r.model_ocr   // match on the reconciled catalog name
+      const model = r.catalog_model_name || r.model_ocr   // reconciled name, else the printed name
       if (!brand || !model) continue
       sightings++
       const docId = r.source_docId || ""
