@@ -19,6 +19,7 @@ import { EntityMentions } from "@/components/feed/entity-mentions"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { SignInPrompt } from "@/components/ui/sign-in-prompt"
 import { BrandMark } from "@/components/ui/brand-mark"
+import { BoardSources } from "@/components/boards/board-sources"
 import type { Story } from "@/types"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -677,6 +678,9 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
             </div>
           </div>
         </div>
+
+        {/* ── Documented in (catalog provenance) ────────────────────────────── */}
+        <BoardSources boardId={board.id} />
 
         <div className="grid grid-cols-1 md:grid-cols-[1fr_240px] gap-6">
           <div className="space-y-8">

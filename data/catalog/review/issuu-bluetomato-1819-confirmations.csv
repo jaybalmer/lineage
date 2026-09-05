@@ -1,0 +1,94 @@
+brand,model_ocr,catalog_model_name,match_type,confidence,catalog_season,catalog_model_year,source_docId,source_url,note
+Burton,Process FV,Process,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'Process FV' = catalog 'Process' + qualifier
+Burton,Custom Flying V,Custom,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'Custom Flying V' = catalog 'Custom' + qualifier
+Burton,Free Thinker,Free Thinker,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Burton,Custom X,Custom X,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Burton,Custom,Custom,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Burton,FT Mystery Fish,Fish,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'FT Mystery Fish' = catalog 'Fish' + qualifier
+Burton,FT Speed Date,Speed Date,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'FT Speed Date' = catalog 'Speed Date' + qualifier
+Burton,FT Stun Gun,Stun Gun,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'FT Stun Gun' = catalog 'Stun Gun' + qualifier
+Burton,Kilroy Custom,Custom,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'Kilroy Custom' = catalog 'Custom' + qualifier
+Burton,Kilroy Process,Kilroy,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'Kilroy Process' = catalog 'Kilroy' + qualifier
+Burton,Flight Attendant,Flight Attendant,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Capita,Spring Break Slush Slasher,Spring Break Slush Slasher,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Capita,Indoor Survival,Indoor Survival,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Capita,Defenders Of Awesome,Defenders of Awesome,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Capita,The Outsiders,Outsiders,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'The Outsiders' = catalog 'Outsiders' + qualifier
+Capita,Ultrafear,Ultrafear,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Capita,Horrorscope,Horrorscope,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Capita,Outerspace Living,Outerspace Living,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Capita,Kazu Kokubo Pro,Kazu Kokubo Pro,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Capita,The Black Snowboard Of Death,Black Snowboard of Death,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'The Black Snowboard Of Death' = catalog 'Black Snowboard of Death' + qualifier
+Bataleon,Stallion,Stallion,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Bataleon,Boss,Boss,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Bataleon,Goliath,Goliath,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Bataleon,Global Warmer,Global Warmer,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Bataleon,Evil Twin,Evil Twin,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Bataleon,Goliath X BYNDXMDLS,Goliath,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'Goliath X BYNDXMDLS' = catalog 'Goliath' + qualifier
+Bataleon,Whatever,Whatever,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Bataleon,Wallie,Wallie,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Bataleon,Disaster,Disaster,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Bataleon,Magic Carpet,Magic Carpet,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Bataleon,Surfer Ltd,Surfer,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'Surfer Ltd' = catalog 'Surfer' + qualifier
+Bataleon,Surfer,Surfer,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Bataleon,Carver,Carver,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Bataleon,Party Wave,Party Wave,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Lib Tech,T-Rice Pro,T.Rice Pro,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Lib Tech,TRS,TRS,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Lib Tech,Doughboy Shredder,Doughboy,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'Doughboy Shredder' = catalog 'Doughboy' + qualifier
+Lib Tech,Ejack Knife,EJack Knife,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Lib Tech,Box Scratcher,Box Scratcher,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Lib Tech,Skate Banana,Skate Banana,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Lib Tech,Skunk Ape,Skunk Ape,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Lib Tech,Jamie Lynn Tittyfish,Jamie Lynn,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'Jamie Lynn Tittyfish' = catalog 'Jamie Lynn' + qualifier
+Lib Tech,Cold Brew,Cold Brew,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Lib Tech,T-Rice Orca,T.Rice Orca,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Jones,Lone Wolf,Lone Wolf,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Jones,Mind Expander,Mind Expander,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Jones,Ultra Mountain Twin,Ultra Mountain Twin,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Jones,Mountain Twin,Mountain Twin,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Jones,Project X,Project X,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Jones,Storm Chaser,Storm Chaser,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Jones,Flagship,Flagship,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Lobster,Sender,Sender,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Lobster,Halldor Pro,Halldor Pro,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Lobster,Eiki Pro,Eiki Pro,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Nitro,X Volcom Beast,TØ,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'X Volcom Beast' = catalog 'TØ' + qualifier
+Nitro,Magnum,Magnum,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Nitro,Team,Team,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Nitro,T1,T1,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Nitro,Good Times,TØ,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'Good Times' = catalog 'TØ' + qualifier
+Nitro,Pantera,Pantera,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Nitro,Cannon,Cannon,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Nitro,Squash,Squash,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+GNU,Mullair,Mullair,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+GNU,Asym FB Head Space,Head Space,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'Asym FB Head Space' = catalog 'Head Space' + qualifier
+GNU,Asym Carbon Credit,Carbon Credit,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'Asym Carbon Credit' = catalog 'Carbon Credit' + qualifier
+GNU,Money,Money,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+GNU,Hyperkyarve,Hyper,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'Hyperkyarve' = catalog 'Hyper' + qualifier
+Amplid,Paradigma,Paradigma,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Amplid,Stereo,Stereo,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Amplid,Milligram Split,Milligram,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'Milligram Split' = catalog 'Milligram' + qualifier
+Amplid,Pentaquark,Pentaquark,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Amplid,Surfari,Surfari,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Amplid,Aloha Vibes,Aloha Vibes,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Amplid,Dada,Dada,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Salomon,Sight,Sight,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Salomon,Assassin,Assassin,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Salomon,Huck Knife,Huck Knife,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Salomon,The Villain,Villain,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'The Villain' = catalog 'Villain' + qualifier
+F2,Eliminator,Eliminator,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+F2,Silberpfeil,Silberpfeil,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+F2,Speedster RS,Speedster RS,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+F2,Speedster SL,Speedster SL,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Arbor,Coda Camber,Coda,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'Coda Camber' = catalog 'Coda' + qualifier
+Arbor,Bryan Iguchi Pro,Bryan Iguchi Pro,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+Arbor,Westmark Rocker,Westmark,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'Westmark Rocker' = catalog 'Westmark' + qualifier
+Arbor,Westmark Camber Frank April,Westmark,QUALIFIED,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,printed 'Westmark Camber Frank April' = catalog 'Westmark' + qualifier
+DC,Focus,Focus,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+K2,Standard,Standard,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+K2,Simple Pleasures,Simple Pleasures,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+K2,Cool Bean,Cool Bean,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+K2,Manifest,Manifest,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+K2,Afterblack,Afterblack,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
+K2,WWW,WWW,EXACT,verified,2018/19,2019,blue-tomato-snowboard-catalogue-201,https://issuu.com/blue-tomato/docs/blue-tomato-snowboard-catalogue-201,
