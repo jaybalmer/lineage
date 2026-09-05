@@ -19,7 +19,7 @@ import { EntityMentions } from "@/components/feed/entity-mentions"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { SignInPrompt } from "@/components/ui/sign-in-prompt"
 import { BrandMark } from "@/components/ui/brand-mark"
-import { BoardSources } from "@/components/boards/board-sources"
+import { BoardSources, BoardImageCatalogueLink, useBoardSources } from "@/components/boards/board-sources"
 import type { Story } from "@/types"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -185,6 +185,7 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
   const boardBrand = board!.brand
   const boardModel = board!.model
   const boardYear  = board!.model_year
+  const boardSources = useBoardSources(boardId)
 
   const ownedClaims = catalog.claims.filter((c) => c.object_id === boardId && c.predicate === "owned_board")
   const riderIds = [...new Set(ownedClaims.map((c) => c.subject_id))]
@@ -515,6 +516,8 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
                   <BrandMark size={44} color="var(--muted)" dotColor="var(--muted)" className="opacity-30" />
                 </div>
               )}
+              {/* Phase 2: "View in catalogue" pointer to where this year's graphic lives */}
+              <BoardImageCatalogueLink sources={boardSources} />
               {/* Image vote buttons */}
               {isAuth && (
                 <div className="flex gap-1 mt-2 justify-center">
@@ -680,7 +683,7 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
         </div>
 
         {/* ── Documented in (catalog provenance) ────────────────────────────── */}
-        <BoardSources boardId={board.id} />
+        <BoardSources boardId={board.id} sources={boardSources} />
 
         <div className="grid grid-cols-1 md:grid-cols-[1fr_240px] gap-6">
           <div className="space-y-8">
