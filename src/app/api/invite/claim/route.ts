@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth, getServiceClient } from "@/lib/auth"
+import { promoteGhostToAccount } from "@/lib/promote-ghost"
 
 // POST /api/invite/claim — the authenticated tail of the email-invite flow.
 //
@@ -34,14 +35,6 @@ import { requireAuth, getServiceClient } from "@/lib/auth"
 // Idempotent + graceful: no matching invite, an already-claimed invite, or a
 // normal signup with no invite all resolve to { claimed: false } with a 200,
 // never a 500.
-
-interface GhostIdentity {
-  display_name: string | null
-  birth_year: number | null
-  riding_since: number | null
-  bio: string | null
-  avatar_url: string | null
-}
 
 interface InviteRow {
   id: string
@@ -107,64 +100,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, claimed: false, reason: "self" })
   }
 
-  // ── Read the invited identity off the ghost before we delete it ─────────────
-  const { data: ghostRow } = await db
-    .from("people")
-    .select("display_name, birth_year, riding_since, bio, avatar_url")
-    .eq("id", oldId)
-    .maybeSingle()
-  const ghost = (ghostRow as GhostIdentity | null) ?? null
-
-  // ── Repoint the ghost's data onto the real account (invite-claim parity) ────
-  await db
-    .from("claims")
-    .update({ subject_id: user.id })
-    .eq("subject_id", oldId)
-    .eq("subject_type", "person")
-  await db
-    .from("claims")
-    .update({ object_id: user.id })
-    .eq("object_id", oldId)
-    .eq("object_type", "person")
-  await db.from("claims").update({ asserted_by: user.id }).eq("asserted_by", oldId)
-  await db.from("story_riders").update({ rider_id: user.id }).eq("rider_id", oldId)
-
-  // ── Restore the invited identity onto the profile ───────────────────────────
-  // Name: overwrite only a blank or email-placeholder name — never a real name
-  // the user typed during onboarding. Other fields: fill only when the profile's
-  // is empty, so we never clobber values the member set themselves.
-  const placeholder = email ? email.split("@")[0] : null
-  const { data: profRow } = await db
-    .from("profiles")
-    .select("display_name, birth_year, riding_since, bio, avatar_url, merged_from_id")
-    .eq("id", user.id)
-    .maybeSingle()
-  const profile = profRow as (GhostIdentity & { merged_from_id: string | null }) | null
-
-  const update: Record<string, unknown> = {
-    node_status: "claimed",
-    claimed_at: nowIso,
-  }
-  // Only set the breadcrumb if the account hasn't already absorbed another node.
-  if (!profile?.merged_from_id) update.merged_from_id = oldId
-
-  const nameIsPlaceholder =
-    !profile?.display_name || (placeholder !== null && profile.display_name === placeholder)
-  if (nameIsPlaceholder && ghost?.display_name) update.display_name = ghost.display_name
-  if (!profile?.birth_year && ghost?.birth_year) update.birth_year = ghost.birth_year
-  if (!profile?.riding_since && ghost?.riding_since) update.riding_since = ghost.riding_since
-  if (!profile?.bio && ghost?.bio) update.bio = ghost.bio
-  if (!profile?.avatar_url && ghost?.avatar_url) update.avatar_url = ghost.avatar_url
-
-  await db.from("profiles").update(update).eq("id", user.id)
-
-  // ── Mark the invite claimed and retire the ghost ────────────────────────────
-  await db.from("invites").update({ claimed_at: nowIso, claimed_by: user.id }).eq("id", invite.id)
-  await db.from("people").delete().eq("id", oldId)
-
-  return NextResponse.json({
-    ok: true,
-    claimed: true,
-    display_name: (update.display_name as string | undefined) ?? profile?.display_name ?? null,
+  // ── Fold the ghost into the account via the shared promotion path ────────────
+  // One repoint list (promote-ghost.ts -> merge_person_into): repoints every
+  // person-referencing column, restores the invited identity, and retires the
+  // ghost. The placeholder is the email local part, so a real onboarding name is
+  // never overwritten.
+  const placeholder = email ? email.split("@")[0] : ""
+  const { claimed, display_name } = await promoteGhostToAccount(db, {
+    ghostId: oldId,
+    userId: user.id,
+    placeholderName: placeholder,
+    note: "invite_claim",
   })
+
+  // Mark the invite resolved so it cannot be reused, regardless of the fold
+  // outcome (a stale/already-folded ghost still resolves the invite).
+  await db.from("invites").update({ claimed_at: nowIso, claimed_by: user.id }).eq("id", invite.id)
+
+  return NextResponse.json({ ok: true, claimed, display_name })
 }
