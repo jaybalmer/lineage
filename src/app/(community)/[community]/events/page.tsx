@@ -8,6 +8,7 @@ import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { SignInPrompt } from "@/components/ui/sign-in-prompt"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
+import { UnverifiedBadge } from "@/components/ui/badge"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import { CommunityLink } from "@/components/ui/community-link"
@@ -107,7 +108,7 @@ function EventCard({ event }: { event: Event }) {
               <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                 <span className="font-semibold text-foreground text-sm leading-snug">{event.name}</span>
                 {isUnverified && (
-                  <span className="text-[10px] text-amber-600 border border-amber-500/40 rounded px-1.5 py-0.5">unverified</span>
+                  <UnverifiedBadge />
                 )}
               </div>
               <div className="text-xs text-muted">

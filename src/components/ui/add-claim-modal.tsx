@@ -10,6 +10,7 @@ import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import { BoardRelationshipToggles } from "@/components/ui/board-relationship-toggles"
 import { toBoardRelationship, boardRelationshipFlags } from "@/lib/board-relationship"
 import { RiderAvatar, getInitials } from "@/components/ui/rider-avatar"
+import { UnverifiedBadge } from "@/components/ui/badge"
 import { isInvitableNodeStatus } from "@/lib/invite-tracking"
 import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 import type { Predicate, EntityType, ConfidenceLevel, PrivacyLevel, Board, Person } from "@/types"
@@ -1130,7 +1131,7 @@ export function AddClaimModal({ defaultFilter = "all", onClose }: AddClaimModalP
                         <RiderAvatar person={p} size="xs" />
                         <span>{p.display_name}</span>
                         {p.community_status === "unverified" && (
-                          <span className="ml-auto text-[10px] px-1.5 py-0.5 rounded bg-amber-950/60 text-amber-400 border border-amber-800/40">◎ unverified</span>
+                          <UnverifiedBadge className="ml-auto" />
                         )}
                       </button>
                     ))}
