@@ -9,6 +9,7 @@
 // idea rendered for the dark ground with a pre-resolved subject name.
 
 import { useState } from "react"
+import Link from "next/link"
 import { formatTimestamp } from "@/lib/mentions"
 import { parseYouTubeId } from "@/lib/utils"
 import type { PublicMention } from "@/lib/public-timeline-read"
@@ -39,25 +40,34 @@ export function PublicMentionRow({ mention, mediaUrl }: {
 
   return (
     <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-      <button
-        type="button"
-        onClick={() => hasDetail && setExpanded((v) => !v)}
-        className={`w-full text-left ${hasDetail ? "cursor-pointer" : "cursor-default"}`}
-        aria-expanded={hasDetail ? expanded : undefined}
-      >
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs text-fuchsia-400" aria-hidden>🎙</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs text-fuchsia-400" aria-hidden>🎙</span>
+        {mention.href ? (
+          <Link
+            href={mention.href}
+            className="text-sm font-semibold text-white hover:text-white/80 transition-colors"
+          >
+            {mention.subject_name}
+          </Link>
+        ) : (
           <span className="text-sm font-semibold text-white">{mention.subject_name}</span>
-          {stamp && (
-            <span className="text-[10px] tabular-nums px-1.5 py-0.5 rounded-full bg-white/10 border border-white/10 text-white/60">
-              {stamp}
-            </span>
-          )}
-        </div>
-        {hasDetail && !expanded && (
-          <p className="text-[11px] text-white/45 mt-1">{mention.excerpt ? "Read the line" : "Listen"} →</p>
         )}
-      </button>
+        {stamp && (
+          <span className="text-[10px] tabular-nums px-1.5 py-0.5 rounded-full bg-white/10 border border-white/10 text-white/60">
+            {stamp}
+          </span>
+        )}
+      </div>
+      {hasDetail && !expanded && (
+        <button
+          type="button"
+          onClick={() => setExpanded(true)}
+          className="text-[11px] text-white/45 hover:text-white/70 transition-colors mt-1 text-left"
+          aria-expanded={expanded}
+        >
+          {mention.excerpt ? "Read the line" : "Listen"} →
+        </button>
+      )}
 
       {expanded && (
         <div className="mt-3 pt-3 border-t border-white/10">

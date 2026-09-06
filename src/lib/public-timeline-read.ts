@@ -14,6 +14,8 @@
 import { getServiceClient } from "@/lib/auth"
 import { readPublishedMentions } from "@/lib/mentions-server"
 import { eventSlug, placeSlug, boardSlug } from "@/lib/mock-data"
+import { mentionHref } from "@/lib/mention-links"
+import { FNRAD_CHALLENGE, hasChallengeGuest } from "@/lib/fnrad"
 import { nameToSlug } from "@/lib/utils"
 import type {
   Claim, Story, EntityType, Predicate, MentionSubjectType,
@@ -1110,6 +1112,10 @@ export interface PublicMention {
   subject_id: string
   /** Resolved display name, falling back to the raw id when unresolvable. */
   subject_name: string
+  /** In-app path for the subject, resolved server-side (T4). Null when the
+   *  subject cannot be linked (unresolved org, or an unknown type). The view
+   *  renders a linked chip when set, plain text when null. */
+  href: string | null
   timestamp_seconds: number | null
   excerpt: string | null
   story_title: string | null
@@ -1132,6 +1138,11 @@ export interface PublicEpisodePayload {
   /** Total matching linked stories before the cap, so the view can offer
    *  "See all on the episode". */
   linkedTotal: number
+  /** FNRad Listener Landing (D5): this week's challenge spotlight, resolved from
+   *  FNRAD_CHALLENGE.guestId, NOT from this episode's own guests. Same person on
+   *  every surface. Null when no guest is configured, in which case the episode
+   *  page renders no challenge card (D5 render state 3). */
+  challengeGuest: PublicPersonLite | null
 }
 
 /** Map an episode event row to the shared owner header shape (display_name =
@@ -1422,9 +1433,14 @@ export async function readEventStack(
     if (bucket) bucket.push(m.subject_id)
   }
 
+  // FNRad challenge spotlight (D5): resolve FNRAD_CHALLENGE.guestId in the same
+  // pass so the episode page can render this week's challenge without a second
+  // read. The guest need not be one of this episode's own guests.
+  const challengeGuestId = hasChallengeGuest(FNRAD_CHALLENGE.guestId) ? FNRAD_CHALLENGE.guestId : null
+
   const { entries, stories, entities } = await loadOwnerStack(db, "event", event.id, {
     seed: {
-      person: [...guestIds, ...mentionSeed.person],
+      person: [...guestIds, ...mentionSeed.person, ...(challengeGuestId ? [challengeGuestId] : [])],
       place: mentionSeed.place,
       event: mentionSeed.event,
       org: mentionSeed.org,
@@ -1448,6 +1464,7 @@ export async function readEventStack(
     subject_type: m.subject_type,
     subject_id: m.subject_id,
     subject_name: mentionSubjectName(m.subject_type, m.subject_id, entities),
+    href: mentionHref(m.subject_type, m.subject_id, entities),
     timestamp_seconds: m.timestamp_seconds ?? null,
     excerpt: m.excerpt ?? null,
     story_title: m.story_title ?? null,
@@ -1489,7 +1506,35 @@ export async function readEventStack(
     linkedEntries,
     linkedStories,
     linkedTotal: linkedAll.length,
+    challengeGuest: challengeGuestFromEntities(entities),
   }
+}
+
+/** The FNRad weekly-challenge spotlight (D5), built from FNRAD_CHALLENGE against
+ *  already-resolved entities. Returns null when no guest is configured (no card
+ *  anywhere). When the id is set but unresolved, falls back to the configured
+ *  guestName so the copy never renders "undefined"; the link always uses the id. */
+function challengeGuestFromEntities(entities: PublicTimelineEntities): PublicPersonLite | null {
+  if (!hasChallengeGuest(FNRAD_CHALLENGE.guestId)) return null
+  const guestId = FNRAD_CHALLENGE.guestId
+  return (
+    entities.people[guestId] ?? {
+      id: guestId,
+      display_name: FNRAD_CHALLENGE.guestName,
+      avatar_url: null,
+      node_status: null,
+    }
+  )
+}
+
+/** Resolve the FNRad weekly-challenge spotlight for a surface that does not
+ *  already hold resolved entities (the /fnrad hub, T6 step 5). One person read.
+ *  Returns null when no guest is configured (D5 render state 3). */
+export async function readChallengeGuest(): Promise<PublicPersonLite | null> {
+  if (!hasChallengeGuest(FNRAD_CHALLENGE.guestId)) return null
+  const db = getServiceClient()
+  const entities = await resolveEntities(db, [], [], { person: [FNRAD_CHALLENGE.guestId] })
+  return challengeGuestFromEntities(entities)
 }
 
 /** Display name for a mention subject, resolved from the already-loaded public
@@ -1653,4 +1698,97 @@ export async function readOrgOwner(slug: string): Promise<PublicTimelineOwner | 
   const org = data as OrgStackRow | null
   if (!org || org.public_enabled !== true) return null
   return orgOwnerHeader(org)
+}
+
+// ── FNRad listener hub (features/fnrad-listener-landing-brief.md, T2) ──────────
+
+export interface ShowHubEpisode extends PublicShowEpisode {
+  /** Resolved names from this episode's PUBLISHED mentions, in read order,
+   *  deduped by subject. Empty when the episode has no published mentions. */
+  mentionNames: { id: string; name: string; href: string | null }[]
+  /** Total distinct published-mention subjects, so the view can say "and N more". */
+  mentionTotal: number
+}
+
+export interface PublicShowHubPayload {
+  owner: PublicTimelineOwner
+  episodes: ShowHubEpisode[]
+}
+
+/**
+ * The /fnrad hub's one read: the show header, its live episode list (newest
+ * first), and the names from each episode's PUBLISHED mentions. Reuses
+ * readOrgStack so "live" and the sort can never drift (F8), and the
+ * published-only mention rule with no editor override (F9). Null in, null out:
+ * a wrong slug or an unpublished show returns null and the hub renders degraded
+ * (D3, A10). Any thrown query degrades to an episode list with no names rather
+ * than 500ing a URL that gets read out on a podcast.
+ */
+export async function readShowHub(slug: string): Promise<PublicShowHubPayload | null> {
+  const show = await readOrgStack({ slug, requireEnabled: true })
+  if (!show) return null
+
+  // readOrgStack(requireEnabled) already returns live episodes only, newest
+  // first; an episode with no public_slug has no page to link, so it is dropped.
+  const liveEpisodes = show.episodes.filter((e) => e.live && e.slug)
+  const nameless = (): PublicShowHubPayload => ({
+    owner: show.owner,
+    episodes: liveEpisodes.map((e) => ({ ...e, mentionNames: [], mentionTotal: 0 })),
+  })
+  if (liveEpisodes.length === 0) return { owner: show.owner, episodes: [] }
+
+  try {
+    const db = getServiceClient()
+    const liveIds = liveEpisodes.map((e) => e.id)
+    const { data } = await db
+      .from("mentions")
+      .select("id, episode_event_id, subject_type, subject_id")
+      .in("episode_event_id", liveIds)
+      .eq("status", "published")
+      .order("timestamp_seconds", { ascending: true, nullsFirst: false })
+      .order("created_at", { ascending: true })
+
+    const rows = (data ?? []) as {
+      id: string
+      episode_event_id: string
+      subject_type: MentionSubjectType
+      subject_id: string
+    }[]
+
+    // Resolve every subject in one pass.
+    const seed = { person: [] as string[], place: [] as string[], event: [] as string[], org: [] as string[], board: [] as string[] }
+    for (const r of rows) {
+      const bucket = seed[r.subject_type as keyof typeof seed]
+      if (bucket) bucket.push(r.subject_id)
+    }
+    const entities = await resolveEntities(db, [], [], seed)
+
+    const byEpisode = new Map<string, typeof rows>()
+    for (const r of rows) {
+      const arr = byEpisode.get(r.episode_event_id) ?? []
+      arr.push(r)
+      byEpisode.set(r.episode_event_id, arr)
+    }
+
+    const episodes: ShowHubEpisode[] = liveEpisodes.map((ep) => {
+      const seen = new Set<string>()
+      const names: { id: string; name: string; href: string | null }[] = []
+      for (const r of byEpisode.get(ep.id) ?? []) {
+        const key = `${r.subject_type}:${r.subject_id}`
+        if (seen.has(key)) continue
+        seen.add(key)
+        const name = mentionSubjectName(r.subject_type, r.subject_id, entities)
+        // Drop unresolved subjects: mentionSubjectName falls back to the raw id
+        // (F20), and a generated id must never render as a name on a page that is
+        // advertised on air (D8, risk 8).
+        if (name === r.subject_id) continue
+        names.push({ id: r.subject_id, name, href: mentionHref(r.subject_type, r.subject_id, entities) })
+      }
+      return { ...ep, mentionNames: names.slice(0, 8), mentionTotal: names.length }
+    })
+
+    return { owner: show.owner, episodes }
+  } catch {
+    return nameless()
+  }
 }

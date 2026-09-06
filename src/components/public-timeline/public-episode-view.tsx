@@ -9,9 +9,13 @@ import Link from "next/link"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { StackView } from "@/components/public-timeline/stack-view"
 import { PublicMentionGroup } from "@/components/public-timeline/public-mention-group"
+import { ChallengeCard } from "@/components/fnrad/challenge-card"
 import { groupMentionsByMoment } from "@/lib/mentions"
+import { FNRAD_HUB_REF } from "@/lib/fnrad"
 import { parseYouTubeId } from "@/lib/utils"
 import type { PublicEpisodePayload } from "@/lib/public-timeline-read"
+
+const ONBOARDING_HREF = `/onboarding?ref=${FNRAD_HUB_REF}`
 
 /** "3 Feb 2026 at 09:00" in the reader's own locale, for the scheduled banner. */
 function scheduleLabel(iso: string): string {
@@ -56,7 +60,7 @@ export function PublicEpisodeView({ payload, preview = false }: {
   /** Editor-only pre-publish render (B4): banner-marked, otherwise identical. */
   preview?: boolean
 }) {
-  const { owner, meta, entries, stories, entities, mentions, linkedEntries, linkedStories, linkedTotal } = payload
+  const { owner, meta, entries, stories, entities, mentions, linkedEntries, linkedStories, linkedTotal, challengeGuest } = payload
   const ytId = meta.media_url ? parseYouTubeId(meta.media_url) : null
   // Two distinct editor-only states: never published, and published but waiting
   // on its scheduled time. Both only ever render for an editor (an anonymous
@@ -125,10 +129,15 @@ export function PublicEpisodeView({ payload, preview = false }: {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 {meta.guests.map((g) => (
-                  <div key={g.id} className="flex items-center gap-2 pr-3 rounded-full bg-white/5 border border-white/10">
+                  <Link
+                    key={g.id}
+                    href={`/people/${g.id}`}
+                    aria-label={`${g.display_name}, on Linestry`}
+                    className="flex items-center gap-2 pr-3 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                  >
                     <GuestAvatar name={g.display_name} url={g.avatar_url} />
                     <span className="text-xs text-white/85">{g.display_name}</span>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </div>
@@ -156,6 +165,30 @@ export function PublicEpisodeView({ payload, preview = false }: {
             </a>
           ) : null}
         </header>
+
+        {/* Listener strip (FNRad Listener Landing, D9): a one-line orientation for
+            a stranger who arrived from show notes, on every public episode page. */}
+        <section className="mb-6 rounded-xl border border-white/10 bg-white/5 px-4 py-3.5">
+          <p className="text-sm font-light leading-relaxed text-white/80">
+            New here? Linestry is a shared timeline of snowboarding, kept by the people who were
+            there. Everyone named in this episode has a spot on it, and so do you.
+          </p>
+          <Link
+            href={ONBOARDING_HREF}
+            className="mt-3 inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-accent-strong"
+          >
+            Start your timeline
+          </Link>
+        </section>
+
+        {/* This week's challenge (D5). Same person as the hub, from
+            FNRAD_CHALLENGE.guestId, NOT this episode's own guests. Absent when no
+            guest is configured (D5 render state 3). */}
+        {challengeGuest && (
+          <div className="mb-6">
+            <ChallengeCard guest={challengeGuest} mode="episode" />
+          </div>
+        )}
 
         {/* Featured set */}
         {entries.length > 0 && (
@@ -213,8 +246,8 @@ export function PublicEpisodeView({ payload, preview = false }: {
             <BrandMark size={18} color="#ffffff" />
             <span className="text-xs font-medium">Powered by Linestry</span>
           </Link>
-          <Link href="/" className="text-xs font-semibold text-white/80 hover:text-white">
-            Explore the snowboarding graph →
+          <Link href={ONBOARDING_HREF} className="text-xs font-semibold text-white/80 hover:text-white">
+            Start your timeline →
           </Link>
         </footer>
       </main>

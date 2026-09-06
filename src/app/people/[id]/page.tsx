@@ -28,6 +28,7 @@ import { EQUITY_SNAPSHOT_LABEL } from "@/lib/equity-offer"
 import { isAuthUser } from "@/store/lineage-store"
 import { notFound, useRouter } from "next/navigation"
 import { encodeIntent, readIntent, stripIntent } from "@/lib/intent"
+import { addStoryAboutHref } from "@/lib/fnrad"
 import { ClaimRequestModal } from "@/components/ui/claim-request-modal"
 import { ClaimNodeSheet } from "@/components/ui/claim-node-sheet"
 import { InviteToClaimSheet } from "@/components/ui/invite-to-claim-sheet"
@@ -706,27 +707,40 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
             invitation to help fill in their history. */}
         {!isCurrentUser && isInvitableNodeStatus(person.node_status) && personClaims.length === 0 && stories.length === 0 && mentions.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border-default p-6 text-center">
-            <p className="text-sm font-semibold text-foreground mb-1">No entries yet</p>
+            <p className="text-sm font-semibold text-foreground mb-1">Nothing here yet</p>
             <p className="text-xs text-muted leading-relaxed max-w-sm mx-auto">
-              {person.display_name} is in the graph because another member mentioned them.
-              If you rode with {person.display_name.split(" ")[0]}, add a story or claim to help fill in their history.
+              {person.display_name.split(" ")[0]}&apos;s page is new. If you rode with{" "}
+              {person.display_name.split(" ")[0]}, or you were there watching, you can be the first
+              to put something on it.
             </p>
-            {isAuth && (
-              <div className="flex items-center justify-center gap-3 mt-4 flex-wrap">
+            {/* FNRad Listener Landing (T7a): the action row renders for everyone,
+                not only signed-in visitors, because episode 1 lands on exactly
+                this empty state. Signed in, the primary opens the pre-tagged
+                composer; signed out, it routes through the same addStoryAboutHref
+                the challenge card and T9 use. */}
+            <div className="flex items-center justify-center gap-3 mt-4 flex-wrap">
+              {isAuth ? (
                 <button
                   onClick={() => setShowAddStory(true)}
                   className="px-3 py-2 rounded-lg bg-violet-700 text-white text-xs font-medium hover:bg-violet-600 transition-colors"
                 >
-                  ✍ Add a story
+                  Add your story about {person.display_name.split(" ")[0]}
                 </button>
+              ) : (
                 <Link
-                  href="/people"
-                  className="px-3 py-2 rounded-lg bg-surface-hover border border-border-default text-xs font-medium text-foreground hover:bg-surface-active transition-colors"
+                  href={addStoryAboutHref(resolvedId)}
+                  className="px-3 py-2 rounded-lg bg-violet-700 text-white text-xs font-medium hover:bg-violet-600 transition-colors"
                 >
-                  Browse riders
+                  Add your story about {person.display_name.split(" ")[0]}
                 </Link>
-              </div>
-            )}
+              )}
+              <Link
+                href="/people"
+                className="px-3 py-2 rounded-lg bg-surface-hover border border-border-default text-xs font-medium text-foreground hover:bg-surface-active transition-colors"
+              >
+                Browse riders
+              </Link>
+            </div>
           </div>
         ) : (
           /* Feed */
