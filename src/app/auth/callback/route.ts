@@ -11,9 +11,13 @@ export async function GET(request: NextRequest) {
   // it after the session is established. Validated to an internal path.
   const returnTo = safeReturnTo(searchParams.get("returnTo"))
   const completeUrl = `${origin}/auth/complete${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`
+  // Keep returnTo through a failed provider hop too, so the retry lands on the
+  // destination (e.g. the guest page) rather than dropping it. Not R1 (that
+  // renders the error message); this only stops throwing the destination away.
+  const rtSuffix = returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""
 
   if (!code) {
-    return NextResponse.redirect(`${origin}/onboarding?error=no_code`)
+    return NextResponse.redirect(`${origin}/onboarding?error=no_code${rtSuffix}`)
   }
 
   const cookieStore = await cookies()
@@ -37,7 +41,7 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
-    return NextResponse.redirect(`${origin}/onboarding?error=auth_failed`)
+    return NextResponse.redirect(`${origin}/onboarding?error=auth_failed${rtSuffix}`)
   }
 
   return NextResponse.redirect(completeUrl)

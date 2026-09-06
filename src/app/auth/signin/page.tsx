@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
@@ -52,6 +52,17 @@ export default function SignInPage() {
   const [sending, setSending]   = useState(false) // magic link send in flight
   const [sent, setSent]         = useState(false)
   const [error, setError]       = useState<string | null>(null)
+
+  // Carry the destination onto the "Create your timeline" signup link. This is
+  // the one method on the page that otherwise drops returnTo, and it is the link
+  // a first-time listener clicks (D6). The link renders rather than fires, so it
+  // cannot call currentReturnTo() at action time without forcing a dynamic
+  // render; compute the href once on mount instead.
+  const [onboardingHref, setOnboardingHref] = useState("/onboarding")
+  useEffect(() => {
+    const rt = currentReturnTo()
+    if (rt) setOnboardingHref(`/onboarding?returnTo=${encodeURIComponent(rt)}`)
+  }, [])
 
   const continueWithGoogle = async () => {
     setError(null)
@@ -332,7 +343,7 @@ export default function SignInPage() {
         <div className="flex items-center justify-between" style={{ fontSize: 10 }}>
           <p className="text-muted">
             No account yet?{" "}
-            <Link href="/onboarding" className="underline hover:text-foreground">
+            <Link href={onboardingHref} className="underline hover:text-foreground">
               Create your timeline
             </Link>
           </p>

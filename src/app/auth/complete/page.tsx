@@ -55,7 +55,14 @@ export default function AuthCompletePage() {
         first_place_id?: string
         first_board_id?: string
         sessionClaims?: typeof sessionClaims
+        returnTo?: string
       } | null
+
+      // Signup-intent fallback (D7): when the URL carried no returnTo (Supabase
+      // dropped redirect_to), recover it from the stash. Re-validate through
+      // safeReturnTo even though it came back from our own server: it originated
+      // in a client POST body, and storage location is not provenance (section 10).
+      const effReturnTo = returnTo ?? safeReturnTo(pending?.returnTo ?? null)
 
       const effDisplayName = onboarding.display_name?.trim() || pending?.display_name?.trim()
       const effBirthYear   = onboarding.birth_year    ?? pending?.birth_year    ?? null
@@ -222,7 +229,7 @@ export default function AuthCompletePage() {
       }
 
       setStatus("Done! Opening your linestry…")
-      router.replace(returnTo ?? `/${activeCommunitySlug}/profile`)
+      router.replace(effReturnTo ?? `/${activeCommunitySlug}/profile`)
     }
 
     // ── Timeout: never hang indefinitely ──────────────────────────────────

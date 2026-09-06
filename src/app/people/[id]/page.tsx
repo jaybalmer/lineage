@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState, useEffect } from "react"
+import { use, useState, useEffect, useRef } from "react"
 import { Nav } from "@/components/ui/nav"
 import { CLAIMS, getPersonById, getSharedContext } from "@/lib/mock-data"
 import { FeedView } from "@/components/feed/feed-view"
@@ -26,7 +26,8 @@ import { HelpConnectCard } from "@/components/ui/help-connect-card"
 import { isInvitableNodeStatus, isInvitablePerson, trackInviteEvent } from "@/lib/invite-tracking"
 import { EQUITY_SNAPSHOT_LABEL } from "@/lib/equity-offer"
 import { isAuthUser } from "@/store/lineage-store"
-import { notFound } from "next/navigation"
+import { notFound, useRouter } from "next/navigation"
+import { encodeIntent, readIntent, stripIntent } from "@/lib/intent"
 import { ClaimRequestModal } from "@/components/ui/claim-request-modal"
 import { ClaimNodeSheet } from "@/components/ui/claim-node-sheet"
 import { InviteToClaimSheet } from "@/components/ui/invite-to-claim-sheet"
@@ -38,6 +39,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   const { id } = use(params)
   const { activePersonId, profileOverride, membership, catalogLoaded, catalog, userEntities, setShowMemberCard, sessionClaims } = useLineageStore()
   const allPeople = [...catalog.people, ...(userEntities.people ?? [])]
+  const router = useRouter()
   const [playingTimeline, setPlayingTimeline] = useState(false)
   // Lazy-init from localStorage so these are correct on first render without a
   // synchronous setState in an effect (react-hooks/set-state-in-effect). The
@@ -200,6 +202,25 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
       .then((data) => { if (Array.isArray(data)) setClaimRequests(data as ClaimRequestWithClaimant[]) })
       .catch(() => {})
   }, [catalogLoaded, resolvedId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Signup-intent replay (T5). When an authenticated viewer arrives with an
+  // add-story intent naming THIS person, open the composer once and clear the
+  // intent from the URL and history so it never re-fires on reload or Back (D4).
+  // The subject-matches-page clause means an intent can only open a composer on
+  // the page it names. Any precondition failing is a silent no-op: a signed-out
+  // arrival just sees the ordinary page plus the T2.2 CTA.
+  const replayedRef = useRef(false)
+  useEffect(() => {
+    if (!catalogLoaded || !isAuthUser(activePersonId) || replayedRef.current) return
+    const intent = readIntent(window.location.search)
+    if (!intent || intent.action !== "add-story" || intent.subject !== resolvedId) return
+    replayedRef.current = true
+    router.replace(window.location.pathname + stripIntent(window.location.search))
+    // One-shot, ref-latched replay: this is the intended open-on-arrival side
+    // effect, not a cascading render (the latch guarantees it runs once).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setShowAddStory(true)
+  }, [catalogLoaded, activePersonId, resolvedId, router])
 
   // Wait for catalog to hydrate before 404-ing
   if (!catalogLoaded) {
@@ -426,6 +447,23 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
               >
                 Add story about {person.display_name.split(" ")[0]}
               </button>
+            </div>
+          )}
+          {/* Signed-out visitors (the episode-1 listener path) get one direct
+              link to signup carrying an add-story intent for this person, so
+              they land back here with the composer pre-tagged. Not SignInPrompt
+              (D5): the label already says what it does, and a modal would put a
+              click between the listener and signup. */}
+          {!isCurrentUser && !isAuthUser(activePersonId) && (
+            <div className="mt-3">
+              <Link
+                href={`/auth/signin?returnTo=${encodeURIComponent(
+                  encodeIntent({ path: `/people/${resolvedId}`, action: "add-story", subject: resolvedId }),
+                )}`}
+                className="block text-center px-3 py-2.5 rounded-lg bg-surface-hover border border-border-default text-foreground text-sm font-medium hover:bg-surface-active transition-colors"
+              >
+                Add your story about {person.display_name.split(" ")[0]}
+              </Link>
             </div>
           )}
         </div>

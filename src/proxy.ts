@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import type { PersonRedirectMap, PersonRedirectReason } from "@/types"
+import { safeReturnTo } from "@/lib/safe-redirect"
 
 /**
  * Three-layer proxy (renamed from middleware.ts per Next 16's proxy file
@@ -205,8 +206,12 @@ export async function proxy(request: NextRequest) {
     path === "/me" || path.startsWith("/me/")
 
   if (!user && isProtected) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/onboarding"
+    // Stamp where they were headed so signup can return them there. Build the
+    // target explicitly rather than mutating the clone, so the incoming query
+    // string does not ride along beside the new returnTo (F9).
+    const target = safeReturnTo(`${path}${request.nextUrl.search}`)
+    const url = new URL("/onboarding", request.url)
+    if (target) url.searchParams.set("returnTo", target)
     return NextResponse.redirect(url)
   }
 
