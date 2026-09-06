@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useLineageStore } from "@/store/lineage-store"
 import { trackEvent } from "@/lib/analytics"
+import { safeReturnTo } from "@/lib/safe-redirect"
 import { cn } from "@/lib/utils"
 import { eraForYear, ERA_FTUE } from "@/lib/eras"
 import { BrandMark } from "@/components/ui/brand-mark"
@@ -119,6 +120,19 @@ export function OnboardingFlow() {
   const step = onboarding.step
   const currentStepId: StepId = STEPS[step] ?? "save"
   const [claimContext, setClaimContext] = useState<{ inviterName?: string } | null>(null)
+
+  // Read the signup-intent destination from this page's own URL once, per visit.
+  // Not useSearchParams (forces a dynamic render) and not the Zustand store (D3):
+  // the value lives only as long as this URL does. Matches the from=intro pattern
+  // below at line ~173.
+  const [returnTo] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null
+    try {
+      return safeReturnTo(new URLSearchParams(window.location.search).get("returnTo"))
+    } catch {
+      return null
+    }
+  })
 
   // One funnel event per name per visit; back-navigation must not double-count.
   const firedRef = useRef<Set<string>>(new Set())
@@ -259,7 +273,10 @@ export function OnboardingFlow() {
   // only, so answers survive for a later return; ftue_exited records where.
   const exitToBrowsing = () => {
     trackEvent("ftue", "ftue_exited", { step_id: currentStepId })
-    router.push(`/${activeCommunitySlug}`)
+    // Back out to where they came from when an intent brought them here (D10),
+    // else the community home. Intent params ride along verbatim: the replay is
+    // gated on an authenticated viewer, so a signed-out arrival sees a dead param.
+    router.push(returnTo ?? `/${activeCommunitySlug}`)
   }
 
   // Dev bypass. Skips the OAuth gate locally, binding the answers to a dev user
@@ -629,7 +646,7 @@ export function OnboardingFlow() {
         {/* ── Save ── */}
         {currentStepId === "save" && (
           <div className="mt-auto">
-            <SaveStep firstName={firstName} startYear={startYear} ridersWaiting={stats.riders} />
+            <SaveStep firstName={firstName} startYear={startYear} ridersWaiting={stats.riders} returnTo={returnTo} />
           </div>
         )}
 

@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 // context (the iOS Mail default). Carry the payload to the server so
 // /auth/complete can restore the typed name and the FTUE claims from the auth
 // user's metadata when the local store is empty.
-function buildOnboardingPayload() {
+function buildOnboardingPayload(returnTo?: string | null) {
   const { onboarding, sessionClaims } = useLineageStore.getState()
   return {
     display_name: onboarding.display_name?.trim() || undefined,
@@ -21,6 +21,10 @@ function buildOnboardingPayload() {
     first_place_id: onboarding.first_place_id ?? undefined,
     first_board_id: onboarding.first_board_id ?? undefined,
     sessionClaims,
+    // Second channel for the signup intent (D7): the magic link itself carries
+    // returnTo in its redirect, but if Supabase discards redirect_to (sending
+    // origin not in the Redirect URLs allowlist) the stash is what survives.
+    ...(returnTo ? { returnTo } : {}),
   }
 }
 
@@ -68,11 +72,14 @@ export function SaveStep({
   firstName = "",
   startYear = null,
   ridersWaiting = null,
+  returnTo = null,
 }: {
   firstName?: string
   startYear?: number | null
   /** Null when the community stats fetch failed. The tile is dropped, never faked. */
   ridersWaiting?: number | null
+  /** Signup-intent destination to preserve across auth (validated by the caller). */
+  returnTo?: string | null
 } = {}) {
   const [showEmail, setShowEmail] = useState(false)
   const [email, setEmail] = useState("")
@@ -86,7 +93,7 @@ export function SaveStep({
     try {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: { redirectTo: `${window.location.origin}/auth/callback${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}` },
       })
       if (oauthError) {
         trackEvent("auth", "signup_failed", { method: "google", error_class: signupErrorClass(oauthError.message) })
@@ -106,7 +113,7 @@ export function SaveStep({
     try {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "facebook",
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: { redirectTo: `${window.location.origin}/auth/callback${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}` },
       })
       if (oauthError) {
         trackEvent("auth", "signup_failed", { method: "facebook", error_class: signupErrorClass(oauthError.message) })
@@ -129,12 +136,15 @@ export function SaveStep({
     setSending(true)
     setError(null)
     trackEvent("auth", "signup_started", { method: "magic_link" })
-    const onboardingPayload = buildOnboardingPayload()
+    const onboardingPayload = buildOnboardingPayload(returnTo)
     try {
       const res = await fetch("/api/auth/magic-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: e, onboarding: onboardingPayload }),
+        // returnTo is baked into the emailed link's redirect by the route; the
+        // stash inside onboardingPayload is the fallback channel (D7). No
+        // `intent` field here: that name means signin|signup on this route (F7).
+        body: JSON.stringify({ email: e, onboarding: onboardingPayload, returnTo: returnTo ?? undefined }),
       })
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean
@@ -154,7 +164,7 @@ export function SaveStep({
         const { error: otpError } = await supabase.auth.signInWithOtp({
           email: e,
           options: {
-            emailRedirectTo: `${window.location.origin}/auth/complete`,
+            emailRedirectTo: `${window.location.origin}/auth/complete${returnTo ? `?returnTo=${encodeURIComponent(returnTo)}` : ""}`,
             shouldCreateUser: true,
             // Same carry-across as the server path: stash the picks in
             // user_metadata so /auth/complete can restore them cross-context.

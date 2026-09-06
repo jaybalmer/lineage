@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
+import { safeReturnTo } from "@/lib/safe-redirect"
 
 /**
  * Press-time gate for contribution affordances shown to signed-out visitors
@@ -23,7 +24,12 @@ export function SignInPrompt({
 }) {
   useBodyScrollLock()
   const pathname = usePathname()
-  const returnTo = pathname ? `?returnTo=${encodeURIComponent(pathname)}` : ""
+  // Carry path AND search, so a signup intent (or any query param) on the
+  // current URL survives to /auth/signin. Guard the window read for SSR and
+  // validate through the same guard /auth/signin uses.
+  const search = typeof window !== "undefined" ? window.location.search : ""
+  const target = safeReturnTo(`${pathname ?? ""}${search}`)
+  const returnTo = target ? `?returnTo=${encodeURIComponent(target)}` : ""
 
   return (
     <div

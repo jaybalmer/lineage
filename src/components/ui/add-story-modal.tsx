@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useCallback, useEffect } from "react"
-import { useLineageStore } from "@/store/lineage-store"
+import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 import { cn, parseYouTubeId, type StoryDatePrecision } from "@/lib/utils"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
@@ -38,7 +38,7 @@ interface AddStoryModalProps {
 type UploadState = { file: File; preview: string; uploading: boolean; url?: string }
 
 export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStoryModalProps) {
-  const { activePersonId, profileOverride, catalog, catalogLoaded, loadCatalog, awardFeedback } = useLineageStore()
+  const { activePersonId, profileOverride, catalog, catalogLoaded, loadCatalog, awardFeedback, userEntities } = useLineageStore()
   const isEditing = !!editStory
 
   // Lock the background page while the modal is open (BUG-048).
@@ -71,6 +71,30 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
   const [onTimeline, setOnTimeline] = useState<boolean>(
     editStory?.on_timeline ?? defaults?.onTimeline ?? (isEditing ? true : !startedFromEntity)
   )
+
+  // First-story timeline default (T6.3, D9). A profile-originated story passes
+  // onTimeline:false (documenting someone else should not fill your timeline),
+  // but the very first story of a brand-new member should land on their own
+  // timeline rather than nowhere. When the author has zero stories, flip it on.
+  // Any fetch failure leaves the false default, so the worst case is today's
+  // behaviour. Guard on defaults?.onTimeline === false so the people-in-timeline
+  // call site (which passes no onTimeline) never triggers this.
+  const [firstStory, setFirstStory] = useState(false)
+  useEffect(() => {
+    if (isEditing || defaults?.onTimeline !== false || !isAuthUser(activePersonId)) return
+    let cancelled = false
+    fetch(`/api/stories?author_id=${activePersonId}&limit=1`)
+      .then((r) => r.json())
+      .then((rows) => {
+        if (!cancelled && Array.isArray(rows) && rows.length === 0) {
+          setOnTimeline(true)
+          setFirstStory(true)
+        }
+      })
+      .catch(() => {})
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePersonId, isEditing])
 
   const [saving, setSaving]     = useState(false)
   const [error, setError]       = useState<string | null>(null)
@@ -113,6 +137,19 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
   const allOrgs    = catalog.orgs
   const allBoards  = catalog.boards
   const allRiders  = catalog.people.filter((p) => p.id !== activePersonId)
+
+  // Resolve pre-tagged riders' names from the CATALOG (never from the URL) for
+  // the named header (T6.1) and the pinned tag row (T6.2). Covers both catalog
+  // people and user-added people, matching the person page's merge. A crafted
+  // intent whose subject does not resolve simply falls back to the generic
+  // header, so the composer can never be made to display attacker text.
+  const mergedPeople = [...catalog.people, ...(userEntities.people ?? [])]
+  const taggedNames = selectedRiderIds
+    .map((rid) => mergedPeople.find((p) => p.id === rid)?.display_name)
+    .filter((n): n is string => !!n)
+  const taggedFirstName = !isEditing && defaults?.riderIds?.[0]
+    ? mergedPeople.find((p) => p.id === defaults.riderIds![0])?.display_name?.split(" ")[0]
+    : undefined
 
   // ── Photo handling ─────────────────────────────────────────────────────────
 
@@ -279,9 +316,30 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border-default">
-          <h2 className="text-base font-bold text-foreground">{isEditing ? "Edit Story" : "Add a Story"}</h2>
+          <h2 className="text-base font-bold text-foreground">
+            {isEditing ? "Edit Story" : taggedFirstName ? `Add a story about ${taggedFirstName}` : "Add a Story"}
+          </h2>
           <button onClick={onClose} className="text-muted hover:text-foreground transition-colors text-xl leading-none">×</button>
         </div>
+
+        {/* Pinned tag row: keeps a pre-tagged rider visible on BOTH tabs, so the
+            tag is never hidden behind the Links tab (T6.2). Only renders when
+            riders are pre-selected, so it costs no layout in the common case. */}
+        {!isEditing && taggedNames.length > 0 && (
+          <div className="flex items-center flex-wrap gap-1.5 px-5 py-2.5 border-b border-border-default text-xs text-muted">
+            <span>Tagging:</span>
+            {taggedNames.map((n) => (
+              <span key={n} className="px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-700 font-medium">{n}</span>
+            ))}
+            <button
+              type="button"
+              onClick={() => setActiveTab("links")}
+              className="ml-1 underline hover:text-foreground transition-colors"
+            >
+              Edit tags
+            </button>
+          </div>
+        )}
 
         {/* Tab nav */}
         <div className="flex gap-0 border-b border-border-default px-5">
@@ -487,6 +545,11 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
                   />
                   <div className="flex-1 min-w-0">
                     <div className="text-sm font-medium text-foreground">Add to my timeline</div>
+                    {firstStory && onTimeline && (
+                      <p className="text-xs text-muted mt-1 leading-relaxed">
+                        This is your first story, so it starts your timeline.
+                      </p>
+                    )}
                     {!onTimeline && (
                       <p className="text-xs text-muted mt-1 leading-relaxed">
                         This story stays off your personal timeline. It still shows on the pages it is linked to and in the community feed.
