@@ -475,9 +475,12 @@ function AddRiderToEvent({
   catalog: { people: { id: string; display_name: string }[]; claims: Claim[] }
   onDone: () => void
 }) {
-  const { addUserPerson, sessionClaims, dbClaims, catalogLoaded } = useLineageStore()
-  const [showNewRider, setShowNewRider] = useState(false)
-  const [newRiderName, setNewRiderName] = useState("")
+  const { sessionClaims, dbClaims, catalogLoaded } = useLineageStore()
+  // Name to seed a new-rider create with, or null when not creating. Creation
+  // is routed through AddEntityModal so the near-match warning (Phase 2 §3.2)
+  // catches a duplicate person before it is minted, rather than a bespoke
+  // inline create that bypasses the check.
+  const [addingPersonName, setAddingPersonName] = useState<string | null>(null)
 
   const allClaims = [...catalog.claims, ...sessionClaims, ...dbClaims]
   const existingRiderIds = new Set(
@@ -508,30 +511,6 @@ function AddRiderToEvent({
       created_at: new Date().toISOString(),
     })
     setRiderQuery("")
-  }
-
-  async function handleCreateRider() {
-    if (!newRiderName.trim()) return
-    // Do not mint a rider off an unresolved catalog: the person the user is
-    // typing may already exist but not have loaded yet, and creating now is how
-    // a duplicate ghost node lands (BUG-179). The create affordance below is
-    // suppressed while loading; this is the matching guard.
-    if (!catalogLoaded) return
-    const personId = crypto.randomUUID()
-    // Await the person insert before firing the claim: the paired tag_event
-    // reads the ghost's node_status for its subject tier, and a failed person
-    // save should not leave a claim pointing at a rider that never landed.
-    // On failure the form stays open so the name can be retried (BUG-022).
-    const ok = await addUserPerson({
-      id: personId,
-      display_name: newRiderName.trim(),
-      privacy_level: "public",
-      added_by: activePersonId ?? undefined,
-    } as import("@/types").Person)
-    if (!ok) return
-    addRiderClaim(personId)
-    setNewRiderName("")
-    setShowNewRider(false)
   }
 
   return (
@@ -567,7 +546,7 @@ function AddRiderToEvent({
         <input
           type="text"
           value={riderQuery}
-          onChange={(e) => { setRiderQuery(e.target.value); setShowNewRider(false) }}
+          onChange={(e) => setRiderQuery(e.target.value)}
           placeholder="Search riders by name…"
           className="w-full bg-background border border-border-default rounded-lg px-3 py-2 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
           autoFocus
@@ -594,7 +573,7 @@ function AddRiderToEvent({
               </button>
             ))}
             <button
-              onClick={() => { setNewRiderName(riderQuery.trim()); setRiderQuery(""); setShowNewRider(true) }}
+              onClick={() => { setAddingPersonName(riderQuery.trim()); setRiderQuery("") }}
               className="w-full text-left px-3 py-2 text-sm text-blue-400 hover:bg-surface-hover transition-colors flex items-center gap-2"
             >
               <span className="font-bold">+</span> Add &ldquo;{riderQuery.trim()}&rdquo; as new rider
@@ -605,31 +584,15 @@ function AddRiderToEvent({
         )}
       </div>
 
-      {/* Create new rider inline */}
-      {showNewRider && (
-        <div className="flex gap-2 items-center">
-          <input
-            type="text"
-            value={newRiderName}
-            onChange={(e) => setNewRiderName(e.target.value)}
-            placeholder="Rider name…"
-            className="flex-1 bg-background border border-border-default rounded-lg px-3 py-2 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500"
-            autoFocus
-          />
-          <button
-            onClick={handleCreateRider}
-            disabled={!newRiderName.trim()}
-            className="px-3 py-2 rounded-lg bg-[#1C1917] text-white text-sm font-medium hover:bg-[#292524] disabled:opacity-50 transition-colors"
-          >
-            Add
-          </button>
-          <button
-            onClick={() => setShowNewRider(false)}
-            className="text-xs text-muted hover:text-foreground transition-colors"
-          >
-            Cancel
-          </button>
-        </div>
+      {/* Create new rider: routed through AddEntityModal so the near-match
+          warning runs before a duplicate person is minted (Phase 2 §3.2). */}
+      {addingPersonName !== null && (
+        <AddEntityModal
+          entityType="person"
+          initialName={addingPersonName}
+          onClose={() => setAddingPersonName(null)}
+          onAdded={(id) => { addRiderClaim(id); setAddingPersonName(null) }}
+        />
       )}
 
       <button onClick={onDone} className="text-xs text-muted hover:text-foreground transition-colors">
