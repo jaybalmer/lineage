@@ -22,7 +22,11 @@ const posthogKey = process.env.NEXT_PUBLIC_POSTHOG_KEY
 if (posthogKey && !posthog.__loaded) {
   posthog.init(posthogKey, {
     api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST || "https://us.i.posthog.com",
-    capture_pageview: true,
+    // App Router navigates client-side, so the boolean form only ever captured
+    // hard loads: every in-site navigation went uncounted, inflating every
+    // page-level funnel's denominator. "history_change" captures pushState /
+    // replaceState / popstate navigations too.
+    capture_pageview: "history_change",
     capture_pageleave: true,
     // Mask all input values in session replay so we never record emails, names,
     // story bodies, or claim notes. PII discipline, brief D-LOCKED-3.

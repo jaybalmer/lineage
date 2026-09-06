@@ -7,6 +7,7 @@ import { getInitials } from "@/components/ui/rider-avatar"
 import { useLineageStore } from "@/store/lineage-store"
 import { useTheme } from "@/lib/theme"
 import { supabase } from "@/lib/supabase"
+import posthog from "posthog-js"
 import { FeedbackModal } from "@/components/ui/feedback-modal"
 import { memberBadgeFor } from "@/components/ui/member-badge"
 
@@ -38,6 +39,11 @@ export function AvatarDropdown({ displayName, tier, totalTokens, pendingTagCount
     setOpen(false)
     const { setActivePersonId, setProfileOverride } = useLineageStore.getState()
     await supabase.auth.signOut()
+    // Unlink this browser's PostHog distinct id from the signed-out user so the
+    // next (anonymous) session is not attributed to them. Wrapped because
+    // posthog.reset() throws when the library never initialised (the no-key case
+    // the rest of the codebase guards for).
+    try { posthog.reset() } catch {}
     setActivePersonId("")
     setProfileOverride({})
     router.push("/")
