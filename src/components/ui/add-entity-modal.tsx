@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useRef } from "react"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
-import { cn } from "@/lib/utils"
+import { cn, nameToSlug } from "@/lib/utils"
 import { PLACES, EVENT_SERIES, getPersonById } from "@/lib/mock-data"
 import { useBodyScrollLock } from "@/lib/use-body-scroll-lock"
 import { supabase } from "@/lib/supabase"
@@ -131,6 +131,30 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
   const [displayName, setDisplayName] = useState(initialName)
   const [ridingSince, setRidingSince] = useState("")
   const [bio, setBio] = useState("")
+
+  // Duplicate-person prevention Phase 2 (§3.2): before minting a rider, surface
+  // existing people whose name lands in the same slug space merge_person uses,
+  // so the user can pick the real one rather than splitting a history in two.
+  // Members (node_status 'claimed') rank above ghosts. Warn and offer, never
+  // block: "Add anyway" always stays available (namesakes are real, and the
+  // slug-collision rule already handles two people with the same name).
+  const nameMatches = useMemo(() => {
+    if (entityType !== "person") return []
+    const typed = nameToSlug(displayName)
+    if (typed.length < 2) return []
+    const hits = catalog.people
+      .map((p) => {
+        const slug = nameToSlug(p.display_name)
+        let rank = -1
+        if (slug === typed) rank = 0
+        else if (slug.includes(typed) || typed.includes(slug)) rank = 1
+        return { p, rank, member: p.node_status === "claimed" }
+      })
+      .filter((h) => h.rank >= 0)
+    hits.sort((a, b) => (a.member === b.member ? a.rank - b.rank : a.member ? -1 : 1))
+    return hits.slice(0, 3)
+  }, [entityType, displayName, catalog.people])
+  const namesakeBlocking = entityType === "person" && nameMatches.length > 0
 
   const canSubmit = () => {
     if (entityType === "place") return name.trim().length > 0
@@ -655,6 +679,40 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
                   className={inputCls}
                 />
               </Field>
+              {nameMatches.length > 0 && (
+                <div className="rounded-lg border border-amber-700/50 bg-amber-950/20 p-3 space-y-2">
+                  <p className="text-xs font-semibold text-amber-300">Someone with this name is already here.</p>
+                  <div className="space-y-1.5">
+                    {nameMatches.map(({ p, member }) => (
+                      <div key={p.id} className="flex items-center justify-between gap-2">
+                        <div className="text-xs text-foreground min-w-0">
+                          <span className="font-medium">{p.display_name}</span>
+                          <span className="text-muted">
+                            {" · "}{member ? "member" : "unclaimed"}
+                            {p.riding_since ? ` · riding since ${p.riding_since}` : ""}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => onAdded(p.id)}
+                          className="shrink-0 px-2.5 py-1 rounded-md bg-[#1C1917] text-white text-[11px] font-medium hover:bg-[#292524] transition-colors"
+                        >
+                          Use this one
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-muted">Adding a second one splits their history in two.</p>
+                  <button
+                    type="button"
+                    onClick={handleSubmit}
+                    disabled={submitting}
+                    className="text-[11px] text-muted hover:text-foreground underline underline-offset-2 transition-colors disabled:opacity-50"
+                  >
+                    Add anyway
+                  </button>
+                </div>
+              )}
               <Field label="Riding since">
                 <input
                   type="number"
@@ -709,10 +767,10 @@ export function AddEntityModal({ entityType, initialName = "", initialSeriesId =
           </button>
           <button
             onClick={handleSubmit}
-            disabled={!canSubmit() || submitting}
+            disabled={!canSubmit() || submitting || namesakeBlocking}
             className={cn(
               "flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all",
-              canSubmit() && !submitting
+              canSubmit() && !submitting && !namesakeBlocking
                 ? "bg-[#1C1917] text-white hover:bg-[#292524]"
                 : "bg-surface-active text-muted cursor-not-allowed"
             )}
