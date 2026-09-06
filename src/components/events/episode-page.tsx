@@ -14,6 +14,7 @@ import { Nav } from "@/components/ui/nav"
 import { CommunityLink } from "@/components/ui/community-link"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { entityHref } from "@/lib/entity-links"
+import { addStoryAboutHref } from "@/lib/fnrad"
 import { parseYouTubeId, formatEventDateRange } from "@/lib/utils"
 import { StackView } from "@/components/public-timeline/stack-view"
 import { StackCurateModal } from "@/components/ui/stack-curate-modal"
@@ -423,10 +424,32 @@ export function EpisodeView({ instance }: { instance: Event }) {
             /api/events/[id]/connections are deliberately left intact, so this
             is a rendering decision and not a deletion. */}
 
+        {/* Logged-out CTA (FNRad Listener Landing, T9). Carries the destination
+            the visitor is standing on instead of pointing at "/": the guest when
+            there is one, else the episode's own public page. */}
         {!isAuth && (
-          <p className="text-xs text-muted text-center">
-            <CommunityLink href="/" className="text-accent-strong hover:underline">Join Linestry</CommunityLink> to add what you know about this episode.
-          </p>
+          guests.length > 0 ? (
+            <p className="text-xs text-muted text-center">
+              Rode with {guests[0].display_name.split(" ")[0]}, or watched them ride?{" "}
+              <Link href={addStoryAboutHref(guests[0].id)} className="text-accent-strong hover:underline">
+                Add your story about {guests[0].display_name.split(" ")[0]}
+              </Link>.
+            </p>
+          ) : instance.public_slug ? (
+            <p className="text-xs text-muted text-center">
+              Know something about this episode?{" "}
+              <Link href={`/t/${instance.public_slug}`} className="text-accent-strong hover:underline">
+                Add what you have to {instance.name}
+              </Link>.
+            </p>
+          ) : (
+            <p className="text-xs text-muted text-center">
+              Know something about this episode?{" "}
+              <CommunityLink href={entityHref(instance.id, "event", catalog)} className="text-accent-strong hover:underline">
+                Add what you have to {instance.name}
+              </CommunityLink>.
+            </p>
+          )
         )}
       </div>
     </div>

@@ -9,6 +9,7 @@
 // lookup and no linking out to in-app entity pages.
 
 import { useState } from "react"
+import Link from "next/link"
 import { formatTimestamp, type MomentGroup } from "@/lib/mentions"
 import { parseYouTubeId } from "@/lib/utils"
 import type { PublicMention } from "@/lib/public-timeline-read"
@@ -63,14 +64,24 @@ export function PublicMentionGroup({ moment, mediaUrl }: {
       </button>
 
       <div className="flex flex-wrap items-center gap-1.5 mt-2">
-        {moment.items.map((mention) => (
-          <span
-            key={mention.id}
-            className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-white/10 border border-white/10 rounded-lg text-white/80"
-          >
-            {mention.subject_name}
-          </span>
-        ))}
+        {moment.items.map((mention) =>
+          mention.href ? (
+            <Link
+              key={mention.id}
+              href={mention.href}
+              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-white/10 border border-white/10 rounded-lg text-white/80 hover:bg-white/15 transition-colors"
+            >
+              {mention.subject_name}
+            </Link>
+          ) : (
+            <span
+              key={mention.id}
+              className="inline-flex items-center gap-1 text-xs px-2 py-0.5 bg-white/10 border border-white/10 rounded-lg text-white/80"
+            >
+              {mention.subject_name}
+            </span>
+          ),
+        )}
       </div>
 
       {expanded && (
