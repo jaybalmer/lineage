@@ -38,7 +38,7 @@ interface AddStoryModalProps {
 type UploadState = { file: File; preview: string; uploading: boolean; url?: string }
 
 export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStoryModalProps) {
-  const { activePersonId, profileOverride, catalog, loadCatalog, awardFeedback } = useLineageStore()
+  const { activePersonId, profileOverride, catalog, catalogLoaded, loadCatalog, awardFeedback } = useLineageStore()
   const isEditing = !!editStory
 
   // Lock the background page while the modal is open (BUG-048).
@@ -580,6 +580,8 @@ export function AddStoryModal({ onClose, onSaved, defaults, editStory }: AddStor
                   placeholder="Search riders…"
                   onAddNew={() => setAddingEntity("person")}
                   addNewLabel="Add a rider"
+                  loading={!catalogLoaded}
+                  loadingLabel="Loading riders…"
                 />
               </div>
             </>
