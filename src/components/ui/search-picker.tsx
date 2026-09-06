@@ -19,6 +19,8 @@ export function SearchPicker<T extends { id: string }>({
   single = false,
   onAddNew,
   addNewLabel,
+  loading = false,
+  loadingLabel = "Loading…",
 }: {
   items: T[]
   selected: string[]
@@ -28,6 +30,13 @@ export function SearchPicker<T extends { id: string }>({
   single?: boolean
   onAddNew?: () => void
   addNewLabel?: string
+  // While the catalog is still resolving, the items list is empty through no
+  // fault of the user. Rendering the "+ Add new" action then invites a
+  // duplicate node for someone who already exists but has not loaded yet
+  // (BUG-179). When loading, show a muted non-interactive row and suppress
+  // both the create button and the "None yet" text.
+  loading?: boolean
+  loadingLabel?: string
 }) {
   const [query, setQuery] = useState("")
   const filtered = items
@@ -45,42 +54,50 @@ export function SearchPicker<T extends { id: string }>({
         className={cn(inputCls, "mb-1.5")}
       />
       <div className="max-h-36 overflow-y-auto rounded-lg border border-border-default divide-y divide-border-default">
-        {filtered.map((item) => {
-          const isSelected = selected.includes(item.id)
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => onToggle(item.id)}
-              className={cn(
-                "w-full text-left px-3 py-2 text-xs transition-colors",
-                isSelected
-                  ? "bg-blue-500/10 text-blue-400"
-                  : "text-muted hover:bg-surface-hover hover:text-foreground"
-              )}
-            >
-              {isSelected ? "✓ " : ""}{getLabel(item)}
-            </button>
-          )
-        })}
-        {noResults && (
+        {loading ? (
           <div className="px-3 py-2 text-xs text-muted italic">
-            {query ? "No matches" : "None yet"}
+            {loadingLabel}
           </div>
-        )}
-        {onAddNew && (
-          <button
-            type="button"
-            onClick={onAddNew}
-            className={cn(
-              "w-full text-left px-3 py-2 text-xs transition-colors font-medium",
-              noResults && query
-                ? "text-blue-400 hover:bg-[#292524]/10"
-                : "text-muted hover:text-blue-400 hover:bg-surface-hover"
+        ) : (
+          <>
+            {filtered.map((item) => {
+              const isSelected = selected.includes(item.id)
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => onToggle(item.id)}
+                  className={cn(
+                    "w-full text-left px-3 py-2 text-xs transition-colors",
+                    isSelected
+                      ? "bg-blue-500/10 text-blue-400"
+                      : "text-muted hover:bg-surface-hover hover:text-foreground"
+                  )}
+                >
+                  {isSelected ? "✓ " : ""}{getLabel(item)}
+                </button>
+              )
+            })}
+            {noResults && (
+              <div className="px-3 py-2 text-xs text-muted italic">
+                {query ? "No matches" : "None yet"}
+              </div>
             )}
-          >
-            + {addNewLabel ?? "Add new…"}
-          </button>
+            {onAddNew && (
+              <button
+                type="button"
+                onClick={onAddNew}
+                className={cn(
+                  "w-full text-left px-3 py-2 text-xs transition-colors font-medium",
+                  noResults && query
+                    ? "text-blue-400 hover:bg-[#292524]/10"
+                    : "text-muted hover:text-blue-400 hover:bg-surface-hover"
+                )}
+              >
+                + {addNewLabel ?? "Add new…"}
+              </button>
+            )}
+          </>
         )}
       </div>
       {selected.length > 0 && (

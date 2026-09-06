@@ -24,7 +24,7 @@ interface AddConnectionsPopoverProps {
 }
 
 export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnectionsPopoverProps) {
-  const { activePersonId, catalog, loadCatalog, addToast, awardFeedback } = useLineageStore()
+  const { activePersonId, catalog, catalogLoaded, loadCatalog, addToast, awardFeedback } = useLineageStore()
   const [posting, setPosting] = useState<string | null>(null)
   // When a search returns no match, the member can create a brand-new entity
   // inline (BUG-059), mirroring the Add Story modal. The AddEntityModal key
@@ -189,6 +189,8 @@ export function AddConnectionsPopover({ story, onClose, onAdded }: AddConnection
                 placeholder="Search riders…"
                 onAddNew={() => setAddingEntity("person")}
                 addNewLabel="Add a rider"
+                loading={!catalogLoaded}
+                loadingLabel="Loading riders…"
               />
             </div>
             <div>

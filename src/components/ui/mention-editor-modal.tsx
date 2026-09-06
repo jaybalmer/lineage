@@ -38,7 +38,7 @@ export function MentionEditorModal({
   onClose: () => void
   onSaved: () => void
 }) {
-  const { catalog, addToast } = useLineageStore()
+  const { catalog, catalogLoaded, addToast } = useLineageStore()
   const isEdit = Boolean(editMention)
 
   const [subjectType, setSubjectType] = useState<MentionSubjectType>(
@@ -173,6 +173,7 @@ export function MentionEditorModal({
             getLabel={(i) => i.label}
             placeholder="Search the catalog…"
             single
+            loading={!catalogLoaded}
           />
 
           {/* Timestamp */}

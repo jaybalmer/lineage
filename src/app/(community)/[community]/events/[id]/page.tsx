@@ -475,7 +475,7 @@ function AddRiderToEvent({
   catalog: { people: { id: string; display_name: string }[]; claims: Claim[] }
   onDone: () => void
 }) {
-  const { addUserPerson, sessionClaims, dbClaims } = useLineageStore()
+  const { addUserPerson, sessionClaims, dbClaims, catalogLoaded } = useLineageStore()
   const [showNewRider, setShowNewRider] = useState(false)
   const [newRiderName, setNewRiderName] = useState("")
 
@@ -512,6 +512,11 @@ function AddRiderToEvent({
 
   async function handleCreateRider() {
     if (!newRiderName.trim()) return
+    // Do not mint a rider off an unresolved catalog: the person the user is
+    // typing may already exist but not have loaded yet, and creating now is how
+    // a duplicate ghost node lands (BUG-179). The create affordance below is
+    // suppressed while loading; this is the matching guard.
+    if (!catalogLoaded) return
     const personId = crypto.randomUUID()
     // Await the person insert before firing the claim: the paired tag_event
     // reads the ghost's node_status for its subject tier, and a failed person
@@ -569,6 +574,10 @@ function AddRiderToEvent({
         />
         {riderQuery.trim().length > 0 && (
           <div className="absolute z-10 w-full mt-1 bg-surface border border-border-default rounded-lg shadow-xl max-h-48 overflow-y-auto">
+            {!catalogLoaded ? (
+              <div className="px-3 py-2 text-sm text-muted italic">Loading riders…</div>
+            ) : (
+              <>
             {matches.map((p) => (
               <button
                 key={p.id}
@@ -590,6 +599,8 @@ function AddRiderToEvent({
             >
               <span className="font-bold">+</span> Add &ldquo;{riderQuery.trim()}&rdquo; as new rider
             </button>
+              </>
+            )}
           </div>
         )}
       </div>

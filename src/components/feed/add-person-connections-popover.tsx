@@ -37,7 +37,7 @@ const SECTION_MAP: Record<SectionKind, { predicate: Predicate; objectType: Entit
 }
 
 export function AddPersonConnectionsPopover({ person, onClose }: AddPersonConnectionsPopoverProps) {
-  const { activePersonId, catalog, loadCatalog, addClaim, addToast } = useLineageStore()
+  const { activePersonId, catalog, catalogLoaded, loadCatalog, addClaim, addToast } = useLineageStore()
   // When a search returns no match, the member can create a brand-new entity
   // inline (mirrors the story popover + Add Story modal), then connect against it.
   const [addingEntity, setAddingEntity] = useState<CreateKind | null>(null)
@@ -244,6 +244,8 @@ export function AddPersonConnectionsPopover({ person, onClose }: AddPersonConnec
                   placeholder="Search riders…"
                   onAddNew={() => setAddingEntity("person")}
                   addNewLabel="Add a rider"
+                  loading={!catalogLoaded}
+                  loadingLabel="Loading riders…"
                 />
               </div>
             </div>
