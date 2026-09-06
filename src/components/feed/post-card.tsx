@@ -684,7 +684,7 @@ export function PostCard({ claim, isOwn, readOnly, explicitCompanionIds }: { cla
               <span className="text-xs text-muted">{dateRange}</span>
             )}
             <ConfidenceBadge level={claim.confidence} />
-            {isUnverified && <UnverifiedBadge />}
+            {isUnverified && <UnverifiedBadge entityType={claim.object_type} />}
             {claim.sources && claim.sources.length > 0 && (
               <span className="text-[10px] text-muted flex items-center gap-1">
                 📎 {claim.sources.length} source{claim.sources.length > 1 ? "s" : ""}

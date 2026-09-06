@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { BrandMark } from "@/components/ui/brand-mark"
+import { UnverifiedBadge } from "@/components/ui/badge"
 
 interface InviteRecord {
   id: string
@@ -214,9 +215,7 @@ export default function ClaimPage() {
                 <p className="text-xs text-muted mt-0.5">Riding since {person.riding_since}</p>
               )}
               <div className="flex items-center gap-1.5 mt-1.5">
-                <span className="text-[10px] bg-amber-900/30 text-amber-600 border border-amber-900/50 rounded px-1.5 py-0.5">
-                  unverified
-                </span>
+                <UnverifiedBadge />
                 <span className="text-[10px] text-muted">· added by {invite?.inviter_name}</span>
               </div>
             </div>

@@ -10,6 +10,7 @@ import { useLineageStore } from "@/store/lineage-store"
 import { useBoardImage } from "@/hooks/use-board-image"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { BoardRelationshipToggles } from "@/components/ui/board-relationship-toggles"
+import { UnverifiedBadge } from "@/components/ui/badge"
 import { boardSlug } from "@/lib/mock-data"
 import { toBoardRelationship, boardRelationshipBadges } from "@/lib/board-relationship"
 import { cn } from "@/lib/utils"
@@ -365,9 +366,7 @@ export function BoardTile({
           <BoardCover board={board} orgLogoUrl={orgLogoUrl} overrideUrl={imageOverride} className="aspect-[3/4] rounded-xl border border-border-default" markSize={48} />
         </CommunityLink>
         {isUnverified && (
-          <span className="absolute top-2 left-2 text-[10px] text-amber-600 bg-background/80 backdrop-blur-sm border border-amber-500/40 rounded px-1.5 py-0.5 pointer-events-none">
-            unverified
-          </span>
+          <UnverifiedBadge className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm pointer-events-none" />
         )}
         <div className="absolute top-2 right-2">
           <BoardActionsMenu board={board} align="right" />
@@ -423,7 +422,7 @@ export function BoardListRow({
               {board.brand} {board.model}
             </span>
             {isUnverified && (
-              <span className="text-[10px] text-amber-600 border border-amber-500/40 rounded px-1.5 py-0.5">unverified</span>
+              <UnverifiedBadge />
             )}
           </div>
           <div className="text-xs text-muted mt-0.5 flex items-center gap-1.5 flex-wrap">

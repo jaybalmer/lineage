@@ -9,6 +9,7 @@ import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { SignInPrompt } from "@/components/ui/sign-in-prompt"
 import { CreateShowModal } from "@/components/orgs/create-show-modal"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
+import { UnverifiedBadge } from "@/components/ui/badge"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import type { Org } from "@/types"
@@ -76,7 +77,7 @@ function OrgCard({ org, conn }: { org: Org; conn: ConnCounts }) {
                   <span className="text-[10px] font-semibold text-violet-700 bg-violet-500/10 rounded px-1.5 py-0.5 shrink-0">Curated</span>
                 )}
                 {isUnverified && (
-                  <span className="text-[10px] text-amber-600 border border-amber-500/40 rounded px-1.5 py-0.5 shrink-0">unverified</span>
+                  <UnverifiedBadge className="shrink-0" />
                 )}
               </div>
               <div className="text-xs text-muted mt-0.5">
