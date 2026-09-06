@@ -4,12 +4,14 @@ import { useMemo, useState, useEffect, useCallback } from "react"
 import { Nav } from "@/components/ui/nav"
 import { StoryCard } from "@/components/feed/story-card"
 import { PostCard } from "@/components/feed/post-card"
+import { ClaimGroupCard } from "@/components/feed/claim-group-card"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 import Link from "next/link"
 import { nameToSlug, cn } from "@/lib/utils"
 import { groupRodeAtCompanions } from "@/lib/companion-grouping"
+import { groupClaimsByAuthorDay } from "@/lib/feed-grouping"
 import type { Story, Claim } from "@/types"
 
 // ── Vague relative time ────────────────────────────────────────────────────────
@@ -233,6 +235,21 @@ export default function FeedPage() {
     [entries, sort],
   )
 
+  // BUG-076: fold a member's run of same-day claim adds into one grouped card so
+  // the feed reads as stories with claims as context. Only in "added" order,
+  // where the grouping key (day added) is meaningful; "happened" order keeps the
+  // event chronology and shows individual cards. Runs on the post-companion-fold
+  // survivors, in the sorted order, so a group's anchor is its newest member.
+  const { groupedIds, anchorToClaims } = useMemo(() => {
+    if (sort !== "added") {
+      return { groupedIds: new Set<string>(), anchorToClaims: new Map<string, Claim[]>() }
+    }
+    const orderedClaims = sortedEntries.flatMap((e) =>
+      e.kind === "claim" && !absorbedIds.has(e.claim.id) ? [e.claim] : [],
+    )
+    return groupClaimsByAuthorDay(orderedClaims)
+  }, [sortedEntries, absorbedIds, sort])
+
   return (
     <div className="min-h-screen bg-background">
       <Nav />
@@ -316,6 +333,27 @@ export default function FeedPage() {
             {sortedEntries.map((entry) => {
               if (entry.kind === "claim" && absorbedIds.has(entry.claim.id)) {
                 return null
+              }
+              // BUG-076: grouped same-day claims render once as a ClaimGroupCard
+              // at the group's anchor (newest member); the rest are skipped.
+              if (entry.kind === "claim" && groupedIds.has(entry.claim.id)) {
+                const groupClaims = anchorToClaims.get(entry.claim.id)
+                if (!groupClaims) return null
+                const author = authorForClaim(entry.claim)
+                const authorName = author?.display_name
+                const ago = timeAgo(entry.claim.created_at)
+                return (
+                  <div key={`claimgroup-${entry.claim.id}`}>
+                    <ClaimGroupCard
+                      claims={groupClaims}
+                      authorName={authorName}
+                      authorHref={authorName ? `/people/${nameToSlug(authorName)}` : undefined}
+                      ago={ago}
+                      companionMap={companionMap}
+                      activePersonId={activePersonId}
+                    />
+                  </div>
+                )
               }
               if (entry.kind === "story") {
                 const authorName = entry.story.author?.display_name
