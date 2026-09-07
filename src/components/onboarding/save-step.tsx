@@ -5,6 +5,7 @@ import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { useLineageStore } from "@/store/lineage-store"
 import { trackEvent } from "@/lib/analytics"
+import { attributionProps } from "@/lib/attribution"
 import { cn } from "@/lib/utils"
 
 // BUG-115 / BUG-116: the onboarding picks live only in client localStorage, which
@@ -89,7 +90,7 @@ export function SaveStep({
 
   const continueWithGoogle = async () => {
     setError(null)
-    trackEvent("auth", "signup_started", { method: "google" })
+    trackEvent("auth", "signup_started", { method: "google", ...attributionProps() })
     try {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -109,7 +110,7 @@ export function SaveStep({
 
   const continueWithFacebook = async () => {
     setError(null)
-    trackEvent("auth", "signup_started", { method: "facebook" })
+    trackEvent("auth", "signup_started", { method: "facebook", ...attributionProps() })
     try {
       const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "facebook",
@@ -135,7 +136,7 @@ export function SaveStep({
     }
     setSending(true)
     setError(null)
-    trackEvent("auth", "signup_started", { method: "magic_link" })
+    trackEvent("auth", "signup_started", { method: "magic_link", ...attributionProps() })
     const onboardingPayload = buildOnboardingPayload(returnTo)
     try {
       const res = await fetch("/api/auth/magic-link", {

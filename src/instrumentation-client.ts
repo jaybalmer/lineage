@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/nextjs"
 import posthog from "posthog-js"
+import { captureTouch } from "@/lib/attribution"
 
 // Client-side Sentry init. Guarded on the DSN so a missing key is inert
 // (no-capture, no throw). Diagnostics Phase 1, brief D9.
@@ -34,6 +35,21 @@ if (posthogKey && !posthog.__loaded) {
     // Only create PostHog person profiles for identified (signed-in) users.
     person_profiles: "identified_only",
   })
+}
+
+// First-touch acquisition capture. Runs here, before hydration and before any
+// component effect, for the same reason the PostHog init moved here: ftue_landed
+// fires from the onboarding mount effect and must be able to read a touch that is
+// already stored. This module runs on a full page load, not on a client-side soft
+// navigation, which is exactly right for first-touch (a full load by definition);
+// last-touch misses only the rare UTM-bearing in-app soft nav, which does not
+// happen because campaign links are external. captureTouch swallows its own
+// errors, but wrap the call anyway: nothing in this file may ever throw, or client
+// instrumentation breaks for the whole app.
+try {
+  captureTouch()
+} catch {
+  // never let attribution capture break instrumentation
 }
 
 export const onRouterTransitionStart = Sentry.captureRouterTransitionStart
