@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { useLineageStore } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 import { trackEvent, identifyUser } from "@/lib/analytics"
+import { attributionProps } from "@/lib/attribution"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { safeReturnTo } from "@/lib/safe-redirect"
 import type { User } from "@supabase/supabase-js"
@@ -90,7 +91,11 @@ export default function AuthCompletePage() {
           home_resort_id: effPlaceId,
         })
         if (profileError) console.error("Profile save failed:", profileError)
-        else trackEvent("auth", "signup_succeeded", {}, { actorId: user.id })
+        // Episode-1 attribution carve: stamp first-touch props from this device's
+        // localStorage. Cross-device carry (the pending_onboarding channel) is the
+        // full build's job; here a magic link opened on another device attributes
+        // signup_started but not signup_succeeded, which is the documented tradeoff.
+        else trackEvent("auth", "signup_succeeded", { ...attributionProps() }, { actorId: user.id })
       }
 
       // ── 2. Migrate session claims ─────────────────────────────────────────
