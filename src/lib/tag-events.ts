@@ -209,14 +209,25 @@ export async function insertTagEvent(
   const defaultStatus = defaultStatusForSource(input.source)
   const displayState = defaultDisplayStateForSource(input.source)
 
+  // BUG-180: a self-tag (the subject IS the asserter, e.g. an author tagging
+  // themselves in their own story) is trivially the subject's own decision, so
+  // it lands approved and never reaches their own inbox. Placed here, the guard
+  // covers every write path that pairs a tag_event — story riders, the
+  // connections endpoint, and (defensively) claims. Recorded like a trust
+  // decision, with the subject as the decider. asserterId can be null on
+  // anonymous public-embed tags, so the equality check never fires there.
+  const isSelfTag = input.asserterId !== null && input.asserterId === input.subjectId
+
   // BUG-138: a tag the subject would have approved anyway should never reach
   // their inbox. Only the statuses that would otherwise wait get the lookup, so
   // editor and system tags (already approved) cost no extra read. The subject
   // is recorded as the decider because trust IS their standing decision, which
   // keeps the asserter's approval rate and the editor rap sheet honest.
-  const trusted = defaultStatus === "pending"
+  const trusted = !isSelfTag
+    && defaultStatus === "pending"
     && await subjectTrustsAsserter(supabase, input.subjectId, input.asserterId)
-  const status: TagEventStatus = trusted ? "approved" : defaultStatus
+  const selfApproved = isSelfTag || trusted
+  const status: TagEventStatus = selfApproved ? "approved" : defaultStatus
 
   // Approved rows don't expire; pending rows get the source-typed TTL.
   const expiresAt = status === "approved" ? null : expiryForSource(input.source)
@@ -233,7 +244,7 @@ export async function insertTagEvent(
       moment_ref: input.momentRef,
       community_id: input.communityId ?? null,
       status,
-      decision_by: trusted ? input.subjectId : null,
+      decision_by: selfApproved ? input.subjectId : null,
       decision_at: status === "approved" ? new Date().toISOString() : null,
       display_state: displayState,
       expires_at: expiresAt,
@@ -284,9 +295,10 @@ export async function isAsserterGloballyBlocked(
 // ── Story-rider write-path helper ───────────────────────────────────────────
 // Inserts one tag_event per rider id, then updates the story_riders row with
 // the new tag_event_id. Asserter is the story's author. Subject is each
-// rider_id. Self-tags (author tagging themselves in their own story) get a
-// tag_event too — they're trivially approved, but having the row keeps the
-// view filter coherent and Phase 2's owner inbox can ignore them.
+// rider_id. A self-tag (author tagging themselves) still gets a paired row so
+// the story_riders_public view stays coherent, but insertTagEvent lands it
+// approved (BUG-180) rather than pending, so it never reaches the author's own
+// /me/tags inbox.
 
 export interface PairResult {
   paired: number
