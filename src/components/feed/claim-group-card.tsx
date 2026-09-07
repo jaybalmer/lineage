@@ -17,6 +17,7 @@ export function ClaimGroupCard({
   claims,
   authorName,
   authorHref,
+  subjectName,
   ago,
   companionMap,
   activePersonId,
@@ -24,12 +25,22 @@ export function ClaimGroupCard({
   claims: Claim[]
   authorName?: string
   authorHref?: string
+  // BUG-183: the person whose timeline these claims landed on. Undefined when it
+  // could not be resolved; equal to authorName when the member added to their
+  // own timeline (then the sentence collapses to "their timeline").
+  subjectName?: string
   ago: string
   companionMap: CompanionMap
   activePersonId: string | null
 }) {
   const [showAll, setShowAll] = useState(false)
   const summary = summarizeClaimTypes(claims)
+
+  // "added N to Ingemar Backman's timeline" when the actor added to someone
+  // else's timeline; "added N to their timeline" when they added to their own,
+  // or when the subject could not be resolved.
+  const timelineOwner =
+    subjectName && subjectName !== authorName ? `${subjectName}'s` : "their"
 
   return (
     <div className="rounded-xl border border-border-default bg-surface px-4 py-3">
@@ -46,7 +57,7 @@ export function ClaimGroupCard({
           ) : authorName ? (
             <span className="font-medium text-foreground truncate">{authorName}</span>
           ) : null}
-          <span className="text-muted">added {summary} to their timeline</span>
+          <span className="text-muted">added {summary} to {timelineOwner} timeline</span>
         </div>
         {ago && <span className="text-[10px] text-muted shrink-0 ml-3">{ago}</span>}
       </div>

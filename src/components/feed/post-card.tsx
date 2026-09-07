@@ -345,13 +345,24 @@ function EntityBlock({ claim, entityName, isOwn, readOnly }: EntityBlockProps) {
     ? (catalog.people.find((p) => p.id === id) ?? getPersonById(id) ?? null)
     : null
 
-  // Generate href from catalog-resolved entity (avoids mock-data ID mismatches)
-  const href = place  ? `/places/${placeSlug(place)}`
+  // BUG-184: whether the claim's object still resolves to a real entity. When it
+  // does not (a deleted or legacy/malformed object_id), we render the card with a
+  // plain-text fallback name and NO link, rather than a "#" link that looks
+  // clickable but goes nowhere.
+  const resolved = Boolean(board || place || org || event || person)
+
+  // Generate href from catalog-resolved entity (avoids mock-data ID mismatches).
+  // undefined when the object does not resolve, so no dead link is rendered.
+  const href: string | undefined = place  ? `/places/${placeSlug(place)}`
     : board  ? `/boards/${boardSlug(board)}`
     : org    ? `/brands/${orgSlug(org)}`
     : event  ? `/events/${eventSlug(event)}`
     : person ? personHref(person, catalog.people)
-    : "#"
+    : undefined
+
+  // A link is only rendered when the entity resolved and we are not in read-only
+  // mode. Gating on this (not just href) lets TS narrow href to a string below.
+  const linkable = !readOnly && resolved && Boolean(href)
 
   // Auto-fetch board image via search API (hook always called; returns null for non-boards)
   // Passing board.id lets the API check community-suggested images first
@@ -387,13 +398,28 @@ function EntityBlock({ claim, entityName, isOwn, readOnly }: EntityBlockProps) {
   // entity, so it stays correct even when the caller's entityName prop could not
   // resolve the object (e.g. a real catalog brand picked during onboarding, which
   // PostCard's entityName resolver does not look up in catalog.orgs; BUG-126).
+  // BUG-184 (D5): when the object does not resolve, `entityName` is the literal
+  // "Unknown" from getEntityName. Show the entity type instead ("A board" /
+  // "A place"), matching the "A rider" tone the feed already uses, without
+  // touching the shared getEntityName in mock-data.
+  const typeFallback = (() => {
+    switch (type) {
+      case "board":  return "A board"
+      case "place":  return "A place"
+      case "event":  return "An event"
+      case "org":    return "A brand"
+      case "person": return "A rider"
+      default:       return "An entry"
+    }
+  })()
+
   const displayName = (() => {
     if (board)  return `${board.brand} ${board.model}`
     if (place)  return place.name
     if (org)    return org.name
     if (event)  return event.name
     if (person) return person.display_name
-    return entityName
+    return entityName && entityName !== "Unknown" ? entityName : typeFallback
   })()
 
   // Graphic. The avatar initial derives from displayName (not the entityName
@@ -443,34 +469,34 @@ function EntityBlock({ claim, entityName, isOwn, readOnly }: EntityBlockProps) {
           // Community-scoped paths (boards/places/events/brands) must carry the
           // active community prefix or the lightbox's new-tab <a> 404s (BUG-001a).
           // personHref is already top-level, so communityHref passes it through.
-          href={href !== "#" ? communityHref(href, activeCommunitySlug) : undefined}
+          href={href ? communityHref(href, activeCommunitySlug) : undefined}
           hrefLabel={type === "board" ? "View board" : type === "place" ? "View resort" : "View page"}
           onClose={() => setLightboxOpen(false)}
         />
       )}
 
       <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border-default">
-        {readOnly ? (
-          <div className="flex-shrink-0">{graphic}</div>
-        ) : (
+        {linkable && href ? (
           <CommunityLink href={href} className="flex-shrink-0">
             {graphic}
           </CommunityLink>
+        ) : (
+          <div className="flex-shrink-0">{graphic}</div>
         )}
 
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
-              {readOnly ? (
-                <p className="font-bold text-foreground text-base leading-snug truncate">
-                  {displayName}
-                </p>
-              ) : (
+              {linkable && href ? (
                 <CommunityLink href={href} className="block">
                   <p className="font-bold text-foreground text-base leading-snug hover:text-blue-300 transition-colors truncate">
                     {displayName}
                   </p>
                 </CommunityLink>
+              ) : (
+                <p className="font-bold text-foreground text-base leading-snug truncate">
+                  {displayName}
+                </p>
               )}
               {subtitle && (
                 <p className="text-xs text-muted mt-0.5 capitalize">{subtitle}</p>

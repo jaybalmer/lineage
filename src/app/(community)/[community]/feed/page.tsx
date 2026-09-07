@@ -206,8 +206,17 @@ export default function FeedPage() {
     return () => { cancelled = true }
   }, [fetchPage, applyPage])
 
-  function authorForClaim(claim: Claim) {
+  // The person the claim is ABOUT (whose timeline it lands on).
+  function subjectForClaim(claim: Claim) {
     return catalog.people.find((p) => p.id === claim.subject_id)
+  }
+
+  // BUG-183: the member who actually ADDED the claim. `asserted_by` is TEXT and
+  // may be a legacy person id or an orphaned uuid, so this is a plain string
+  // compare that tolerates a miss (falls back to UNKNOWN_RIDER at the call site).
+  function actorForClaim(claim: Claim) {
+    if (!claim.asserted_by) return undefined
+    return catalog.people.find((p) => p.id === claim.asserted_by)
   }
 
   // Fold companion `rode_with` rows into their matching `rode_at` row so the
@@ -339,15 +348,20 @@ export default function FeedPage() {
               if (entry.kind === "claim" && groupedIds.has(entry.claim.id)) {
                 const groupClaims = anchorToClaims.get(entry.claim.id)
                 if (!groupClaims) return null
-                const author = authorForClaim(entry.claim)
-                const authorName = author?.display_name
+                // The group is keyed by actor+subject+day, so every claim shares
+                // one actor and one subject; the anchor gives both.
+                const actor = actorForClaim(entry.claim)
+                const actorName = actor?.display_name
+                const subject = subjectForClaim(entry.claim)
+                const subjectName = subject?.display_name
                 const ago = timeAgo(entry.claim.created_at)
                 return (
                   <div key={`claimgroup-${entry.claim.id}`}>
                     <ClaimGroupCard
                       claims={groupClaims}
-                      authorName={authorName}
-                      authorHref={authorName ? `/people/${nameToSlug(authorName)}` : undefined}
+                      authorName={actorName || UNKNOWN_RIDER}
+                      authorHref={actorName ? `/people/${nameToSlug(actorName)}` : undefined}
+                      subjectName={subjectName}
                       ago={ago}
                       companionMap={companionMap}
                       activePersonId={activePersonId}
@@ -376,8 +390,8 @@ export default function FeedPage() {
                 )
               }
 
-              const author = authorForClaim(entry.claim)
-              const authorName = author?.display_name
+              const actor = actorForClaim(entry.claim)
+              const authorName = actor?.display_name
               const ago = timeAgo(entry.claim.created_at)
               const action = claimAction(entry.claim)
               return (
