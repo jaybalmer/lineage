@@ -6,11 +6,15 @@ import type { Claim, Predicate } from "@/types"
 // companion-grouping.ts) so a rode_at that already absorbed its rode_with
 // companions counts once here.
 //
-// Grouping key: subject person + the calendar day the claim was ADDED
-// (created_at), in the viewer's local time. This is a "added X to their
-// timeline" summary, so it only makes sense in the Recently-added sort; the
-// feed page skips this pass in Date-happened mode, where event chronology is the
-// point. Claims with no parseable created_at never group.
+// Grouping key: the member who ADDED the claims (asserted_by) + the subject
+// person whose timeline they landed on + the calendar day the claims were added
+// (created_at), in the viewer's local time. BUG-183: keying on asserted_by (not
+// subject_id) is what makes the grouped card read as "MEMBER added X to
+// SUBJECT's timeline" truthfully; keeping subject_id in the key means every
+// group is single-subject, so that sentence is always unambiguous. This is a
+// "added X" summary, so it only makes sense in the Recently-added sort; the feed
+// page skips this pass in Date-happened mode, where event chronology is the
+// point. Claims with no parseable created_at, or no asserter, never group.
 
 export const CLAIM_GROUP_THRESHOLD = 3
 
@@ -106,8 +110,10 @@ export function groupClaimsByAuthorDay(
   const buckets = new Map<string, Claim[]>()
   for (const c of orderedClaims) {
     const day = dayKey(c.created_at)
-    if (!day) continue
-    const key = `${c.subject_id}|${day}`
+    // No asserter means we cannot attribute the group to a member, so leave
+    // those claims ungrouped (they render as individual, "A rider" cards).
+    if (!day || !c.asserted_by) continue
+    const key = `${c.asserted_by}|${c.subject_id}|${day}`
     const list = buckets.get(key)
     if (list) list.push(c)
     else buckets.set(key, [c])
