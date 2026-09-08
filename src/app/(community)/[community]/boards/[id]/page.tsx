@@ -187,6 +187,13 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
   const boardYear  = board!.model_year
   const boardSources = useBoardSources(boardId)
 
+  // BUG-185: credit the member who added the board, matching the list page's
+  // "Added by {name}" line. Resolve against the catalog so an unresolved or
+  // archived contributor renders no line rather than "Added by undefined".
+  const addedByPerson = board!.added_by
+    ? catalog.people.find((p) => p.id === board!.added_by)
+    : undefined
+
   const ownedClaims = catalog.claims.filter((c) => c.object_id === boardId && c.predicate === "owned_board")
   const riderIds = [...new Set(ownedClaims.map((c) => c.subject_id))]
   const sameBrand = catalog.boards.filter((b) => b.brand === board.brand && b.id !== board.id).sort((a, b) => b.model_year - a.model_year)
@@ -577,6 +584,17 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
               </div>
               <h1 className="text-2xl font-bold text-foreground">{boardBrand} {boardModel}</h1>
               <p className="text-muted text-sm mt-1">{boardYear}</p>
+              {addedByPerson && (
+                <p className="text-[10px] text-muted mt-1">
+                  Added by{" "}
+                  <Link
+                    href={personLink(addedByPerson)}
+                    className="hover:text-foreground transition-colors"
+                  >
+                    {addedByPerson.display_name}
+                  </Link>
+                </p>
+              )}
 
               <div className="mt-4 flex gap-6">
                 <div>
