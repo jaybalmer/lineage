@@ -46,17 +46,25 @@ export function ClaimGroupCard({
     <div className="rounded-xl border border-border-default bg-surface px-4 py-3">
       {/* Header: author + by-type summary, once */}
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
-        <div className="flex items-center gap-1 text-sm min-w-0">
+        {/* BUG-187: one wrapping text flow, not a flex row. The name is a word
+            inside this sentence, so it must never be a separately-shrinkable
+            box. Do not add `truncate` to the name here: that made overflow land
+            entirely on the name and clipped it to "Jay.." at mobile widths.
+            Let the whole sentence wrap instead. (This is the opposite of
+            story-card.tsx:328, where the name IS a label beside a badge and
+            keeps its truncate per BUG-158.) */}
+        <div className="text-sm">
           {authorName && authorHref ? (
             <Link
               href={authorHref}
-              className="font-medium text-foreground hover:text-blue-400 transition-colors truncate"
+              className="font-medium text-foreground hover:text-blue-400 transition-colors"
             >
               {authorName}
             </Link>
           ) : authorName ? (
-            <span className="font-medium text-foreground truncate">{authorName}</span>
+            <span className="font-medium text-foreground">{authorName}</span>
           ) : null}
+          {authorName ? " " : null}
           <span className="text-muted">added {summary} to {timelineOwner} timeline</span>
         </div>
         {ago && <span className="text-[10px] text-muted shrink-0 ml-3">{ago}</span>}
