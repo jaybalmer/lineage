@@ -1,7 +1,7 @@
 "use client"
 
 import { create } from "zustand"
-import { persist } from "zustand/middleware"
+import { persist, createJSONStorage } from "zustand/middleware"
 import type { Claim, OnboardingState, Place, Board, Org, Event, EventSeries, Person, RidingDay, MembershipState, TriggerPrefs, Community, CelebrationPayload } from "@/types"
 import { PLACES, ORGS, BOARDS, EVENTS, EVENT_SERIES, PEOPLE, CLAIMS } from "@/lib/mock-data"
 import { supabase } from "@/lib/supabase"
@@ -1149,11 +1149,34 @@ export const useLineageStore = create<LineageStore>()(
     }),
     {
       name: "lineage-store-v2",
+      // Quota-safe storage: a full localStorage (WebKit's hard 5MB per origin) or
+      // private mode degrades to a skipped save instead of throwing synchronously
+      // out of every store action. Same guard already used in use-board-image.ts
+      // and seen-celebrations.ts (BUG-188).
+      storage: createJSONStorage(() => ({
+        getItem: (k) => { try { return localStorage.getItem(k) } catch { return null } },
+        setItem: (k, v) => { try { localStorage.setItem(k, v) } catch { /* quota or private mode: skip the save (BUG-188) */ } },
+        removeItem: (k) => { try { localStorage.removeItem(k) } catch { /* no-op */ } },
+      })),
+      // Strip the authed userEntities blob that older versions persisted before
+      // BUG-188. partialize governs writes, not reads, so an already-stored blob
+      // would keep hydrating ~5MB back into memory without this migrate.
+      version: 1,
+      migrate: (persisted) => {
+        const { userEntities: _ue, ...rest } = (persisted ?? {}) as Record<string, unknown>
+        return rest
+      },
       // Don't persist catalog or dbClaims — catalog always starts from mock data
-      // and gets overwritten by loadCatalog(); dbClaims are always reloaded from DB
+      // and gets overwritten by loadCatalog(); dbClaims are always reloaded from DB.
+      // For signed-in members userEntities is a full mirror of four catalog tables
+      // (see loadDbEntities), ~5MB and the whole localStorage quota. Nav refetches
+      // it on every mount, so persisting it buys nothing and overflows the quota
+      // (BUG-188). Anonymous adds still need it to survive a reload before signup.
       partialize: (s) => {
         const { dbClaims: _db, catalog: _cat, catalogLoaded: _cl, showMemberCard: _smc, authReady: _ar, communities: _comm, catalogError: _ce, toasts: _t, tokenEarnTick: _tet, celebrationQueue: _cq, showWelcomeCelebration: _swc, pendingTagCount: _ptc, ...rest } = s
-        return rest
+        return isAuthUser(s.activePersonId)
+          ? { ...rest, userEntities: EMPTY_USER_ENTITIES }
+          : rest
       },
     }
   )
