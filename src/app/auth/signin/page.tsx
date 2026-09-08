@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { trackEvent } from "@/lib/analytics"
+import { authErrorMessage } from "@/lib/auth-messages"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { cn } from "@/lib/utils"
 import { safeReturnTo } from "@/lib/safe-redirect"
@@ -64,6 +65,30 @@ export default function SignInPage() {
     if (rt) setOnboardingHref(`/onboarding?returnTo=${encodeURIComponent(rt)}`)
   }, [])
 
+  // Cooldown for the magic-link resend (R6). Counts down once a second; a new
+  // successful send resets it to 30. Component state only, never persisted.
+  const [cooldown, setCooldown] = useState(0)
+  const [resent, setResent] = useState(false)
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const t = setTimeout(() => setCooldown((n) => n - 1), 1000)
+    return () => clearTimeout(t)
+  }, [cooldown])
+
+  // R1: surface an auth error code stamped onto this page's URL by /auth/complete
+  // on an expired or failed link (?error=link_expired). Read from
+  // window.location.search in an effect, not useSearchParams, to avoid forcing a
+  // dynamic render (see the returnTo note above). The existing error slot renders
+  // it; set it only when not already showing the sent state.
+  useEffect(() => {
+    try {
+      const msg = authErrorMessage(new URLSearchParams(window.location.search).get("error"))
+      if (msg) setError(msg)
+    } catch {
+      /* window/search may be unavailable */
+    }
+  }, [])
+
   const continueWithGoogle = async () => {
     setError(null)
     trackEvent("auth", "signin_started", { method: "google" })
@@ -88,14 +113,15 @@ export default function SignInPage() {
     if (oauthError) setError(oauthError.message)
   }
 
-  const sendMagicLink = async () => {
+  const sendMagicLink = async (): Promise<boolean> => {
     const e = email.trim().toLowerCase()
     if (!e.includes("@")) {
       setError("Enter a valid email address.")
-      return
+      return false
     }
     setSending(true)
     setError(null)
+    setResent(false)
     trackEvent("auth", "signin_started", { method: "magic_link" })
     try {
       const res = await fetch("/api/auth/magic-link", {
@@ -111,7 +137,7 @@ export default function SignInPage() {
 
       if (data.error) {
         setError(data.error)
-        return
+        return false
       }
 
       // The server route falls back to a client-side OTP when Resend or the
@@ -134,13 +160,16 @@ export default function SignInPage() {
               ? "We could not find an account with that email."
               : otpError.message
           )
-          return
+          return false
         }
       }
 
       setSent(true)
+      setCooldown(30)
+      return true
     } catch {
       setError("Something went wrong. Please try again.")
+      return false
     } finally {
       setSending(false)
     }
@@ -200,14 +229,45 @@ export default function SignInPage() {
             <p className="text-muted leading-relaxed" style={{ fontSize: 12 }}>
               We sent a sign-in link to{" "}
               <span className="text-foreground font-medium">{email.trim().toLowerCase()}</span>.
-              Open it to finish signing in.
+              It works once and lasts an hour.
             </p>
+
+            <div className="space-y-2 pt-1">
+              <p className="text-muted" style={{ fontSize: 11 }}>
+                Not there in a minute? Have a look in spam, then send it again.
+              </p>
+              <button
+                onClick={async () => { const ok = await sendMagicLink(); if (ok) setResent(true) }}
+                disabled={sending || cooldown > 0}
+                className={cn(
+                  "w-full px-4 py-2.5 rounded-xl font-semibold transition-colors",
+                  sending || cooldown > 0
+                    ? "bg-surface-active text-muted cursor-not-allowed"
+                    : "bg-[#1C1917] text-white hover:bg-[#292524]"
+                )}
+                style={{ fontSize: 12 }}
+              >
+                {sending ? "Sending…" : cooldown > 0 ? `Send it again in ${cooldown}s` : "Send it again"}
+              </button>
+              {resent && !error && (
+                <p className="text-emerald-500" style={{ fontSize: 11 }}>
+                  Sent. Check your email again.
+                </p>
+              )}
+              {error && (
+                <p className="text-red-400" style={{ fontSize: 11 }}>
+                  We could not send that link just now. Try once more, or go back and use a
+                  different address.
+                </p>
+              )}
+            </div>
+
             <button
-              onClick={() => { setSent(false); setView("email") }}
+              onClick={() => { setSent(false); setView("email"); setError(null); setResent(false); setCooldown(0) }}
               className="text-accent-strong hover:underline"
               style={{ fontSize: 11 }}
             >
-              Wrong address? Try again
+              Use a different address
             </button>
           </div>
         ) : (

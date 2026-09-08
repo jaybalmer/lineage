@@ -1,8 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
+import { authErrorMessage } from "@/lib/auth-messages"
 import { BrandMark } from "@/components/ui/brand-mark"
 
 export default function ForgotPasswordPage() {
@@ -10,6 +11,19 @@ export default function ForgotPasswordPage() {
   const [loading, setLoading]  = useState(false)
   const [sent, setSent]        = useState(false)
   const [error, setError]      = useState<string | null>(null)
+
+  // R1 (F5): an expired recovery link bounces here as ?error=link_expired. Read
+  // it on mount from window.location.search (not useSearchParams, to avoid a
+  // dynamic render) and set the existing error slot, so the visitor is told the
+  // link expired instead of landing on a blank reset-request form.
+  useEffect(() => {
+    try {
+      const msg = authErrorMessage(new URLSearchParams(window.location.search).get("error"))
+      if (msg) setError(msg)
+    } catch {
+      /* window/search may be unavailable */
+    }
+  }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()

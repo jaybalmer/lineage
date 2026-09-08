@@ -2,8 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useLineageStore } from "@/store/lineage-store"
+import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { trackEvent } from "@/lib/analytics"
+import { authErrorMessage } from "@/lib/auth-messages"
 import { safeReturnTo } from "@/lib/safe-redirect"
 import { cn } from "@/lib/utils"
 import { eraForYear, ERA_FTUE } from "@/lib/eras"
@@ -115,11 +116,32 @@ export function OnboardingFlow() {
     setProfileOverride,
     setActivePersonId,
     activeCommunitySlug,
+    authReady,
+    activePersonId,
   } = useLineageStore()
 
   const step = onboarding.step
   const currentStepId: StepId = STEPS[step] ?? "save"
   const [claimContext, setClaimContext] = useState<{ inviterName?: string } | null>(null)
+
+  // R2: a signed-in member who lands on /onboarding (usually bounced here by a
+  // session hiccup on a proxy-gated route) is sent to their own timeline, not
+  // shown the signup wizard. Gate on authReady, never on activePersonId alone:
+  // the store is persisted, so a stale id reads true before CatalogLoader has
+  // server-confirmed the session (F8). /me/timeline server-resolves to the
+  // viewer's own profile, so no community slug is needed. This is the same
+  // authReady-gating family as BUG-179; do not "simplify" the guard by reading
+  // the persisted id, that is exactly what makes it misfire.
+  const signedIn = authReady && isAuthUser(activePersonId)
+  useEffect(() => {
+    if (signedIn) router.replace("/me/timeline")
+  }, [signedIn, router])
+
+  // R1: an auth error stamped onto this page's URL (?error=no_code|auth_failed)
+  // by /auth/callback. Set once in the entry effect below and shown as a
+  // dismissible banner so the visitor is told what happened instead of landing
+  // on a normal-looking first step.
+  const [entryError, setEntryError] = useState<string | null>(null)
 
   // Read the signup-intent destination from this page's own URL once, per visit.
   // Not useSearchParams (forces a dynamic render) and not the Zustand store (D3):
@@ -184,7 +206,13 @@ export function OnboardingFlow() {
 
     let fromIntro = false
     try {
-      fromIntro = new URLSearchParams(window.location.search).get("from") === "intro"
+      const params = new URLSearchParams(window.location.search)
+      fromIntro = params.get("from") === "intro"
+      // R1: same URL, read the error code alongside `from`. authErrorMessage
+      // maps a known code, falls back to a generic sentence for an unknown one,
+      // and returns null when there is no code.
+      const errMsg = authErrorMessage(params.get("error"))
+      if (errMsg) setEntryError(errMsg)
     } catch {
       /* window/search may be unavailable */
     }
@@ -315,6 +343,24 @@ export function OnboardingFlow() {
 
   // ── Render ────────────────────────────────────────────────────────────────
 
+  // R2: never paint the FTUE for a signed-in member. While the redirect above is
+  // in flight, hold on the same brand-mark state /auth/complete uses rather than
+  // flashing a signup wizard. Signed-out visitors never reach here (authReady is
+  // true but isAuthUser is false), and until authReady flips the flow renders
+  // normally, so there is no added delay for a first-time arrival.
+  if (signedIn) {
+    return (
+      <div className="ftue-dark min-h-dvh flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="animate-pulse text-accent flex justify-center">
+            <BrandMark size={30} />
+          </div>
+          <div className="text-muted text-sm">Taking you to your timeline.</div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       className="ftue-dark min-h-dvh flex flex-col px-5 pb-6"
@@ -350,6 +396,24 @@ export function OnboardingFlow() {
         )}
       </header>
       <Thread pct={threadPct} />
+
+      {/* R1: auth error banner. Sits above the step body so it shows on the
+          first step regardless of which step renders. Same red treatment as the
+          save step's error slot, legible on the forced-dark .ftue-dark ground,
+          and dismissible so the visitor can clear it and carry on. */}
+      {entryError && (
+        <div className="mx-auto w-full max-w-md mt-3 flex items-start gap-3 rounded-2xl border border-red-900/40 bg-red-950/30 px-4 py-3 text-sm text-red-300">
+          <p className="flex-1 leading-snug">{entryError}</p>
+          <button
+            type="button"
+            onClick={() => setEntryError(null)}
+            aria-label="Dismiss"
+            className="shrink-0 text-red-300/70 hover:text-red-200 transition-colors"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Body. Keyed on the step so each beat replays its entrance. */}
       <main
