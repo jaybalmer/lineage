@@ -1,0 +1,20 @@
+{
+ "exported_at": "2026-09-07",
+ "note": "Written directly from a live MCP probe in the import session, not from export-events-tables.mjs (which needs a network route to Supabase). Column lists are information_schema truth as of the probe. event_results is pre-migration here; after 20260907000001_events_catalog.sql it exists.",
+ "tables": {
+  "event_series": {
+   "exists": true,
+   "total": 2,
+   "columns": ["id","name","place_id","frequency","started_year","description","community_status","created_at","start_year","end_year","catalog_category","catalog_status","governing_body","region","home_venue","country","former_names","disciplines","sources","confidence"]
+  },
+  "events": {
+   "exists": true,
+   "total": 31,
+   "columns": ["id","name","event_type","start_date","end_date","place_id","series_id","year","description","external_ref","community_status","added_by","created_at","website_url","youtube_url","visitor_display_override","show_org_id","media_url","episode_number","public_slug","public_enabled","publish_at","date_precision","catalog_status","catalog_status_note","venue_name","city","country","disciplines","sources","confidence"]
+  },
+  "event_results": {
+   "exists": true,
+   "columns": ["id","event_id","discipline","division_label","division_gender","division_class","division_age_band","event_name","place","rider_name","person_id","nationality","score_or_time","notes","sources","confidence","citation_status","created_at"]
+  }
+ }
+}

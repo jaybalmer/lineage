@@ -1,0 +1,5 @@
+table,id,name,reason,source_file
+series,snowboarder-superpark,Snowboarder Superpark,category=None is not in the vocabulary; agent flagged it as out of the contests-only scope,us-grassroots
+edition,snowboarder-superpark--1999,Superpark 3,parent series held out of scope,us-grassroots
+edition,snowboarder-superpark--2014,Superpark 18,parent series held out of scope,us-grassroots
+edition,snowboarder-superpark--2016,Superpark 20,parent series held out of scope,us-grassroots
