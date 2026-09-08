@@ -1,0 +1,17 @@
+edition_id,field,change
+blue-mountain-fis-snowboard-world-cup--2013,edition_label,'2013 Blue Mountain World Cup team snowboardcross' -> '2013 Blue Mountain World Cup snowboard cross'
+blue-mountain-fis-snowboard-world-cup--2013,disciplines,'boardercross | team' -> 'boardercross'
+blue-mountain-fis-snowboard-world-cup--2013,notes,"""Listed in the FIS calendar for the 2013 season as 'Blue Mountain WC - QUA 4xSBX'."" -> ""Listed in the FIS calendar for the 2013 season as 'Blue Mountain WC - QUA 4xSBX'. [QA-corrected: FIS calendar reads 4xSBX, four snowboard cross races, not a team event.]"""
+the-arctic-challenge--2007,venue,'' -> 'Oslo'
+the-arctic-challenge--2007,start_date,'' -> '2007-03-02'
+the-arctic-challenge--2007,notes,"""Terje Haakonsen set a quarterpipe air record of 9.8 m above the lip, beating Heikki Sorsa's 9.3 m from 2001. Venue not stated in the sources I opened."" -> ""Terje Haakonsen set a quarterpipe air record of 9.8 m above the lip, beating Heikki Sorsa's 9.3 m from 2001. Venue not stated in the sources I opened. [QA-corrected: venue and date taken from the cited the-house.com history, which the original row overlooked.]"""
+winter-dew-tour--2009-b,end_date,'2009-02-22' -> ''
+winter-dew-tour--2009-b,confidence,'verified' -> 'likely'
+winter-dew-tour--2009-b,notes,"'Season finale of the 2008-09 season.' -> 'Season finale of the 2008-09 season. [QA-corrected: end_date removed, not carried by either citation.]'"
+us-open-snowboarding--1989,notes,'Last year the downhill was run. Craig Kelly took a second consecutive halfpipe title.' -> 'Last year the downhill was run. Craig Kelly won the Overall title. [QA-corrected: the cited sources say halfpipe DEBUTED at the 1989 US Open and that Kelly took the Overall title; the earlier claim of a second consecutive halfpipe title was unsupported. The downhill discipline was uncited and has been removed.]'
+us-open-snowboarding--1989,disciplines,'halfpipe | downhill' -> 'halfpipe'
+kaunertal-opening--2022,status_note,"'' -> 'Ran as two separate weekends, 15-16 October and 19-20 November 2022; the date range is not continuous.'"
+kaunertal-opening--2022,notes,"""New two-weekend format: the Jib'n'Playground Edition on 15-16 October and the Testival Open & Snowpark Days on 19-20 November. Cash-for-tricks sessions across several categories plus snowskate competitions and a multi-brand park testival. Powered by Monster Energy."" -> ""New two-weekend format: the Jib'n'Playground Edition on 15-16 October and the Testival Open & Snowpark Days on 19-20 November. Cash-for-tricks sessions across several categories plus snowskate competitions and a multi-brand park testival. Powered by Monster Energy. [QA-flagged: non-continuous dates.]"""
+burton-australian-open--2008,confidence,'likely' -> 'likely'
+burton-australian-open--2008,notes,"'Second stop of the 2008/09 Burton Global Open Series, as announced in the series calendar. Disciplines not stated in the announcement.' -> 'Second stop of the 2008/09 Burton Global Open Series, as announced in the series calendar. Disciplines not stated in the announcement. [QA-flagged: dates and venue are from a pre-season calendar, so the event is confirmed as scheduled rather than as held.]'"
+fis-snowboard-world-cup--1994,DELETED,duplicate of the Zell am See stop already inside fis-snowboard-world-cup--1995

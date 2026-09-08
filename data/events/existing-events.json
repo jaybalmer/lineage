@@ -1,0 +1,41 @@
+{
+ "exported_at": "2026-09-07",
+ "note": "Live snapshot of public.events and public.event_series pulled via MCP in the import session, for scripts/reconcile-events.py. Read-only.",
+ "events": [
+  {"id":"event_1781470879531_sjz56","name":"1986 Snowboarding World Championships","event_type":"contest","year":1986,"start_date":"1986-03","series_id":null,"external_ref":null,"community_status":"unverified"},
+  {"id":"event_1781804939736_z44x9","name":"North American Snowboard Championships","event_type":"contest","year":1986,"start_date":"1986-04","series_id":null,"external_ref":null,"community_status":"unverified"},
+  {"id":"event_1781460997348_uznyr","name":"1987 North American Snowboard Championships","event_type":"contest","year":1987,"start_date":"1987-04","series_id":null,"external_ref":null,"community_status":"unverified"},
+  {"id":"event_1773691017612_oyzi7","name":"Baker Banked Slalom 1987","event_type":"contest","year":1987,"start_date":"1987-01-01","series_id":"es1","external_ref":null,"community_status":"unverified"},
+  {"id":"event_1773691047295_uz4v0","name":"Baker Banked Slalom 1988","event_type":"contest","year":1988,"start_date":"1988-01-01","series_id":"es1","external_ref":null,"community_status":"unverified"},
+  {"id":"event_1777135229030_2d1nu","name":"1988 North American Snowboard Championships","event_type":"contest","year":1988,"start_date":"1988-04","series_id":null,"external_ref":null,"community_status":"unverified"},
+  {"id":"event_1781753687456_n2eas","name":"Chevron Cup 1989","event_type":"contest","year":1989,"start_date":"1989-03","series_id":null,"external_ref":null,"community_status":"unverified"},
+  {"id":"event_1773691066162_zo77e","name":"Baker Banked Slalom 1989","event_type":"contest","year":1989,"start_date":"1989-01-01","series_id":"es1","external_ref":null,"community_status":"unverified"},
+  {"id":"event_1774838343638_i942r","name":"Westbeach Classic 1989","event_type":"contest","year":1989,"start_date":"1989-04","series_id":"series_1774838253156_mep0c","external_ref":null,"community_status":"unverified"},
+  {"id":"event_1788237115444_g2cgi","name":"Pepsi Pipeline","event_type":"contest","year":1990,"start_date":"1990-03","series_id":null,"external_ref":null,"community_status":"unverified"},
+  {"id":"event_1774838419971_1njpq","name":"Westbeach Classic 1990","event_type":"contest","year":1990,"start_date":"1990-01-01","series_id":"series_1774838253156_mep0c","external_ref":null,"community_status":"unverified"},
+  {"id":"event_1774838437821_9yr0j","name":"Westbeach Classic 1991","event_type":"contest","year":1991,"start_date":"1991-01-01","series_id":"series_1774838253156_mep0c","external_ref":null,"community_status":"unverified"},
+  {"id":"e11","name":"Baker Banked Slalom 1992","event_type":"contest","year":1992,"start_date":"1992-03","series_id":"es1","external_ref":null,"community_status":"verified"},
+  {"id":"event_1774838455737_8b5ua","name":"Westbeach Classic 1992","event_type":"contest","year":1992,"start_date":"1992-04","series_id":"series_1774838253156_mep0c","external_ref":null,"community_status":"unverified"},
+  {"id":"event_1774838473372_wnrct","name":"Westbeach Classic 1993","event_type":"contest","year":1993,"start_date":"1993-01-01","series_id":"series_1774838253156_mep0c","external_ref":null,"community_status":"unverified"},
+  {"id":"event_1787850166221_8lz6c","name":"Mt. Hood Wide Open","event_type":"contest","year":1993,"start_date":"1993-01-01","series_id":null,"external_ref":null,"community_status":"unverified"},
+  {"id":"event_1787850326121_wlp1s","name":"Air and Style","event_type":"contest","year":1994,"start_date":"1994-01-01","series_id":null,"external_ref":null,"community_status":"unverified"},
+  {"id":"event_1774838503921_4t9lb","name":"Westbeach Classic 1994","event_type":"contest","year":1994,"start_date":"1994-01-01","series_id":"series_1774838253156_mep0c","external_ref":null,"community_status":"unverified"},
+  {"id":"event_1774838517620_p588r","name":"Westbeach Classic 1995","event_type":"contest","year":1995,"start_date":"1995-01-01","series_id":"series_1774838253156_mep0c","external_ref":null,"community_status":"unverified"},
+  {"id":"event_1774838538604_tn4r7","name":"Westbeach Classic 1996","event_type":"contest","year":1996,"start_date":"1996-01-01","series_id":"series_1774838253156_mep0c","external_ref":null,"community_status":"unverified"},
+  {"id":"event_1781066420352_2a1wp","name":"King Of The Hill","event_type":"gathering","year":1996,"start_date":"1996-01-01","series_id":null,"external_ref":null,"community_status":"unverified"},
+  {"id":"event_1774838567452_ddn4a","name":"Westbeach Classic 1997","event_type":"contest","year":1997,"start_date":"1997-01-01","series_id":"series_1774838253156_mep0c","external_ref":null,"community_status":"unverified"},
+  {"id":"e12","name":"Baker Banked Slalom 1999","event_type":"contest","year":1999,"start_date":"1999-03","series_id":"es1","external_ref":null,"community_status":"verified"},
+  {"id":"e13","name":"Baker Banked Slalom 2005","event_type":"contest","year":2005,"start_date":"2005-03","series_id":"es1","external_ref":null,"community_status":"verified"},
+  {"id":"event_1787782345410_9pqoq","name":"Baker Banked Slalom 2006","event_type":"contest","year":2006,"start_date":"2006-01","series_id":"es1","external_ref":null,"community_status":"unverified"},
+  {"id":"e14","name":"Baker Banked Slalom 2010","event_type":"contest","year":2010,"start_date":"2010-03","series_id":"es1","external_ref":null,"community_status":"verified"},
+  {"id":"e15","name":"Baker Banked Slalom 2015","event_type":"contest","year":2015,"start_date":"2015-03","series_id":"es1","external_ref":null,"community_status":"verified"},
+  {"id":"e16","name":"Baker Banked Slalom 2019","event_type":"contest","year":2019,"start_date":"2019-03","series_id":"es1","external_ref":null,"community_status":"verified"},
+  {"id":"evt_1782850803307_apuqit","name":"FNRad: Jay Balmer","event_type":"episode","year":2021,"start_date":"2021-03-24","series_id":null,"external_ref":null,"community_status":"verified"},
+  {"id":"evt_1785710768741_kerwqf","name":"FNRad: Devun Walsh","event_type":"episode","year":2024,"start_date":"2024-12-18","series_id":null,"external_ref":null,"community_status":"verified"},
+  {"id":"event_1781066166784_300xa","name":"King Of The Hill 30","event_type":"gathering","year":2026,"start_date":"2026-05","series_id":null,"external_ref":null,"community_status":"unverified"}
+ ],
+ "series": [
+  {"id":"es1","name":"Baker Banked Slalom","frequency":"annual","start_year":null,"end_year":null,"community_status":"verified"},
+  {"id":"series_1774838253156_mep0c","name":"Westbeach Classic","frequency":"annual","start_year":1989,"end_year":null,"community_status":"verified"}
+ ]
+}

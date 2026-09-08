@@ -1,0 +1,64 @@
+action,edition_id,change
+note,us-open-snowboarding--1991,Chris Carol / Chris Karol spelling flagged
+reclass,winter-dew-tour--2021,jib -> street-style
+reclass,winter-dew-tour--2021,jib -> street-style
+reclass,winter-dew-tour--2023,jib -> street-style
+reclass,winter-dew-tour--2023,jib -> street-style
+reclass,winter-dew-tour--2023,jib -> street-style
+reclass,winter-dew-tour--2023,jib -> street-style
+reclass,winter-dew-tour--2023,jib -> street-style
+reclass,winter-dew-tour--2023,jib -> street-style
+reclass,winter-dew-tour--2024,jib -> street-style
+reclass,winter-dew-tour--2024,jib -> street-style
+reclass,winter-dew-tour--2024,jib -> street-style
+reclass,winter-dew-tour--2024,jib -> street-style
+reclass,winter-dew-tour--2024,jib -> street-style
+reclass,winter-dew-tour--2024,jib -> street-style
+reclass,winter-x-games--2007,other -> best-trick
+reclass,winter-x-games--2007,other -> best-trick
+reclass,winter-x-games--2007,other -> best-trick
+reclass,winter-x-games--2012,jib -> street-style
+reclass,winter-x-games--2012,jib -> street-style
+reclass,winter-x-games--2012,jib -> street-style
+reclass,winter-x-games--2013,jib -> street-style
+reclass,winter-x-games--2013,jib -> street-style
+reclass,winter-x-games--2013,jib -> street-style
+reclass,winter-x-games--2019,other -> knuckle-huck
+reclass,winter-x-games--2020,other -> knuckle-huck
+reclass,winter-x-games--2021,other -> knuckle-huck
+reclass,winter-x-games--2022,other -> knuckle-huck
+reclass,winter-x-games--2022,other -> knuckle-huck
+reclass,winter-x-games--2022,other -> knuckle-huck
+reclass,winter-x-games--2023,other -> knuckle-huck
+reclass,winter-x-games--2023,other -> knuckle-huck
+reclass,winter-x-games--2023,other -> knuckle-huck
+reclass,winter-x-games--2024,other -> knuckle-huck
+reclass,winter-x-games--2024,other -> knuckle-huck
+reclass,winter-x-games--2024,other -> knuckle-huck
+reclass,winter-x-games--2024,other -> knuckle-huck
+reclass,winter-x-games--2024,other -> knuckle-huck
+reclass,winter-x-games--2024,other -> knuckle-huck
+reclass,winter-x-games--2025,jib -> street-style
+reclass,winter-x-games--2025,jib -> street-style
+reclass,winter-x-games--2025,jib -> street-style
+reclass,winter-x-games--2025,jib -> street-style
+reclass,winter-x-games--2025,jib -> street-style
+reclass,winter-x-games--2025,jib -> street-style
+reclass,winter-x-games--2025,other -> knuckle-huck
+reclass,winter-x-games--2025,other -> knuckle-huck
+reclass,winter-x-games--2025,other -> knuckle-huck
+reclass,winter-x-games--2025,other -> knuckle-huck
+reclass,winter-x-games--2025,other -> knuckle-huck
+reclass,winter-x-games--2025,other -> knuckle-huck
+reclass,winter-x-games--2026,other -> knuckle-huck
+reclass,winter-x-games--2026,other -> knuckle-huck
+reclass,winter-x-games--2026,other -> knuckle-huck
+reclass,winter-x-games--2026,other -> knuckle-huck
+reclass,winter-x-games--2026,other -> knuckle-huck
+reclass,winter-x-games--2026,other -> knuckle-huck
+reclass,x-games-norway--2020,other -> knuckle-huck
+delete,us-open-snowboarding--1982,"Doug Bouton removed from downhill 1st: the Burton blog names no discipline, and the contemporaneous account gives the downhill to Tom Sims"
+add,us-open-snowboarding--1982,Doug Bouton slalom 1st added from the QA source
+add,us-open-snowboarding--1982,Doug Bouton other 1st added from the QA source
+note,air-and-style--1994-a,tie annotated on the Iguchi row
+fix,air-and-style--1994-a,"Shaun Palmer moved from 3rd to a shared 2nd, per the German standings page"
