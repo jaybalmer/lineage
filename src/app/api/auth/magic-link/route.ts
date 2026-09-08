@@ -122,8 +122,18 @@ export async function POST(req: NextRequest) {
     // Generate the magic link via Supabase admin API
     // redirectTo must point to /auth/complete so the session hash is handled correctly
     const ALLOWED_ORIGINS = ["https://linestry.com", "https://lineage.wtf", "https://lineage.community", "http://localhost:3000"]
+    // Vercel preview deployments get a per-deploy hostname, so a preview that
+    // emailed a link would otherwise send it into production (D8). Accept the
+    // project's own preview host shape too. Anchored full-origin match, never a
+    // substring test, so a lookalike host cannot slip through. Prerequisite: the
+    // matching wildcard must be in Supabase URL Configuration Redirect URLs or
+    // Supabase rejects the redirect_to (see brief section 10).
+    const PREVIEW_ORIGIN = /^https:\/\/[a-z0-9-]+-jaybalmers-projects\.vercel\.app$/
     const reqOrigin = req.headers.get("origin")
-    const origin = reqOrigin && ALLOWED_ORIGINS.includes(reqOrigin) ? reqOrigin : "https://linestry.com"
+    const origin =
+      reqOrigin && (ALLOWED_ORIGINS.includes(reqOrigin) || PREVIEW_ORIGIN.test(reqOrigin))
+        ? reqOrigin
+        : "https://linestry.com"
     const completeRedirect = `${origin}/auth/complete${safeReturn ? `?returnTo=${encodeURIComponent(safeReturn)}` : ""}`
     const { data, error: genError } = await supabaseAdmin.auth.admin.generateLink({
       type: "magiclink",
@@ -146,13 +156,22 @@ export async function POST(req: NextRequest) {
     // (the iOS Mail default). generateLink creates the user when absent, so
     // data.user is the freshly provisioned signup account. Only signup carries a
     // payload; sign-in posts none, so returning users are untouched.
+    // R6c (D9): a failed stash is carried out as a warning, not shown. The link
+    // still works and the picks usually survive in the client store, so an error
+    // message would be a false alarm, but the failure was previously invisible
+    // even to us (the exact BUG-115 / BUG-116 shape). The client fires one
+    // analytics event and changes nothing the user sees.
+    let stashFailed = false
     const stashUserId = data.user?.id
     if (stashUserId && onboarding && typeof onboarding === "object") {
       const { error: metaErr } = await supabaseAdmin.auth.admin.updateUserById(
         stashUserId,
         { user_metadata: { pending_onboarding: onboarding } }
       )
-      if (metaErr) console.error("stash onboarding metadata error:", metaErr)
+      if (metaErr) {
+        console.error("stash onboarding metadata error:", metaErr)
+        stashFailed = true
+      }
     }
 
     // Send via Resend
@@ -175,7 +194,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ fallback: true }, { status: 200 })
     }
 
-    return NextResponse.json({ ok: true })
+    return NextResponse.json(stashFailed ? { ok: true, warning: "stash_failed" } : { ok: true })
   } catch (err) {
     console.error("Magic link route error:", err)
     return NextResponse.json({ fallback: true }, { status: 200 })

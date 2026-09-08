@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { useLineageStore } from "@/store/lineage-store"
@@ -88,6 +88,17 @@ export function SaveStep({
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  // Magic-link resend cooldown (R6). Counts down once a second; a successful
+  // send (first or resend) resets it to 30. Component state only, never
+  // persisted. `resent` shows the "sent again" confirmation.
+  const [cooldown, setCooldown] = useState(0)
+  const [resent, setResent] = useState(false)
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const t = setTimeout(() => setCooldown((n) => n - 1), 1000)
+    return () => clearTimeout(t)
+  }, [cooldown])
+
   const continueWithGoogle = async () => {
     setError(null)
     trackEvent("auth", "signup_started", { method: "google", ...attributionProps() })
@@ -128,14 +139,15 @@ export function SaveStep({
     }
   }
 
-  const sendMagicLink = async () => {
+  const sendMagicLink = async (): Promise<boolean> => {
     const e = email.trim().toLowerCase()
     if (!e.includes("@")) {
       setError("Enter a valid email address.")
-      return
+      return false
     }
     setSending(true)
     setError(null)
+    setResent(false)
     trackEvent("auth", "signup_started", { method: "magic_link", ...attributionProps() })
     const onboardingPayload = buildOnboardingPayload(returnTo)
     try {
@@ -151,12 +163,21 @@ export function SaveStep({
         ok?: boolean
         fallback?: boolean
         error?: string
+        warning?: string
       }
 
       if (data.error) {
         trackEvent("auth", "signup_failed", { method: "magic_link", error_class: signupErrorClass(data.error) })
         setError(data.error)
-        return
+        return false
+      }
+
+      // R6c (D9): the branded link was sent, but stashing the onboarding picks on
+      // the auth user failed. Nothing the visitor sees changes (the picks usually
+      // survive in the client store); record it so the BUG-115 / BUG-116 failure
+      // is no longer invisible to us.
+      if (data.warning === "stash_failed") {
+        trackEvent("error", "magic_link_stash_failed", { method: "magic_link" })
       }
 
       // The server route falls back to a client-side OTP when Resend / the
@@ -175,14 +196,17 @@ export function SaveStep({
         if (otpError) {
           trackEvent("auth", "signup_failed", { method: "magic_link", error_class: signupErrorClass(otpError.message) })
           setError(otpError.message)
-          return
+          return false
         }
       }
 
       setSent(true)
+      setCooldown(30)
+      return true
     } catch {
       trackEvent("auth", "signup_failed", { method: "magic_link", error_class: "network" })
       setError("Something went wrong. Please try again.")
+      return false
     } finally {
       setSending(false)
     }
@@ -196,15 +220,42 @@ export function SaveStep({
         <p className="text-muted text-sm leading-relaxed">
           We sent a sign-in link to{" "}
           <span className="text-foreground font-medium">{email.trim().toLowerCase()}</span>.
-          Open the link to finish signing in.
+          It works once and lasts an hour.
         </p>
-        <p className="text-xs text-muted pt-2">
-          Wrong address?{" "}
+
+        <div className="space-y-2.5 pt-1">
+          <p className="text-xs text-muted">
+            Not there in a minute? Have a look in spam, then send it again.
+          </p>
           <button
-            onClick={() => { setSent(false); setShowEmail(true) }}
+            onClick={async () => { const ok = await sendMagicLink(); if (ok) setResent(true) }}
+            disabled={sending || cooldown > 0}
+            className={cn(
+              "w-full px-4 py-3 rounded-full text-sm font-semibold transition-colors",
+              sending || cooldown > 0
+                ? "bg-surface-active text-muted cursor-not-allowed"
+                : "bg-accent text-white hover:bg-accent-strong"
+            )}
+          >
+            {sending ? "Sending…" : cooldown > 0 ? `Send it again in ${cooldown}s` : "Send it again"}
+          </button>
+          {resent && !error && (
+            <p className="text-xs text-emerald-400">Sent. Check your email again.</p>
+          )}
+          {error && (
+            <p className="text-sm text-red-400 bg-red-950/30 border border-red-900/40 rounded-2xl px-4 py-3">
+              We could not send that link just now. Try once more, or go back and use a
+              different address.
+            </p>
+          )}
+        </div>
+
+        <p className="text-xs text-muted pt-1">
+          <button
+            onClick={() => { setSent(false); setShowEmail(true); setError(null); setResent(false); setCooldown(0) }}
             className="text-blue-400 hover:underline"
           >
-            Try again
+            Use a different address
           </button>
         </p>
       </div>
