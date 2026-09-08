@@ -13,7 +13,8 @@ import { supabase } from "@/lib/supabase"
 import { EVENTS, EVENT_SERIES, eventSlug, eventMatchesSlug, seriesSlug, placeSlug } from "@/lib/mock-data"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
-import type { Event, Story, Claim } from "@/types"
+import type { Event, Story, Claim, EventResult } from "@/types"
+import { eventLocationText } from "@/lib/continents"
 import { StoryCard } from "@/components/feed/story-card"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { EditEventModal } from "@/components/ui/edit-event-modal"
@@ -602,6 +603,93 @@ function AddRiderToEvent({
   )
 }
 
+// ─── Podium results (read-only) ─────────────────────────────────────────────
+// Renders public.event_results grouped by discipline then division. rider_name is
+// plain text: no person link yet (import DECISION 3 keeps person_id null until a
+// rider is matched on demand), so this section states the record, it does not claim.
+
+const PLACE_MEDAL: Record<number, string> = { 1: "🥇", 2: "🥈", 3: "🥉" }
+const CLASS_LABEL: Record<string, string> = {
+  pro: "Pro", amateur: "Amateur", masters: "Masters", junior: "Junior",
+  grom: "Grom", legends: "Legends", para: "Para", open: "Open",
+}
+
+function divisionName(r: EventResult): string {
+  if (r.division_label) return r.division_label
+  const gender = r.division_gender && r.division_gender !== "unspecified"
+    ? r.division_gender[0].toUpperCase() + r.division_gender.slice(1)
+    : ""
+  const cls = r.division_class ? (CLASS_LABEL[r.division_class] ?? r.division_class) : ""
+  return [gender, cls].filter(Boolean).join(" ") || "Overall"
+}
+
+function ResultsSection({ results }: { results: EventResult[] }) {
+  const groups = useMemo(() => {
+    // discipline -> division -> rows (sorted by place)
+    const byDiscipline = new Map<string, Map<string, EventResult[]>>()
+    for (const r of results) {
+      const disc = r.discipline || "Results"
+      const div = divisionName(r)
+      if (!byDiscipline.has(disc)) byDiscipline.set(disc, new Map())
+      const divs = byDiscipline.get(disc)!
+      if (!divs.has(div)) divs.set(div, [])
+      divs.get(div)!.push(r)
+    }
+    return [...byDiscipline.entries()].map(([discipline, divs]) => ({
+      discipline,
+      divisions: [...divs.entries()]
+        .map(([division, rows]) => ({
+          division,
+          rows: [...rows].sort((a, b) => a.place - b.place),
+        }))
+        .sort((a, b) => a.division.localeCompare(b.division)),
+    }))
+  }, [results])
+
+  if (results.length === 0) return null
+
+  return (
+    <section className="mb-8">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-xs font-semibold text-muted uppercase tracking-widest">Podium</h2>
+        <span className="text-[10px] text-muted">{results.length} placing{results.length !== 1 ? "s" : ""}</span>
+      </div>
+      <div className="space-y-5">
+        {groups.map((g) => (
+          <div key={g.discipline}>
+            {groups.length > 1 && (
+              <div className="text-sm font-semibold text-foreground mb-2">{g.discipline}</div>
+            )}
+            <div className="space-y-4">
+              {g.divisions.map((d) => (
+                <div key={d.division}>
+                  <div className="text-[11px] font-medium text-muted uppercase tracking-wider mb-1.5">{d.division}</div>
+                  <div className="bg-surface border border-border-default rounded-xl divide-y divide-border-default overflow-hidden">
+                    {d.rows.map((r) => (
+                      <div key={r.id} className="flex items-center gap-3 px-3 py-2">
+                        <span className="w-7 shrink-0 text-center text-sm">
+                          {PLACE_MEDAL[r.place] ?? <span className="text-muted">{r.place}</span>}
+                        </span>
+                        <span className="flex-1 min-w-0 text-sm text-foreground truncate">
+                          {r.rider_name}
+                          {r.nationality && <span className="text-muted text-xs ml-1.5">{r.nationality}</span>}
+                        </span>
+                        {r.score_or_time && (
+                          <span className="shrink-0 text-xs text-muted tabular-nums">{r.score_or_time}</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  )
+}
+
 // ─── Main page ─────────────────────────────────────────────────────────────────
 
 export default function EventPage(props: { params: Promise<{ community: string; id: string }> }) {
@@ -643,6 +731,21 @@ function EventPageInner({ params }: { params: Promise<{ community: string; id: s
     fetch(`/api/stories?event_id=${instanceId}&limit=50`)
       .then((r) => r.json())
       .then((data) => { if (Array.isArray(data)) setEventStories(data as Story[]) })
+  }, [instanceId])
+
+  // Podium results for this edition (public.event_results, public-read). rider_name
+  // is text; results are read-only here (no bulk person nodes, import DECISION 3).
+  const [results, setResults] = useState<EventResult[]>([])
+  useEffect(() => {
+    if (!instanceId) { setResults([]); return }
+    let live = true
+    supabase
+      .from("event_results")
+      .select("*")
+      .eq("event_id", instanceId)
+      .order("place", { ascending: true })
+      .then(({ data }) => { if (live && Array.isArray(data)) setResults(data as EventResult[]) })
+    return () => { live = false }
   }, [instanceId])
 
   // Look up from all sources: catalog (Supabase) first, then mock seed, then
@@ -765,13 +868,17 @@ function EventPageInner({ params }: { params: Promise<{ community: string; id: s
                 {instance.description && (
                   <p className="text-muted text-sm mt-1 leading-relaxed">{instance.description}</p>
                 )}
-                {place && (
+                {place ? (
                   <CommunityLink href={`/places/${placeSlug(place)}`}>
                     <p className="text-muted text-sm mt-1 hover:text-blue-300 transition-colors">
                       🏔 {place.name}
                     </p>
                   </CommunityLink>
-                )}
+                ) : (() => {
+                  // Imported editions carry venue/city/country text instead of a linked Place.
+                  const loc = eventLocationText({ venue: instance.venue_name, city: instance.city, country: instance.country })
+                  return loc ? <p className="text-muted text-sm mt-1">🏔 {loc}</p> : null
+                })()}
                 <p className="text-muted text-sm mt-0.5">
                   {formatEventDateRange(instance.start_date, instance.end_date)}
                 </p>
@@ -809,6 +916,9 @@ function EventPageInner({ params }: { params: Promise<{ community: string; id: s
               </div>
             </section>
           )}
+
+          {/* Podium results (imported catalog editions) */}
+          <ResultsSection results={results} />
 
           {/* Participants */}
           <section className="mb-8">

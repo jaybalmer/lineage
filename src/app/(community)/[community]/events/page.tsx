@@ -12,47 +12,16 @@ import { UnverifiedBadge } from "@/components/ui/badge"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
 import { CommunityLink } from "@/components/ui/community-link"
-import type { Event, EventType, EventSeries } from "@/types"
+import { countryToContinent, eventLocationText, CONTINENT_ORDER } from "@/lib/continents"
+import type { Event, EventSeries } from "@/types"
 
 const EVENT_PREDICATES = ["competed_at", "spectated_at", "organized_at"] as const
 type EventPredicate = (typeof EVENT_PREDICATES)[number]
 
 type MainTab = "all" | "series" | "entries"
-
-const ACCENT: Record<EventType, string> = {
-  contest: "border-amber-600",
-  "film-shoot": "border-violet-600",
-  trip: "border-rose-600",
-  camp: "border-emerald-600",
-  gathering: "border-cyan-600",
-  episode: "border-fuchsia-600",
-}
-
-const EVENT_DOT_COLOR: Record<EventType, string> = {
-  contest: "#D97706",
-  "film-shoot": "#7C3AED",
-  trip: "#E11D48",
-  camp: "#059669",
-  gathering: "#0891B2",
-  episode: "#C026D3",
-}
-
-const TYPE_LABEL: Record<EventType, string> = {
-  contest: "Contest",
-  "film-shoot": "Film shoot",
-  trip: "Trip",
-  camp: "Camp",
-  gathering: "Gathering",
-  episode: "Episode",
-}
-
-const TYPE_FILTERS: { value: EventType; label: string }[] = [
-  { value: "contest",    label: "Contest" },
-  { value: "film-shoot", label: "Film shoot" },
-  { value: "trip",       label: "Trip" },
-  { value: "camp",       label: "Camp" },
-  { value: "gathering",  label: "Gathering" },
-]
+// The list is one flat set of events, no longer divided by type (contest / trip /
+// camp / film-shoot / gathering). It is segmented instead by decade or continent.
+type GroupMode = "decade" | "continent"
 
 function AvatarStack({ riderIds }: { riderIds: string[] }) {
   const { catalog } = useLineageStore()
@@ -85,25 +54,22 @@ function AvatarStack({ riderIds }: { riderIds: string[] }) {
 function EventCard({ event }: { event: Event }) {
   const { catalog } = useLineageStore()
   const place = event.place_id ? catalog.places.find((p) => p.id === event.place_id) : null
+  const location = eventLocationText({
+    placeName: place?.name, venue: event.venue_name, city: event.city, country: event.country,
+  })
   const riderIds = [...new Set(
     catalog.claims.filter(
       (c) => c.object_id === event.id && EVENT_PREDICATES.includes(c.predicate as EventPredicate)
     ).map((c) => c.subject_id)
   )]
-  const accent = ACCENT[event.event_type] ?? "border-zinc-400"
-  const dotColor = EVENT_DOT_COLOR[event.event_type] ?? "#D97706"
   const addedByPerson = event.added_by ? catalog.people.find((p) => p.id === event.added_by) : null
   const isUnverified = event.community_status === "unverified"
 
   return (
     <div className="flex items-center gap-2">
       <CommunityLink href={`/events/${eventSlug(event)}`} className="flex-1 min-w-0 block">
-        <div className={cn(
-          "bg-surface border-2 rounded-xl p-4 hover:opacity-90 transition-all",
-          accent
-        )}>
+        <div className="bg-surface border border-border-default rounded-xl p-4 hover:border-foreground/20 hover:bg-surface-hover transition-all">
           <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full shrink-0" style={{ background: dotColor }} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-0.5 flex-wrap">
                 <span className="font-semibold text-foreground text-sm leading-snug">{event.name}</span>
@@ -112,9 +78,8 @@ function EventCard({ event }: { event: Event }) {
                 )}
               </div>
               <div className="text-xs text-muted">
-                <span className="uppercase tracking-widest mr-2">{TYPE_LABEL[event.event_type]}</span>
                 {event.year}
-                {place && <span> · {place.name}</span>}
+                {location && <span> · {location}</span>}
               </div>
               {isUnverified && addedByPerson && (
                 <div className="flex items-center gap-1 mt-1 text-[10px] text-muted">
@@ -200,7 +165,7 @@ function EventsPageInner() {
   const searchParams = useSearchParams()
   const yearParam = searchParams.get("year")
   const [mainTab, setMainTab] = useState<MainTab>("all")
-  const [typeFilter, setTypeFilter] = useState<EventType | null>(null)
+  const [groupMode, setGroupMode] = useState<GroupMode>("decade")
   const [myOnly, setMyOnly] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   // BUG-161: a signed-out add is a no-op, so gate at press time and prompt.
@@ -225,28 +190,45 @@ function EventsPageInner() {
     )
   }, [activePersonId, catalog.claims])
 
-  // Apply search + type + mine filters
+  // Apply search + mine filters (type is no longer a filter; the list is flat)
   const visibleEvents = useMemo(() => {
     const q = search.trim().toLowerCase()
     return allEvents.filter((e) => {
       if (myOnly && !myEventIds.has(e.id)) return false
-      if (typeFilter && e.event_type !== typeFilter) return false
       if (q) {
         const place = e.place_id ? catalog.places.find((p) => p.id === e.place_id) : null
+        const location = eventLocationText({
+          placeName: place?.name, venue: e.venue_name, city: e.city, country: e.country,
+        })
         const haystack = [
           e.name,
           String(e.year ?? ""),
-          place?.name ?? "",
-          e.event_type,
+          location ?? "",
+          e.country ?? "",
         ].join(" ").toLowerCase()
         if (!haystack.includes(q)) return false
       }
       return true
     })
-  }, [search, typeFilter, myOnly, allEvents, myEventIds, catalog.places])
+  }, [search, myOnly, allEvents, myEventIds, catalog.places])
 
-  // ── All tab: group by decade ──────────────────────────────────────────────
-  const decadeGroups = useMemo(() => {
+  // ── All tab: group by decade OR continent, per the toggle ──────────────────
+  const groupedEvents = useMemo(() => {
+    if (groupMode === "continent") {
+      const byContinent = new Map<string, Event[]>()
+      visibleEvents.forEach((e) => {
+        const cont = countryToContinent(e.country)
+        if (!byContinent.has(cont)) byContinent.set(cont, [])
+        byContinent.get(cont)!.push(e)
+      })
+      return [...byContinent.entries()]
+        .sort(([a], [b]) => CONTINENT_ORDER.indexOf(a as never) - CONTINENT_ORDER.indexOf(b as never))
+        .map(([cont, events]) => ({
+          label: cont,
+          uppercase: true,
+          events: [...events].sort((a, b) => (b.year ?? 0) - (a.year ?? 0)),
+        }))
+    }
     const byDecade = new Map<number, Event[]>()
     visibleEvents.forEach((e) => {
       if (e.year == null) return
@@ -258,9 +240,10 @@ function EventsPageInner() {
       .sort(([a], [b]) => b - a)   // newest decade first
       .map(([decade, events]) => ({
         label: `${decade}s`,
+        uppercase: false,
         events: [...events].sort((a, b) => (b.year ?? 0) - (a.year ?? 0)),
       }))
-  }, [visibleEvents])
+  }, [visibleEvents, groupMode])
 
   // ── Series tab: group by series ───────────────────────────────────────────
   const seriesGroups = useMemo(() => {
@@ -368,23 +351,31 @@ function EventsPageInner() {
               ))}
             </div>
 
-            {/* Type filter chips */}
-            <div className="flex flex-wrap gap-1.5">
-              {TYPE_FILTERS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  onClick={() => setTypeFilter(typeFilter === value ? null : value)}
-                  className={cn(
-                    "px-3 py-1 rounded-full text-xs font-medium border transition-all",
-                    typeFilter === value
-                      ? "bg-surface-active border-border-default text-foreground"
-                      : "bg-transparent text-muted border-border-default hover:border-border-default hover:text-foreground"
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            {/* Group-by toggle (All tab only): segment the flat list by decade or continent */}
+            {mainTab === "all" && (
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-muted uppercase tracking-widest">Group by</span>
+                <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1">
+                  {([
+                    { key: "decade" as GroupMode, label: "Decade" },
+                    { key: "continent" as GroupMode, label: "Continent" },
+                  ]).map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setGroupMode(key)}
+                      className={cn(
+                        "px-3 py-1 rounded-md text-xs font-medium transition-all",
+                        groupMode === key
+                          ? "bg-surface-active text-foreground"
+                          : "text-muted hover:text-foreground"
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Mine filter */}
@@ -403,7 +394,7 @@ function EventsPageInner() {
           )}
         </div>
 
-        {/* ── All tab: decade groups ── */}
+        {/* ── All tab: one flat list, grouped by decade or continent ── */}
         {mainTab === "all" && (
           <div className="space-y-8">
             {isEmpty ? (
@@ -412,9 +403,9 @@ function EventsPageInner() {
                 <button onClick={openAdd} className="text-blue-500 hover:text-blue-400">Add one.</button>
               </div>
             ) : (
-              decadeGroups.map(({ label, events }) => (
+              groupedEvents.map(({ label, uppercase, events }) => (
                 <div key={label}>
-                  <SectionDivider label={label} uppercase={false} />
+                  <SectionDivider label={label} uppercase={uppercase} />
                   <div className="space-y-2 mt-3">
                     {events.map((event) => (
                       <EventCard key={event.id} event={event} />
