@@ -413,6 +413,20 @@ export interface Event {
   description?: string
   image_url?: string
   community_status?: CommunityStatus
+  // ── Events catalog import (migration 20260907000001) ──
+  /** Free-text venue/city/country from the researched catalog, shown when no
+   *  place_id is linked (imported editions carry these instead of a Place). */
+  venue_name?: string | null
+  city?: string | null
+  country?: string | null
+  /** 'day' | 'month' | 'year' — start_date precision for imported partial dates. */
+  date_precision?: string | null
+  /** 'held' | 'cancelled' | 'postponed' | 'unconfirmed' for imported editions. */
+  catalog_status?: string | null
+  catalog_status_note?: string | null
+  disciplines?: string[] | null
+  sources?: string[] | null
+  confidence?: string | null
   added_by?: string
   website_url?: string
   youtube_url?: string
@@ -436,6 +450,29 @@ export interface Event {
    *  manual. Live gate is public_enabled AND (publish_at is null or in the past),
    *  evaluated at read time; editors always bypass it. */
   publish_at?: string | null
+}
+
+/** A podium placing at an event (public.event_results, migration 20260907000001).
+ *  rider_name is text; person_id stays null until a rider is linked on demand
+ *  (import brief DECISION 3 — no bulk person-node creation). */
+export interface EventResult {
+  id: number
+  event_id: string
+  discipline: string
+  division_label?: string | null
+  division_gender?: "men" | "women" | "mixed" | "unspecified" | null
+  division_class?: string | null
+  division_age_band?: string | null
+  event_name?: string | null
+  place: number
+  rider_name: string
+  person_id?: string | null
+  nationality?: string | null
+  score_or_time?: string | null
+  notes?: string | null
+  sources?: string[] | null
+  confidence?: "verified" | "likely" | null
+  citation_status?: string | null
 }
 
 export type EntityType = "person" | "place" | "org" | "board" | "event"
