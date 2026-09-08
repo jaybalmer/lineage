@@ -41,6 +41,12 @@ FREQ = {"tour-series": "tour", "tour-stop": "annual", "major-contest": "annual",
         "legacy-contest": "annual", "grassroots-contest": "annual",
         "national-championship": "annual"}
 
+# Editions the contest was scheduled for but never actually held are excluded from the
+# import: they are phantom years that inflate the events list (e.g. the Mt Baker LBS was
+# postponed in 2021/2022/2024/2026, and 2027 is not yet held). This overrides the brief's
+# DECISION 5 per Jay 2026-09-07. These rows carry no podiums, so nothing is orphaned.
+SKIP_STATUSES = {"cancelled", "unconfirmed", "postponed"}
+
 
 def rows(p):
     with open(SRC / p, newline="") as fh:
@@ -149,9 +155,13 @@ events_cols = ["id", "external_ref", "name", "series_id", "year", "start_date", 
                "disciplines", "sources", "confidence"]
 events_vals, events_json = [], []
 skipped_editions = 0
+skipped_neverheld = set()
 for e in editions_in:
     if e["edition_id"] in collide_to_existing:
         skipped_editions += 1
+        continue
+    if e["status"] in SKIP_STATUSES:
+        skipped_neverheld.add(e["edition_id"])
         continue
     sd = e["start_date"] or str(e["year"])
     dp = ("day" if len(sd) == 10 else "month" if len(sd) == 7 else "year" if len(sd) == 4 else None)
@@ -186,6 +196,8 @@ results_cols = ["event_id", "discipline", "division_label", "division_gender", "
 results_vals, results_json = [], []
 repointed = 0
 for r in results_in:
+    if r["edition_id"] in skipped_neverheld:
+        continue  # its edition was not imported (never held); no podium exists anyway
     ev_id = collide_to_existing.get(r["edition_id"], r["edition_id"])
     if r["edition_id"] in collide_to_existing:
         repointed += 1
@@ -217,6 +229,7 @@ json.dump(events_json, open(OUT / "events.json", "w"))
 json.dump(results_json, open(OUT / "results.json", "w"))
 
 print(f"series:  {n_series} inserted ({skipped_series} skipped, already in prod)")
-print(f"events:  {n_events} inserted ({skipped_editions} skipped, merged into existing rows)")
+print(f"events:  {n_events} inserted ({skipped_editions} merged into existing rows, "
+      f"{len(skipped_neverheld)} skipped as never-held)")
 print(f"results: {n_results} inserted ({repointed} re-pointed onto existing events)")
 print(f"wrote {OUT}/  (both .sql and .json)")
