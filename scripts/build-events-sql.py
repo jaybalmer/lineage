@@ -166,7 +166,12 @@ for e in editions_in:
     sd = e["start_date"] or str(e["year"])
     dp = ("day" if len(sd) == 10 else "month" if len(sd) == 7 else "year" if len(sd) == 4 else None)
     series_id = SERIES_REMAP.get(e["series_id"], e["series_id"])
-    name = e["edition_label"] or f'{e["year"]} {e["series_id"]}'
+    # Mt Baker LBS uses a consistent "[YEAR] Mt. Baker Legendary Banked Slalom" name
+    # (per Jay 2026-09-07) rather than the mixed catalog edition_labels ("30th ...").
+    if e["series_id"] == "mt-baker-legendary-banked-slalom":
+        name = f'{e["year"]} Mt. Baker Legendary Banked Slalom'
+    else:
+        name = e["edition_label"] or f'{e["year"]} {e["series_id"]}'
     cstatus = "verified" if e["confidence"] == "verified" else "unverified"
     events_vals.append([
         q(e["edition_id"]), q(e["edition_id"]), q(name),
