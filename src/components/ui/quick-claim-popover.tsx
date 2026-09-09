@@ -58,6 +58,10 @@ export function QuickClaimPopover({ entityId, entityType, entityName, entityYear
   // source). Tracked separately so the trigger shows a pending clock, not the
   // success checkmark that reads as "confirmed".
   const [requested, setRequested] = useState(false)
+  // BUG-190: same rapid-tap race as the board popover. A synchronous ref guard
+  // stops concurrent addClaim writes before the async re-render hides the button.
+  const [submitting, setSubmitting] = useState(false)
+  const submittingRef = useRef(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
 
   // Re-select the only option if the entity type changes to a single-predicate
@@ -97,6 +101,11 @@ export function QuickClaimPopover({ entityId, entityType, entityName, entityYear
 
   function handleAdd() {
     if (!predicate || !activePersonId) return
+    // BUG-190: block re-entry after the first tap; `alreadyClaimed` short-circuits
+    // a re-add of an entity the member already has on their timeline.
+    if (submittingRef.current || alreadyClaimed) return
+    submittingRef.current = true
+    setSubmitting(true)
     const effectiveYear = entityYear ?? (year.length === 4 ? Number(year) : new Date().getFullYear())
     const startDate = `${effectiveYear}-01-01`
     addClaim({
@@ -139,7 +148,10 @@ export function QuickClaimPopover({ entityId, entityType, entityName, entityYear
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
-          if (!alreadyClaimed && !added) setOpen(!open)
+          if (!alreadyClaimed && !added) {
+            if (!open) { submittingRef.current = false; setSubmitting(false) }
+            setOpen(!open)
+          }
         }}
         title={
           pending
@@ -206,7 +218,7 @@ export function QuickClaimPopover({ entityId, entityType, entityName, entityYear
 
           {/* Add button */}
           <button
-            disabled={!canAdd}
+            disabled={!canAdd || submitting}
             onClick={handleAdd}
             className={cn(
               "w-full py-1.5 rounded-lg text-xs font-medium transition-all",

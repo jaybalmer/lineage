@@ -220,6 +220,12 @@ export function BoardActionsMenu({ board, align = "right" }: { board: Board; ali
   const [rode, setRode] = useState(true)
   const [own, setOwn] = useState(false)
   const [justAdded, setJustAdded] = useState(false)
+  // BUG-190: rapid taps on "Add to timeline" fired one POST /api/claims each,
+  // racing past the server's non-atomic owned_board upsert and creating
+  // duplicate rows. The button hides once `claimed` re-renders, but that is
+  // async, so a synchronous ref guard is what actually stops the race.
+  const [submitting, setSubmitting] = useState(false)
+  const submittingRef = useRef(false)
   const wrapperRef = useRef<HTMLDivElement>(null)
 
   const allClaims = [...catalog.claims, ...sessionClaims, ...dbClaims]
@@ -244,6 +250,12 @@ export function BoardActionsMenu({ board, align = "right" }: { board: Board; ali
   function handleAdd() {
     const rel = toBoardRelationship(rode, own)
     if (!rel || !activePersonId) return
+    // BUG-190: block re-entry after the first tap. `existing` short-circuits a
+    // re-add of a board the member already owns (the server upsert would widen
+    // the relationship, but we never want a second insert to race in).
+    if (submittingRef.current || existing) return
+    submittingRef.current = true
+    setSubmitting(true)
     addClaim({
       id: generateClaimId(),
       subject_id: activePersonId,
@@ -268,6 +280,8 @@ export function BoardActionsMenu({ board, align = "right" }: { board: Board; ali
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
+          // Reset the in-flight guard each time the popover is (re)opened.
+          if (!open) { submittingRef.current = false; setSubmitting(false) }
           setOpen((o) => !o)
         }}
         title={claimed ? "On your timeline" : "Add to your timeline"}
@@ -301,7 +315,7 @@ export function BoardActionsMenu({ board, align = "right" }: { board: Board; ali
               <BoardRelationshipToggles size="sm" rode={rode} own={own} onChange={({ rode, own }) => { setRode(rode); setOwn(own) }} />
               <button
                 onClick={handleAdd}
-                disabled={!rode && !own}
+                disabled={(!rode && !own) || submitting}
                 className={cn(
                   "w-full mt-3 py-1.5 rounded-lg text-xs font-medium transition-all",
                   rode || own ? "bg-[#1C1917] text-white hover:bg-[#292524]" : "bg-surface-hover text-muted cursor-not-allowed"
