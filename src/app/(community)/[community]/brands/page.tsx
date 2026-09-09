@@ -11,6 +11,7 @@ import { CreateShowModal } from "@/components/orgs/create-show-modal"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { UnverifiedBadge } from "@/components/ui/badge"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
+import { presentingPartners } from "@/lib/partners"
 import { cn } from "@/lib/utils"
 import type { Org } from "@/types"
 
@@ -74,7 +75,14 @@ function OrgCard({ org, conn }: { org: Org; conn: ConnCounts }) {
                   {org.name}
                 </span>
                 {isCurated && (
-                  <span className="text-[10px] font-semibold text-violet-700 bg-violet-500/10 rounded px-1.5 py-0.5 shrink-0">Curated</span>
+                  <span className="text-[10px] font-semibold text-violet-700 bg-violet-500/10 rounded px-1.5 py-0.5 shrink-0">
+                    {/* Founding partners show their commercial label (e.g.
+                        "Founding Brand Partner"); everyone curated shows "Curated"
+                        (T2.4). Empty partner_label falls back to "Curated". */}
+                    {org.curation_tier === "founding" && org.partner_label?.trim()
+                      ? org.partner_label
+                      : "Curated"}
+                  </span>
                 )}
                 {isUnverified && (
                   <UnverifiedBadge className="shrink-0" />
@@ -199,9 +207,20 @@ function BrandsPageInner() {
     })
   }, [myOnly, search, catalog.orgs, myOrgIds])
 
-  const brandOrgs = allOrgs.filter((o) => o.org_type === "brand" || o.org_type === "magazine")
-  const teams = allOrgs.filter((o) => o.org_type === "team")
-  const shops = allOrgs.filter((o) => o.org_type === "shop")
+  // Presenting partners (curation_tier='founding') are pinned above every bucket
+  // and every sort. Derived from allOrgs, not brandOrgs, because a partner may be
+  // any org_type: a media org (e.g. an FNRad-style show) would otherwise be
+  // invisible here, rendering only under "Shows & Media" (brief F3). Derived
+  // AFTER search/myOnly so the pin respects filters (D6).
+  const featuredPartners = presentingPartners(allOrgs)
+  const featuredIds = new Set(featuredPartners.map((o) => o.id))
+  // Featured partners are lifted out of the normal buckets (D3): they render once,
+  // at the top. Everything below buckets off the remainder.
+  const unfeaturedOrgs = allOrgs.filter((o) => !featuredIds.has(o.id))
+
+  const brandOrgs = unfeaturedOrgs.filter((o) => o.org_type === "brand" || o.org_type === "magazine")
+  const teams = unfeaturedOrgs.filter((o) => o.org_type === "team")
+  const shops = unfeaturedOrgs.filter((o) => o.org_type === "shop")
   // event-series orgs are intentionally not surfaced here: they belong to the
   // Events surface, not the Brands list. Anything in neither bucket (brand /
   // magazine / team / shop) is excluded by design, and the header count below
@@ -228,7 +247,7 @@ function BrandsPageInner() {
   const sortedShops = [...shops].sort(cmp)
   // Media shows (FNRad authoring): a separate browsable section; each card links
   // to its show hub (the brand detail page renders a Show block for media orgs).
-  const sortedShows = allOrgs.filter((o) => o.org_type === "media").sort(cmp)
+  const sortedShows = unfeaturedOrgs.filter((o) => o.org_type === "media").sort(cmp)
 
   // Count the displayed set (brands + teams + shops), not allOrgs, so the
   // header number matches the cards on screen (BUG-027 / cf. BUG-019).
@@ -316,6 +335,21 @@ function BrandsPageInner() {
         </div>
 
         <div className="space-y-10">
+          {/* Presenting partners: pinned above every sort and every filter state
+              (D5). Lifted out of the buckets below, so each renders exactly once. */}
+          {featuredPartners.length > 0 && (
+            <section>
+              <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-4">
+                {featuredPartners.length === 1 ? "Presenting Partner" : "Presenting Partners"}
+              </h2>
+              <div className="space-y-2">
+                {featuredPartners.map((org) => (
+                  <OrgCard key={org.id} org={org} conn={conn(org.id)} />
+                ))}
+              </div>
+            </section>
+          )}
+
           {sort === "category" ? (
             Object.entries(grouped).map(([cat, orgs]) => (
               <section key={cat}>

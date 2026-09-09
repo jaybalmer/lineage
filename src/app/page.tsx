@@ -6,13 +6,20 @@ import { Nav } from "@/components/ui/nav"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { EQUITY_POOL_SHARES } from "@/lib/equity-offer"
+import { primaryPresentingPartner, partnerEyebrow } from "@/lib/partners"
+import { orgSlug } from "@/lib/mock-data"
 
 export default function Home() {
   const { activePersonId } = useLineageStore()
   const communities = useLineageStore((s) => s.communities)
+  const orgs = useLineageStore((s) => s.catalog.orgs)
+  const catalogLoaded = useLineageStore((s) => s.catalogLoaded)
   const isAuth = isAuthUser(activePersonId)
   // Single-community launch: homepage banner reads snowboarding.
   const banner = communities.find((c) => c.slug === "snowboarding")?.landing_banner_url
+  // Presenting partner card (D8/D9): only once the catalog has loaded, so it does
+  // not pop in mid-read; null until an org is set to 'founding' in /admin/brand.
+  const partner = catalogLoaded ? primaryPresentingPartner(orgs) : null
 
   return (
     // Landing page is always dark, regardless of the theme toggle. The .dark
@@ -120,6 +127,45 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Presenting partner card. Below the focus card so its async arrival cannot
+          push the primary CTA down (D8/F11/BUG-017). Renders nothing until an org
+          is 'founding'. Force-dark scope, so the logo sits on a white tile (F10). */}
+      {partner && (
+        <div className="max-w-3xl mx-auto px-6 pb-8">
+          <Link
+            href={`/snowboarding/brands/${orgSlug(partner)}`}
+            className="block rounded-2xl border border-border-default bg-surface p-5 sm:p-6 hover:border-foreground/30 transition-colors"
+          >
+            <p className="text-[11px] font-semibold text-muted uppercase tracking-widest mb-3">
+              {partnerEyebrow(partner)}
+            </p>
+            <div className="flex items-center gap-4 min-w-0">
+              {partner.logo_url ? (
+                <div className="w-12 h-12 rounded-lg bg-white border border-border-default flex items-center justify-center overflow-hidden shrink-0">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={partner.logo_url} alt={partner.name} className="w-full h-full object-contain p-1" />
+                </div>
+              ) : (
+                <div className="w-12 h-12 rounded-lg bg-violet-50 border border-violet-200 flex items-center justify-center text-lg font-bold text-violet-700 shrink-0">
+                  {partner.name[0].toUpperCase()}
+                </div>
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-base font-semibold text-foreground truncate">{partner.name}</p>
+                {partner.description && (
+                  <p className="text-sm text-muted mt-0.5 line-clamp-2">
+                    {partner.description.slice(0, 120)}{partner.description.length > 120 ? "…" : ""}
+                  </p>
+                )}
+              </div>
+              <span className="text-sm text-accent-strong font-semibold shrink-0 hidden sm:inline">
+                Visit {partner.name}
+              </span>
+            </div>
+          </Link>
+        </div>
+      )}
 
       {/* Equity teaser: visible to everyone (auth + logged out). Surfaces the
           offer that otherwise only lives behind /membership. */}
