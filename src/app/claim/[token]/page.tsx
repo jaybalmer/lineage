@@ -125,13 +125,24 @@ export default function ClaimPage() {
         <div className="max-w-sm w-full text-center space-y-4">
           <div className="text-4xl">🔍</div>
           <h1 className="text-xl font-bold text-foreground">Invite not found</h1>
-          <p className="text-sm text-muted">This invite link doesn&apos;t exist or may have been removed.</p>
-          <button
-            onClick={() => router.push("/")}
-            className="mt-4 px-6 py-2.5 rounded-xl bg-surface-hover border border-border-default text-sm text-foreground hover:bg-surface-active transition-colors"
-          >
-            Go to Linestry
-          </button>
+          <p className="text-sm text-muted">
+            This link may be incomplete, or the invite was removed. You can still start your own
+            timeline from scratch.
+          </p>
+          <div className="pt-2 space-y-2">
+            <button
+              onClick={() => router.push("/onboarding")}
+              className="w-full px-6 py-3 rounded-xl bg-[#1C1917] text-sm font-semibold text-white hover:bg-[#292524] transition-colors"
+            >
+              Start your timeline
+            </button>
+            <button
+              onClick={() => router.push("/auth/signin")}
+              className="w-full px-6 py-2 text-sm text-muted hover:text-foreground transition-colors"
+            >
+              Sign in
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -145,14 +156,23 @@ export default function ClaimPage() {
           <div className="text-4xl">⏳</div>
           <h1 className="text-xl font-bold text-foreground">This invite has expired</h1>
           <p className="text-sm text-muted">
-            {invite?.inviter_name} can send you a new invite from their Linestry profile.
+            {invite?.inviter_name} can send you a new one from their timeline. You do not have to
+            wait for it, though. You can start your own now and connect up later.
           </p>
-          <button
-            onClick={() => router.push("/")}
-            className="mt-4 px-6 py-2.5 rounded-xl bg-[#1C1917] text-sm font-semibold text-white hover:bg-[#292524] transition-colors"
-          >
-            Visit Linestry
-          </button>
+          <div className="pt-2 space-y-2">
+            <button
+              onClick={() => router.push("/onboarding")}
+              className="w-full px-6 py-3 rounded-xl bg-[#1C1917] text-sm font-semibold text-white hover:bg-[#292524] transition-colors"
+            >
+              Start your timeline
+            </button>
+            <button
+              onClick={() => router.push("/auth/signin")}
+              className="w-full px-6 py-2 text-sm text-muted hover:text-foreground transition-colors"
+            >
+              Sign in
+            </button>
+          </div>
         </div>
       </div>
     )
@@ -169,7 +189,7 @@ export default function ClaimPage() {
             Someone has already claimed this profile. If that was you, sign in to see your linestry.
           </p>
           <button
-            onClick={() => router.push("/onboarding")}
+            onClick={() => router.push("/auth/signin")}
             className="mt-4 px-6 py-2.5 rounded-xl bg-[#1C1917] text-sm font-semibold text-white hover:bg-[#292524] transition-colors"
           >
             Sign in
@@ -238,10 +258,10 @@ export default function ClaimPage() {
               Claim my profile →
             </button>
             <button
-              onClick={() => router.push("/onboarding")}
+              onClick={() => router.push("/auth/signin")}
               className="w-full py-2 text-xs text-muted hover:text-foreground transition-colors"
             >
-              I already have an account — sign in
+              I already have an account
             </button>
           </div>
         </div>

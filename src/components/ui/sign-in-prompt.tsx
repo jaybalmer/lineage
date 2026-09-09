@@ -39,17 +39,27 @@ export function SignInPrompt({
     >
       <div className="absolute inset-0 bg-black/60" />
       <div className="relative w-full max-w-md bg-surface border border-border-default rounded-2xl p-6 shadow-2xl">
-        <h2 className="text-lg font-bold text-foreground mb-2">Sign in to contribute</h2>
+        <h2 className="text-lg font-bold text-foreground mb-2">Create your timeline to add this</h2>
         <p className="text-sm text-muted mb-5">
           {message ??
-            "Adding to Linestry needs an account, so your contribution is credited to you. Takes about a minute."}
+            "Adding to Linestry needs an account so your contribution is credited to you. It takes about a minute."}
         </p>
+        {/* R7 (D10): signup leads, because this prompt fires the first time someone
+            tries to contribute, which strongly implies no account. The returning
+            member loses nothing: their action is one line down and still carries
+            returnTo. */}
         <div className="flex flex-col gap-2">
           <Link
-            href={`/auth/signin${returnTo}`}
+            href={`/onboarding${returnTo}`}
             className="w-full text-center px-4 py-2.5 rounded-lg bg-[#1C1917] text-sm font-medium text-white hover:bg-[#292524] transition-colors"
           >
-            Sign in or start
+            Create your timeline
+          </Link>
+          <Link
+            href={`/auth/signin${returnTo}`}
+            className="w-full text-center px-4 py-2 text-sm text-muted hover:text-foreground transition-colors"
+          >
+            I already have an account
           </Link>
           <button
             onClick={onClose}
