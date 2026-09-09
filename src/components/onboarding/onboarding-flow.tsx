@@ -143,6 +143,12 @@ export function OnboardingFlow() {
   // on a normal-looking first step.
   const [entryError, setEntryError] = useState<string | null>(null)
 
+  // R3 (D4): whether the persisted answers were already complete when the flow
+  // was re-entered, captured in the entry effect before the BUG-166 step-0 reset
+  // runs. Drives an opt-in "pick up where you left off" button on the first step
+  // only. Never restores the stored step (that is BUG-166); it just offers a jump.
+  const [canResume, setCanResume] = useState(false)
+
   // Read the signup-intent destination from this page's own URL once, per visit.
   // Not useSearchParams (forces a dynamic render) and not the Zustand store (D3):
   // the value lives only as long as this URL does. Matches the from=intro pattern
@@ -225,7 +231,12 @@ export function OnboardingFlow() {
     }
 
     const applyEntryStep = () => {
-      if (useLineageStore.getState().onboarding.step !== 0) setOnboardingStep(0)
+      // Capture completeness from the hydrated answers before resetting the step
+      // (the reset only touches step, never the answers). Both name and a usable
+      // year must be present for the resume jump to have somewhere to land.
+      const ob = useLineageStore.getState().onboarding
+      setCanResume(Boolean(ob.display_name?.trim()) && isUsableYear(ob.start_year ?? null))
+      if (ob.step !== 0) setOnboardingStep(0)
     }
     if (useLineageStore.persist.hasHydrated()) applyEntryStep()
     else useLineageStore.persist.onFinishHydration(applyEntryStep)
@@ -765,6 +776,23 @@ export function OnboardingFlow() {
                 <p className="text-center text-[11px] text-muted">
                   Nothing is saved until you do.
                 </p>
+              )}
+              {/* R3: opt-in resume, first step only. The default path is
+                  unchanged (land on scatter with answers pre-filled); this just
+                  offers a jump straight to the save step for a returning visitor
+                  whose two answers are already complete. Never fires on its own. */}
+              {canResume && currentStepId === "scatter" && (
+                <div className="flex flex-col items-center gap-1 pt-1">
+                  <button
+                    onClick={() => setOnboardingStep(STEPS.indexOf("save"))}
+                    className="text-[13px] font-semibold text-accent-strong hover:text-accent transition-colors"
+                  >
+                    Pick up where you left off
+                  </button>
+                  <p className="text-center text-[11px] text-muted">
+                    Your name and year are already saved.
+                  </p>
+                </div>
               )}
             </>
           )}

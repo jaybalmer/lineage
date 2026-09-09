@@ -198,8 +198,10 @@ export default function SignInPage() {
     }
 
     // Password sign-in establishes the session client-side (no callback hop), so
-    // honor returnTo here directly; default stays the home redirect (BUG-054).
-    router.push(currentReturnTo() ?? "/")
+    // honor returnTo here directly. Default is /me/timeline, matching the callback
+    // path every other method lands on (R8/D11); /me/timeline needs no community
+    // slug and server-resolves to the viewer's own profile.
+    router.push(currentReturnTo() ?? "/me/timeline")
     router.refresh()
   }
 
@@ -400,13 +402,22 @@ export default function SignInPage() {
           </p>
         )}
 
-        <div className="flex items-center justify-between" style={{ fontSize: 10 }}>
-          <p className="text-muted">
-            No account yet?{" "}
-            <Link href={onboardingHref} className="underline hover:text-foreground">
-              Create your timeline
-            </Link>
-          </p>
+        {/* R7 (F15): promote the signup path from a fontSize:10 inline link to a
+            full-width bordered button below the consent line. The destination is
+            unchanged (onboardingHref, set by the signup-intent handoff); only the
+            shape is promoted. Hidden in the sent state, where signing up is not
+            the next action. */}
+        {!sent && (
+          <Link
+            href={onboardingHref}
+            className="block w-full text-center px-4 py-3 rounded-xl border border-border-default text-foreground font-semibold hover:bg-surface-hover transition-colors"
+            style={{ fontSize: 13 }}
+          >
+            New here? Create your timeline
+          </Link>
+        )}
+
+        <div className="flex items-center justify-center" style={{ fontSize: 10 }}>
           <button
             onClick={() => router.back()}
             className="text-muted hover:text-foreground transition-colors"
