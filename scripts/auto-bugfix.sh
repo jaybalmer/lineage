@@ -36,6 +36,21 @@
 # August 18 blocker) and an EXIT trap that always returns the repo to main, so a
 # failed run cannot leave the checkout parked on an auto branch and confuse the
 # next morning's triage into thinking a session is in progress.
+#
+# September 8, 2026 revision: ops paths are committed, not counted.
+#
+# The August 19 revision correctly stopped counting untracked files, but three
+# files under bugs/ and features/ were tracked (two READMEs and a stray brief),
+# and Cowork rewrites those directories every day (triage 04:06, digest 07:15,
+# brief drafting). So the same class of silent failure returned through a
+# different door: a day whose write touched one of the tracked files left a
+# modified TRACKED file, the gate blocked, and the run aborted, nine of the last
+# ten mornings. The fix stops treating bugs/ and features/ as product code at
+# all. Ops dirt there is committed at preflight as a chore(ops) commit on main
+# and pushed, so the tree is clean before the branch is cut; the gate only blocks
+# on tracked dirt OUTSIDE those paths; and the auto commit excludes them
+# unconditionally, so the PR is always product code and never ops prose. See
+# features/ops-tree-hygiene-brief.md.
 # ---------------------------------------------------------------------------
 #
 set -uo pipefail
@@ -170,11 +185,19 @@ fi
 
 # Dirty-tree classification.
 #
-# BLOCKING: modified or staged TRACKED files. That is genuine in-progress work
-# and the run must leave it alone.
-TRACKED_DIRT="$(git status --porcelain --untracked-files=no)"
+# Ops paths. Cowork writes these every day (triage 04:06, digest 07:15, brief
+# drafting). They are prose, not product code: they must never block a code run,
+# and they must never ride into the auto PR. See
+# features/ops-tree-hygiene-brief.md.
+OPS_PATHS=(bugs features)
+#
+# BLOCKING: modified or staged TRACKED files OUTSIDE the ops paths. That is
+# genuine in-progress work and the run must leave it alone (D4). The leading `.`
+# pathspec is required alongside the excludes, or git reads the argument list as
+# exclude-only and matches nothing.
+TRACKED_DIRT="$(git status --porcelain --untracked-files=no -- . ':(exclude)bugs' ':(exclude)features')"
 if [ -n "$TRACKED_DIRT" ]; then
-  log "tracked changes present:"; echo "$TRACKED_DIRT" | sed 's/^/    /'
+  log "tracked changes present outside the ops paths:"; echo "$TRACKED_DIRT" | sed 's/^/    /'
   fail "working tree has uncommitted changes to tracked files, leaving your work alone"
 fi
 
@@ -200,6 +223,34 @@ fi
 git fetch --quiet origin
 git checkout --quiet "$MAIN_BRANCH"
 git pull --quiet --ff-only origin "$MAIN_BRANCH" || fail "could not fast-forward $MAIN_BRANCH"
+
+# TOLERATED AND COMMITTED: ops dirt. Committing it here, on freshly-synced main
+# and before the branch is cut, is what keeps the daily Cowork loop from
+# disarming the nightly code loop (D2). It is pushed so the ops commit lands on
+# origin/main and the auto branch, cut next, never carries it into the PR diff
+# (D1). Everything about this step WARNS AND CONTINUES on failure: a hygiene step
+# must never become a new reason the run does not fire, which is the whole lesson
+# of the aborted mornings. See features/ops-tree-hygiene-brief.md.
+OPS_DIRT="$(git status --porcelain -- "${OPS_PATHS[@]}")"
+if [ -n "$OPS_DIRT" ]; then
+  log "ops-path changes present, committing them before the run:"
+  echo "$OPS_DIRT" | sed 's/^/    /'
+  git add -- "${OPS_PATHS[@]}"
+  git reset -q -- bugs/.auto-verdict.json 2>/dev/null || true   # per-run scratch, never committed
+  if git diff --cached --quiet; then
+    log "ops paths produced nothing to commit after exclusions"
+  elif git commit -q -m "chore(ops): tracker state $(date +%Y-%m-%d)"; then
+    log "committed ops tracker state"
+    if git push -q origin "$MAIN_BRANCH"; then
+      log "pushed ops commit to origin/$MAIN_BRANCH"
+    else
+      log "WARNING: ops commit push failed; unwinding it to keep local main in sync with origin (ops dirt tolerated for this run)"
+      git reset -q --mixed HEAD~1 2>/dev/null || log "WARNING: could not unwind the un-pushed ops commit"
+    fi
+  else
+    log "WARNING: ops commit failed, continuing with a dirty ops tree"
+  fi
+fi
 
 # is there a brief?
 NS="bugs/NEXT-SESSION.md"
@@ -258,8 +309,13 @@ log "verdict: risk=$RISK migration=$MIG bugs=[$BUGS]"
 # were already sitting in the tree when the run started. This is what lets the
 # preflight tolerate untracked scratch: it is present during the run but can
 # never reach a commit.
-git add -A
-git reset -q bugs/.auto-verdict.json 2>/dev/null || true   # never commit the verdict
+#
+# D1: bugs/ and features/ are ops prose, already committed at preflight, and are
+# excluded here UNCONDITIONALLY so the fix commit (and thus the PR diff) can never
+# contain an ops path, even once every tracker is tracked. This also subsumes the
+# old `git reset bugs/.auto-verdict.json`, since the verdict lives under bugs/.
+# See features/ops-tree-hygiene-brief.md.
+git add -A -- . ':(exclude)bugs' ':(exclude)features'
 if [ "$PRE_UNTRACKED_COUNT" != "0" ]; then
   log "unstaging $PRE_UNTRACKED_COUNT pre-existing untracked path(s)"
   # Guarded by the count check: `git reset -- ` with no pathspec would unstage
