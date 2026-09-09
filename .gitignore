@@ -47,6 +47,13 @@ next-env.d.ts
 /bugs/private/
 /features/private/
 
+# Cowork scratch. bugs/scrub-pii.py deliberately skips these dirs, so their
+# contents are NEVER PII-scrubbed and must never be committed. The 05:00 wrapper
+# commits ops dirt under bugs/ and features/ (auto-bugfix.sh T2), so ignoring
+# these keeps that step from ever committing un-scrubbed scratch.
+/bugs/_cowork-scratch/
+/features/_cowork-scratch/
+
 # podcast mention seeds (local-only: proposed catalog data pending review).
 # The committed EXAMPLE.json is the format reference; real seeds stay out.
 /podcast-seeds/*.json
