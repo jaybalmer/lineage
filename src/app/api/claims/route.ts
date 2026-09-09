@@ -222,6 +222,37 @@ export async function POST(req: NextRequest) {
     community_id: optStr(body.community_id, 40),
   })
   if (insertError) {
+    // BUG-190 follow-up: with the partial unique index claims_owned_board_uniq
+    // in place, a concurrent owned_board insert that loses the race now raises a
+    // unique violation instead of duplicating. Resolve it the same way the
+    // check-then-update backstop above would have, by widening the existing row,
+    // so the race is settled in the database rather than surfaced as an error.
+    if (insertError.code === "23505" && predicate === "owned_board") {
+      const { data: rows } = await db
+        .from("claims")
+        .select("id")
+        .eq("subject_id", subjectId)
+        .eq("object_id", objectId)
+        .eq("predicate", "owned_board")
+        .is("parent_claim_id", null)
+        .order("created_at", { ascending: true })
+        .limit(1)
+      const existing = rows?.[0]
+      if (existing) {
+        const upd: Record<string, unknown> = {}
+        if (boardRelationship) upd.board_relationship = boardRelationship
+        const startDate = optStr(body.start_date, 32)
+        if (startDate !== null) upd.start_date = startDate
+        if (Object.keys(upd).length > 0) {
+          const { error: updErr } = await db.from("claims").update(upd).eq("id", existing.id)
+          if (updErr) {
+            console.error("[api/claims] board conflict upsert failed:", updErr)
+            return NextResponse.json({ error: updErr.message }, { status: 400 })
+          }
+        }
+        return NextResponse.json({ ok: true, paired: 0, updated: existing.id })
+      }
+    }
     console.error("[api/claims] insert failed:", insertError)
     const status = insertError.code === "23505" ? 409 : 400
     return NextResponse.json({ error: insertError.message }, { status })
