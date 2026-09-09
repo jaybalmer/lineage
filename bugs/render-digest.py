@@ -6,8 +6,11 @@ to bugs/render-queue.py (which renders the bug-queue dashboard). Running it at t
 end of every morning-digest run keeps the HTML in sync with the markdown.
 
 Usage:  python3 bugs/render-digest.py
-Reads:  bugs/MORNING-DIGEST.md
-Writes: bugs/morning-digest.html
+Reads:  <ops>/log/MORNING-DIGEST.md
+Writes: <ops>/log/morning-digest.html
+
+The ops state lives in the linestry-ops repo now, resolved from the
+LINESTRY_OPS_REPO env var (default ~/linestry-ops). See features/ops-cutover-brief.md.
 
 No external dependencies (stdlib only). House rule: the output is scrubbed of em
 and en dashes (the source markdown occasionally carries one). Renders the small
@@ -16,13 +19,14 @@ headings, ordered and unordered lists, paragraphs, **bold**, and `inline code`.
 """
 
 import html as _html
+import os
 import re
 from datetime import datetime
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
-SRC = HERE / "MORNING-DIGEST.md"
-OUT = HERE / "morning-digest.html"
+OPS = Path(os.environ.get("LINESTRY_OPS_REPO", str(Path.home() / "linestry-ops")))
+SRC = OPS / "log" / "MORNING-DIGEST.md"
+OUT = OPS / "log" / "morning-digest.html"
 
 
 def scrub_dashes(s: str) -> str:
@@ -194,7 +198,7 @@ def main():
     # Date for the sub line: the first line of the digest after "digest, ".
     m = re.search(r"digest,\s*(.+)$", title)
     date_str = m.group(1).strip() if m else title
-    sub = f"{date_str}. Source: bugs/MORNING-DIGEST.md."
+    sub = f"{date_str}. Source: linestry-ops/log/MORNING-DIGEST.md."
 
     headline = f'<div class="headline">{intro_html}</div>' if intro_html else ""
 
@@ -208,7 +212,7 @@ def main():
 
     gen = datetime.now().strftime("%Y-%m-%d %H:%M")
     foot = (
-        "Browser view generated from bugs/MORNING-DIGEST.md by bugs/render-digest.py "
+        "Browser view generated from linestry-ops/log/MORNING-DIGEST.md by bugs/render-digest.py "
         f"(the morning-digest run). Last generated {gen}."
     )
 
