@@ -414,10 +414,12 @@ Bug tracking lives in `bugs/`, which is committed to git so Claude Code (cloud s
 
 **To start a bug-fix session, the user only needs to say "start a bug-fix session" (no file names required). On that cue:**
 
-1. Read `bugs/NEXT-SESSION.md` first. It is the single entry point and is always current.
-   - If it holds a build-ready brief (or points to a dated brief in `bugs/`), implement that brief. It is self-contained: BUG entries, suspected files, acceptance criteria, suggested order, pre-flight SQL.
-   - If it says **NO BUILD-READY BRIEF YET**, do not invent scope. Read `bugs/bug-triage.md` for the queue and the latest hand-off note, then ask the user which cluster to take.
-2. Read `bugs/bug-triage.md` for full context on the cluster (severity, repro, replay links, related bugs).
+> Note: the ops queues now live in the `~/linestry-ops` repo (`queues/`, `briefs/`, `log/`), not in this repo. The `bugs/` and `features/` directories here are being retired to pointer stubs; read the live state from `~/linestry-ops`.
+
+1. Read `~/linestry-ops/queues/NEXT-SESSION.md` first. It is the single entry point and is always current.
+   - If it holds a build-ready brief (or points to a dated brief in `~/linestry-ops/briefs/`), implement that brief. It is self-contained: BUG entries, suspected files, acceptance criteria, suggested order, pre-flight SQL.
+   - If it says **NO BUILD-READY BRIEF YET**, do not invent scope. Read `~/linestry-ops/queues/bug-triage.md` for the queue and the latest hand-off note, then ask the user which cluster to take.
+2. Read `~/linestry-ops/queues/bug-triage.md` for full context on the cluster (severity, repro, replay links, related bugs).
 
 **Standing rules for bug-fix sessions:**
 - `npx tsc --noEmit` clean before commit.
@@ -440,10 +442,12 @@ Feature work (new product capability, not bug repairs) lives in `features/`, com
 
 **To start a feature session, the user only needs to say "start a feature session" (no file names required). On that cue:**
 
-1. Read `features/NEXT-FEATURE.md` first. It is the single entry point and is always current.
-   - If it points at a lead brief in `features/` (or the user names one), implement that brief. It is self-contained: scope, a "DECISIONS (review before building)" block with recommended defaults, verified facts, acceptance criteria, suggested order, pre-flight SQL.
-   - If it says **NO BUILD-READY BRIEF YET**, do not invent scope. Read `features/feature-queue.md` for the queue and ask the user which feature to take.
-2. Read `features/feature-queue.md` for the fuller queue, the deferred/parked list, and recent ships.
+> Note: the ops queues now live in the `~/linestry-ops` repo (`queues/`, `briefs/`, `log/`), not in this repo. The `bugs/` and `features/` directories here are being retired to pointer stubs; read the live state from `~/linestry-ops`.
+
+1. Read `~/linestry-ops/queues/NEXT-FEATURE.md` first. It is the single entry point and is always current.
+   - If it points at a lead brief in `~/linestry-ops/briefs/` (or the user names one), implement that brief. It is self-contained: scope, a "DECISIONS (review before building)" block with recommended defaults, verified facts, acceptance criteria, suggested order, pre-flight SQL.
+   - If it says **NO BUILD-READY BRIEF YET**, do not invent scope. Read `~/linestry-ops/queues/feature-queue.md` for the queue and ask the user which feature to take.
+2. Read `~/linestry-ops/queues/feature-queue.md` for the fuller queue, the deferred/parked list, and recent ships.
 
 **Standing rules for feature sessions:**
 - `npx tsc --noEmit` clean before commit.

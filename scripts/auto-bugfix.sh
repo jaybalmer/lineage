@@ -71,6 +71,10 @@ set -uo pipefail
 
 # ---------- config (edit these if needed) ----------
 REPO="${LINESTRY_REPO:-$HOME/lineage}"
+# Ops state (queues, briefs, logs, dashboards) lives in its own repo now, no
+# longer under $REPO/bugs + $REPO/features. Resolve it the same way as $REPO so a
+# future move is one variable. See features/ops-cutover-brief.md.
+OPS_REPO="${LINESTRY_OPS_REPO:-$HOME/linestry-ops}"
 NOTIFY_EMAIL="${LINESTRY_NOTIFY_EMAIL:-jaybalmer@gmail.com}"
 MAIN_BRANCH="main"
 BRANCH_PREFIX="auto/bugfix"
@@ -130,7 +134,7 @@ log "env: node=$(node --version 2>/dev/null || echo '?') npm=$(npm --version 2>/
 #   | paused | no-op | empty | aborted | escalated
 # (escalated is written directly, out-of-band, so it can accompany a paused or
 # no-op row rather than replacing it.)
-RUNLOG="$REPO/bugs/RUN-LOG.md"
+RUNLOG="$OPS_REPO/log/RUN-LOG.md"
 record_run() {
   local outcome="$1" detail="${2:-}"
   [ "$RUN_RECORDED" = "true" ] && return 0
@@ -173,6 +177,37 @@ fail() {
   record_run "aborted" "$*. Log: $LOG"
   notify "[Auto bug-fix] stopped: $*" "Run log: $LOG"
   exit 1
+}
+
+# ---------- ops repo sync (D3) ----------
+# The ops trackers (queues, briefs, logs, dashboards) live in $OPS_REPO now, a
+# separate git repo. Cowork rewrites them every day (triage 04:06, digest 07:15)
+# and this runner appends RUN-LOG/SHIP-LOG rows. Commit and push that state to the
+# GitHub mirror, best-effort, so it is backed up. Called at preflight (so the
+# 04:06 triage's writes are backed up before the 05:00 read) and once more at the
+# end of a run that opened a PR (so the runner's own RUN-LOG/SHIP-LOG changes ride
+# along). Replaces the old lineage ops-dirt commit block: the trackers no longer
+# live in $REPO. Never fatal (a backup step must not disarm the run), makes no
+# empty commit, and unwinds an un-pushed commit so local stays in sync with
+# origin, mirroring the old block's posture. See features/ops-cutover-brief.md.
+sync_ops_repo() {
+  [ -d "$OPS_REPO/.git" ] || { log "no git repo at $OPS_REPO, skipping ops sync"; return 0; }
+  git -C "$OPS_REPO" add -A 2>/dev/null || { log "WARNING: ops sync 'git add' failed, skipping"; return 0; }
+  if git -C "$OPS_REPO" diff --cached --quiet 2>/dev/null; then
+    log "ops repo clean, nothing to sync"
+    return 0
+  fi
+  if git -C "$OPS_REPO" commit -q -m "ops: sync $(date +%F)"; then
+    log "committed ops repo state"
+    if git -C "$OPS_REPO" push -q; then
+      log "pushed ops repo to origin"
+    else
+      log "WARNING: ops repo push failed; unwinding the un-pushed commit to keep local in sync with origin (ops state tolerated for this run)"
+      git -C "$OPS_REPO" reset -q --mixed HEAD~1 2>/dev/null || log "WARNING: could not unwind the un-pushed ops commit"
+    fi
+  else
+    log "WARNING: ops repo commit failed, continuing"
+  fi
 }
 
 # ---------- stale-branch prune (D3) ----------
@@ -219,18 +254,22 @@ prune_stale_unmerged_auto_branches() {
 # (does not consume record_run, so the paused/no-op row still lands). Never
 # crashes the run on a NEXT-SESSION.md format change.
 maybe_escalate_aging_p1() {
-  local ns="$REPO/bugs/NEXT-SESSION.md" line brief bug mtime now age_days stampdir stamp
+  local ns="$OPS_REPO/queues/NEXT-SESSION.md" line brief bug mtime now age_days stampdir stamp briefpath
   [ -f "$ns" ] || return 0
   line="$(grep -m1 -i 'Build this:' "$ns" 2>/dev/null || true)"
   [ -n "$line" ] || return 0
   echo "$line" | grep -qi 'P1' || return 0
-  brief="$(echo "$line" | grep -oE 'bugs/[A-Za-z0-9._/-]+\.md' | head -1)"
+  # NEXT-SESSION may name the brief with a briefs/ or a legacy bugs/ prefix; the
+  # file itself lives under $OPS_REPO/briefs/, so resolve it there by basename.
+  brief="$(echo "$line" | grep -oE '(briefs|bugs)/[A-Za-z0-9._/-]+\.md' | head -1)"
   bug="$(echo "$line" | grep -oE 'BUG-[0-9]+' | head -1)"
-  [ -n "$brief" ] && [ -f "$REPO/$brief" ] || return 0
-  mtime="$(stat -f %m "$REPO/$brief" 2>/dev/null || echo 0)"
+  [ -n "$brief" ] || return 0
+  briefpath="$OPS_REPO/briefs/$(basename "$brief")"
+  [ -f "$briefpath" ] || return 0
+  mtime="$(stat -f %m "$briefpath" 2>/dev/null || echo 0)"
   now="$(date +%s)"; age_days=$(( (now - mtime) / 86400 ))
   [ "$age_days" -ge "$P1_AGING_DAYS" ] || return 0
-  stampdir="$REPO/bugs/.escalation-stamps"; mkdir -p "$stampdir" 2>/dev/null || true
+  stampdir="$OPS_REPO/.escalation-stamps"; mkdir -p "$stampdir" 2>/dev/null || true
   stamp="$stampdir/${bug:-lead}-$(date +%Y%m%d)"
   [ -f "$stamp" ] && { log "P1 escalation already sent today for ${bug:-lead}"; return 0; }
   : > "$stamp" 2>/dev/null || true
@@ -297,12 +336,6 @@ fi
 # later) is never a candidate.
 prune_stale_unmerged_auto_branches
 
-# Ops paths. Cowork writes these every day (triage 04:06, digest 07:15, brief
-# drafting). They are prose, not product code: they must never ride into the auto
-# PR, and are committed at preflight (below) rather than counted. See
-# features/ops-tree-hygiene-brief.md.
-OPS_PATHS=(bugs features)
-
 # NOTE (resilience D1): there is no longer a tracked-dirt abort here. The whole
 # session runs in a throwaway worktree cut off origin/main (created below), so
 # the primary checkout's state, dirty or on a feature branch, cannot block or
@@ -320,42 +353,13 @@ fi
 
 git fetch --quiet origin
 
-# Commit ops dirt from the PRIMARY checkout so origin/main carries the latest
-# trackers before the worktree is cut off it (ops-tree-hygiene D2/D1). This is
-# now fully best-effort and runs ONLY when the primary is safely on main: if a
-# human feature session has the checkout parked on another branch, leave it
-# untouched and let the run proceed off whatever origin/main already has. Nothing
-# here ever fails the run (resilience: a hygiene step must never disarm it).
-PRIMARY_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
-if [ "$PRIMARY_BRANCH" = "$MAIN_BRANCH" ]; then
-  git merge --quiet --ff-only "origin/$MAIN_BRANCH" 2>/dev/null \
-    || log "WARNING: primary $MAIN_BRANCH not fast-forwardable, skipping ops sync"
-  OPS_DIRT="$(git status --porcelain -- "${OPS_PATHS[@]}")"
-  if [ -n "$OPS_DIRT" ]; then
-    log "ops-path changes present, committing them before the run:"
-    echo "$OPS_DIRT" | sed 's/^/    /'
-    git add -- "${OPS_PATHS[@]}"
-    git reset -q -- bugs/.auto-verdict.json 2>/dev/null || true   # per-run scratch, never committed
-    if git diff --cached --quiet; then
-      log "ops paths produced nothing to commit after exclusions"
-    elif git commit -q -m "chore(ops): tracker state $(date +%Y-%m-%d)"; then
-      log "committed ops tracker state"
-      if git push -q origin "$MAIN_BRANCH"; then
-        log "pushed ops commit to origin/$MAIN_BRANCH"
-      else
-        log "WARNING: ops commit push failed; unwinding it to keep local main in sync with origin (ops dirt tolerated for this run)"
-        git reset -q --mixed HEAD~1 2>/dev/null || log "WARNING: could not unwind the un-pushed ops commit"
-      fi
-    else
-      log "WARNING: ops commit failed, continuing with a dirty ops tree"
-    fi
-  fi
-else
-  log "primary checkout is on $PRIMARY_BRANCH, not $MAIN_BRANCH; leaving it untouched (the run isolates via a worktree off origin/$MAIN_BRANCH)"
-fi
+# Back up the ops repo before the run reads it: the 04:06 triage rewrote the
+# queues/briefs in $OPS_REPO, so commit and push them to the GitHub mirror before
+# the 05:00 read (D3). Best-effort, never fatal.
+sync_ops_repo
 
-# is there a brief? (read from the primary checkout, now synced to origin/main)
-NS="$REPO/bugs/NEXT-SESSION.md"
+# is there a brief? (read from the ops repo, synced by sync_ops_repo above)
+NS="$OPS_REPO/queues/NEXT-SESSION.md"
 if [ ! -f "$NS" ]; then
   log "no $NS, nothing to do."
   maybe_escalate_aging_p1
@@ -410,7 +414,7 @@ fi
 # permission prompt. The real guardrail is the merge gate below, not the tool list:
 # nothing risky is ever auto-merged. Tighten allowedTools if you prefer (Claude may
 # then fail on an unlisted command instead of running it).
-PROMPT='You are running unattended. Read bugs/NEXT-SESSION.md and implement the LEAD brief it points to ("Build this"). Take the recommended DECISIONS defaults in that brief. Follow the repo CLAUDE.md bug-session rules. Make npx tsc --noEmit clean. Append a status: pending entry to bugs/SHIP-LOG.md per its schema. Do NOT push, do NOT open a PR, do NOT merge anything; the wrapper handles git. The working tree may contain pre-existing untracked scratch files that are not yours: do not edit, move, or delete anything you did not create for this brief. As your final action, write a file bugs/.auto-verdict.json with exactly this shape: {"bug_ids":["BUG-041"],"risk":"safe","migration_required":false,"reason":"one line","title":"BUG-041: short PR title"}. Set risk to "needs-review" if the change touches a DB migration, a _public view, auth, payments/Stripe, memberships, or a data backfill, otherwise "safe".'
+PROMPT='You are running unattended. Read /Users/jaybalmer/linestry-ops/queues/NEXT-SESSION.md and implement the LEAD brief it points to ("Build this"); resolve that brief file by its name under /Users/jaybalmer/linestry-ops/briefs/. Take the recommended DECISIONS defaults in that brief. Follow the repo CLAUDE.md bug-session rules. Make npx tsc --noEmit clean. Append a status: pending entry to /Users/jaybalmer/linestry-ops/log/SHIP-LOG.md per its schema. Do NOT push, do NOT open a PR, do NOT merge anything; the wrapper handles git. The working tree may contain pre-existing untracked scratch files that are not yours: do not edit, move, or delete anything you did not create for this brief. As your final action, write a file bugs/.auto-verdict.json with exactly this shape: {"bug_ids":["BUG-041"],"risk":"safe","migration_required":false,"reason":"one line","title":"BUG-041: short PR title"}. Set risk to "needs-review" if the change touches a DB migration, a _public view, auth, payments/Stripe, memberships, or a data backfill, otherwise "safe".'
 
 claude -p "$PROMPT" \
   --permission-mode acceptEdits \
@@ -533,5 +537,10 @@ else
 Why held: $REASON_LINE
 Test it on the Vercel preview (link in the PR), then merge if happy: $PR_URL"
 fi
+
+# Push the runner's own ops-state changes (the RUN-LOG row this run wrote, plus
+# any SHIP-LOG line the session appended) to the mirror now, rather than waiting
+# for the next preflight (D3).
+sync_ops_repo
 
 log "done."
