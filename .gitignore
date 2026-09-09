@@ -54,6 +54,10 @@ next-env.d.ts
 /bugs/_cowork-scratch/
 /features/_cowork-scratch/
 
+# Per-run scratch from the auto-bugfix runner: verdict file and P1-escalation
+# debounce stamps. Never committed (the wrapper commits ops dirt under bugs/).
+/bugs/.escalation-stamps/
+
 # podcast mention seeds (local-only: proposed catalog data pending review).
 # The committed EXAMPLE.json is the format reference; real seeds stay out.
 /podcast-seeds/*.json
