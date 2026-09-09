@@ -430,6 +430,8 @@ Bug tracking lives in `bugs/`, which is committed to git so Claude Code (cloud s
 
 Historical one-off briefs from before this convention live at the repo root (e.g. `launch-bugfix-session-1-brief.md`); new bug-fix briefs live in `bugs/`.
 
+The 05:00 auto-bugfix runner (`scripts/auto-bugfix.sh`) runs each session in a throwaway `git worktree` cut off `origin/main`, so a dirty primary checkout (a half-finished feature session, uncommitted edits, a parked feature branch) no longer blocks the nightly bug run. The worktree is removed on every exit path.
+
 ---
 
 ## Feature sessions

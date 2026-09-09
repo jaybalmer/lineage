@@ -51,6 +51,20 @@
 # on tracked dirt OUTSIDE those paths; and the auto commit excludes them
 # unconditionally, so the PR is always product code and never ops prose. See
 # features/ops-tree-hygiene-brief.md.
+#
+# September 9, 2026 revision: worktree isolation + resilience.
+#
+# ops-tree-hygiene stopped the ops loop from dirtying the tree; a half-finished
+# FEATURE session left in the primary checkout still killed the run, because the
+# gate blocked on any tracked dirt. This revision removes that failure class by
+# running the whole session in a throwaway `git worktree` cut off origin/main:
+# the primary checkout is never touched, so its state (dirty, on a feature
+# branch, whatever) is irrelevant to the run. The tracked-dirt abort is gone.
+# The ops-commit is kept but made best-effort and conditional on the primary
+# being on main, so origin/main still carries fresh trackers for the worktree
+# without ever disturbing an in-flight human session. Plus: a stale-unmerged
+# branch prune, an aged-P1 escalation email, and startup env diagnostics. See
+# features/auto-bugfix-resilience-brief.md.
 # ---------------------------------------------------------------------------
 #
 set -uo pipefail
@@ -71,6 +85,14 @@ PRUNE_BRANCHES="${LINESTRY_PRUNE_BRANCHES:-true}"
 # seconds, and no git process is running. Anything else is treated as live.
 LOCK_STALE_SECONDS=600
 
+# Delete UNMERGED auto/bugfix-* branches whose tip is older than this many days
+# (except the current run's branch and any branch with an open PR).
+STALE_BRANCH_DAYS="${LINESTRY_STALE_BRANCH_DAYS:-14}"
+
+# Escalate an unshipped P1 lead whose brief file is older than this many days,
+# once per day per bug.
+P1_AGING_DAYS="${LINESTRY_P1_AGING_DAYS:-3}"
+
 # Risky paths: if the diff touches any of these, never auto-merge. Hand to Jay.
 RISKY_PATTERNS='supabase/migrations/|_public|src/lib/auth\.|src/app/api/auth/|stripe|memberships|backfill'
 
@@ -83,6 +105,7 @@ PR_URL=""
 RUN_RECORDED="false"
 PRE_UNTRACKED_FILE=""
 PRE_UNTRACKED_COUNT="0"
+WT=""
 
 # ---------- logging ----------
 LOG_DIR="$HOME/Library/Logs/linestry-autobugfix"
@@ -91,12 +114,22 @@ LOG="$LOG_DIR/$(date +%Y%m%d-%H%M%S).log"
 exec > >(tee -a "$LOG") 2>&1
 log() { echo "[$(date +%H:%M:%S)] $*"; }
 
+# ---------- startup diagnostics (D5) ----------
+# A PATH or auth failure under launchd is otherwise undiagnosable from the log.
+# Logged before the command-existence checks so the PATH is visible even when
+# `claude` is missing. Pure logging, no behavior change.
+log "env: PATH=$PATH"
+log "env: claude=$(command -v claude 2>/dev/null || echo 'NOT FOUND') version=$(claude --version 2>/dev/null | head -1 || echo '?')"
+log "env: node=$(node --version 2>/dev/null || echo '?') npm=$(npm --version 2>/dev/null || echo '?') gh=$(command -v gh 2>/dev/null || echo 'NOT FOUND')"
+
 # ---------- run ledger ----------
 # One row per run, appended at whichever outcome the run reaches. The morning
 # digest reads this file. Idempotent: only the first call in a run writes.
 # Outcome vocabulary (keep stable, the digest keys on it):
 #   merged | draft-needs-review | checks-failed | merge-failed
-#   | paused | no-op | empty | aborted
+#   | paused | no-op | empty | aborted | escalated
+# (escalated is written directly, out-of-band, so it can accompany a paused or
+# no-op row rather than replacing it.)
 RUNLOG="$REPO/bugs/RUN-LOG.md"
 record_run() {
   local outcome="$1" detail="${2:-}"
@@ -142,20 +175,96 @@ fail() {
   exit 1
 }
 
+# ---------- stale-branch prune (D3) ----------
+# Delete local and remote auto/bugfix-* branches whose tip is older than
+# STALE_BRANCH_DAYS and which are NOT the current run's branch and do NOT have an
+# open PR (a needs-review draft must survive). Abandoned auto branches are
+# disposable: the fix re-derives from the brief. Best-effort, never fatal.
+prune_stale_unmerged_auto_branches() {
+  [ "$PRUNE_BRANCHES" = "true" ] || return 0
+  git -C "$REPO" fetch --quiet --prune origin 2>/dev/null || return 0
+  local now cutoff b tip age
+  now="$(date +%s)"; cutoff=$(( STALE_BRANCH_DAYS * 86400 ))
+  # remote
+  for b in $(git -C "$REPO" branch -r 2>/dev/null | sed 's|^[[:space:]]*||' \
+             | grep "^origin/$BRANCH_PREFIX" | sed 's|^origin/||' || true); do
+    [ -n "$BRANCH" ] && [ "$b" = "$BRANCH" ] && continue
+    if [ "$(gh pr list --head "$b" --state open --json number --jq 'length' 2>/dev/null || echo 0)" != "0" ]; then
+      continue
+    fi
+    tip="$(git -C "$REPO" log -1 --format=%ct "origin/$b" 2>/dev/null || echo "$now")"
+    age=$(( now - tip ))
+    if [ "$age" -gt "$cutoff" ]; then
+      log "pruning stale unmerged remote branch $b (age $(( age/86400 ))d, no open PR)"
+      git -C "$REPO" push --quiet origin --delete "$b" 2>/dev/null || log "could not delete remote $b"
+    fi
+  done
+  # local
+  for b in $(git -C "$REPO" branch 2>/dev/null | sed 's|^[* ]*||' \
+             | grep "^$BRANCH_PREFIX" || true); do
+    [ -n "$BRANCH" ] && [ "$b" = "$BRANCH" ] && continue
+    tip="$(git -C "$REPO" log -1 --format=%ct "$b" 2>/dev/null || echo "$now")"
+    age=$(( now - tip ))
+    if [ "$age" -gt "$cutoff" ]; then
+      log "pruning stale local branch $b (age $(( age/86400 ))d)"
+      git -C "$REPO" branch -D "$b" 2>/dev/null || log "could not delete local $b"
+    fi
+  done
+}
+
+# ---------- aged-P1 escalation (D4) ----------
+# On a run that does not ship (paused or no-op), if the P1 lead brief has been
+# build-ready longer than P1_AGING_DAYS, send ONE escalation email, debounced to
+# once per day per bug via a stamp file. Writes its own out-of-band RUN-LOG row
+# (does not consume record_run, so the paused/no-op row still lands). Never
+# crashes the run on a NEXT-SESSION.md format change.
+maybe_escalate_aging_p1() {
+  local ns="$REPO/bugs/NEXT-SESSION.md" line brief bug mtime now age_days stampdir stamp
+  [ -f "$ns" ] || return 0
+  line="$(grep -m1 -i 'Build this:' "$ns" 2>/dev/null || true)"
+  [ -n "$line" ] || return 0
+  echo "$line" | grep -qi 'P1' || return 0
+  brief="$(echo "$line" | grep -oE 'bugs/[A-Za-z0-9._/-]+\.md' | head -1)"
+  bug="$(echo "$line" | grep -oE 'BUG-[0-9]+' | head -1)"
+  [ -n "$brief" ] && [ -f "$REPO/$brief" ] || return 0
+  mtime="$(stat -f %m "$REPO/$brief" 2>/dev/null || echo 0)"
+  now="$(date +%s)"; age_days=$(( (now - mtime) / 86400 ))
+  [ "$age_days" -ge "$P1_AGING_DAYS" ] || return 0
+  stampdir="$REPO/bugs/.escalation-stamps"; mkdir -p "$stampdir" 2>/dev/null || true
+  stamp="$stampdir/${bug:-lead}-$(date +%Y%m%d)"
+  [ -f "$stamp" ] && { log "P1 escalation already sent today for ${bug:-lead}"; return 0; }
+  : > "$stamp" 2>/dev/null || true
+  log "escalating aged P1 ${bug:-lead}: brief $brief age ${age_days}d >= ${P1_AGING_DAYS}d"
+  notify "[Auto bug-fix] P1 ${bug:-lead} has not shipped in ${age_days} days" \
+    "The P1 lead brief $brief has been build-ready for ${age_days} days without shipping. Run log: $LOG"
+  if [ -f "$RUNLOG" ]; then
+    printf '| %s | %s | %s | %s | %s | %s |\n' \
+      "$(date '+%Y-%m-%d %H:%M %Z')" "${BRANCH:-(none)}" "${bug:-(none)}" "n/a" "escalated" \
+      "P1 ${bug:-lead} aged ${age_days}d unshipped; escalation email sent." >> "$RUNLOG"
+    log "RUN-LOG row written: outcome=escalated"
+  fi
+}
+
 # ---------- exit trap ----------
-# Always leave the repo on main and always leave a ledger row behind. Without
-# this, a tsc failure parked the checkout on the auto branch and the next
-# morning's triage read that as "a session is in progress".
+# Always tear down the throwaway worktree and its local branch, and always leave
+# a ledger row behind. R1: cd back to $REPO first, or `git worktree remove` runs
+# from inside the worktree it is trying to remove and fails. The branch survives
+# on the remote once pushed (the PR needs it); only the local ref is dropped.
 cleanup() {
   local code=$?
   if [ "$RUN_RECORDED" != "true" ]; then
     record_run "aborted" "Exited with code $code before reaching a recorded outcome. Log: $LOG"
   fi
   [ -n "$PRE_UNTRACKED_FILE" ] && rm -f "$PRE_UNTRACKED_FILE"
+  cd "$REPO" 2>/dev/null || true
+  if [ -n "$WT" ]; then
+    git -C "$REPO" worktree remove --force "$WT" 2>/dev/null \
+      && log "removed worktree $WT" \
+      || { log "could not git-worktree-remove $WT, forcing"; rm -rf "$WT" 2>/dev/null; git -C "$REPO" worktree prune 2>/dev/null || true; }
+  fi
   if [ -n "$BRANCH" ]; then
-    git -C "$REPO" checkout --quiet "$MAIN_BRANCH" 2>/dev/null \
-      && log "returned to $MAIN_BRANCH" \
-      || log "could not return to $MAIN_BRANCH (repo left on $BRANCH)"
+    git -C "$REPO" branch -D "$BRANCH" 2>/dev/null \
+      && log "dropped local branch $BRANCH" || true
   fi
 }
 trap cleanup EXIT
@@ -183,94 +292,118 @@ if [ -f "$LOCK" ]; then
   fi
 fi
 
-# Dirty-tree classification.
-#
+# Prune abandoned auto branches (D3), after the lock sweep so it never fights a
+# lock. At this point $BRANCH is empty, so the current run's branch (created
+# later) is never a candidate.
+prune_stale_unmerged_auto_branches
+
 # Ops paths. Cowork writes these every day (triage 04:06, digest 07:15, brief
-# drafting). They are prose, not product code: they must never block a code run,
-# and they must never ride into the auto PR. See
+# drafting). They are prose, not product code: they must never ride into the auto
+# PR, and are committed at preflight (below) rather than counted. See
 # features/ops-tree-hygiene-brief.md.
 OPS_PATHS=(bugs features)
-#
-# BLOCKING: modified or staged TRACKED files OUTSIDE the ops paths. That is
-# genuine in-progress work and the run must leave it alone (D4). The leading `.`
-# pathspec is required alongside the excludes, or git reads the argument list as
-# exclude-only and matches nothing.
-TRACKED_DIRT="$(git status --porcelain --untracked-files=no -- . ':(exclude)bugs' ':(exclude)features')"
-if [ -n "$TRACKED_DIRT" ]; then
-  log "tracked changes present outside the ops paths:"; echo "$TRACKED_DIRT" | sed 's/^/    /'
-  fail "working tree has uncommitted changes to tracked files, leaving your work alone"
-fi
 
-# TOLERATED: untracked files. They cannot conflict with a branch checkout, and
-# blocking on them is what silently killed three nights of runs. Snapshot the
-# set now so the commit step can exclude exactly these paths later.
-PRE_UNTRACKED_FILE="$(mktemp -t autobugfix-untracked)"
-git ls-files --others --exclude-standard -z > "$PRE_UNTRACKED_FILE"
-PRE_UNTRACKED_COUNT="$(tr -cd '\0' < "$PRE_UNTRACKED_FILE" | wc -c | tr -d ' ')"
-if [ "$PRE_UNTRACKED_COUNT" != "0" ]; then
-  log "$PRE_UNTRACKED_COUNT untracked path(s) present and tolerated; they will be excluded from the commit:"
-  tr '\0' '\n' < "$PRE_UNTRACKED_FILE" | sed 's/^/    /'
-fi
+# NOTE (resilience D1): there is no longer a tracked-dirt abort here. The whole
+# session runs in a throwaway worktree cut off origin/main (created below), so
+# the primary checkout's state, dirty or on a feature branch, cannot block or
+# contaminate the run. The untracked snapshot that the commit step relies on is
+# taken INSIDE the worktree, once it exists.
 
 # only one auto PR in flight at a time
 OPEN_AUTO="$(gh pr list --state open --search "head:$BRANCH_PREFIX" --json number --jq 'length' 2>/dev/null || echo 0)"
 if [ "$OPEN_AUTO" != "0" ]; then
   log "an auto PR is already open and awaiting review/merge, pausing. Nothing to do."
+  maybe_escalate_aging_p1
   record_run "paused" "An auto PR is already open awaiting review or merge; run took no action."
   exit 0
 fi
 
 git fetch --quiet origin
-git checkout --quiet "$MAIN_BRANCH"
-git pull --quiet --ff-only origin "$MAIN_BRANCH" || fail "could not fast-forward $MAIN_BRANCH"
 
-# TOLERATED AND COMMITTED: ops dirt. Committing it here, on freshly-synced main
-# and before the branch is cut, is what keeps the daily Cowork loop from
-# disarming the nightly code loop (D2). It is pushed so the ops commit lands on
-# origin/main and the auto branch, cut next, never carries it into the PR diff
-# (D1). Everything about this step WARNS AND CONTINUES on failure: a hygiene step
-# must never become a new reason the run does not fire, which is the whole lesson
-# of the aborted mornings. See features/ops-tree-hygiene-brief.md.
-OPS_DIRT="$(git status --porcelain -- "${OPS_PATHS[@]}")"
-if [ -n "$OPS_DIRT" ]; then
-  log "ops-path changes present, committing them before the run:"
-  echo "$OPS_DIRT" | sed 's/^/    /'
-  git add -- "${OPS_PATHS[@]}"
-  git reset -q -- bugs/.auto-verdict.json 2>/dev/null || true   # per-run scratch, never committed
-  if git diff --cached --quiet; then
-    log "ops paths produced nothing to commit after exclusions"
-  elif git commit -q -m "chore(ops): tracker state $(date +%Y-%m-%d)"; then
-    log "committed ops tracker state"
-    if git push -q origin "$MAIN_BRANCH"; then
-      log "pushed ops commit to origin/$MAIN_BRANCH"
+# Commit ops dirt from the PRIMARY checkout so origin/main carries the latest
+# trackers before the worktree is cut off it (ops-tree-hygiene D2/D1). This is
+# now fully best-effort and runs ONLY when the primary is safely on main: if a
+# human feature session has the checkout parked on another branch, leave it
+# untouched and let the run proceed off whatever origin/main already has. Nothing
+# here ever fails the run (resilience: a hygiene step must never disarm it).
+PRIMARY_BRANCH="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo '?')"
+if [ "$PRIMARY_BRANCH" = "$MAIN_BRANCH" ]; then
+  git merge --quiet --ff-only "origin/$MAIN_BRANCH" 2>/dev/null \
+    || log "WARNING: primary $MAIN_BRANCH not fast-forwardable, skipping ops sync"
+  OPS_DIRT="$(git status --porcelain -- "${OPS_PATHS[@]}")"
+  if [ -n "$OPS_DIRT" ]; then
+    log "ops-path changes present, committing them before the run:"
+    echo "$OPS_DIRT" | sed 's/^/    /'
+    git add -- "${OPS_PATHS[@]}"
+    git reset -q -- bugs/.auto-verdict.json 2>/dev/null || true   # per-run scratch, never committed
+    if git diff --cached --quiet; then
+      log "ops paths produced nothing to commit after exclusions"
+    elif git commit -q -m "chore(ops): tracker state $(date +%Y-%m-%d)"; then
+      log "committed ops tracker state"
+      if git push -q origin "$MAIN_BRANCH"; then
+        log "pushed ops commit to origin/$MAIN_BRANCH"
+      else
+        log "WARNING: ops commit push failed; unwinding it to keep local main in sync with origin (ops dirt tolerated for this run)"
+        git reset -q --mixed HEAD~1 2>/dev/null || log "WARNING: could not unwind the un-pushed ops commit"
+      fi
     else
-      log "WARNING: ops commit push failed; unwinding it to keep local main in sync with origin (ops dirt tolerated for this run)"
-      git reset -q --mixed HEAD~1 2>/dev/null || log "WARNING: could not unwind the un-pushed ops commit"
+      log "WARNING: ops commit failed, continuing with a dirty ops tree"
     fi
-  else
-    log "WARNING: ops commit failed, continuing with a dirty ops tree"
   fi
+else
+  log "primary checkout is on $PRIMARY_BRANCH, not $MAIN_BRANCH; leaving it untouched (the run isolates via a worktree off origin/$MAIN_BRANCH)"
 fi
 
-# is there a brief?
-NS="bugs/NEXT-SESSION.md"
+# is there a brief? (read from the primary checkout, now synced to origin/main)
+NS="$REPO/bugs/NEXT-SESSION.md"
 if [ ! -f "$NS" ]; then
   log "no $NS, nothing to do."
+  maybe_escalate_aging_p1
   record_run "no-op" "No bugs/NEXT-SESSION.md present."
   exit 0
 fi
 if grep -qi "NO BUILD-READY BRIEF YET" "$NS"; then
   log "triage left no build-ready brief, nothing to do."
+  maybe_escalate_aging_p1
   record_run "no-op" "Triage left NO BUILD-READY BRIEF YET; nothing to implement."
   exit 0
 fi
 
-# ---------- branch ----------
-STAMP="$(date +%Y%m%d-%H%M)"
+# ---------- worktree (resilience D1) ----------
+# Cut a throwaway worktree off origin/main and run the whole session there. The
+# primary checkout is never touched. R2: seconds in the stamp so two runs in the
+# same minute cannot collide on the branch name (git worktree add fails on a
+# name clash).
+STAMP="$(date +%Y%m%d-%H%M%S)"
 BRANCH="$BRANCH_PREFIX-$STAMP"
-git checkout --quiet -b "$BRANCH"
-log "working on branch $BRANCH (dry_run=$DRY_RUN)"
+WT="$(mktemp -d -t autobugfix-wt)"
+git worktree add --quiet "$WT" -b "$BRANCH" "origin/$MAIN_BRANCH" \
+  || fail "could not create worktree at $WT"
+log "worktree $WT on branch $BRANCH off origin/$MAIN_BRANCH (dry_run=$DRY_RUN)"
+
+# R3: a fresh worktree has none of the gitignored files the session and build
+# need. Link them in from the primary checkout.
+ln -s "$REPO/.env.local" "$WT/.env.local" 2>/dev/null \
+  || log "WARNING: could not link .env.local into the worktree (headless session may lack env)"
+if [ -e "$REPO/node_modules" ]; then
+  ln -s "$REPO/node_modules" "$WT/node_modules" 2>/dev/null \
+    || log "WARNING: could not link node_modules into the worktree (tsc may fail)"
+fi
+
+cd "$WT" || fail "could not enter worktree $WT"
 rm -f bugs/.auto-verdict.json
+
+# Snapshot the (clean) worktree's untracked set so the commit step can exclude
+# any pre-existing scratch, mirroring the old primary-checkout behavior (D2). A
+# fresh worktree is clean by construction, so this is normally empty; the linked
+# .env.local / node_modules are gitignored and never appear here.
+PRE_UNTRACKED_FILE="$(mktemp -t autobugfix-untracked)"
+git ls-files --others --exclude-standard -z > "$PRE_UNTRACKED_FILE"
+PRE_UNTRACKED_COUNT="$(tr -cd '\0' < "$PRE_UNTRACKED_FILE" | wc -c | tr -d ' ')"
+if [ "$PRE_UNTRACKED_COUNT" != "0" ]; then
+  log "$PRE_UNTRACKED_COUNT untracked path(s) already in the worktree, will be excluded from the commit:"
+  tr '\0' '\n' < "$PRE_UNTRACKED_FILE" | sed 's/^/    /'
+fi
 
 # ---------- run Claude Code headless ----------
 # acceptEdits auto-approves file edits; Bash is allowed so the run never hangs on a
@@ -287,9 +420,9 @@ claude -p "$PROMPT" \
 # ---------- tsc gate (do not trust the model's word) ----------
 log "running tsc gate"
 if ! npx --yes tsc --noEmit; then
-  record_run "checks-failed" "tsc gate failed before any PR was opened. Branch $BRANCH left locally for inspection. Log: $LOG"
-  notify "[Auto bug-fix] tsc failed, no PR opened" "Branch $BRANCH left locally for inspection. Log: $LOG"
-  log "tsc not clean"
+  record_run "checks-failed" "tsc gate failed before any PR was opened; the worktree is discarded and the run re-derives from the brief next time. Log: $LOG"
+  notify "[Auto bug-fix] tsc failed, no PR opened" "The session's work was in a throwaway worktree (now removed); re-run to retry from the brief. Log: $LOG"
+  log "tsc not clean; worktree will be removed by the exit trap"
   exit 1
 fi
 
@@ -337,7 +470,8 @@ git commit -q -m "$TITLE"
 git push -q -u origin "$BRANCH"
 
 # ---------- second guardrail: diff path check overrides a too-rosy verdict ----------
-CHANGED="$(git diff --name-only "$MAIN_BRANCH"...HEAD)"
+# Base is origin/main: the worktree branch was cut from it and local main may be stale.
+CHANGED="$(git diff --name-only "origin/$MAIN_BRANCH"...HEAD)"
 log "changed files:"; echo "$CHANGED" | sed 's/^/    /'
 if echo "$CHANGED" | grep -qE "$RISKY_PATTERNS"; then
   log "diff touches a risky path, forcing needs-review"

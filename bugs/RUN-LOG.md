@@ -7,6 +7,7 @@
 > repo fails until it is removed: `rm ~/lineage/.git/index.lock`.
 >
 > Append-only. One row per scripts/auto-bugfix.sh run, written by the script at each outcome.
+> Outcomes: merged | draft-needs-review | checks-failed | merge-failed | paused | no-op | empty | aborted | escalated. `escalated` is written out-of-band when an aged P1 lead is flagged, so it can accompany a paused/no-op row rather than replace it.
 > The morning digest reads this. Committed to git (only bugs/private/ is gitignored). Full per-run logs live at ~/Library/Logs/linestry-autobugfix/.
 
 | When | Branch | Bug ids | Verdict | Outcome | Detail |
