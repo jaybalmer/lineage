@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { createClient } from "@supabase/supabase-js"
 import { nextFoundingMemberNumber } from "@/lib/memberships"
+import { captureServerEvent } from "@/lib/analytics-server"
 
 // Supabase admin client (bypasses RLS)
 function adminClient() {
@@ -62,6 +63,14 @@ export async function POST(req: NextRequest) {
           status:    "unused",
         })
         // TODO: email the gift code to the purchaser via Resend
+        // Commerce event rides 'content' + props.domain (D4). Fired after the
+        // branch's DB work so a failed insert never reports as completed.
+        await captureServerEvent({
+          category: "content",
+          event: "checkout_completed",
+          actorId: userId,
+          props: { domain: "commerce", tier },
+        })
         break
       }
 
@@ -101,15 +110,32 @@ export async function POST(req: NextRequest) {
           source:     `${tier}_membership_purchase`,
         })
       }
+
+      // Fired after the membership + token DB work, so a failed update does not
+      // report as a completed checkout (D4, T15).
+      await captureServerEvent({
+        category: "content",
+        event: "checkout_completed",
+        actorId: userId,
+        props: { domain: "commerce", tier },
+      })
       break
     }
 
     case "customer.subscription.deleted": {
       const sub = event.data.object as Stripe.Subscription
-      // Lapse membership — freeze tokens (don't delete them)
-      await db.from("profiles").update({
+      // Lapse membership — freeze tokens (don't delete them). Return the row so
+      // the event can carry the actor and the tier (which is not cleared here).
+      const { data: lapsed } = await db.from("profiles").update({
         membership_status: "expired",
-      }).eq("stripe_subscription_id", sub.id)
+      }).eq("stripe_subscription_id", sub.id).select("id, membership_tier")
+      const lapsedRow = lapsed?.[0] as { id: string; membership_tier: string | null } | undefined
+      await captureServerEvent({
+        category: "content",
+        event: "membership_cancelled",
+        actorId: lapsedRow?.id ?? null,
+        props: { domain: "commerce", ...(lapsedRow?.membership_tier ? { tier: lapsedRow.membership_tier } : {}) },
+      })
       break
     }
 
@@ -153,6 +179,22 @@ export async function POST(req: NextRequest) {
       // Grace period handled by Stripe (3 retries over 3 days by default)
       // After Stripe marks the sub as past_due → cancelled → subscription.deleted fires
       console.log("invoice.payment_failed — Stripe will retry automatically")
+      const inv = event.data.object as Stripe.Invoice
+      const subscriptionId = (inv as unknown as { subscription?: string }).subscription
+      let failedRow: { id: string; membership_tier: string | null } | undefined
+      if (subscriptionId) {
+        const { data: failed } = await db.from("profiles")
+          .select("id, membership_tier")
+          .eq("stripe_subscription_id", subscriptionId)
+          .maybeSingle()
+        failedRow = (failed as { id: string; membership_tier: string | null } | null) ?? undefined
+      }
+      await captureServerEvent({
+        category: "content",
+        event: "payment_failed",
+        actorId: failedRow?.id ?? null,
+        props: { domain: "commerce", ...(failedRow?.membership_tier ? { tier: failedRow.membership_tier } : {}) },
+      })
       break
     }
   }

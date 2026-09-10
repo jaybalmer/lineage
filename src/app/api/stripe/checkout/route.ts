@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { requireAuth } from "@/lib/auth"
+import { captureServerEvent } from "@/lib/analytics-server"
 
 const PRICE_IDS: Record<string, string | undefined> = {
   annual:     process.env.STRIPE_PRICE_ANNUAL,
@@ -55,6 +56,16 @@ export async function POST(req: NextRequest) {
       success_url: `${origin}/welcome?tier=${tier}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${origin}/membership`,
       client_reference_id: user.id,
+    })
+
+    // Commerce events ride the existing 'content' category with a domain prop
+    // (D4); a real 'commerce' category is a follow-up migration. Awaited: the
+    // handler ends in a JSON return.
+    await captureServerEvent({
+      category: "content",
+      event: "checkout_started",
+      actorId: user.id,
+      props: { domain: "commerce", tier, is_gift: tier === "gift_annual" },
     })
 
     return NextResponse.json({ url: session.url })

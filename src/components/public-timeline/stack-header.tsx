@@ -18,6 +18,7 @@ import { useState } from "react"
 import type { PublicTimelineOwner } from "@/lib/public-timeline-read"
 import { StackTimelineToggle } from "@/components/public-timeline/stack-timeline-toggle"
 import { memberBadgeFor } from "@/components/ui/member-badge"
+import { trackEvent } from "@/lib/analytics"
 import { cn } from "@/lib/utils"
 
 export function StackViewControls({
@@ -31,6 +32,12 @@ export function StackViewControls({
   const [copied, setCopied] = useState(false)
 
   const share = async () => {
+    // One event per press, measuring intent to share: fired at the top before
+    // the native-sheet attempt, so a cancelled sheet still counts (D13, F14a).
+    trackEvent("invite", "share_clicked", {
+      surface: "public_timeline_stack",
+      method: typeof navigator !== "undefined" && typeof navigator.share === "function" ? "native" : "clipboard",
+    })
     const url = typeof window !== "undefined" ? window.location.href : ""
     if (!url) return
     if (typeof navigator !== "undefined" && navigator.share) {

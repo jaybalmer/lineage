@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import Stripe from "stripe"
 import { requireAuth, getServiceClient } from "@/lib/auth"
+import { captureServerEvent } from "@/lib/analytics-server"
 
 export async function POST(req: NextRequest) {
   const { user, response: authResponse } = await requireAuth()
@@ -34,6 +35,12 @@ export async function POST(req: NextRequest) {
     const session = await stripe.billingPortal.sessions.create({
       customer:   customerId,
       return_url: `${origin}/account/membership`,
+    })
+    await captureServerEvent({
+      category: "content",
+      event: "billing_portal_opened",
+      actorId: user.id,
+      props: { domain: "commerce" },
     })
     return NextResponse.json({ url: session.url })
   } catch (err) {

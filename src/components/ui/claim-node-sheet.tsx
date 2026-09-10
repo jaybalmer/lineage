@@ -9,6 +9,19 @@
 // renders as a centered modal that reads on either ground.
 
 import { useState } from "react"
+import posthog from "posthog-js"
+
+// Read the visitor's PostHog distinct id the same guarded way src/lib/analytics.ts
+// does, so the anonymous claim event can be stitched to the session that fired
+// it (T3). undefined on any failure or before posthog-js has loaded.
+function distinctId(): string | undefined {
+  try {
+    if (typeof window === "undefined") return undefined
+    return posthog.get_distinct_id?.()
+  } catch {
+    return undefined
+  }
+}
 
 export function ClaimNodeSheet({
   nodeId,
@@ -49,6 +62,7 @@ export function ClaimNodeSheet({
           note: note.trim() || undefined,
           source,
           slug,
+          distinct_id: distinctId(),
         }),
       })
       const data = (await res.json().catch(() => ({}))) as { error?: string }

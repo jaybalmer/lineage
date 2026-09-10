@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth, getServiceClient } from "@/lib/auth"
 import { promoteGhostToAccount } from "@/lib/promote-ghost"
+import { captureServerEvent } from "@/lib/analytics-server"
 
 // POST /api/public/admin-invite-complete — node-claim-by-admin-invite.
 //
@@ -54,6 +55,7 @@ export async function POST() {
 
   const placeholder = email.split("@")[0]
   let claimedAny = false
+  let claimedGhostId: string | null = null
 
   for (const claim of claims as { id: string; node_id: string }[]) {
     const ghostId = claim.node_id
@@ -83,7 +85,22 @@ export async function POST() {
       userId: user.id,
       placeholderName: placeholder,
     })
-    if (claimed) claimedAny = true
+    if (claimed) {
+      claimedAny = true
+      claimedGhostId = ghostId
+    }
+  }
+
+  // Fire once, only on a real fold-in (T11): this route runs for EVERY sign-in
+  // and no-ops for everyone without an approved admin invite. Awaited: the
+  // handler ends in a JSON return.
+  if (claimedAny) {
+    await captureServerEvent({
+      category: "invite",
+      event: "invite_accepted",
+      actorId: user.id,
+      props: { path: "admin_invite", node_id: claimedGhostId },
+    })
   }
 
   return NextResponse.json({ ok: true, claimed: claimedAny })

@@ -21,16 +21,20 @@ export async function POST(req: Request) {
     if (body && typeof body.event === "string") {
       const props = body.props && typeof body.props === "object" ? body.props : {}
       const actorId =
-        typeof props.inviter_id === "string"
-          ? props.inviter_id
-          : typeof props.actor_id === "string"
-            ? props.actor_id
-            : null
+        typeof body.actor_id === "string"
+          ? body.actor_id
+          : typeof props.inviter_id === "string"
+            ? props.inviter_id
+            : typeof props.actor_id === "string"
+              ? props.actor_id
+              : null
       await captureServerEvent({
         category: "invite",
         event: body.event,
         props,
         actorId,
+        distinctId: typeof body.distinct_id === "string" ? body.distinct_id : null,
+        occurredAt: typeof body.occurred_at === "string" ? body.occurred_at : null,
       })
     }
   } catch {

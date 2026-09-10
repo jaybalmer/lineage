@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth, getServiceClient } from "@/lib/auth"
 import { claimVouchedHtml, claimVouchedText, sendClaimEmail } from "@/lib/emails/claim-emails"
+import { trackServerEvent } from "@/lib/track-server"
 import type { ClaimRequest, Vouch } from "@/types"
 
 const RELATIONSHIPS = ["rode_with", "worked_with", "family", "other"] as const
@@ -8,14 +9,6 @@ type Relationship = (typeof RELATIONSHIPS)[number]
 
 function isRelationship(v: unknown): v is Relationship {
   return typeof v === "string" && (RELATIONSHIPS as readonly string[]).includes(v)
-}
-
-function trackEvent(origin: string, event: string, props: Record<string, unknown>) {
-  void fetch(`${origin}/api/track/claim-event`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ event, props }),
-  }).catch(() => {})
 }
 
 function trackError(origin: string, tag: string, payload: Record<string, unknown>) {
@@ -152,21 +145,21 @@ export async function POST(
 
   const vouchCount = Array.isArray(updated.vouches_received) ? updated.vouches_received.length : 0
 
-  trackEvent(origin, "vouch_added", {
+  trackServerEvent(origin, "claim-event", "vouch_added", {
     claim_request_id: id,
     voucher_id: user.id,
     relationship: newVouch.relationship,
     vouch_count: vouchCount,
     threshold_met: willFlip,
-  })
+  }, { actorId: user.id })
 
   if (willFlip) {
-    trackEvent(origin, "claim_status_changed", {
+    trackServerEvent(origin, "claim-event", "claim_status_changed", {
       claim_request_id: id,
       from: "pending",
       to: "vouched",
       reason: "vouch_threshold_met",
-    })
+    }, { actorId: user.id })
 
     // Vouches only apply to member claims (public_invite never reaches the vouch
     // surface, D5), so claimant_id is set here; ?? "" keeps TS happy on the now

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireAuth, getServiceClient } from "@/lib/auth"
 import { promoteGhostToAccount } from "@/lib/promote-ghost"
+import { captureServerEvent } from "@/lib/analytics-server"
 
 // POST /api/public/claim-complete — PB-010 Phase 4b. The authenticated tail of
 // the public tag-to-claim growth loop.
@@ -68,6 +69,7 @@ export async function POST() {
   // to overwrite on the profile; a real onboarding name is never clobbered.
   const placeholder = email.split("@")[0]
   let claimedAny = false
+  let claimedGhostId: string | null = null
   let sawLiveGhost = false
 
   for (const ghost of ghosts as { id: string }[]) {
@@ -120,7 +122,23 @@ export async function POST() {
       userId: user.id,
       placeholderName: placeholder,
     })
-    if (claimed) claimedAny = true
+    if (claimed) {
+      claimedAny = true
+      claimedGhostId = ghostId
+    }
+  }
+
+  // Fire once, only on a real fold-in (T11): this route runs for EVERY sign-in
+  // and returns claimed:false when there is nothing pending, so firing on call
+  // would turn an invite metric into a sign-in counter. Awaited: the handler
+  // ends in a JSON return.
+  if (claimedAny) {
+    await captureServerEvent({
+      category: "invite",
+      event: "invite_accepted",
+      actorId: user.id,
+      props: { path: "public_tag", node_id: claimedGhostId },
+    })
   }
 
   return NextResponse.json({

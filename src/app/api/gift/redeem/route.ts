@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth, getServiceClient } from "@/lib/auth"
+import { captureServerEvent } from "@/lib/analytics-server"
 
 export async function POST(req: NextRequest) {
   const { user, response: authResponse } = await requireAuth()
@@ -75,6 +76,13 @@ export async function POST(req: NextRequest) {
     token_type: "member",
     amount:     20,
     source:     "gift_redemption",
+  })
+
+  await captureServerEvent({
+    category: "content",
+    event: "gift_redeemed",
+    actorId: user.id,
+    props: { domain: "commerce" },
   })
 
   return NextResponse.json({ success: true })
