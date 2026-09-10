@@ -2663,3 +2663,15 @@ Implements features/linestry-ops-repo-brief.md: unpins the operating layer from 
 - tsc: clean
 
 BUG-181: the "Unknown" (undated) decade group rendered at the TOP of a person's timeline because decade keys were string-sorted and "Unknown" sorts above every digit; the FeedView comparator now pins "Unknown" last in both sort directions, mirroring people/page.tsx:316. BUG-182: the "+ Add connection" popover wrote event claims with no date, dropping them into the Unknown bucket; the write path now inherits the event's start_date (place/brand/rider stay dateless per D4), and a FeedView render-time fallback (D3) resolves an undated event claim's date from catalog.events so existing dateless rows land in the event's decade on next load with no data change. Two client files, no migration. Verified: tsc clean, comparator unit-checked (Unknown last in desc and asc), and both owner and visitor person views share the one FeedView code path.
+
+## 2026-09-10 - Funnel event completion (feature)
+- type: feature
+- pr: #257
+- branch: feat/funnel-event-completion
+- ids: none
+- scope: funnel-event-completion
+- migration: none
+- status: merged
+- tsc: clean
+
+Closes the analytics event-vocabulary gaps behind the funnel Jay is trying to move, without touching the dual-sink substrate (PostHog + analytics_events). Part A: one shared src/lib/track-server.ts replaces the five duplicated private trackEvent helpers; claim-event/invite-event/node-redirect now carry distinct_id + occurred_at + explicit actor_id (invite/claim/redirect events stop landing anonymous), all eight claim sites pass a real actor, and claim_node_invited/claim_node_requested move moderation->invite (historical rows keep their old category; seam date 2026-09-10 recorded in docs). Part B: ftue_name_shown/ftue_year_shown, signin_succeeded/failed, magic_link_sent/clicked, auth_complete_landed (denominator) + auth_complete_failed, oauth_callback_failed; signupErrorClass extracted to src/lib/auth-error-class.ts; is_new_account on the two new-profile-gated events. Part C: story_ordinal/is_first on story_created, invite_accepted on the three completion routes (fire only on a real fold-in), share_clicked on the public stack header, and the dormant threshold telemetry wired (two dead HTTP helpers deleted). Part E: six commerce events on content + props.domain="commerce" (no category migration). Part F: docs/analytics-events.md registry, .env.example + a !.env.example gitignore negation. T14 (pageview + posthog.reset) was already shipped in #233 so it is not repeated, and there is NO pageview step-up on this deploy. Merged after Jay's explicit go-ahead on the payments-touching Stripe telemetry (webhook + checkout are additive captures, no payment-logic change). Deferred to follow-up (logged in the brief section 14): the claim_created ordinal (unreliable local count, T10 AUDIT), a real commerce category, the other twelve untracked share surfaces, and a PostHog reverse proxy. Live PostHog acceptance (A3-A16, A19) still needs a smoke against real traffic with the key present.
