@@ -456,14 +456,25 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
               key={photo.id}
               className={cn(
                 "relative cursor-pointer overflow-hidden bg-surface-hover",
-                photos.length === 1 ? "aspect-[16/9]" : "aspect-square"
+                // BUG-191: a single photo renders at its natural aspect, height
+                // capped and centred, so a vertical shot is shown whole instead
+                // of being cropped top and bottom by a fixed 16/9 box. Multi
+                // photo tiles stay a square collage (BUG-080 counts above).
+                photos.length === 1 ? "mx-auto w-fit max-w-full rounded-lg" : "aspect-square"
               )}
               onClick={() => setLightboxIdx(i)}
             >
               <img
                 src={photo.url}
                 alt={photo.caption ?? `Photo ${i + 1}`}
-                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                className={cn(
+                  photos.length === 1
+                    // No hover scale on the single photo: the wrapper hugs the
+                    // image, so scaling would clip the edges it just stopped
+                    // cropping.
+                    ? "block w-auto h-auto max-w-full max-h-[560px] object-contain"
+                    : "w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                )}
               />
               {i === 5 && photos.length > 6 && (
                 <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
