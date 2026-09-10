@@ -13,6 +13,7 @@ import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { BoardShelf } from "@/components/feed/board-shelf"
 import { cn } from "@/lib/utils"
+import { useLineageStore } from "@/store/lineage-store"
 import { groupRodeAtCompanions, countTimelineEntries } from "@/lib/companion-grouping"
 import { dateToSortNum, groupByDecade } from "@/lib/timeline-grouping"
 
@@ -169,6 +170,23 @@ export function FeedView({
   const [addingStory, setAddingStory] = useState(false)
   const [entranceDone, setEntranceDone] = useState(false)
 
+  // BUG-182 D3: an event claim written with no date (the "+ Add connection"
+  // popover used to omit it) should sit in the event's decade, not Unknown.
+  // Resolve the event's own date at render time so existing dateless rows are
+  // fixed on sight with no data change. Narrow selector so this shared card only
+  // re-renders when the events catalog itself changes.
+  const catalogEvents = useLineageStore((s) => s.catalog.events)
+  const eventDateById = useMemo(() => {
+    const m = new Map<string, string>()
+    for (const e of catalogEvents) m.set(e.id, e.start_date)
+    return m
+  }, [catalogEvents])
+  const claimSortDateStr = (claim: Claim): string | undefined => {
+    if (claim.start_date) return claim.start_date
+    if (claim.object_type === "event") return eventDateById.get(claim.object_id)
+    return undefined
+  }
+
   // Bake the staggered entrance into its final state once the stagger window
   // elapses, so later re-renders (a queued celebration, a freshly added claim)
   // do not replay the whole reveal.
@@ -198,7 +216,7 @@ export function FeedView({
       return filtered.map((claim) => ({
         kind: "claim" as const,
         claim,
-        sortDate: dateToSortNum(claim.start_date),
+        sortDate: dateToSortNum(claimSortDateStr(claim)),
       }))
     })()
 
@@ -240,12 +258,17 @@ export function FeedView({
       if (a.sortDate !== b.sortDate) return dir * (a.sortDate - b.sortDate)
       return predicateRank(a) - predicateRank(b)
     })
-  }, [groupedClaims, days, stories, mentions, filter, ridingSince, order])
+  }, [groupedClaims, days, stories, mentions, filter, ridingSince, order, eventDateById])
 
   const grouped = useMemo(() => groupByDecade(items), [items])
-  const decades = Object.keys(grouped).sort((a, b) =>
-    order === "asc" ? a.localeCompare(b) : b.localeCompare(a)
-  )
+  const decades = Object.keys(grouped).sort((a, b) => {
+    // Undated items land in the "Unknown" group. As a plain string it sorts
+    // above every digit, so in the default descending order it would render at
+    // the very TOP of the timeline (BUG-181). Pin it last in both directions.
+    if (a === "Unknown") return 1
+    if (b === "Unknown") return -1
+    return order === "asc" ? a.localeCompare(b) : b.localeCompare(a)
+  })
 
   const emitEntrance = animateEntrance && !entranceDone
   if (emitEntrance) injectEntranceStyles()
