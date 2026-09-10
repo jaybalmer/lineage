@@ -2652,3 +2652,14 @@ scripts/auto-bugfix.sh now runs each session in a throwaway git worktree cut off
 - tsc: clean
 
 Implements features/linestry-ops-repo-brief.md: unpins the operating layer from the laptop and gives an outside operator a place to attach. Created the private repo jaybalmer/linestry-ops (queues/ briefs/ log/ runbooks/ docs/ + CLAUDE.md), seeded with a structured, PII-scrubbed snapshot of lineage/bugs and lineage/features (159 files: 4 queues, 39 active briefs, 101 archived, logs, dashboards, two loop READMEs, four runbooks, a SEED-STATE decision record). Verified private, and that a clone shows only opaque tokens (R-nn/S-nn) with zero personal emails, zero raw UUIDv7 session ids, and no secret/.env path in history (acceptance #1/#5). T2: new Supabase table public.ops_pii_map is the canonical token->raw map (service-role only), applied and populated. T3: bugs/scrub-pii.py extended (stdlib urllib) to union local bugs/private/ keys with ops_pii_map, upsert new tokens + the full map back, fall back to Supabase when local keys are absent (exit 1 only if neither reachable, R1), and accept OPS_SCRUB_ROOT so --check runs against the ops repo (exit 0, acceptance #2). This lineage PR #253 carries the migration file + scrub-pii.py; the repo itself lives at github.com/jaybalmer/linestry-ops. DEFERRED per brief D3/R2/R4: T5 (repoint the four queue writers - two Cowork scheduled tasks + auto-bugfix.sh OPS_REPO + the render dashboards) is a single coordinated cutover, not flag-dayed piecemeal; T7 (delete the in-repo copies) waits a few clean days. Cutover checklist is in linestry-ops/docs/SEED-STATE.md. Also: the earlier claim in an intermediate note that auto-bugfix.sh gained OPS_REPO was corrected - it was intentionally not wired yet to avoid stranding the queue.
+
+## 2026-09-10 - Timeline undated claims sort last + event connections get their date (bug)
+- type: bug
+- pr: #256
+- branch: fix/timeline-undated-claims
+- ids: BUG-181, BUG-182
+- migration: none
+- status: merged
+- tsc: clean
+
+BUG-181: the "Unknown" (undated) decade group rendered at the TOP of a person's timeline because decade keys were string-sorted and "Unknown" sorts above every digit; the FeedView comparator now pins "Unknown" last in both sort directions, mirroring people/page.tsx:316. BUG-182: the "+ Add connection" popover wrote event claims with no date, dropping them into the Unknown bucket; the write path now inherits the event's start_date (place/brand/rider stay dateless per D4), and a FeedView render-time fallback (D3) resolves an undated event claim's date from catalog.events so existing dateless rows land in the event's decade on next load with no data change. Two client files, no migration. Verified: tsc clean, comparator unit-checked (Unknown last in desc and asc), and both owner and visitor person views share the one FeedView code path.
