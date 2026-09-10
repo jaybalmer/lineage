@@ -3,6 +3,8 @@ import { cookies } from "next/headers"
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import { safeReturnTo } from "@/lib/safe-redirect"
+import { captureServerEvent } from "@/lib/analytics-server"
+import { signupErrorClass } from "@/lib/auth-error-class"
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
@@ -17,6 +19,10 @@ export async function GET(request: NextRequest) {
   const rtSuffix = returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""
 
   if (!code) {
+    // Server route ends in a redirect, so await the capture: a floating promise
+    // would be truncated. This is the only place an OAuth round trip can fail
+    // server-side (T9).
+    await captureServerEvent({ category: "auth", event: "oauth_callback_failed", props: { reason: "no_code" } })
     return NextResponse.redirect(`${origin}/onboarding?error=no_code${rtSuffix}`)
   }
 
@@ -41,6 +47,11 @@ export async function GET(request: NextRequest) {
   const { error } = await supabase.auth.exchangeCodeForSession(code)
 
   if (error) {
+    await captureServerEvent({
+      category: "auth",
+      event: "oauth_callback_failed",
+      props: { reason: "exchange_failed", error_class: signupErrorClass(error.message) },
+    })
     return NextResponse.redirect(`${origin}/onboarding?error=auth_failed${rtSuffix}`)
   }
 

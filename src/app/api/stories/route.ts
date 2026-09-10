@@ -426,6 +426,14 @@ export async function POST(req: NextRequest) {
       tokensAwarded += await awardContributionTokens(supabase, user.id, 2, "contribution_source", storyRef)
     }
 
+    // First-story activation signal (D12). Counted AFTER the insert so the new
+    // story is included and `count` is this story's ordinal. On a failed count
+    // the props are null/false, never a wrong is_first: true.
+    const { count: storyCount } = await supabase
+      .from("stories")
+      .select("id", { count: "exact", head: true })
+      .eq("author_id", user.id)
+
     await captureServerEvent({
       category: "content",
       event: "story_created",
@@ -439,6 +447,8 @@ export async function POST(req: NextRequest) {
         board_count: (board_ids as unknown[]).length,
         has_youtube: !!youtube_url,
         has_link: !!(linked_place_id || linked_event_id || linked_org_id),
+        story_ordinal: storyCount ?? null,
+        is_first: storyCount === 1,
       },
     })
 

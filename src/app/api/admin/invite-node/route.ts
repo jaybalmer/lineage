@@ -3,17 +3,10 @@ import { requireEditor, getServiceClient } from "@/lib/auth"
 import { verificationTierFor, vouchesRequiredForTier } from "@/lib/claim-request-helpers"
 import { applyNodeInvite } from "@/lib/node-invite"
 import { personHasBoundAccount } from "@/lib/invite-tracking-server"
+import { trackServerEvent } from "@/lib/track-server"
 import type { Person } from "@/types"
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
-
-function trackEvent(origin: string, event: string, props: Record<string, unknown>) {
-  void fetch(`${origin}/api/track/claim-event`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ event, props }),
-  }).catch(() => {})
-}
 
 // GET /api/admin/invite-node?q=<name> — editor node search for the /admin/claims
 // proactive-invite panel. Returns up to 10 invitable (catalog/unclaimed) nodes
@@ -161,11 +154,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Node not found" }, { status: 404 })
   }
 
-  trackEvent(origin, "claim_node_invited", {
+  trackServerEvent(origin, "claim-event", "claim_node_invited", {
     node_id: nodeId,
     surface: "editor",
     resend: !!existingClaim,
-  })
+  }, { actorId: user.id })
 
   return NextResponse.json({ ok: true, invited_email: email, person_name: invite.personName })
 }

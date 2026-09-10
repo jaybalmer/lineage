@@ -33,6 +33,11 @@ export type InviteEvent =
   | "invite_email_added"
   | "tag_threshold_notification_sent"
 
+// invite_post_fetch_failed has client call sites; threshold_notification_send_failed
+// and threshold_count_query_failed fire from invite-tracking-server.ts. The other
+// four (invite_resend_failed, invite_db_insert_failed, invite_target_not_claimable,
+// threshold_notification_dedup_violation) have no call site yet: wiring or pruning
+// them needs a /api/invite error-handling audit (out of scope).
 export type InviteErrorTag =
   | "invite_resend_failed"
   | "invite_db_insert_failed"
@@ -57,24 +62,6 @@ export function trackInviteError(tag: InviteErrorTag, payload: Record<string, un
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ tag, payload }),
     keepalive: true,
-  }).catch(() => {})
-}
-
-// Server-side variants — these require an absolute origin since they run
-// inside route handlers where relative fetch isn't a thing.
-export function trackInviteEventServer(origin: string, event: InviteEvent, props: Record<string, unknown> = {}): void {
-  void fetch(`${origin}/api/track/invite-event`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ event, props }),
-  }).catch(() => {})
-}
-
-export function trackInviteErrorServer(origin: string, tag: InviteErrorTag, payload: Record<string, unknown> = {}): void {
-  void fetch(`${origin}/api/track/invite-error`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ tag, payload }),
   }).catch(() => {})
 }
 

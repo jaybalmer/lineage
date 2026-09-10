@@ -247,13 +247,17 @@ export function OnboardingFlow() {
     const name =
       currentStepId === "scatter" || currentStepId === "weave"
         ? "ftue_intro_viewed"
-        : currentStepId === "era"
-          ? "ftue_aha_shown"
-          : currentStepId === "welcome"
-            ? "ftue_timeline_shown"
-            : currentStepId === "save"
-              ? "ftue_save_shown"
-              : null
+        : currentStepId === "name"
+          ? "ftue_name_shown"
+          : currentStepId === "year"
+            ? "ftue_year_shown"
+            : currentStepId === "era"
+              ? "ftue_aha_shown"
+              : currentStepId === "welcome"
+                ? "ftue_timeline_shown"
+                : currentStepId === "save"
+                  ? "ftue_save_shown"
+                  : null
     if (!name) return
     const key = `${name}:${currentStepId}`
     if (firedRef.current.has(key)) return

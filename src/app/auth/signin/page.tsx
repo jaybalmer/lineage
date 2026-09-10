@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { trackEvent } from "@/lib/analytics"
+import { signupErrorClass } from "@/lib/auth-error-class"
 import { authErrorMessage } from "@/lib/auth-messages"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { cn } from "@/lib/utils"
@@ -98,7 +99,12 @@ export default function SignInPage() {
       provider: "google",
       options: { redirectTo },
     })
-    if (oauthError) setError(oauthError.message)
+    if (oauthError) {
+      // No on-page success for OAuth: the user leaves the page and their success
+      // lands as auth_complete_landed (T8).
+      trackEvent("auth", "signin_failed", { method: "google", error_class: signupErrorClass(oauthError.message) })
+      setError(oauthError.message)
+    }
   }
 
   const continueWithFacebook = async () => {
@@ -110,7 +116,10 @@ export default function SignInPage() {
       provider: "facebook",
       options: { redirectTo },
     })
-    if (oauthError) setError(oauthError.message)
+    if (oauthError) {
+      trackEvent("auth", "signin_failed", { method: "facebook", error_class: signupErrorClass(oauthError.message) })
+      setError(oauthError.message)
+    }
   }
 
   const sendMagicLink = async (): Promise<boolean> => {
@@ -136,6 +145,7 @@ export default function SignInPage() {
       }
 
       if (data.error) {
+        trackEvent("auth", "signin_failed", { method: "magic_link", error_class: signupErrorClass(data.error) })
         setError(data.error)
         return false
       }
@@ -154,6 +164,7 @@ export default function SignInPage() {
           },
         })
         if (otpError) {
+          trackEvent("auth", "signin_failed", { method: "magic_link", error_class: signupErrorClass(otpError.message) })
           const msg = otpError.message.toLowerCase()
           setError(
             msg.includes("signups not allowed") || msg.includes("not found")
@@ -164,10 +175,18 @@ export default function SignInPage() {
         }
       }
 
+      // fallback distinguishes the Resend server path from the client OTP
+      // fallback (they generate different link shapes), matching save-step.tsx.
+      trackEvent("auth", "magic_link_sent", {
+        intent: "signin",
+        surface: "signin",
+        fallback: !!data.fallback,
+      })
       setSent(true)
       setCooldown(30)
       return true
     } catch {
+      trackEvent("auth", "signin_failed", { method: "magic_link", error_class: "network" })
       setError("Something went wrong. Please try again.")
       return false
     } finally {
@@ -188,6 +207,7 @@ export default function SignInPage() {
     })
 
     if (authError) {
+      trackEvent("auth", "signin_failed", { method: "password", error_class: signupErrorClass(authError.message) })
       setError(
         authError.message.toLowerCase().includes("invalid")
           ? "Incorrect email or password."
@@ -196,6 +216,10 @@ export default function SignInPage() {
       setLoading(false)
       return
     }
+
+    // Password is the only method that resolves on-page (no callback hop), so it
+    // is the only one with an on-page success event.
+    trackEvent("auth", "signin_succeeded", { method: "password" })
 
     // Password sign-in establishes the session client-side (no callback hop), so
     // honor returnTo here directly. Default is /me/timeline, matching the callback

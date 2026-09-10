@@ -11,15 +11,8 @@ import {
 } from "@/lib/emails/claim-emails"
 import { applyNodeInvite } from "@/lib/node-invite"
 import { awardContributionTokens } from "@/lib/tokens"
+import { trackServerEvent } from "@/lib/track-server"
 import type { ClaimRequest, MergePersonResult } from "@/types"
-
-function trackEvent(origin: string, event: string, props: Record<string, unknown>) {
-  void fetch(`${origin}/api/track/claim-event`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ event, props }),
-  }).catch(() => {})
-}
 
 function trackError(origin: string, tag: string, payload: Record<string, unknown>) {
   void fetch(`${origin}/api/track/claim-error`, {
@@ -190,11 +183,11 @@ export async function PATCH(
       console.error("[admin claim PATCH approve invite] node missing:", current.node_id)
     }
 
-    trackEvent(origin, "claim_node_approved", {
+    trackServerEvent(origin, "claim-event", "claim_node_approved", {
       claim_request_id: id,
       node_id: current.node_id,
       verification_tier: current.verification_tier,
-    })
+    }, { actorId: user.id })
 
     return NextResponse.json(updated)
   }
@@ -275,7 +268,7 @@ export async function PATCH(
       await awardContributionTokens(db, inviterId, 5, "contribution_onboard")
     }
 
-    trackEvent(origin, "claim_approved", {
+    trackServerEvent(origin, "claim-event", "claim_approved", {
       claim_request_id: id,
       path: result.path,
       noop: result.noop,
@@ -285,7 +278,7 @@ export async function PATCH(
       deduplicated: sumDedupCounts(result.references_deduplicated),
       alias_rewrites: result.alias_rewrites,
       claim_requests_auto_denied: result.claim_requests_auto_denied,
-    })
+    }, { actorId: user.id })
 
     // Re-load the (now resolved) claim_request so the response matches the
     // pre-RPC shape clients expect.
@@ -351,12 +344,12 @@ export async function PATCH(
     )
   }
 
-  trackEvent(origin, "claim_status_changed", {
+  trackServerEvent(origin, "claim-event", "claim_status_changed", {
     claim_request_id: id,
     from: current.status,
     to: "denied",
     reason: "editor_denied",
-  })
+  }, { actorId: user.id })
 
   try {
     const { data: person } = await db

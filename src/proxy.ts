@@ -128,11 +128,13 @@ function trackRedirect(
   origin: string,
   payload: { from_slug: string; to_slug: string; reason: RedirectReasonTag },
 ) {
-  // Fire-and-forget. PostHog stub is at /api/track/node-redirect.
+  // Fire-and-forget. PostHog stub is at /api/track/node-redirect. Stamp
+  // occurred_at at the edge so the redirect orders correctly against the client
+  // funnel; there is no session here, so actor_id stays null on the sink.
   void fetch(`${origin}/api/track/node-redirect`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ ...payload, occurred_at: new Date().toISOString() }),
   }).catch(() => {})
 }
 

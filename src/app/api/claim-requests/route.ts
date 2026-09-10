@@ -2,17 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAuth, getServiceClient } from "@/lib/auth"
 import { verificationTierFor, vouchesRequiredForTier } from "@/lib/claim-request-helpers"
 import { claimSubmittedHtml, claimSubmittedText, sendClaimEmail } from "@/lib/emails/claim-emails"
+import { trackServerEvent } from "@/lib/track-server"
 import type { Person } from "@/types"
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
-
-function trackEvent(origin: string, event: string, props: Record<string, unknown>) {
-  void fetch(`${origin}/api/track/claim-event`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ event, props }),
-  }).catch(() => {})
-}
 
 // ── GET /api/claim-requests?node_id=<id> ──────────────────────────────────────
 // Public: returns open claim requests (pending|vouched, not expired) for a
@@ -162,12 +155,12 @@ export async function POST(req: NextRequest) {
 
     // Track + email (fire-and-forget; don't fail the request on transport errors)
     const origin = req.headers.get("origin") ?? req.nextUrl.origin
-    trackEvent(origin, "claim_requested", {
+    trackServerEvent(origin, "claim-event", "claim_requested", {
       claim_request_id: inserted.id,
       node_id: nodeId,
       verification_tier: tier,
       vouches_required: vouchesRequired,
-    })
+    }, { actorId: user.id })
 
     if (user.email) {
       void sendClaimEmail({

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth, getServiceClient } from "@/lib/auth"
 import { promoteGhostToAccount } from "@/lib/promote-ghost"
+import { captureServerEvent } from "@/lib/analytics-server"
 
 // POST /api/invite/claim — the authenticated tail of the email-invite flow.
 //
@@ -116,6 +117,19 @@ export async function POST(req: NextRequest) {
   // Mark the invite resolved so it cannot be reused, regardless of the fold
   // outcome (a stale/already-folded ghost still resolves the invite).
   await db.from("invites").update({ claimed_at: nowIso, claimed_by: user.id }).eq("id", invite.id)
+
+  // Only on a real fold-in: this route is called for EVERY sign-in and returns
+  // claimed:false when there is nothing to claim, so firing on call would make
+  // an invite metric into a sign-in counter (T11). Awaited: the handler ends in
+  // a JSON return that would truncate a floating capture.
+  if (claimed) {
+    await captureServerEvent({
+      category: "invite",
+      event: "invite_accepted",
+      actorId: user.id,
+      props: { path: "email_invite", node_id: oldId },
+    })
+  }
 
   return NextResponse.json({ ok: true, claimed, display_name })
 }

@@ -9,6 +9,7 @@ import {
   checkTagThrottle,
   recordTagThrottle,
 } from "@/lib/public-tag"
+import { trackServerEvent } from "@/lib/track-server"
 import type { Person } from "@/types"
 
 // POST /api/public/claim-node — node-claim-by-admin-invite.
@@ -27,14 +28,6 @@ import type { Person } from "@/types"
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
 const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || "jay@lineage.community"
-
-function trackEvent(origin: string, event: string, props: Record<string, unknown>) {
-  void fetch(`${origin}/api/track/claim-event`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ event, props }),
-  }).catch(() => {})
-}
 
 export async function POST(req: NextRequest) {
   let body: Record<string, unknown>
@@ -175,12 +168,16 @@ export async function POST(req: NextRequest) {
     listUnsubscribe: false,
   })
 
-  trackEvent(origin, "claim_node_requested", {
+  // Anonymous by design (actor null); the visitor's PostHog distinct id, when
+  // the sheet forwards it (T3), is the only way to stitch this event to the
+  // session that fired it.
+  const distinctId = typeof body.distinct_id === "string" ? body.distinct_id : null
+  trackServerEvent(origin, "claim-event", "claim_node_requested", {
     claim_request_id: inserted.id,
     node_id: nodeId,
     verification_tier: tier,
     source,
-  })
+  }, { actorId: null, distinctId })
 
   return NextResponse.json({ ok: true })
 }

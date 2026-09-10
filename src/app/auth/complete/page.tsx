@@ -26,6 +26,26 @@ export default function AuthCompletePage() {
     const returnTo = safeReturnTo(new URLSearchParams(window.location.search).get("returnTo"))
     const expiredUrl = `/auth/signin?error=link_expired${returnTo ? `&returnTo=${encodeURIComponent(returnTo)}` : ""}`
 
+    // Flow discrimination (F10), computed once so every exit below can label its
+    // event: ?code = PKCE, an #access_token hash = the implicit magic-link flow,
+    // and neither = the cookie session set by /auth/callback (the OAuth path,
+    // whose code was already exchanged server-side).
+    const hasCode = !!new URLSearchParams(window.location.search).get("code")
+    const hasHash = !!new URLSearchParams(window.location.hash.slice(1)).get("access_token")
+    const flow = hasCode ? "pkce" : hasHash ? "implicit" : "cookie"
+
+    // Always-firing denominator (D6): fires for new signups, returning sign-ins,
+    // and bounces alike, so /auth/complete finally has a total to divide by. Note
+    // is_new_account is deliberately NOT on this event: that value is only known
+    // inside saveAndRedirect, well after this fires. The join Jay wants is
+    // auth_complete_landed -> signup_succeeded, and the ABSENCE of the second is
+    // the returning-user signal.
+    trackEvent("auth", "auth_complete_landed", { flow })
+    // A magic-link click (implicit) or a defensive PKCE link; not the OAuth
+    // cookie path. AUDIT: a password-recovery link also arrives implicit; at
+    // current volume mislabelling a handful of those is acceptable (F10 / T8).
+    if (flow !== "cookie") trackEvent("auth", "magic_link_clicked", { flow })
+
     async function saveAndRedirect(user: User) {
       if (handled) return
       handled = true
@@ -95,7 +115,7 @@ export default function AuthCompletePage() {
         // localStorage. Cross-device carry (the pending_onboarding channel) is the
         // full build's job; here a magic link opened on another device attributes
         // signup_started but not signup_succeeded, which is the documented tradeoff.
-        else trackEvent("auth", "signup_succeeded", { ...attributionProps() }, { actorId: user.id })
+        else trackEvent("auth", "signup_succeeded", { ...attributionProps(), is_new_account: true }, { actorId: user.id })
       }
 
       // ── 2. Migrate session claims ─────────────────────────────────────────
@@ -187,12 +207,20 @@ export default function AuthCompletePage() {
       // claims here, flip the paired tags to attributed, and remove the ghost.
       // The route is keyed server-side on the authenticated email, so it is safe
       // to call for everyone — it no-ops for a normal signup with no pending tag.
+      // Capture the result for symmetry with the two calls above (T11). The
+      // invite_accepted event fires server-side inside the route, so this local
+      // is not consumed here; it exists so all three completion calls read their
+      // result rather than one silently discarding it.
+      let publicTagClaimed = false
       try {
         setStatus("Claiming your spot…")
-        await fetch("/api/public/claim-complete", { method: "POST" })
+        const res = await fetch("/api/public/claim-complete", { method: "POST" })
+        const data = (await res.json().catch(() => ({}))) as { claimed?: boolean }
+        publicTagClaimed = data?.claimed === true
       } catch (claimErr) {
         console.error("Public claim completion error:", claimErr)
       }
+      void publicTagClaimed
 
       // ── 6. Read canonical profile back from DB ────────────────────────────
       // Read AFTER the claims above so a restored invited name lands in the
@@ -217,7 +245,7 @@ export default function AuthCompletePage() {
       // the funnel's final step. signup_succeeded above is already gated the
       // same way.
       if (!existingProfile) {
-        trackEvent("ftue", "ftue_completed", {}, { actorId: user.id })
+        trackEvent("ftue", "ftue_completed", { is_new_account: true }, { actorId: user.id })
       }
 
       // Mark the arrival celebration as pending — the owner timeline picks it up.
@@ -239,7 +267,11 @@ export default function AuthCompletePage() {
 
     // ── Timeout: never hang indefinitely ──────────────────────────────────
     const timeout = setTimeout(() => {
-      if (!handled) router.replace(expiredUrl)
+      if (!handled) {
+        // Fire before the navigation so keepalive:true is not racing an unload.
+        trackEvent("auth", "auth_complete_failed", { reason: "timeout", flow })
+        router.replace(expiredUrl)
+      }
     }, 10000)
 
     async function init() {
@@ -277,10 +309,16 @@ export default function AuthCompletePage() {
 
       // ── 4. Nothing worked → expired or invalid ───────────────────────────
       clearTimeout(timeout)
+      trackEvent("auth", "auth_complete_failed", { reason: "no_session", flow })
       router.replace(expiredUrl)
     }
 
-    init().catch(() => { if (!handled) router.replace(expiredUrl) })
+    init().catch(() => {
+      if (!handled) {
+        trackEvent("auth", "auth_complete_failed", { reason: "threw" })
+        router.replace(expiredUrl)
+      }
+    })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase"
 import { useLineageStore } from "@/store/lineage-store"
 import { trackEvent } from "@/lib/analytics"
 import { attributionProps } from "@/lib/attribution"
+import { signupErrorClass } from "@/lib/auth-error-class"
 import { cn } from "@/lib/utils"
 
 // BUG-115 / BUG-116: the onboarding picks live only in client localStorage, which
@@ -32,20 +33,6 @@ function buildOnboardingPayload(returnTo?: string | null) {
 const inputCls =
   "w-full bg-surface-2 border border-border-default rounded-2xl px-4 py-4 text-[17px] text-foreground " +
   "outline-none transition-colors placeholder:text-muted/60 focus:border-accent"
-
-// Coarse, PII-free bucket for a signup failure, so the auth-gate cliff can be
-// diagnosed in PostHog without logging raw error strings (D6). Auth error
-// messages carry no email/PII, but bucketing keeps the funnel property clean.
-function signupErrorClass(msg?: string | null): string {
-  const m = (msg ?? "").toLowerCase()
-  if (!m) return "unknown"
-  if (m.includes("network") || m.includes("fetch") || m.includes("failed to")) return "network"
-  if (m.includes("rate") || m.includes("too many")) return "rate_limited"
-  if (m.includes("no account") || m.includes("not found")) return "no_account"
-  if (m.includes("popup") || m.includes("cancel") || m.includes("closed")) return "cancelled"
-  if (m.includes("provider") || m.includes("oauth")) return "provider_error"
-  return "other"
-}
 
 function GoogleGlyph() {
   return (
@@ -200,6 +187,14 @@ export function SaveStep({
         }
       }
 
+      // fallback distinguishes the Resend server path from the client OTP
+      // fallback: they generate different link shapes, so Jay can see which one
+      // loses people.
+      trackEvent("auth", "magic_link_sent", {
+        intent: "signup",
+        surface: "ftue_save",
+        fallback: !!data.fallback,
+      })
       setSent(true)
       setCooldown(30)
       return true

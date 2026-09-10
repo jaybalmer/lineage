@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import { emailHeaderHtml, emailFooterHtml, EMAIL_REPLY_TO } from "@/lib/emails/shared-header"
 import { listUnsubscribeHeaders, isEmailSuppressed } from "@/lib/email-suppression"
+import { captureServerEvent, captureServerError } from "@/lib/analytics-server"
 
 /**
  * Server-authoritative twin of hasBoundAccount (src/lib/invite-tracking.ts).
@@ -129,10 +130,16 @@ function thresholdEmailHtml(personName: string, count: number): string {
 </html>`
 }
 
-async function sendThresholdEmail(args: { to: string; personName: string; count: number }) {
+// Returns true when the email was actually handed to Resend without error (or
+// intentionally skipped: no key in local dev, or a suppressed recipient), false
+// only on a real send failure (Resend rejection or a transport throw). The
+// caller uses false to fire threshold_notification_send_failed, which is the
+// meaningful signal: the dedup row is already inserted by then, so a broken send
+// is permanent (T13).
+async function sendThresholdEmail(args: { to: string; personName: string; count: number }): Promise<boolean> {
   const key = process.env.RESEND_API_KEY
-  if (!key || !args.to) return
-  if (await isEmailSuppressed(args.to)) return
+  if (!key || !args.to) return true
+  if (await isEmailSuppressed(args.to)) return true
   try {
     const { Resend } = await import("resend")
     const resend = new Resend(key)
@@ -149,9 +156,12 @@ async function sendThresholdEmail(args: { to: string; personName: string; count:
     })
     if (sendErr) {
       console.error("[invite-tracking] Resend send rejected:", sendErr)
+      return false
     }
+    return true
   } catch (err) {
     console.error("[invite-tracking] Resend send failed:", err)
+    return false
   }
 }
 
@@ -198,6 +208,12 @@ export async function maybeFireThresholdNotification(personId: string): Promise<
     .rpc("distinct_tagger_summary", { p_person_id: personId })
   if (rpcErr) {
     console.error("[invite-tracking] distinct_tagger_summary RPC error:", rpcErr)
+    await captureServerError({
+      category: "invite",
+      tag: "threshold_count_query_failed",
+      actorId: null,
+      payload: { person_id: personId },
+    })
     return { fired: false, reason: "rpc_error" }
   }
   const s = summary as DistinctTaggerSummary | null
@@ -233,11 +249,29 @@ export async function maybeFireThresholdNotification(personId: string): Promise<
     return { fired: false, reason: "insert_error" }
   }
 
-  await sendThresholdEmail({
+  const sent = await sendThresholdEmail({
     to: recipientEmail,
     personName: personRow.display_name ?? "Someone",
     count: s.distinct_count,
   })
+
+  if (!sent) {
+    // Highest-value of the three (D5): the dedup row is already inserted, so a
+    // failed send is permanent, and until now it was invisible.
+    await captureServerError({
+      category: "invite",
+      tag: "threshold_notification_send_failed",
+      actorId: inviterId,
+      payload: { person_id: personId, distinct_tagger_count: s.distinct_count },
+    })
+  } else {
+    await captureServerEvent({
+      category: "invite",
+      event: "tag_threshold_notification_sent",
+      actorId: inviterId,
+      props: { person_id: personId, distinct_tagger_count: s.distinct_count },
+    })
+  }
 
   return { fired: true, recipient: recipientEmail, count: s.distinct_count }
 }

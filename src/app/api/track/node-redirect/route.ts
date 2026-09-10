@@ -24,6 +24,11 @@ export async function POST(req: Request) {
           to_slug: body.to_slug,
           reason: typeof body.reason === "string" ? body.reason : "unknown",
         },
+        // The proxy runs on the edge with no session, so actor_id stays null; it
+        // does stamp occurred_at (and may forward a distinct_id) so the redirect
+        // orders correctly against the client funnel.
+        distinctId: typeof body.distinct_id === "string" ? body.distinct_id : null,
+        occurredAt: typeof body.occurred_at === "string" ? body.occurred_at : null,
       })
     }
   } catch {
