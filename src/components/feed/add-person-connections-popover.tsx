@@ -90,6 +90,13 @@ export function AddPersonConnectionsPopover({ person, onClose }: AddPersonConnec
       return
     }
     const { predicate, objectType } = SECTION_MAP[kind]
+    // Event connections inherit the event's own date so the claim lands in the
+    // event's decade, not the Unknown bucket (BUG-182). Mirrors the event-claim
+    // date resolution in add-claim-modal.tsx:583-590. Place, brand and rider
+    // connections have no date to infer and stay dateless by design (brief D4).
+    const eventStartDate = objectType === "event"
+      ? catalog.events.find((e) => e.id === objectId)?.start_date
+      : undefined
     const claim: Claim = {
       id: crypto.randomUUID(),
       subject_id: person.id,
@@ -97,6 +104,7 @@ export function AddPersonConnectionsPopover({ person, onClose }: AddPersonConnec
       predicate,
       object_id: objectId,
       object_type: objectType,
+      ...(eventStartDate ? { start_date: eventStartDate } : {}),
       confidence: "self-reported",
       visibility: "public",
       asserted_by: viewerId,
