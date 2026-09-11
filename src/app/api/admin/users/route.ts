@@ -24,7 +24,26 @@ export async function GET() {
 
   const emailById = Object.fromEntries(users.map((u) => [u.id, u.email ?? ""]))
 
-  const members = (profiles ?? []).map((p) => ({ ...p, email: emailById[p.id] ?? "" }))
+  // Acquisition ("Came from"), joined in JS like the email join above rather than a
+  // PostgREST embed, matching this file's existing pattern. A member with no row
+  // (signed up before attribution shipped) simply gets nulls -> "Unknown" in the UI.
+  const { data: acq } = await client
+    .from("acquisition")
+    .select("profile_id, first_source, first_campaign, first_ref")
+  const acqById = Object.fromEntries(
+    (acq ?? []).map((a) => [a.profile_id as string, a]),
+  )
+
+  const members = (profiles ?? []).map((p) => {
+    const a = acqById[p.id]
+    return {
+      ...p,
+      email: emailById[p.id] ?? "",
+      first_source: a?.first_source ?? null,
+      first_campaign: a?.first_campaign ?? null,
+      first_ref: a?.first_ref ?? null,
+    }
+  })
 
   return NextResponse.json({ members })
 }

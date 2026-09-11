@@ -870,6 +870,44 @@ export interface AnalyticsEvent {
   props: Record<string, unknown>
 }
 
+// ── Acquisition attribution ─────────────────────────────────────────────────
+// ref_codes: short spoken campaign codes resolved by /r/[code]. acquisition:
+// one durable row per member with first-touch (write-once) and last-touch. Both
+// added in 20260910000002_funnel_attribution. events.id is TEXT (not uuid).
+
+export interface RefCode {
+  code: string
+  label: string | null
+  utm_source: string | null
+  utm_medium: string | null
+  utm_campaign: string | null
+  utm_content: string | null
+  event_id: string | null        // events.id is TEXT
+  destination_path: string | null
+  active: boolean
+  created_at: string
+}
+
+export interface Acquisition {
+  profile_id: string
+  first_source: string | null
+  first_medium: string | null
+  first_campaign: string | null
+  first_content: string | null
+  first_term: string | null
+  first_ref: string | null
+  first_referrer: string | null
+  first_landing_path: string | null
+  first_seen_at: string | null
+  last_source: string | null
+  last_medium: string | null
+  last_campaign: string | null
+  last_ref: string | null
+  last_seen_at: string | null
+  created_at: string
+  updated_at: string
+}
+
 // ── In-app bug report widget ────────────────────────────────────────────────
 // Row shape for the bug_reports table. Written server-side by /api/bug-report
 // after requireAuth(); reporter identity comes from the session, never the

@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { trackEvent } from "@/lib/analytics"
+import { attributionProps } from "@/lib/attribution"
 import { authErrorMessage } from "@/lib/auth-messages"
 import { safeReturnTo } from "@/lib/safe-redirect"
 import { cn } from "@/lib/utils"
@@ -227,7 +228,7 @@ export function OnboardingFlow() {
     // arrival is tagged once and never also logged source-less on the same mount.
     if (!firedRef.current.has("ftue_landed")) {
       firedRef.current.add("ftue_landed")
-      trackEvent("ftue", "ftue_landed", fromIntro ? { source: "intro" } : {})
+      trackEvent("ftue", "ftue_landed", { ...(fromIntro ? { source: "intro" } : {}), ...attributionProps() })
     }
 
     const applyEntryStep = () => {

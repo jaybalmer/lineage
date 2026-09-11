@@ -5,7 +5,7 @@ import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { useLineageStore } from "@/store/lineage-store"
 import { trackEvent } from "@/lib/analytics"
-import { attributionProps } from "@/lib/attribution"
+import { attributionProps, readAttribution } from "@/lib/attribution"
 import { signupErrorClass } from "@/lib/auth-error-class"
 import { cn } from "@/lib/utils"
 
@@ -23,6 +23,11 @@ function buildOnboardingPayload(returnTo?: string | null) {
     first_place_id: onboarding.first_place_id ?? undefined,
     first_board_id: onboarding.first_board_id ?? undefined,
     sessionClaims,
+    // Cross-device carry (T6): first-touch rides the same pending_onboarding
+    // stash, so a magic link opened on a phone still attributes to the laptop
+    // that saw the ad. Read here (client) since /auth/complete may run in a fresh
+    // context with empty localStorage.
+    attribution: readAttribution(),
     // Second channel for the signup intent (D7): the magic link itself carries
     // returnTo in its redirect, but if Supabase discards redirect_to (sending
     // origin not in the Redirect URLs allowlist) the stash is what survives.
