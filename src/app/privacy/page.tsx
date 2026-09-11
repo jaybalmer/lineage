@@ -72,7 +72,7 @@ export default function PrivacyPage() {
         </p>
         <p>
           <strong className="font-semibold text-foreground">{`Usage and diagnostic data.`}</strong>
-          {` Page views, feature events (for example, starting onboarding or publishing a story), approximate location inferred from IP address by our analytics provider, browser and device type, and error reports when something breaks. Session replays are recorded with all input fields masked, so typed content such as emails, names, story bodies, and claim notes is not captured.`}
+          {` Page views, feature events (for example, starting onboarding or publishing a story), approximate location inferred from IP address by our analytics provider, browser and device type, and error reports when something breaks. Session replays are recorded with all input fields masked, so typed content such as emails, names, story bodies, and claim notes is not captured. If you arrive through a campaign link or a referral code (for example a code read out on a podcast), we record that code and the standard campaign tags on the link, along with the site that referred you, so we can tell which of our own efforts brought people here. This is first-party measurement only: we do not run advertising pixels and we do not share it with advertisers.`}
         </p>
         <p>
           <strong className="font-semibold text-foreground">{`Bug reports and support email.`}</strong>

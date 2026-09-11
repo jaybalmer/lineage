@@ -188,8 +188,17 @@ export function clearAttribution(): void {
  * every call site can spread it unconditionally and degrade to today's behaviour.
  */
 export function attributionProps(): Record<string, string> {
-  const stored = readRaw()
-  if (!stored) return {}
+  return attributionPropsFrom(readRaw())
+}
+
+/**
+ * The same mapping as attributionProps() but from a supplied record rather than
+ * from localStorage, so the cross-device path (a magic link opened on another
+ * device, where localStorage is empty but the touch rode the pending_onboarding
+ * stash) can stamp the same props. Returns {} for null.
+ */
+export function attributionPropsFrom(stored: StoredAttribution | null): Record<string, string> {
+  if (!stored?.first) return {}
   const f = stored.first
   const out: Record<string, string> = {}
 

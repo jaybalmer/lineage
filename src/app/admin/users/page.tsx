@@ -14,6 +14,9 @@ type UserRow = {
   created_at: string | null
   is_archived: boolean | null
   archived_at: string | null
+  first_source: string | null
+  first_campaign: string | null
+  first_ref: string | null
 }
 
 const thCls =
@@ -28,6 +31,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [search, setSearch] = useState("")
+  const [sourceFilter, setSourceFilter] = useState("all")
   const [showArchived, setShowArchived] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [confirmId, setConfirmId] = useState<string | null>(null)
@@ -107,8 +111,17 @@ export default function AdminUsersPage() {
       (u.display_name ?? "").toLowerCase().includes(q) ||
       (u.email ?? "").toLowerCase().includes(q)
     )
+    .filter((u) =>
+      sourceFilter === "all" ||
+      (sourceFilter === "__unknown" ? !u.first_source : u.first_source === sourceFilter)
+    )
 
   const archivedCount = users.filter((u) => u.is_archived).length
+
+  // Distinct non-null sources present in the loaded rows, for the source filter.
+  const sourceOptions = Array.from(
+    new Set(users.map((u) => u.first_source).filter((s): s is string => !!s)),
+  ).sort()
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -145,6 +158,18 @@ export default function AdminUsersPage() {
             placeholder="Search name or email…"
             className="bg-surface border border-border-default rounded-lg px-3 py-2 text-sm text-foreground placeholder-zinc-600 focus:outline-none focus:border-blue-500 w-60"
           />
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value)}
+            className="bg-surface border border-border-default rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:border-blue-500"
+            title="Filter by acquisition source"
+          >
+            <option value="all">All sources</option>
+            <option value="__unknown">Unknown</option>
+            {sourceOptions.map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
           <label className="flex items-center gap-1.5 text-xs text-muted cursor-pointer select-none">
             <input
               type="checkbox"
@@ -172,6 +197,7 @@ export default function AdminUsersPage() {
                 <tr>
                   <th className={thCls}>User</th>
                   <th className={thCls}>Tier</th>
+                  <th className={thCls}>Came from</th>
                   <th className={thCls}>Joined</th>
                   <th className={cn(thCls, "text-right")}>Actions</th>
                 </tr>
@@ -204,6 +230,18 @@ export default function AdminUsersPage() {
                         <div className="text-[11px] text-muted">{u.email || `${u.id.slice(0, 12)}…`}</div>
                       </td>
                       <td className={cn(cellCls, "text-muted text-xs")}>{u.membership_tier ?? "free"}</td>
+                      <td className={cellCls}>
+                        {u.first_source ? (
+                          <>
+                            <div className="text-xs text-foreground">{u.first_source}</div>
+                            {u.first_campaign && (
+                              <div className="text-[10px] text-muted">{u.first_campaign}</div>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-xs text-muted/50">Unknown</span>
+                        )}
+                      </td>
                       <td className={cn(cellCls, "text-muted text-xs")}>
                         {u.created_at ? formatSmartDate(u.created_at.slice(0, 10)) : "—"}
                       </td>
@@ -251,7 +289,7 @@ export default function AdminUsersPage() {
                 })}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={4} className="px-3 py-10 text-center text-sm text-muted">
+                    <td colSpan={5} className="px-3 py-10 text-center text-sm text-muted">
                       No users match.
                     </td>
                   </tr>

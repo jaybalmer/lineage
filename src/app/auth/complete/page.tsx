@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation"
 import { useLineageStore } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
 import { trackEvent, identifyUser } from "@/lib/analytics"
-import { attributionProps } from "@/lib/attribution"
+import { readAttribution, clearAttribution, attributionPropsFrom } from "@/lib/attribution"
+import type { StoredAttribution } from "@/lib/attribution"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { safeReturnTo } from "@/lib/safe-redirect"
 import type { User } from "@supabase/supabase-js"
@@ -77,6 +78,7 @@ export default function AuthCompletePage() {
         first_board_id?: string
         sessionClaims?: typeof sessionClaims
         returnTo?: string
+        attribution?: StoredAttribution | null
       } | null
 
       // Signup-intent fallback (D7): when the URL carried no returnTo (Supabase
@@ -90,6 +92,11 @@ export default function AuthCompletePage() {
       const effStartYear   = onboarding.start_year    ?? pending?.start_year    ?? null
       const effPlaceId     = onboarding.first_place_id ?? pending?.first_place_id ?? null
       const effClaims      = sessionClaims.length > 0 ? sessionClaims : (pending?.sessionClaims ?? [])
+      // Attribution: local storage wins, the stashed payload repairs the
+      // cross-context (magic link on another device) case (T8). Props built from
+      // this resolved value so a cross-device signup still attributes.
+      const effAttribution = readAttribution() ?? (pending?.attribution ?? null)
+      const effAttrProps   = attributionPropsFrom(effAttribution)
 
       // ── 1. Profile upsert (new users only) ────────────────────────────────
       const { data: existingProfile } = await supabase
@@ -111,11 +118,22 @@ export default function AuthCompletePage() {
           home_resort_id: effPlaceId,
         })
         if (profileError) console.error("Profile save failed:", profileError)
-        // Episode-1 attribution carve: stamp first-touch props from this device's
-        // localStorage. Cross-device carry (the pending_onboarding channel) is the
-        // full build's job; here a magic link opened on another device attributes
-        // signup_started but not signup_succeeded, which is the documented tradeoff.
-        else trackEvent("auth", "signup_succeeded", { ...attributionProps(), is_new_account: true }, { actorId: user.id })
+        // Attribution props are built from the RESOLVED touch (localStorage, or
+        // the stashed payload on a cross-device magic link), so a phone-opened
+        // link still attributes to the laptop that saw the ad (T8).
+        else trackEvent("auth", "signup_succeeded", { ...effAttrProps, is_new_account: true }, { actorId: user.id })
+
+        // Durable attribution write (T7/D10): fire-and-forget, new-profile-only so
+        // a later sign-in never rewrites first-touch. requireAuth on the route
+        // guarantees the profiles row the FK needs. Then clear the consumed touch
+        // so the next signup on this device does not inherit it (D4).
+        void fetch("/api/attribution/attach", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(effAttribution),
+          keepalive: true,
+        }).catch(() => {})
+        clearAttribution()
       }
 
       // ── 2. Migrate session claims ─────────────────────────────────────────
@@ -245,7 +263,7 @@ export default function AuthCompletePage() {
       // the funnel's final step. signup_succeeded above is already gated the
       // same way.
       if (!existingProfile) {
-        trackEvent("ftue", "ftue_completed", { is_new_account: true }, { actorId: user.id })
+        trackEvent("ftue", "ftue_completed", { ...effAttrProps, is_new_account: true }, { actorId: user.id })
       }
 
       // Mark the arrival celebration as pending — the owner timeline picks it up.
