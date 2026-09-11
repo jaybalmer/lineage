@@ -476,6 +476,22 @@ function ComparePageInner() {
   const bParam = searchParams.get("b")
   const initialB = bParam ? (allPeople.find((p) => p.id === bParam) ?? null) : null
   const [personB, setPersonB] = useState<Person | null>(initialB)
+
+  // BUG-120: the initializer above runs on the first render only, and at that
+  // moment `realProfiles` is still empty (its fetch lives in a useEffect), so a
+  // real rider's UUID from /compare?b= can never resolve there. Re-run the
+  // lookup as the data lands. `allPeople` first, then `catalog.people` so ghost
+  // and catalog-only person nodes resolve too. Bails out once slot B is filled,
+  // so a manual pick made before the data settles is never overwritten, and a
+  // miss simply leaves slot B in its normal empty state.
+  useEffect(() => {
+    if (!bParam || personB) return
+    const found =
+      allPeople.find((p) => p.id === bParam) ??
+      catalog.people.find((p) => p.id === bParam)
+    if (found) setPersonB(found)
+  }, [bParam, personB, allPeople, catalog.people])
+
   const [playingCompare, setPlayingCompare] = useState(false)
 
   // DB claims for a real Person B, symmetric (subject OR object) so a rode_with
