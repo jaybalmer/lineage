@@ -864,6 +864,8 @@ export interface AnalyticsEvent {
   category: AnalyticsCategory
   event: string
   actor_id: string | null
+  /** PostHog distinct_id, so pre-auth funnel steps can count unique people. */
+  distinct_id: string | null
   severity: AnalyticsSeverity | null
   props: Record<string, unknown>
 }
