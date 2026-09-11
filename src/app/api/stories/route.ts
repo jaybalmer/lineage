@@ -7,6 +7,7 @@ import { fireTagEvents } from "@/lib/invite-tracking-server"
 import { pairStoryRiderTagEvents, isAsserterGloballyBlocked } from "@/lib/tag-events"
 import { logTagActions } from "@/lib/tag-action-log"
 import { awardContributionTokens, reverseContributionTokens } from "@/lib/tokens"
+import { maybeMarkActivated } from "@/lib/activation"
 import { normalizeStoryAnchor, type StoryDatePrecision } from "@/lib/utils"
 import type { StoryReactionType } from "@/types"
 
@@ -451,6 +452,10 @@ export async function POST(req: NextRequest) {
         is_first: storyCount === 1,
       },
     })
+
+    // Activation check (story arm). Never throws, never changes the response;
+    // the story write is already committed by this point.
+    await maybeMarkActivated(supabase, user.id, "story")
 
     return NextResponse.json({ id: storyId, tokens_awarded: tokensAwarded }, { status: 201 })
   } catch (err: unknown) {

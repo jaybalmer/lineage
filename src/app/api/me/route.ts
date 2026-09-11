@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { requireAuth, getServiceClient } from "@/lib/auth"
 import { maybeGrantFoundingMemberTokens, FOUNDING_ANNUAL_MEMBER_TOKENS } from "@/lib/tokens"
+import { captureServerEvent } from "@/lib/analytics-server"
+import { maybeMarkActivated } from "@/lib/activation"
 
 // ── GET /api/me ───────────────────────────────────────────────────────────────
 // Returns the current user's profile + membership data.
@@ -50,7 +52,7 @@ export async function GET() {
         membership_tier, membership_status, founding_badge, founding_member_number,
         token_founder, token_member, token_contribution,
         stripe_customer_id, stripe_subscription_id, membership_expires_at, membership_source, pending_credit,
-        is_editor
+        is_editor, created_at, last_visit_award_date
       `)
       .eq("id", user.id)
       .single()
@@ -89,6 +91,38 @@ export async function GET() {
       if (granted) {
         // Keep this response fresh; the DB row was updated after the read.
         profile.token_member = (profile.token_member ?? 0) + FOUNDING_ANNUAL_MEMBER_TOKENS
+      }
+    }
+
+    // Return signal + activation (activation-retention-scoreboard brief, T2).
+    // Both hang off the daily-visit winner branch, so they inherit the RPC's
+    // once-per-UTC-day guarantee and add no second dedupe. The profile read
+    // above (line ~45) runs AFTER award_daily_visit (line ~33), so
+    // last_visit_award_date already reflects today's write; that ordering is
+    // load-bearing (if a refactor inverts it, the return arm silently stops
+    // activating). Best-effort: a failure here never changes the response.
+    if (dailyVisitAwarded) {
+      try {
+        const createdAt = profile.created_at as string | null
+        if (createdAt) {
+          const createdDay = new Date(createdAt).toISOString().slice(0, 10)
+          const todayDay = new Date().toISOString().slice(0, 10)
+          const dayIndex = Math.round(
+            (Date.parse(todayDay) - Date.parse(createdDay)) / 86_400_000,
+          )
+          // Never on signup day (day_index 0). day_index 1 = came back next day.
+          if (dayIndex >= 1) {
+            await captureServerEvent({
+              category: "auth",
+              event: "member_returned",
+              actorId: user.id,
+              props: { day_index: dayIndex },
+            })
+          }
+        }
+        await maybeMarkActivated(db, user.id, "return")
+      } catch (err) {
+        console.error("[api/me] return/activation capture threw:", err)
       }
     }
 

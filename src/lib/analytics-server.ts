@@ -90,6 +90,11 @@ export async function captureServerEvent(args: ServerEventArgs): Promise<void> {
       category,
       event,
       actor_id: actorId,
+      // Write the same resolved id we send to PostHog (args.distinctId || actorId
+      // || "anonymous"), so an authenticated event carries both keys and an
+      // anonymous one carries the PostHog id. This is what lets the durable log
+      // count PEOPLE, not page loads, for the pre-auth funnel steps.
+      distinct_id: distinctId,
       props,
     })
   } catch {
