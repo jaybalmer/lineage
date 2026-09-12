@@ -200,7 +200,7 @@ function SectionHeader({ label, count, color }: { label: string; count: number; 
 function RidersPageInner() {
   const searchParams = useSearchParams()
   const yearParam = searchParams.get("year")
-  const { activePersonId, userEntities, catalog, activeCommunitySlug } = useLineageStore()
+  const { activePersonId, userEntities, catalog, activeCommunitySlug, profileOverride } = useLineageStore()
   const isAuth = isAuthUser(activePersonId)
   const [query, setQuery] = useState("")
   const [sort, setSort] = useState<SortTab>(yearParam ? "origin" : "all")
@@ -220,9 +220,32 @@ function RidersPageInner() {
   // so the page degrades gracefully for entities that haven't been backfilled yet.
   const allPeople = useMemo(() => {
     const merged = [...catalog.people, ...(userEntities.people ?? [])]
-    if (showAllCommunities || !activeCommunitySlug) return merged
-    return merged.filter((p) => !p.community_slugs?.length || p.community_slugs.includes(activeCommunitySlug))
-  }, [catalog.people, userEntities.people, activeCommunitySlug, showAllCommunities])
+    // BUG-089: catalog.people is fetched once per session and is not persisted,
+    // so the signed-in member's own row here is a snapshot taken before any
+    // profile edit. Editing "Riding since" (or the home resort, or the bio)
+    // writes to profiles AND to profileOverride, but this list only read the
+    // stale catalog row, so the old year kept showing until a hard reload.
+    // Overlay the live override onto their own entry, the same way
+    // people/[id]/page.tsx and compare/page.tsx already do. This runs before
+    // the riding-since grouping and sorting below, so the new year also sorts
+    // into the right decade. display_name keeps the catalog value as a
+    // fallback: an override that carries no name must not blank the row, since
+    // the search filter reads display_name unconditionally.
+    const overlaid = isAuthUser(activePersonId)
+      ? merged.map((p) =>
+          p.id === activePersonId
+            ? {
+                ...p,
+                ...profileOverride,
+                id: p.id,
+                display_name: profileOverride.display_name ?? p.display_name,
+              }
+            : p
+        )
+      : merged
+    if (showAllCommunities || !activeCommunitySlug) return overlaid
+    return overlaid.filter((p) => !p.community_slugs?.length || p.community_slugs.includes(activeCommunitySlug))
+  }, [catalog.people, userEntities.people, activeCommunitySlug, showAllCommunities, activePersonId, profileOverride])
 
   const allClaims = catalog.claims
 
