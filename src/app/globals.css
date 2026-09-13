@@ -21,8 +21,8 @@
   --entity-story: #6d28d9;   --entity-story-glow: #a78bfa;
   --entity-event: #b45309;   --entity-event-glow: #fbbf24;
   --entity-board: #0284c7;   --entity-board-glow: #38bdf8;
-  --entity-brand: #15803d;   --entity-brand-glow: #4ade80;
-  --entity-place: #0f766e;   --entity-place-glow: #2dd4bf;
+  --entity-brand: #4338ca;   --entity-brand-glow: #818cf8;
+  --entity-place: #15803d;   --entity-place-glow: #4ade80;
   --entity-rider: #be123c;   --entity-rider-glow: #fb7185;
 }
 
@@ -109,6 +109,17 @@ body {
   /* Concrete fallbacks in case var() chain doesn't reach */
   background-color: #FFFFFF;
   color: #1C1917;
+}
+
+/* Postcards force a white surface even in dark mode, so in dark mode the colored
+   entity frame sits directly against the near-black page and reads harsh. A thin
+   white ring (drawn outside the 2px colored border via outline) gives the white
+   card a white margin to the dark background, so the color reads as a line on
+   the card rather than against the page. Invisible in light mode (white on the
+   light ground). Outline follows border-radius and does not affect layout. */
+.dark .postcard {
+  outline: 3px solid #FFFFFF;
+  outline-offset: 0;
 }
 
 ::-webkit-scrollbar { width: 5px; }

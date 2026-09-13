@@ -24,9 +24,11 @@ import {
   ENTITY_DOT_CLASS,
   ENTITY_FRAME_CLASS,
   ENTITY_TEXT_CLASS,
+  dotClassForClaim,
   frameClassForClaim,
   kindForObjectType,
 } from "@/lib/entity-colors"
+import { RIDER_TIER_CHIP_CLASS } from "@/components/ui/rider-avatar"
 import { groupRodeAtCompanions } from "@/lib/companion-grouping"
 import { dateToSortNum, groupByDecade } from "@/lib/timeline-grouping"
 import { EntityGraphic } from "@/components/public-timeline/entity-graphic"
@@ -39,16 +41,11 @@ type FeedItem =
   | { kind: "claim"; claim: Claim; sortDate: number }
   | { kind: "story"; story: Story; sortDate: number }
 
-// Timeline node colour, keyed to predicate category (mirrors FeedView).
+// Timeline node colour: claims route through the shared entity palette (object
+// type first, predicate fallback); stories use the story dot.
 function nodeColor(item: FeedItem): string {
-  if (item.kind === "story") return "bg-violet-600"
-  const p = item.claim.predicate
-  if (p === "owned_board") return "bg-emerald-700"
-  if (p === "rode_at" || p === "worked_at") return "bg-teal-700"
-  if (p === "rode_with" || p === "shot_by" || p === "coached_by") return "bg-violet-700"
-  if (p === "competed_at" || p === "spectated_at" || p === "organized_at") return "bg-amber-700"
-  if (p === "sponsored_by" || p === "part_of_team" || p === "fan_of") return "bg-zinc-500"
-  return "bg-zinc-600"
+  if (item.kind === "story") return ENTITY_DOT_CLASS.story
+  return dotClassForClaim(item.claim)
 }
 
 // Within the same date: boards, then places, people, events, orgs, stories.
@@ -220,8 +217,10 @@ function ThatsMeChip({
   const claimable = person.node_status === "catalog" || person.node_status === "unclaimed"
   const [open, setOpen] = useState(false)
   if (!claimable) {
+    // A claimed rider on a public timeline. The public payload does not carry
+    // membership tier, so use the member (green) chip rather than a specific tier.
     return (
-      <span className={cn(CHIP, ENTITY_CHIP_CLASS.rider)}>
+      <span className={cn(CHIP, RIDER_TIER_CHIP_CLASS["free-account"])}>
         👤 {person.display_name}
       </span>
     )
@@ -235,7 +234,7 @@ function ThatsMeChip({
           setOpen(true)
         }}
         title="Is this you? Claim this profile"
-        className={cn(CHIP, ENTITY_CHIP_CLASS.rider)}
+        className={cn(CHIP, RIDER_TIER_CHIP_CLASS.unclaimed)}
       >
         👤 {person.display_name}
         <span className="ml-0.5 font-semibold text-[10px]">that&rsquo;s me</span>

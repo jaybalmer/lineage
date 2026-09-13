@@ -2,7 +2,6 @@
 
 import type { Person } from "@/types"
 import { isAuthUser } from "@/store/lineage-store"
-import { ENTITY_COLORS } from "@/lib/entity-colors"
 
 // ── Initials ─────────────────────────────────────────────────────────────────
 
@@ -59,15 +58,42 @@ interface TierStyle {
 }
 
 const TIER_STYLE: Record<RiderTier, TierStyle> = {
-  founding:       { bg: "#78350f", ring: "#f59e0b", text: "#fef3c7" },
-  paid:           { bg: "#431407", ring: "#f97316", text: "#ffedd5" },     // orange (was blue)
-  "free-account": { bg: "#064e3b", ring: "#10b981", text: "#d1fae5" },
-  // Unclaimed reads as the plain Rider color (rose), dashed to signal "not yet
-  // claimed". The paid tiers below keep their own ring colors (that is where
-  // membership tier now lives, per the entity-color-system brief D4).
-  unclaimed:      { bg: "#4c0519", ring: ENTITY_COLORS.rider.frame, text: "#ffe4e6", dashed: true },
+  founding:       { bg: "#78350f", ring: "#f59e0b", text: "#fef3c7" },     // amber
+  paid:           { bg: "#431407", ring: "#f97316", text: "#ffedd5" },     // orange
+  "free-account": { bg: "#064e3b", ring: "#10b981", text: "#d1fae5" },     // green
+  // Unclaimed reads as muted grey, dashed (Cory: the rose was too strong; an
+  // unclaimed node is "nobody yet", so it should recede, not shout).
+  unclaimed:      { bg: "#27272a", ring: "#71717a", text: "#d4d4d8", dashed: true },
   catalog:        { bg: "#27272a", ring: "#52525b", text: "#a1a1aa" },
   verified:       { bg: "#064e3b", ring: "#10b981", text: "#d1fae5" },     // inherits green by default
+}
+
+// Per-tier color shared by every specific-rider surface so a rider's card, chip
+// and dot match their avatar ring (Cory: membership colors should agree). Hex
+// (ring) is for inline borders/dots; the chip classes are readable on the
+// always-light postcard surface. Founding amber, member orange, rider green,
+// unclaimed muted grey (dashed), catalog grey.
+export const RIDER_TIER_RING: Record<RiderTier, string> = {
+  founding: "#f59e0b",
+  paid: "#f97316",
+  "free-account": "#10b981",
+  unclaimed: "#71717a",
+  catalog: "#52525b",
+  verified: "#10b981",
+}
+
+export const RIDER_TIER_CHIP_CLASS: Record<RiderTier, string> = {
+  founding: "bg-amber-500/10 border border-amber-500/20 text-amber-700 hover:bg-amber-500/20 transition-colors",
+  paid: "bg-orange-500/10 border border-orange-500/20 text-orange-700 hover:bg-orange-500/20 transition-colors",
+  "free-account": "bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 hover:bg-emerald-500/20 transition-colors",
+  unclaimed: "bg-zinc-500/5 border border-dashed border-zinc-400/40 text-zinc-500 hover:bg-zinc-500/10 transition-colors",
+  catalog: "bg-zinc-500/10 border border-zinc-500/20 text-zinc-600 hover:bg-zinc-500/20 transition-colors",
+  verified: "bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 hover:bg-emerald-500/20 transition-colors",
+}
+
+/** The tier color for a specific person, matching their avatar ring. */
+export function riderTierRing(person: Pick<Person, "id" | "membership_tier" | "community_status" | "node_status">): string {
+  return RIDER_TIER_RING[getRiderTier(person)]
 }
 
 /** Get the resolved style for a verified user (inherits their tier color) */
@@ -93,7 +119,7 @@ const SIZE: Record<AvatarSize, { wh: string; font: string }> = {
 // ── RiderAvatar ───────────────────────────────────────────────────────────────
 
 interface RiderAvatarProps {
-  person: Pick<Person, "id" | "display_name" | "membership_tier" | "community_status" | "node_status">
+  person: Pick<Person, "id" | "display_name" | "membership_tier" | "community_status" | "node_status" | "avatar_url">
   size?: AvatarSize
   /** Override the automatic tier (e.g. for stack avatars where we just want neutral) */
   tier?: RiderTier
@@ -119,10 +145,15 @@ export function RiderAvatar({ person, size = "lg", tier: tierOverride, className
       } : undefined}
     >
       <div
-        className={`${sz.wh} rounded-full flex items-center justify-center font-bold shrink-0`}
+        className={`${sz.wh} rounded-full flex items-center justify-center font-bold shrink-0 overflow-hidden`}
         style={{ background: style.bg, color: style.text }}
       >
-        <span className={sz.font}>{initials}</span>
+        {person.avatar_url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={person.avatar_url} alt={person.display_name} className="w-full h-full object-cover" />
+        ) : (
+          <span className={sz.font}>{initials}</span>
+        )}
       </div>
       {/* Verified checkmark overlay */}
       {ring && tier === "verified" && (

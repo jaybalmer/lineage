@@ -11,7 +11,7 @@ import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { UnverifiedBadge } from "@/components/ui/badge"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
-import { ENTITY_COLORS } from "@/lib/entity-colors"
+import { ENTITY_COLORS, ENTITY_FRAME_CLASS } from "@/lib/entity-colors"
 import { CommunityLink } from "@/components/ui/community-link"
 import type { Place } from "@/types"
 
@@ -50,9 +50,9 @@ function PlaceCard({ place }: { place: Place }) {
   return (
     <div className="flex items-center gap-2">
       <CommunityLink href={`/places/${placeSlug(place)}`} className="flex-1 min-w-0 block">
-        <div className="bg-surface border-2 border-teal-600 rounded-xl p-4 hover:opacity-90 transition-all">
+        <div className={cn("bg-surface border-2 rounded-xl p-4 hover:opacity-90 transition-all", ENTITY_FRAME_CLASS.place)}>
           <div className="flex items-center gap-3">
-            <div className="w-3 h-3 rounded-full shrink-0" style={{ background: PLACE_TYPE_COLORS[place.place_type] ?? "#0D9488" }} />
+            <div className="w-3 h-3 rounded-full shrink-0" style={{ background: PLACE_TYPE_COLORS[place.place_type] ?? ENTITY_COLORS.place.frame }} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="font-semibold text-foreground text-sm">{place.name}</span>

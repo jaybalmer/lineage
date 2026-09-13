@@ -34,10 +34,10 @@ type SelEntry = {
 }
 
 const TYPE_CHIP: Record<RefType, { label: string; cls: string }> = {
-  rider: { label: "Rider", cls: "text-violet-700 bg-violet-500/10" },
-  place: { label: "Place", cls: "text-teal-700 bg-teal-500/10" },
+  rider: { label: "Rider", cls: "text-rose-700 bg-rose-500/10" },
+  place: { label: "Place", cls: "text-green-700 bg-green-500/10" },
   event: { label: "Event", cls: "text-amber-700 bg-amber-500/10" },
-  board: { label: "Board", cls: "text-emerald-700 bg-emerald-500/10" },
+  board: { label: "Board", cls: "text-sky-700 bg-sky-500/10" },
 }
 
 // Connections API shape (episodes): grouped raw rows. Orgs/brands are omitted

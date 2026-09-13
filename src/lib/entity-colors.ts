@@ -25,12 +25,12 @@ export type EntityKind = "story" | "event" | "board" | "brand" | "place" | "ride
 // nodes and other neon-on-dark surfaces (the story/compare players, the FTUE
 // mosaic). `family` is the Tailwind color family, for reference only.
 export const ENTITY_COLORS: Record<EntityKind, { frame: string; glow: string; family: string }> = {
-  story: { frame: "#6d28d9", glow: "#a78bfa", family: "violet" }, // violet-700 / violet-400
-  event: { frame: "#b45309", glow: "#fbbf24", family: "amber" },  // amber-700 / amber-400
-  board: { frame: "#0284c7", glow: "#38bdf8", family: "sky" },    // sky-600 / sky-400
-  brand: { frame: "#15803d", glow: "#4ade80", family: "green" },  // green-700 / green-400 (NOT emerald: kept clear of Place teal)
-  place: { frame: "#0f766e", glow: "#2dd4bf", family: "teal" },   // teal-700 / teal-400
-  rider: { frame: "#be123c", glow: "#fb7185", family: "rose" },   // rose-700 / rose-400
+  story: { frame: "#6d28d9", glow: "#a78bfa", family: "violet" },  // violet-700 / violet-400
+  event: { frame: "#b45309", glow: "#fbbf24", family: "amber" },   // amber-700 / amber-400
+  board: { frame: "#0284c7", glow: "#38bdf8", family: "sky" },     // sky-600 / sky-400
+  brand: { frame: "#4338ca", glow: "#818cf8", family: "indigo" },  // indigo-700 / indigo-400 (moved off green so Place can take green)
+  place: { frame: "#15803d", glow: "#4ade80", family: "green" },   // green-700 / green-400 (Cory: Places reads as green, clearly apart from Brand)
+  rider: { frame: "#be123c", glow: "#fb7185", family: "rose" },    // rose-700 / rose-400
 }
 
 // Full-width 2px frame border (matches the Story frame everywhere).
@@ -38,8 +38,8 @@ export const ENTITY_FRAME_CLASS: Record<EntityKind, string> = {
   story: "border-violet-700",
   event: "border-amber-700",
   board: "border-sky-600",
-  brand: "border-green-700",
-  place: "border-teal-700",
+  brand: "border-indigo-700",
+  place: "border-green-700",
   rider: "border-rose-700",
 }
 
@@ -48,8 +48,8 @@ export const ENTITY_RAIL_CLASS: Record<EntityKind, string> = {
   story: "border-l-violet-700",
   event: "border-l-amber-700",
   board: "border-l-sky-600",
-  brand: "border-l-green-700",
-  place: "border-l-teal-700",
+  brand: "border-l-indigo-700",
+  place: "border-l-green-700",
   rider: "border-l-rose-700",
 }
 
@@ -58,8 +58,8 @@ export const ENTITY_TEXT_CLASS: Record<EntityKind, string> = {
   story: "text-violet-700",
   event: "text-amber-700",
   board: "text-sky-700",
-  brand: "text-green-700",
-  place: "text-teal-700",
+  brand: "text-indigo-700",
+  place: "text-green-700",
   rider: "text-rose-700",
 }
 
@@ -68,8 +68,8 @@ export const ENTITY_DOT_CLASS: Record<EntityKind, string> = {
   story: "bg-violet-600",
   event: "bg-amber-600",
   board: "bg-sky-600",
-  brand: "bg-green-600",
-  place: "bg-teal-600",
+  brand: "bg-indigo-600",
+  place: "bg-green-600",
   rider: "bg-rose-600",
 }
 
@@ -79,14 +79,10 @@ export const ENTITY_CHIP_CLASS: Record<EntityKind, string> = {
   story: "bg-violet-500/10 border border-violet-500/20 text-violet-700 hover:bg-violet-500/20 transition-colors",
   event: "bg-amber-500/10 border border-amber-500/20 text-amber-700 hover:bg-amber-500/20 transition-colors",
   board: "bg-sky-500/10 border border-sky-500/20 text-sky-700 hover:bg-sky-500/20 transition-colors",
-  brand: "bg-green-500/10 border border-green-500/20 text-green-700 hover:bg-green-500/20 transition-colors",
-  place: "bg-teal-500/10 border border-teal-500/20 text-teal-700 hover:bg-teal-500/20 transition-colors",
+  brand: "bg-indigo-500/10 border border-indigo-500/20 text-indigo-700 hover:bg-indigo-500/20 transition-colors",
+  place: "bg-green-500/10 border border-green-500/20 text-green-700 hover:bg-green-500/20 transition-colors",
   rider: "bg-rose-500/10 border border-rose-500/20 text-rose-700 hover:bg-rose-500/20 transition-colors",
 }
-
-// Unclaimed rider chip: dashed rose (was dashed blue), lower emphasis.
-export const RIDER_UNCLAIMED_CHIP_CLASS =
-  "bg-rose-500/5 border border-dashed border-rose-500/30 text-rose-700/80 hover:bg-rose-500/10 transition-colors"
 
 // Neutral fallbacks for genuinely untyped items (mixed groups, the else branch
 // of a claim accent). Grey stays only for things that have no single type.

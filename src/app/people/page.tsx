@@ -10,13 +10,12 @@ import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { SignInPrompt } from "@/components/ui/sign-in-prompt"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
-import { RiderAvatar, getRiderTier, type RiderTier } from "@/components/ui/rider-avatar"
+import { RiderAvatar, getRiderTier, RIDER_TIER_RING, type RiderTier } from "@/components/ui/rider-avatar"
 import { MemberBadge } from "@/components/ui/member-badge"
 import { isInvitableNodeStatus, trackInviteEvent } from "@/lib/invite-tracking"
 import { CommunityLink } from "@/components/ui/community-link"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { ENTITY_COLORS } from "@/lib/entity-colors"
 import type { Person } from "@/types"
 
 type SortTab = "all" | "entries" | "origin" | "riders" | "resort" | "unclaimed"
@@ -38,18 +37,17 @@ function getRiderKind(person: Person): RiderKind {
   return getRiderTier(person)
 }
 
-// D4: every rider frame/dot is the one Rider color (rose). Membership tier is
-// carried by the MemberBadge and the RiderAvatar ring, not the row color.
-// Catalog stays zinc as the single untyped exception. `avatarBg` and `badge`
-// are unchanged.
-const RIDER = ENTITY_COLORS.rider.frame
+// Each rider's row frame and section header take that tier's color, matching the
+// avatar ring (Cory: memberships should agree across card, icon and header).
+// Founding amber, member orange, rider green, unclaimed muted grey, catalog grey.
+// `avatarBg` and `badge` are unchanged.
 const KIND_META: Record<RiderKind, { label: string; color: string; avatarBg: string; badge?: string }> = {
-  founding:       { label: "Founding",   color: RIDER,      avatarBg: "#78350f", badge: "✦ Founding" },
-  paid:           { label: "Member",     color: RIDER,      avatarBg: "#431407", badge: "◈ Member"   },
-  "free-account": { label: "Rider",      color: RIDER,      avatarBg: "#064e3b", badge: undefined    },
-  unclaimed:      { label: "Unclaimed",  color: RIDER,      avatarBg: "#1e3a8a", badge: undefined    },
-  catalog:        { label: "Catalog",    color: "#52525b", avatarBg: "#27272a", badge: undefined    },
-  verified:       { label: "Verified",   color: RIDER,      avatarBg: "#064e3b", badge: "✓ Verified" },
+  founding:       { label: "Founding",   color: RIDER_TIER_RING.founding,       avatarBg: "#78350f", badge: "✦ Founding" },
+  paid:           { label: "Member",     color: RIDER_TIER_RING.paid,           avatarBg: "#431407", badge: "◈ Member"   },
+  "free-account": { label: "Rider",      color: RIDER_TIER_RING["free-account"], avatarBg: "#064e3b", badge: undefined    },
+  unclaimed:      { label: "Unclaimed",  color: RIDER_TIER_RING.unclaimed,      avatarBg: "#27272a", badge: undefined    },
+  catalog:        { label: "Catalog",    color: RIDER_TIER_RING.catalog,        avatarBg: "#27272a", badge: undefined    },
+  verified:       { label: "Verified",   color: RIDER_TIER_RING.verified,       avatarBg: "#064e3b", badge: "✓ Verified" },
 }
 
 const KIND_ORDER: RiderKind[] = ["founding", "paid", "verified", "free-account", "unclaimed", "catalog"]

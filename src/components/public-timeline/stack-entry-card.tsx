@@ -17,23 +17,18 @@ import { EntityGraphic } from "@/components/public-timeline/entity-graphic"
 import { IWasThere, type TagMoment } from "@/components/public-timeline/i-was-there"
 import { StoryMedia } from "@/components/public-timeline/story-media"
 import { cn } from "@/lib/utils"
+import { ENTITY_DOT_CLASS, ENTITY_TEXT_CLASS } from "@/lib/entity-colors"
 
 // Only story / place / event stack entries are taggable (brief §5). Board,
 // rider and category_summary entries get no "I was there" affordance.
 const TAGGABLE = new Set<TagMoment["kind"]>(["story", "place", "event"])
 
-const ACCENT_EDGE: Record<StackAccent, string> = {
-  violet: "bg-violet-600", teal: "bg-teal-600", amber: "bg-amber-500",
-  emerald: "bg-emerald-600", cyan: "bg-cyan-600",
-}
-const ACCENT_TEXT: Record<StackAccent, string> = {
-  violet: "text-violet-700", teal: "text-teal-700", amber: "text-amber-700",
-  emerald: "text-emerald-700", cyan: "text-cyan-700",
-}
-const ACCENT_DOT: Record<StackAccent, string> = {
-  violet: "bg-violet-500", teal: "bg-teal-500", amber: "bg-amber-500",
-  emerald: "bg-emerald-500", cyan: "bg-cyan-500",
-}
+// Stack accents now ARE entity kinds, so the edge / text / dot classes come
+// straight from the shared entity palette. Edge and dot reuse the solid dot
+// class; text uses the type-label class.
+const ACCENT_EDGE: Record<StackAccent, string> = ENTITY_DOT_CLASS
+const ACCENT_TEXT: Record<StackAccent, string> = ENTITY_TEXT_CLASS
+const ACCENT_DOT: Record<StackAccent, string> = ENTITY_DOT_CLASS
 
 // Violet story tile — the EntityGraphic set has no "story" art (story is not an
 // EntityType), so the fallback lives here, matching the violet story accent.

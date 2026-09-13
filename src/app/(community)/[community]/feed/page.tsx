@@ -267,7 +267,7 @@ export default function FeedPage() {
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-black tracking-widest uppercase text-foreground mb-1">Feed</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-1" style={{ fontFamily: "var(--font-wordmark)" }}>Feed</h1>
             <p className="text-sm text-muted">Recent stories and claims from the community</p>
           </div>
           {isAuth && (
