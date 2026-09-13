@@ -11,6 +11,7 @@
 // visibility='public'. The service client is used only to bypass RLS for the
 // catalog joins; it never widens what the _public views already gate.
 
+import type { EntityKind } from "@/lib/entity-colors"
 import { getServiceClient } from "@/lib/auth"
 import { readPublishedMentions } from "@/lib/mentions-server"
 import { eventSlug, placeSlug, boardSlug } from "@/lib/mock-data"
@@ -578,9 +579,9 @@ export async function readMemberOgTarget(idOrSlug: string): Promise<MemberOgTarg
 // the timeline payload pass it as `pre` to avoid a second round-trip.
 // ════════════════════════════════════════════════════════════════════════════
 
-/** Left-edge + kicker accent, keyed to Linestry's entity color conventions
- *  (places = teal per CLAUDE.md, not the legacy blue in the supplement). */
-export type StackAccent = "violet" | "teal" | "amber" | "emerald" | "cyan"
+/** Left-edge + kicker accent, keyed to the shared entity palette
+ *  (src/lib/entity-colors.ts) so the stack view agrees with every other surface. */
+export type StackAccent = EntityKind
 
 /** One row inside a category_summary card's inline expansion (top 5-7 items). */
 export interface ResolvedStackSummaryItem {
@@ -631,10 +632,10 @@ export interface PublicStackPayload {
 }
 
 const ACCENT_BY_TYPE: Record<Exclude<PublicStackEntryType, "category_summary">, StackAccent> = {
-  story: "violet", place: "teal", event: "amber", board: "emerald", rider: "violet",
+  story: "story", place: "place", event: "event", board: "board", rider: "rider",
 }
 const CATEGORY_ACCENT: Record<PublicStackCategoryKey, StackAccent> = {
-  places: "teal", boards: "emerald", events: "amber", riders: "violet", stories: "violet",
+  places: "place", boards: "board", events: "event", riders: "rider", stories: "story",
 }
 const CATEGORY_KICKER: Record<PublicStackCategoryKey, string> = {
   places: "Places", boards: "Boards", events: "Events", riders: "Riders", stories: "Stories",
@@ -929,7 +930,7 @@ export async function readPublicStack(
         (story.linked_event_id && entities.events[story.linked_event_id]?.image_url) ||
         (story.board_ids ?? []).map((b) => entities.boards[b]?.image_url).find(Boolean) || null
       return {
-        ...base, entry_type: "story", href: null, accent: "violet", kicker: "Story",
+        ...base, entry_type: "story", href: null, accent: "story", kicker: "Story",
         kickerMeta: joinMeta([yearOf(story.story_date)?.toString(), linkedPlace?.name]),
         title: row.custom_title ?? story.title ?? (story.body ?? "").split("\n")[0].slice(0, 80) ?? "Story",
         summary: row.custom_summary ?? story.body ?? null,
@@ -993,7 +994,7 @@ export async function readPublicStack(
     if (!person) return null
     const agg = riderAgg.get(ref)
     return {
-      ...base, entry_type: "rider", accent: "violet", kicker: "Rider",
+      ...base, entry_type: "rider", accent: "rider", kicker: "Rider",
       href: stackHref("rider", ref, null),
       kickerMeta: joinMeta([
         agg ? eraLabel(agg.years, agg.ongoing) : null,
@@ -1177,7 +1178,7 @@ function storyStackEntry(
     (story.board_ids ?? []).map((b) => entities.boards[b]?.image_url).find(Boolean) || null
   return {
     id: opts.id, position: opts.position, refId: story.id,
-    entry_type: "story", href: null, accent: "violet", kicker: "Story",
+    entry_type: "story", href: null, accent: "story", kicker: "Story",
     kickerMeta: joinMeta([yearOf(story.story_date)?.toString(), linkedPlace?.name]),
     title: opts.customTitle ?? story.title ?? (story.body ?? "").split("\n")[0].slice(0, 80) ?? "Story",
     summary: opts.customSummary ?? story.body ?? null,
@@ -1285,7 +1286,7 @@ function resolveCuratedRow(
   const person = entities.people[ref]
   if (!person) return null
   return {
-    ...base, entry_type: "rider", accent: "violet", kicker: "Rider", kickerMeta: null,
+    ...base, entry_type: "rider", accent: "rider", kicker: "Rider", kickerMeta: null,
     href: stackHref("rider", ref, null),
     title: row.custom_title ?? person.display_name, summary: row.custom_summary ?? null,
     thumbPhotoUrl: person.avatar_url ?? null, thumbEntity: "person",

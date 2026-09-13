@@ -28,6 +28,7 @@ import { usePlaceImage } from "@/hooks/use-place-image"
 import { useEventImage } from "@/hooks/use-event-image"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
 import { ENTITY_TEXT_CLASS, frameClassForClaim, kindForObjectType } from "@/lib/entity-colors"
+import { RiderAvatar } from "@/components/ui/rider-avatar"
 
 // ─── Type-specific entity block ───────────────────────────────────────────────
 
@@ -592,13 +593,18 @@ function CompanionAvatars({ claim, explicitCompanionIds }: { claim: Claim; expli
       <div className="flex items-center gap-1 flex-wrap">
         {companionIds.map((pid) => {
           const person = catalog.people.find((p) => p.id === pid)
-          const initials = (person?.display_name ?? "?")[0].toUpperCase()
           const name = person?.display_name ?? "Rider"
           return (
             <CommunityLink key={pid} href={person ? personHref(person, catalog.people) : `/people/${pid}`} title={name}>
-              <div className="w-6 h-6 rounded-full bg-rose-700 border border-rose-600 flex items-center justify-center text-[9px] font-bold text-white hover:bg-rose-500 transition-colors">
-                {initials}
-              </div>
+              {person ? (
+                // Real avatar so the shared-rider dot carries membership color +
+                // photo, matching the riders list (Cory item 6).
+                <RiderAvatar person={person} size="sm" ring />
+              ) : (
+                <div className="w-6 h-6 rounded-full bg-zinc-600 border border-zinc-500 flex items-center justify-center text-[9px] font-bold text-white">
+                  {(name[0] ?? "?").toUpperCase()}
+                </div>
+              )}
             </CommunityLink>
           )
         })}

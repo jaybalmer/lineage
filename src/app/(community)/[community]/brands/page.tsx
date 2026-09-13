@@ -61,12 +61,12 @@ function OrgCard({ org, conn }: { org: Org; conn: ConnCounts }) {
           <div className="flex items-center gap-3">
             {/* Curated brands show their logo; everyone else gets the initial block. */}
             {isCurated && org.logo_url ? (
-              <div className="w-9 h-9 rounded-lg bg-white border border-green-200 flex items-center justify-center overflow-hidden shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-white border border-indigo-200 flex items-center justify-center overflow-hidden shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={org.logo_url} alt={org.name} className="w-full h-full object-contain p-0.5" />
               </div>
             ) : (
-              <div className="w-9 h-9 rounded-lg bg-green-50 border border-green-200 flex items-center justify-center text-sm font-bold text-green-700 shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-sm font-bold text-indigo-700 shrink-0">
                 {initial}
               </div>
             )}
@@ -76,7 +76,7 @@ function OrgCard({ org, conn }: { org: Org; conn: ConnCounts }) {
                   {org.name}
                 </span>
                 {isCurated && (
-                  <span className="text-[10px] font-semibold text-green-700 bg-green-500/10 rounded px-1.5 py-0.5 shrink-0">
+                  <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-500/10 rounded px-1.5 py-0.5 shrink-0">
                     {/* Founding partners show their commercial label (e.g.
                         "Founding Brand Partner"); everyone curated shows "Curated"
                         (T2.4). Empty partner_label falls back to "Curated". */}

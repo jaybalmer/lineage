@@ -11,6 +11,7 @@ import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { UnverifiedBadge } from "@/components/ui/badge"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
+import { ENTITY_FRAME_CLASS } from "@/lib/entity-colors"
 import { CommunityLink } from "@/components/ui/community-link"
 import { countryToContinent, eventLocationText, CONTINENT_ORDER } from "@/lib/continents"
 import type { Event, EventSeries } from "@/types"
@@ -68,7 +69,7 @@ function EventCard({ event }: { event: Event }) {
   return (
     <div className="flex items-center gap-2">
       <CommunityLink href={`/events/${eventSlug(event)}`} className="flex-1 min-w-0 block">
-        <div className="bg-surface border border-border-default rounded-xl p-4 hover:border-foreground/20 hover:bg-surface-hover transition-all">
+        <div className={cn("bg-surface border-2 rounded-xl p-4 hover:opacity-90 hover:bg-surface-hover transition-all", ENTITY_FRAME_CLASS.event)}>
           <div className="flex items-center gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 mb-0.5 flex-wrap">
@@ -124,7 +125,7 @@ function SeriesCard({ series, filteredEventCount }: { series: EventSeries; filte
 
   return (
     <CommunityLink href={`/events/${seriesSlug(series)}`}>
-      <div className="bg-surface border border-border-default border-l-2 border-l-amber-700 rounded-xl p-4 hover:border-border-default transition-colors">
+      <div className={cn("bg-surface border-2 rounded-xl p-4 hover:opacity-90 transition-all", ENTITY_FRAME_CLASS.event)}>
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
             <div className="text-[10px] text-muted uppercase tracking-widest mb-1">

@@ -12,9 +12,9 @@ import { ReportTagModal } from "@/components/ui/report-tag-modal"
 import { StoryInteractions } from "@/components/feed/story-interactions"
 import { AddConnectionsPopover, type StoryConnectionType } from "@/components/feed/add-connections-popover"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
-import { getRiderTier } from "@/components/ui/rider-avatar"
+import { getRiderTier, RIDER_TIER_CHIP_CLASS } from "@/components/ui/rider-avatar"
 import { MemberBadge } from "@/components/ui/member-badge"
-import { ENTITY_CHIP_CLASS, ENTITY_DOT_CLASS, ENTITY_FRAME_CLASS, RIDER_UNCLAIMED_CHIP_CLASS } from "@/lib/entity-colors"
+import { ENTITY_CHIP_CLASS, ENTITY_DOT_CLASS, ENTITY_FRAME_CLASS } from "@/lib/entity-colors"
 import type { Story, TagEventDeclineCategory } from "@/types"
 
 interface StoryCardProps {
@@ -627,7 +627,7 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
             const canRemove = canRemoveRiderChip(rider.id)
             const isLoading = reportOpening === rider.id
             const removeBusy = removingKey === `rider:${rider.id}`
-            const appendageCls = isUnclaimed ? RIDER_UNCLAIMED_CHIP_CLASS : ENTITY_CHIP_CLASS.rider
+            const appendageCls = RIDER_TIER_CHIP_CLASS[riderTier]
             return (
               <span key={rider.id} className="inline-flex items-center">
                 <CommunityLink

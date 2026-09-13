@@ -15,6 +15,7 @@ import { boardSlug } from "@/lib/mock-data"
 import { toBoardRelationship, boardRelationshipBadges } from "@/lib/board-relationship"
 import { cn } from "@/lib/utils"
 import { CommunityLink } from "@/components/ui/community-link"
+import { ENTITY_FRAME_CLASS } from "@/lib/entity-colors"
 import type { Board } from "@/types"
 
 // ─── Shared types ────────────────────────────────────────────────────────────
@@ -377,7 +378,7 @@ export function BoardTile({
     <div>
       <div className="relative">
         <CommunityLink href={href} className="block">
-          <BoardCover board={board} orgLogoUrl={orgLogoUrl} overrideUrl={imageOverride} className="aspect-[3/4] rounded-xl border border-border-default" markSize={48} />
+          <BoardCover board={board} orgLogoUrl={orgLogoUrl} overrideUrl={imageOverride} className={cn("aspect-[3/4] rounded-xl border-2", ENTITY_FRAME_CLASS.board)} markSize={48} />
         </CommunityLink>
         {isUnverified && (
           <UnverifiedBadge className="absolute top-2 left-2 bg-background/80 backdrop-blur-sm pointer-events-none" />
@@ -429,7 +430,7 @@ export function BoardListRow({
   return (
     <div className="flex items-center gap-3 py-2.5">
       <CommunityLink href={href} className="flex items-center gap-3 min-w-0 flex-1 group">
-        <BoardCover board={board} orgLogoUrl={orgLogoUrl} overrideUrl={imageOverride} className="w-11 h-14 rounded-lg border border-border-default shrink-0" markSize={18} />
+        <BoardCover board={board} orgLogoUrl={orgLogoUrl} overrideUrl={imageOverride} className={cn("w-11 h-14 rounded-lg border-2 shrink-0", ENTITY_FRAME_CLASS.board)} markSize={18} />
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium text-foreground truncate group-hover:text-accent-strong transition-colors">
@@ -530,7 +531,7 @@ export function BrandIndexCard({
               orgLogoUrl={orgLogoUrl}
               overrideUrl={communityImages.get(b.id)}
               onResolve={(has) => report(b.id, has)}
-              className="w-12 h-16 rounded-lg border border-border-default shrink-0"
+              className={cn("w-12 h-16 rounded-lg border-2 shrink-0", ENTITY_FRAME_CLASS.board)}
               markSize={18}
             />
           </div>
