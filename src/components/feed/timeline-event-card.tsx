@@ -4,6 +4,8 @@ import { CommunityLink } from "@/components/ui/community-link"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { eventSlug } from "@/lib/mock-data"
 import { useLineageStore } from "@/store/lineage-store"
+import { cn } from "@/lib/utils"
+import { ENTITY_DOT_CLASS, ENTITY_FRAME_CLASS } from "@/lib/entity-colors"
 import type { Event, EventType } from "@/types"
 
 // A rider counts toward an event when they competed, spectated, or organized
@@ -75,9 +77,9 @@ export function TimelineEventCard({ event }: { event: Event }) {
 
   return (
     <CommunityLink href={`/events/${eventSlug(event)}`} className="block mb-4">
-      <div className="bg-surface border border-border-default rounded-xl p-4 hover:border-foreground/30 transition-colors">
+      <div className={cn("bg-surface border-2 rounded-xl p-4 hover:opacity-90 transition-all", ENTITY_FRAME_CLASS.event)}>
         <div className="flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />
+          <div className={cn("w-2.5 h-2.5 rounded-full shrink-0", ENTITY_DOT_CLASS.event)} />
           <div className="min-w-0 flex-1">
             <div className="font-semibold text-foreground text-sm leading-snug truncate">
               {event.name}

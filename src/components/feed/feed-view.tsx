@@ -13,6 +13,7 @@ import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { BoardShelf } from "@/components/feed/board-shelf"
 import { cn } from "@/lib/utils"
+import { ENTITY_DOT_CLASS, dotClassForClaim } from "@/lib/entity-colors"
 import { useLineageStore } from "@/store/lineage-store"
 import { groupRodeAtCompanions, countTimelineEntries } from "@/lib/companion-grouping"
 import { dateToSortNum, groupByDecade } from "@/lib/timeline-grouping"
@@ -71,20 +72,17 @@ type FeedItem =
   | { kind: "mention"; mentions: Mention[]; sortDate: number }
   | { kind: "riding_start"; year: number; sortDate: number }
 
-// Timeline node color keyed to predicate category
+// Timeline node color. Claims route through the shared entity palette (object
+// type first, predicate fallback). The non-entity markers keep their own hues:
+// the riding-start milestone (amber), the riding-day tint (emerald, out of the
+// entity palette per the color-system brief), and the mention dot (fuchsia,
+// matching the "Episode" label on the episode page header).
 function nodeColor(item: FeedItem): string {
   if (item.kind === "riding_start") return "bg-amber-500"
   if (item.kind === "day") return "bg-emerald-600"
-  if (item.kind === "story") return "bg-violet-600"
-  // Fuchsia matches the "Episode" label on the episode page header.
+  if (item.kind === "story") return ENTITY_DOT_CLASS.story
   if (item.kind === "mention") return "bg-fuchsia-500"
-  const p = item.claim.predicate
-  if (p === "owned_board") return "bg-emerald-700"
-  if (p === "rode_at" || p === "worked_at") return "bg-teal-700"
-  if (p === "rode_with" || p === "shot_by" || p === "coached_by") return "bg-violet-700"
-  if (p === "competed_at" || p === "spectated_at" || p === "organized_at") return "bg-amber-700"
-  if (p === "sponsored_by" || p === "part_of_team" || p === "fan_of") return "bg-zinc-500"
-  return "bg-zinc-600"
+  return dotClassForClaim(item.claim)
 }
 
 // Within the same date, riding_start (-1) comes before boards (0), then places, people, events, orgs

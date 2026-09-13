@@ -10,6 +10,8 @@ import { useState } from "react"
 import Link from "next/link"
 import { PostCard } from "@/components/feed/post-card"
 import { summarizeClaimTypes } from "@/lib/feed-grouping"
+import { cn } from "@/lib/utils"
+import { ENTITY_FRAME_CLASS, singleKindForClaims } from "@/lib/entity-colors"
 import type { Claim } from "@/types"
 import type { CompanionMap } from "@/lib/companion-grouping"
 
@@ -36,6 +38,13 @@ export function ClaimGroupCard({
   const [showAll, setShowAll] = useState(false)
   const summary = summarizeClaimTypes(claims)
 
+  // A same-day run can mix types ("4 places and 2 boards"); only paint the
+  // wrapper an entity color when the whole group is one type. Mixed groups keep
+  // a neutral (but solid, not faded) frame; each claim inside still shows its
+  // own color when expanded.
+  const groupKind = singleKindForClaims(claims)
+  const frameClass = groupKind ? ENTITY_FRAME_CLASS[groupKind] : "border-border-default"
+
   // "added N to Ingemar Backman's timeline" when the actor added to someone
   // else's timeline; "added N to their timeline" when they added to their own,
   // or when the subject could not be resolved.
@@ -43,7 +52,7 @@ export function ClaimGroupCard({
     subjectName && subjectName !== authorName ? `${subjectName}'s` : "their"
 
   return (
-    <div className="rounded-xl border border-border-default bg-surface px-4 py-3">
+    <div className={cn("rounded-xl border-2 bg-surface px-4 py-3", frameClass)}>
       {/* Header: author + by-type summary, once */}
       <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
         {/* BUG-187: one wrapping text flow, not a flex row. The name is a word

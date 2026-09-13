@@ -12,13 +12,21 @@
 // The payload types are imported type-only so this client bundle never pulls in
 // the server-only read module.
 
-import type { Claim, EntityType, Story, Predicate } from "@/types"
+import type { Claim, EntityType, Story } from "@/types"
 import type {
   PublicTimelinePayload,
   PublicTimelineEntities,
   PublicTimelineOwner,
 } from "@/lib/public-timeline-read"
 import { cn, PREDICATE_LABELS, formatDateRange, formatStoryDate } from "@/lib/utils"
+import {
+  ENTITY_CHIP_CLASS,
+  ENTITY_DOT_CLASS,
+  ENTITY_FRAME_CLASS,
+  ENTITY_TEXT_CLASS,
+  frameClassForClaim,
+  kindForObjectType,
+} from "@/lib/entity-colors"
 import { groupRodeAtCompanions } from "@/lib/companion-grouping"
 import { dateToSortNum, groupByDecade } from "@/lib/timeline-grouping"
 import { EntityGraphic } from "@/components/public-timeline/entity-graphic"
@@ -53,15 +61,6 @@ function predicateRank(item: FeedItem): number {
   if (p === "competed_at" || p === "spectated_at" || p === "organized_at") return 4
   if (p === "sponsored_by" || p === "part_of_team" || p === "fan_of") return 5
   return 6
-}
-
-// Left border accent by predicate group (mirrors PostCard).
-function accentClass(predicate: Predicate): string {
-  if (predicate === "rode_at" || predicate === "worked_at") return "border-teal-700"
-  if (predicate === "owned_board") return "border-emerald-700"
-  if (predicate === "rode_with" || predicate === "shot_by" || predicate === "coached_by") return "border-violet-700"
-  if (predicate === "competed_at" || predicate === "spectated_at" || predicate === "organized_at") return "border-amber-700"
-  return "border-zinc-600"
 }
 
 // Place and event claim cards are excluded from the public timeline (owner
@@ -127,11 +126,13 @@ function PublicClaimCard({
   })()
 
   const badge = (() => {
-    if (type === "board")  return { label: "Snowboard", cls: "text-emerald-700" }
-    if (type === "place")  return { label: place?.place_type ?? "Place", cls: "text-teal-700" }
-    if (type === "event")  return { label: event?.event_type?.replace(/-/g, " ") ?? "Event", cls: "text-amber-700" }
-    if (type === "person") return { label: "Rider", cls: "text-violet-700" }
-    return { label: org?.org_type ?? "Org", cls: "text-muted" }
+    const kind = kindForObjectType(type)
+    const cls = kind ? ENTITY_TEXT_CLASS[kind] : "text-muted"
+    if (type === "board")  return { label: "Snowboard", cls }
+    if (type === "place")  return { label: place?.place_type ?? "Place", cls }
+    if (type === "event")  return { label: event?.event_type?.replace(/-/g, " ") ?? "Event", cls }
+    if (type === "person") return { label: "Rider", cls }
+    return { label: org?.org_type ?? "Org", cls }
   })()
 
   const imageUrl = board?.image_url ?? org?.logo_url ?? place?.image_url ?? event?.image_url ?? undefined
@@ -145,7 +146,7 @@ function PublicClaimCard({
     .filter((n): n is string => !!n)
 
   return (
-    <div className={cn("postcard bg-surface border-2 rounded-xl p-5 mb-4", accentClass(claim.predicate))}>
+    <div className={cn("postcard bg-surface border-2 rounded-xl p-5 mb-4", frameClassForClaim(claim))}>
       {/* Entity visual block */}
       <div className="flex items-center gap-3 mb-4 pb-4 border-b border-border-default">
         <div className="flex-shrink-0">
@@ -220,7 +221,7 @@ function ThatsMeChip({
   const [open, setOpen] = useState(false)
   if (!claimable) {
     return (
-      <span className={cn(CHIP, "bg-violet-500/10 border border-violet-500/20 text-violet-600")}>
+      <span className={cn(CHIP, ENTITY_CHIP_CLASS.rider)}>
         👤 {person.display_name}
       </span>
     )
@@ -234,10 +235,7 @@ function ThatsMeChip({
           setOpen(true)
         }}
         title="Is this you? Claim this profile"
-        className={cn(
-          CHIP,
-          "bg-violet-500/10 border border-violet-500/30 text-violet-700 hover:bg-violet-500/20 transition-colors",
-        )}
+        className={cn(CHIP, ENTITY_CHIP_CLASS.rider)}
       >
         👤 {person.display_name}
         <span className="ml-0.5 font-semibold text-[10px]">that&rsquo;s me</span>
@@ -276,7 +274,7 @@ function PublicStoryCard({ story, entities, owner }: { story: Story; entities: P
     communityOrgs.length > 0
 
   return (
-    <div className="postcard bg-surface border-2 border-violet-700 rounded-xl p-5 mb-4">
+    <div className={cn("postcard bg-surface border-2 rounded-xl p-5 mb-4", ENTITY_FRAME_CLASS.story)}>
       {/* Header */}
       <div className="flex items-start justify-between gap-2 mb-3">
         <div className="flex items-center gap-2 min-w-0">
@@ -304,37 +302,37 @@ function PublicStoryCard({ story, entities, owner }: { story: Story; entities: P
       {hasLinks && (
         <div className="flex flex-wrap gap-1.5 mt-2">
           {linkedPlace && (
-            <span className={cn(CHIP, "bg-teal-500/10 border border-teal-500/20 text-teal-600")}>
-              <span className="w-2 h-2 rounded-full bg-teal-600 flex-shrink-0" /> {linkedPlace.name}
+            <span className={cn(CHIP, ENTITY_CHIP_CLASS.place)}>
+              <span className={cn("w-2 h-2 rounded-full flex-shrink-0", ENTITY_DOT_CLASS.place)} /> {linkedPlace.name}
             </span>
           )}
           {communityPlaces.map((p) => p && (
-            <span key={`cp-${p.id}`} className={cn(CHIP, "bg-teal-500/10 border border-teal-500/20 text-teal-600")}>
-              <span className="w-2 h-2 rounded-full bg-teal-600 flex-shrink-0" /> {p.name}
+            <span key={`cp-${p.id}`} className={cn(CHIP, ENTITY_CHIP_CLASS.place)}>
+              <span className={cn("w-2 h-2 rounded-full flex-shrink-0", ENTITY_DOT_CLASS.place)} /> {p.name}
             </span>
           ))}
           {linkedEvent && (
-            <span className={cn(CHIP, "bg-amber-500/10 border border-amber-500/20 text-amber-600")}>
-              <span className="w-2 h-2 rounded-full bg-amber-600 flex-shrink-0" /> {linkedEvent.name}
+            <span className={cn(CHIP, ENTITY_CHIP_CLASS.event)}>
+              <span className={cn("w-2 h-2 rounded-full flex-shrink-0", ENTITY_DOT_CLASS.event)} /> {linkedEvent.name}
             </span>
           )}
           {communityEvents.map((e) => e && (
-            <span key={`ce-${e.id}`} className={cn(CHIP, "bg-amber-500/10 border border-amber-500/20 text-amber-600")}>
-              <span className="w-2 h-2 rounded-full bg-amber-600 flex-shrink-0" /> {e.name}
+            <span key={`ce-${e.id}`} className={cn(CHIP, ENTITY_CHIP_CLASS.event)}>
+              <span className={cn("w-2 h-2 rounded-full flex-shrink-0", ENTITY_DOT_CLASS.event)} /> {e.name}
             </span>
           ))}
           {linkedOrg && (
-            <span className={cn(CHIP, "bg-cyan-500/10 border border-cyan-500/20 text-cyan-600")}>
-              <span className="w-2 h-2 rounded-full bg-cyan-600 flex-shrink-0" /> {linkedOrg.name}
+            <span className={cn(CHIP, ENTITY_CHIP_CLASS.brand)}>
+              <span className={cn("w-2 h-2 rounded-full flex-shrink-0", ENTITY_DOT_CLASS.brand)} /> {linkedOrg.name}
             </span>
           )}
           {communityOrgs.map((o) => o && (
-            <span key={`co-${o.id}`} className={cn(CHIP, "bg-cyan-500/10 border border-cyan-500/20 text-cyan-600")}>
-              <span className="w-2 h-2 rounded-full bg-cyan-600 flex-shrink-0" /> {o.name}
+            <span key={`co-${o.id}`} className={cn(CHIP, ENTITY_CHIP_CLASS.brand)}>
+              <span className={cn("w-2 h-2 rounded-full flex-shrink-0", ENTITY_DOT_CLASS.brand)} /> {o.name}
             </span>
           ))}
           {linkedBoards.map((b) => b && (
-            <span key={b.id} className={cn(CHIP, "bg-emerald-500/10 border border-emerald-500/20 text-emerald-600")}>
+            <span key={b.id} className={cn(CHIP, ENTITY_CHIP_CLASS.board)}>
               🏂 {b.brand} {b.model} &apos;{String(b.model_year ?? "").slice(2)}
             </span>
           ))}

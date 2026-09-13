@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
 import { useLineageStore, getAllClaims } from "@/store/lineage-store"
 import { supabase } from "@/lib/supabase"
+import { ENTITY_COLORS } from "@/lib/entity-colors"
 import type { Person, Event, Board, Org, Place } from "@/types"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -32,22 +33,24 @@ const TYPE: Record<CollectiveType, { symbol: string; label: string; href: string
   place: { symbol: "◇",  label: "Places",  href: "/places" },
 }
 
-// Dark mode: vivid neon palette (original)
+// Graph node colors derive from the one entity palette (src/lib/entity-colors.ts)
+// so dark and light finally agree with each other and with every other surface:
+// dark uses the neon `glow` weight, light uses the solid `frame` weight. The
+// CollectiveType keys line up 1:1 with EntityKind (no "story" node here).
 const TYPE_COLORS_DARK: Record<CollectiveType, string> = {
-  rider: "#a29bfe",  // lavender
-  event: "#00d4ff",  // cyan
-  board: "#ff9f43",  // orange
-  brand: "#55efc4",  // mint
-  place: "#2dd4bf",  // teal-400
+  rider: ENTITY_COLORS.rider.glow,
+  event: ENTITY_COLORS.event.glow,
+  board: ENTITY_COLORS.board.glow,
+  brand: ENTITY_COLORS.brand.glow,
+  place: ENTITY_COLORS.place.glow,
 }
 
-// Light mode: darker versions matching post-card border accents
 const TYPE_COLORS_LIGHT: Record<CollectiveType, string> = {
-  rider: "#6d28d9",  // violet-700
-  event: "#b45309",  // amber-700
-  board: "#047857",  // emerald-700
-  brand: "#0891B2",  // cyan-600
-  place: "#0D9488",  // teal
+  rider: ENTITY_COLORS.rider.frame,
+  event: ENTITY_COLORS.event.frame,
+  board: ENTITY_COLORS.board.frame,
+  brand: ENTITY_COLORS.brand.frame,
+  place: ENTITY_COLORS.place.frame,
 }
 
 const TYPE_KEYS: CollectiveType[] = ["rider", "event", "board", "brand", "place"]

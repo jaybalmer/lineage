@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { useLineageStore } from "@/store/lineage-store"
+import { ENTITY_COLORS } from "@/lib/entity-colors"
 import type { Board } from "@/types"
 
 // The two mosaic states behind the FTUE's opening beat.
@@ -30,16 +31,17 @@ const TILE_COUNT = 8
  *  threads so the "everything connects" line reads as the brand, not a tier. */
 const THREAD_COLOR = "#3B82F6"
 
-/** Tints used for slots the catalog cannot fill. */
-const FALLBACK_TINTS = ["#14b8a6", "#8b5cf6", "#f59e0b", "#10b981", "#06b6d4"]
-
+// Neon-on-dark, so the FTUE mosaic uses the entity palette's `glow` weight.
 const TIER = {
-  place: "#14b8a6",
-  board: "#10b981",
-  event: "#f59e0b",
-  story: "#8b5cf6",
-  brand: "#06b6d4",
+  place: ENTITY_COLORS.place.glow,
+  board: ENTITY_COLORS.board.glow,
+  event: ENTITY_COLORS.event.glow,
+  story: ENTITY_COLORS.story.glow,
+  brand: ENTITY_COLORS.brand.glow,
 } as const
+
+/** Tints used for slots the catalog cannot fill. */
+const FALLBACK_TINTS = [TIER.place, TIER.story, TIER.event, TIER.board, TIER.brand]
 
 type Tile = {
   key: string

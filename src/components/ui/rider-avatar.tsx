@@ -2,6 +2,7 @@
 
 import type { Person } from "@/types"
 import { isAuthUser } from "@/store/lineage-store"
+import { ENTITY_COLORS } from "@/lib/entity-colors"
 
 // ── Initials ─────────────────────────────────────────────────────────────────
 
@@ -61,7 +62,10 @@ const TIER_STYLE: Record<RiderTier, TierStyle> = {
   founding:       { bg: "#78350f", ring: "#f59e0b", text: "#fef3c7" },
   paid:           { bg: "#431407", ring: "#f97316", text: "#ffedd5" },     // orange (was blue)
   "free-account": { bg: "#064e3b", ring: "#10b981", text: "#d1fae5" },
-  unclaimed:      { bg: "#1e3a8a", ring: "#3b82f6", text: "#dbeafe", dashed: true }, // blue dashed (was orange)
+  // Unclaimed reads as the plain Rider color (rose), dashed to signal "not yet
+  // claimed". The paid tiers below keep their own ring colors (that is where
+  // membership tier now lives, per the entity-color-system brief D4).
+  unclaimed:      { bg: "#4c0519", ring: ENTITY_COLORS.rider.frame, text: "#ffe4e6", dashed: true },
   catalog:        { bg: "#27272a", ring: "#52525b", text: "#a1a1aa" },
   verified:       { bg: "#064e3b", ring: "#10b981", text: "#d1fae5" },     // inherits green by default
 }

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { useLineageStore } from "@/store/lineage-store"
 import { computeConnectionSummary } from "@/lib/connection-summary"
 import { BrandMark } from "@/components/ui/brand-mark"
+import { ENTITY_COLORS } from "@/lib/entity-colors"
 import type { Claim, Person } from "@/types"
 
 // ─── Slide types ──────────────────────────────────────────────────────────────
@@ -70,9 +71,15 @@ type CompareSlide =
 const FACT_ICONS: Record<string, string> = {
   resort: "🏔", event: "🏆", board: "🏂", sponsor: "🎽", team: "🤝", rode_with: "👊",
 }
+// Neon-on-dark player: entity palette `glow` weight. sponsor/team point at a
+// brand/org (green); rode_with is a rider (rose).
 const FACT_ACCENTS: Record<string, string> = {
-  resort: "#0d9488", event: "#d97706", board: "#059669",
-  sponsor: "#7c3aed", team: "#7c3aed", rode_with: "#ec4899",
+  resort: ENTITY_COLORS.place.glow,
+  event: ENTITY_COLORS.event.glow,
+  board: ENTITY_COLORS.board.glow,
+  sponsor: ENTITY_COLORS.brand.glow,
+  team: ENTITY_COLORS.brand.glow,
+  rode_with: ENTITY_COLORS.rider.glow,
 }
 
 function buildCompareSlides(
@@ -107,7 +114,7 @@ function buildCompareSlides(
     slides.push({
       kind: "compare-shared-stat",
       icon: "🏔",
-      accent: "#0d9488",
+      accent: ENTITY_COLORS.place.glow,
       count: sharedPlaces.length,
       label: "mountain" + (sharedPlaces.length !== 1 ? "s" : "") + " in common",
       items: sharedPlaces.map(f => f.label.replace("Both rode ", "")),
@@ -120,7 +127,7 @@ function buildCompareSlides(
     slides.push({
       kind: "compare-shared-stat",
       icon: "🏆",
-      accent: "#d97706",
+      accent: ENTITY_COLORS.event.glow,
       count: sharedEvents.length,
       label: "event" + (sharedEvents.length !== 1 ? "s" : "") + " in both timelines",
       items: sharedEvents.map(f => f.label.replace("Both attended ", "")),
@@ -133,7 +140,7 @@ function buildCompareSlides(
     slides.push({
       kind: "compare-shared-stat",
       icon: "🏂",
-      accent: "#059669",
+      accent: ENTITY_COLORS.board.glow,
       count: sharedBoards.length,
       label: "board" + (sharedBoards.length !== 1 ? "s" : "") + " in common",
       items: sharedBoards.map(f => f.label.replace("Both rode ", "")),
@@ -146,7 +153,7 @@ function buildCompareSlides(
     slides.push({
       kind: "compare-shared-stat",
       icon: "🎽",
-      accent: "#7c3aed",
+      accent: ENTITY_COLORS.brand.glow,
       count: sharedOrgs.length,
       label: "team" + (sharedOrgs.length !== 1 ? "s" : "") + " in common",
       items: sharedOrgs.map(f => f.label),

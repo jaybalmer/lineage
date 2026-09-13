@@ -14,6 +14,7 @@ import { AddConnectionsPopover, type StoryConnectionType } from "@/components/fe
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { getRiderTier } from "@/components/ui/rider-avatar"
 import { MemberBadge } from "@/components/ui/member-badge"
+import { ENTITY_CHIP_CLASS, ENTITY_DOT_CLASS, ENTITY_FRAME_CLASS, RIDER_UNCLAIMED_CHIP_CLASS } from "@/lib/entity-colors"
 import type { Story, TagEventDeclineCategory } from "@/types"
 
 interface StoryCardProps {
@@ -302,7 +303,7 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
       />
     )}
 
-    <div className="postcard group bg-surface border-2 border-violet-700 rounded-xl p-5 mb-4 transition-all">
+    <div className={cn("postcard group bg-surface border-2 rounded-xl p-5 mb-4 transition-all", ENTITY_FRAME_CLASS.story)}>
 
       {/* ── Header row ──
           BUG-158: at 414px the right badge group (Only you + Story + date + menu)
@@ -492,9 +493,9 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
           {linkedPlace && (
             <CommunityLink
               href={`/places/${placeSlug(linkedPlace)}`}
-              className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 hover:bg-[#292524]/20 transition-colors"
+              className={cn("inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full", ENTITY_CHIP_CLASS.place)}
             >
-              <div className="w-2 h-2 rounded-full bg-teal-600 flex-shrink-0" /> {linkedPlace.name}
+              <div className={cn("w-2 h-2 rounded-full flex-shrink-0", ENTITY_DOT_CLASS.place)} /> {linkedPlace.name}
             </CommunityLink>
           )}
           {communityPlaceChips.map(({ conn, place }) => {
@@ -507,18 +508,19 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
                   href={`/places/${placeSlug(place)}`}
                   title={connectedBy ? `Connected by ${connectedBy}` : undefined}
                   className={cn(
-                    "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 hover:bg-[#292524]/20 transition-colors",
+                    "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full",
+                    ENTITY_CHIP_CLASS.place,
                     canRemove && "rounded-r-none",
                   )}
                 >
-                  <div className="w-2 h-2 rounded-full bg-teal-600 flex-shrink-0" /> {place.name}
+                  <div className={cn("w-2 h-2 rounded-full flex-shrink-0", ENTITY_DOT_CLASS.place)} /> {place.name}
                 </CommunityLink>
                 {canRemove && (
                   <button
                     type="button"
                     onClick={() => removeConnection("place", place.id)}
                     disabled={busy}
-                    className="inline-flex items-center text-[11px] px-1.5 py-0.5 rounded-full rounded-l-none border-l-0 bg-teal-500/10 border border-teal-500/20 text-teal-400 hover:bg-teal-500/20 transition-colors"
+                    className={cn("inline-flex items-center text-[11px] px-1.5 py-0.5 rounded-full rounded-l-none border-l-0", ENTITY_CHIP_CLASS.place)}
                     title={`Remove ${place.name} from this story`}
                     aria-label={`Remove ${place.name} from this story`}
                   >
@@ -531,9 +533,9 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
           {linkedEvent && (
             <CommunityLink
               href={`/events/${eventSlug(linkedEvent)}`}
-              className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-colors"
+              className={cn("inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full", ENTITY_CHIP_CLASS.event)}
             >
-              <div className="w-2 h-2 rounded-full bg-amber-600 flex-shrink-0" /> {linkedEvent.name}
+              <div className={cn("w-2 h-2 rounded-full flex-shrink-0", ENTITY_DOT_CLASS.event)} /> {linkedEvent.name}
             </CommunityLink>
           )}
           {communityEventChips.map(({ conn, event }) => {
@@ -546,18 +548,19 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
                   href={`/events/${eventSlug(event)}`}
                   title={connectedBy ? `Connected by ${connectedBy}` : undefined}
                   className={cn(
-                    "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-colors",
+                    "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full",
+                    ENTITY_CHIP_CLASS.event,
                     canRemove && "rounded-r-none",
                   )}
                 >
-                  <div className="w-2 h-2 rounded-full bg-amber-600 flex-shrink-0" /> {event.name}
+                  <div className={cn("w-2 h-2 rounded-full flex-shrink-0", ENTITY_DOT_CLASS.event)} /> {event.name}
                 </CommunityLink>
                 {canRemove && (
                   <button
                     type="button"
                     onClick={() => removeConnection("event", event.id)}
                     disabled={busy}
-                    className="inline-flex items-center text-[11px] px-1.5 py-0.5 rounded-full rounded-l-none border-l-0 bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-colors"
+                    className={cn("inline-flex items-center text-[11px] px-1.5 py-0.5 rounded-full rounded-l-none border-l-0", ENTITY_CHIP_CLASS.event)}
                     title={`Remove ${event.name} from this story`}
                     aria-label={`Remove ${event.name} from this story`}
                   >
@@ -570,9 +573,9 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
           {linkedOrg && (
             <CommunityLink
               href={`/brands/${orgSlug(linkedOrg)}`}
-              className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-colors"
+              className={cn("inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full", ENTITY_CHIP_CLASS.brand)}
             >
-              <div className="w-2 h-2 rounded-full bg-cyan-600 flex-shrink-0" /> {linkedOrg.name}
+              <div className={cn("w-2 h-2 rounded-full flex-shrink-0", ENTITY_DOT_CLASS.brand)} /> {linkedOrg.name}
             </CommunityLink>
           )}
           {communityOrgChips.map(({ conn, org }) => {
@@ -585,18 +588,19 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
                   href={`/brands/${orgSlug(org)}`}
                   title={connectedBy ? `Connected by ${connectedBy}` : undefined}
                   className={cn(
-                    "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-colors",
+                    "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full",
+                    ENTITY_CHIP_CLASS.brand,
                     canRemove && "rounded-r-none",
                   )}
                 >
-                  <div className="w-2 h-2 rounded-full bg-cyan-600 flex-shrink-0" /> {org.name}
+                  <div className={cn("w-2 h-2 rounded-full flex-shrink-0", ENTITY_DOT_CLASS.brand)} /> {org.name}
                 </CommunityLink>
                 {canRemove && (
                   <button
                     type="button"
                     onClick={() => removeConnection("org", org.id)}
                     disabled={busy}
-                    className="inline-flex items-center text-[11px] px-1.5 py-0.5 rounded-full rounded-l-none border-l-0 bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 hover:bg-cyan-500/20 transition-colors"
+                    className={cn("inline-flex items-center text-[11px] px-1.5 py-0.5 rounded-full rounded-l-none border-l-0", ENTITY_CHIP_CLASS.brand)}
                     title={`Remove ${org.name} from this story`}
                     aria-label={`Remove ${org.name} from this story`}
                   >
@@ -610,7 +614,7 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
             <CommunityLink
               key={board.id}
               href={`/boards/${boardSlug(board)}`}
-              className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-colors"
+              className={cn("inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full", ENTITY_CHIP_CLASS.board)}
             >
               🏂 {board.brand} {board.model} &apos;{String(board.model_year).slice(2)}
             </CommunityLink>
@@ -623,19 +627,15 @@ export function StoryCard({ story, isOwn, onDelete, expandComments }: StoryCardP
             const canRemove = canRemoveRiderChip(rider.id)
             const isLoading = reportOpening === rider.id
             const removeBusy = removingKey === `rider:${rider.id}`
-            const appendageCls = isUnclaimed
-              ? "bg-blue-500/5 border border-dashed border-blue-500/30 text-blue-400/70 hover:bg-blue-500/10"
-              : "bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20"
+            const appendageCls = isUnclaimed ? RIDER_UNCLAIMED_CHIP_CLASS : ENTITY_CHIP_CLASS.rider
             return (
               <span key={rider.id} className="inline-flex items-center">
                 <CommunityLink
                   href={personHref(rider, catalog.people)}
                   className={cn(
-                    "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full transition-colors",
+                    "inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full",
                     (canReport || canRemove) ? "rounded-r-none" : "",
-                    isUnclaimed
-                      ? "bg-blue-500/5 border border-dashed border-blue-500/30 text-blue-400/70 hover:bg-blue-500/10"
-                      : "bg-violet-500/10 border border-violet-500/20 text-violet-400 hover:bg-violet-500/20"
+                    appendageCls,
                   )}
                   title={isUnclaimed ? `${rider.display_name} hasn't joined yet` : undefined}
                 >
