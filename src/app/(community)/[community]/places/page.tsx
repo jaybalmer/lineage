@@ -11,6 +11,7 @@ import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { UnverifiedBadge } from "@/components/ui/badge"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { cn } from "@/lib/utils"
+import { ENTITY_COLORS } from "@/lib/entity-colors"
 import { CommunityLink } from "@/components/ui/community-link"
 import type { Place } from "@/types"
 
@@ -21,12 +22,13 @@ const SORT_OPTIONS: { key: PlaceSort; label: string; title: string }[] = [
   { key: "entries", label: "Most entries", title: "Sort by most riders" },
 ]
 
+// Every place subtype (resort, shop, zone, city, venue) is one Place color.
 const PLACE_TYPE_COLORS: Record<string, string> = {
-  resort: "#0D9488",
-  shop: "#0891B2",
-  zone: "#059669",
-  city: "#7C3AED",
-  venue: "#D97706",
+  resort: ENTITY_COLORS.place.frame,
+  shop: ENTITY_COLORS.place.frame,
+  zone: ENTITY_COLORS.place.frame,
+  city: ENTITY_COLORS.place.frame,
+  venue: ENTITY_COLORS.place.frame,
 }
 
 function PlaceCard({ place }: { place: Place }) {

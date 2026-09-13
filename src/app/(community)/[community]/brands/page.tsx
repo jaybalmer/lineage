@@ -5,6 +5,7 @@ import { useSearchParams, useParams } from "next/navigation"
 import { CommunityLink } from "@/components/ui/community-link"
 import { Nav } from "@/components/ui/nav"
 import { orgSlug } from "@/lib/mock-data"
+import { ENTITY_FRAME_CLASS } from "@/lib/entity-colors"
 import { AddEntityModal } from "@/components/ui/add-entity-modal"
 import { SignInPrompt } from "@/components/ui/sign-in-prompt"
 import { CreateShowModal } from "@/components/orgs/create-show-modal"
@@ -56,16 +57,16 @@ function OrgCard({ org, conn }: { org: Org; conn: ConnCounts }) {
   return (
     <div className="flex items-center gap-2">
       <CommunityLink href={`/brands/${orgSlug(org)}`} className="flex-1 min-w-0 block">
-        <div className="group bg-surface border-2 border-violet-600 rounded-xl p-4 hover:opacity-90 transition-all">
+        <div className={cn("group bg-surface border-2 rounded-xl p-4 hover:opacity-90 transition-all", ENTITY_FRAME_CLASS.brand)}>
           <div className="flex items-center gap-3">
             {/* Curated brands show their logo; everyone else gets the initial block. */}
             {isCurated && org.logo_url ? (
-              <div className="w-9 h-9 rounded-lg bg-white border border-violet-200 flex items-center justify-center overflow-hidden shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-white border border-green-200 flex items-center justify-center overflow-hidden shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={org.logo_url} alt={org.name} className="w-full h-full object-contain p-0.5" />
               </div>
             ) : (
-              <div className="w-9 h-9 rounded-lg bg-violet-50 border border-violet-200 flex items-center justify-center text-sm font-bold text-violet-700 shrink-0">
+              <div className="w-9 h-9 rounded-lg bg-green-50 border border-green-200 flex items-center justify-center text-sm font-bold text-green-700 shrink-0">
                 {initial}
               </div>
             )}
@@ -75,7 +76,7 @@ function OrgCard({ org, conn }: { org: Org; conn: ConnCounts }) {
                   {org.name}
                 </span>
                 {isCurated && (
-                  <span className="text-[10px] font-semibold text-violet-700 bg-violet-500/10 rounded px-1.5 py-0.5 shrink-0">
+                  <span className="text-[10px] font-semibold text-green-700 bg-green-500/10 rounded px-1.5 py-0.5 shrink-0">
                     {/* Founding partners show their commercial label (e.g.
                         "Founding Brand Partner"); everyone curated shows "Curated"
                         (T2.4). Empty partner_label falls back to "Curated". */}

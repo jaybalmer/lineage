@@ -14,6 +14,16 @@
   --accent: #3B82F6;
   --accent-strong: #2563EB;
   --accent-tint: #EFF6FF;
+
+  /* Entity color palette (single source: src/lib/entity-colors.ts). `frame` is
+     the solid border/dot weight; `-glow` is the neon-on-dark weight. Fixed
+     brand hues, so they are not redefined per theme. */
+  --entity-story: #6d28d9;   --entity-story-glow: #a78bfa;
+  --entity-event: #b45309;   --entity-event-glow: #fbbf24;
+  --entity-board: #0284c7;   --entity-board-glow: #38bdf8;
+  --entity-brand: #15803d;   --entity-brand-glow: #4ade80;
+  --entity-place: #0f766e;   --entity-place-glow: #2dd4bf;
+  --entity-rider: #be123c;   --entity-rider-glow: #fb7185;
 }
 
 /* Dark theme — warm charcoal */

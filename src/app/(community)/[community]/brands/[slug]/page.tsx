@@ -8,6 +8,7 @@ import { Nav } from "@/components/ui/nav"
 import { boardSlug, orgSlug, eventSlug, seriesSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 import { cn, resolveBrandColor, brandButtonColor } from "@/lib/utils"
+import { ENTITY_RAIL_CLASS } from "@/lib/entity-colors"
 import { signInHref } from "@/lib/safe-redirect"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { usePersonHref } from "@/lib/use-person-href"
@@ -359,12 +360,14 @@ const CONFIDENCE_COLORS: Record<string, string> = {
   "partner-verified": "text-violet-400",
 }
 
+// D1: every event subtype (contest, film-shoot, trip, camp, gathering) takes the
+// one Event color. Contests are an event_type, not a separate entity.
 const EVENT_TYPE_COLOR: Record<string, string> = {
-  contest: "border-l-amber-700",
-  "film-shoot": "border-l-violet-700",
-  trip: "border-l-rose-700",
-  camp: "border-l-emerald-700",
-  gathering: "border-l-cyan-700",
+  contest: ENTITY_RAIL_CLASS.event,
+  "film-shoot": ENTITY_RAIL_CLASS.event,
+  trip: ENTITY_RAIL_CLASS.event,
+  camp: ENTITY_RAIL_CLASS.event,
+  gathering: ENTITY_RAIL_CLASS.event,
 }
 
 type FeedTab = "all" | "people" | "boards" | "events" | "places" | "stories"
@@ -1039,7 +1042,7 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
                           const ownerCount = boardOwnerClaims.filter((c) => c.object_id === item.board.id).length
                           return (
                             <CommunityLink key={item.board.id} href={`/boards/${boardSlug(item.board)}`}>
-                              <div className="flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 border-l-emerald-700 rounded-xl hover:border-border-default transition-all group">
+                              <div className={cn("flex items-center gap-4 px-4 py-3.5 bg-surface border border-border-default border-l-2 rounded-xl hover:border-border-default transition-all group", ENTITY_RAIL_CLASS.board)}>
                                 <span className="text-xl shrink-0">🏂</span>
                                 <div className="flex-1 min-w-0">
                                   <div className="text-sm font-medium text-foreground group-hover:text-blue-300 transition-colors">

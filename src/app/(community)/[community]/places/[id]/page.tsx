@@ -5,6 +5,7 @@ import { Nav } from "@/components/ui/nav"
 import { PLACES, eventSlug, placeSlug } from "@/lib/mock-data"
 import { formatDateRange } from "@/lib/utils"
 import { cn } from "@/lib/utils"
+import { ENTITY_COLORS, ENTITY_RAIL_CLASS } from "@/lib/entity-colors"
 import Link from "next/link"
 import { CommunityLink } from "@/components/ui/community-link"
 import { notFound } from "next/navigation"
@@ -23,20 +24,22 @@ import type { Story } from "@/types"
 
 type PlaceTab = "all" | "riders" | "events" | "stories"
 
+// D1: every event subtype takes the one Event color (contests are an
+// event_type, not a separate entity). One amber dot, one amber left rail.
 const EVENT_TYPE_DOT: Record<string, string> = {
-  contest: "#D97706",
-  "film-shoot": "#7C3AED",
-  trip: "#E11D48",
-  camp: "#059669",
-  gathering: "#0891B2",
+  contest: ENTITY_COLORS.event.frame,
+  "film-shoot": ENTITY_COLORS.event.frame,
+  trip: ENTITY_COLORS.event.frame,
+  camp: ENTITY_COLORS.event.frame,
+  gathering: ENTITY_COLORS.event.frame,
 }
 
 const EVENT_TYPE_COLOR: Record<string, string> = {
-  contest: "border-l-amber-700",
-  "film-shoot": "border-l-violet-700",
-  trip: "border-l-rose-700",
-  camp: "border-l-emerald-700",
-  gathering: "border-l-cyan-700",
+  contest: ENTITY_RAIL_CLASS.event,
+  "film-shoot": ENTITY_RAIL_CLASS.event,
+  trip: ENTITY_RAIL_CLASS.event,
+  camp: ENTITY_RAIL_CLASS.event,
+  gathering: ENTITY_RAIL_CLASS.event,
 }
 
 export default function PlacePage(props: { params: Promise<{ community: string; id: string }> }) {

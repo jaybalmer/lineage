@@ -6,6 +6,7 @@ import { ConfidenceBadge, UnverifiedBadge } from "@/components/ui/badge"
 import { PREDICATE_ICONS, PREDICATE_LABELS, formatDateRange } from "@/lib/utils"
 import { getEntityName } from "@/lib/mock-data"
 import { entityHref } from "@/lib/entity-links"
+import { ENTITY_COLORS, kindForClaim } from "@/lib/entity-colors"
 import { useLineageStore } from "@/store/lineage-store"
 import { EditClaimModal } from "@/components/ui/edit-claim-modal"
 import { EditEventModal } from "@/components/ui/edit-event-modal"
@@ -14,14 +15,6 @@ import type { Event } from "@/types"
 
 const PLACE_PREDICATES = ["rode_at", "worked_at", "competed_at"]
 const ORG_PREDICATES = ["sponsored_by", "part_of_team", "shot_by", "coached_by"]
-
-const ENTITY_DOT_COLOR: Record<string, string> = {
-  place: "#0D9488",
-  person: "#7C3AED",
-  event: "#D97706",
-  board: "#059669",
-  org: "#0891B2",
-}
 
 export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
   const { userEntities, removeClaim, catalog } = useLineageStore()
@@ -34,6 +27,8 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
   const label = PREDICATE_LABELS[claim.predicate] ?? claim.predicate
   const dateRange = formatDateRange(claim.start_date, claim.end_date)
   const href = entityHref(claim.object_id, claim.object_type, catalog)
+  const claimKind = kindForClaim(claim)
+  const entityDotColor = claimKind ? ENTITY_COLORS[claimKind].frame : "#78716C"
 
   const isLinked = true // all entity types now have detail pages
 
@@ -76,7 +71,7 @@ export function ClaimCard({ claim, isOwn }: { claim: Claim; isOwn?: boolean }) {
       <div className="relative pl-10 pb-5 timeline-line last:pb-0 group">
         {/* Entity color dot */}
         <div className="absolute left-0 top-1 w-8 h-8 rounded-full bg-surface-2 border border-border-default flex items-center justify-center z-10">
-          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: ENTITY_DOT_COLOR[claim.object_type] ?? "#78716C" }} />
+          <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: entityDotColor }} />
         </div>
 
         <div className="bg-surface border border-border-default rounded-xl p-4 hover:border-border-default transition-colors">

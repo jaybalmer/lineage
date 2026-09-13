@@ -23,20 +23,11 @@ import { EditClaimModal } from "@/components/ui/edit-claim-modal"
 import { EditEventModal } from "@/components/ui/edit-event-modal"
 import { QuickClaimPopover } from "@/components/ui/quick-claim-popover"
 import { cn } from "@/lib/utils"
-import type { Predicate } from "@/types"
 import { useBoardImage } from "@/hooks/use-board-image"
 import { usePlaceImage } from "@/hooks/use-place-image"
 import { useEventImage } from "@/hooks/use-event-image"
 import { ImageLightbox } from "@/components/ui/image-lightbox"
-
-// Left border accent color by predicate group
-function accentClass(predicate: Predicate): string {
-  if (predicate === "rode_at" || predicate === "worked_at") return "border-teal-700"
-  if (predicate === "owned_board") return "border-emerald-700"
-  if (predicate === "rode_with" || predicate === "shot_by" || predicate === "coached_by") return "border-violet-700"
-  if (predicate === "competed_at" || predicate === "spectated_at" || predicate === "organized_at") return "border-amber-700"
-  return "border-zinc-600"
-}
+import { ENTITY_TEXT_CLASS, frameClassForClaim, kindForObjectType } from "@/lib/entity-colors"
 
 // ─── Type-specific entity block ───────────────────────────────────────────────
 
@@ -451,13 +442,16 @@ function EntityBlock({ claim, entityName, isOwn, readOnly }: EntityBlockProps) {
     return ""
   })()
 
-  // Type badge
+  // Type badge. Color routes through the shared entity palette (board sky,
+  // place teal, event amber, rider rose, brand green) via object type.
   const badge = (() => {
-    if (type === "board")  return { label: "Snowboard", cls: "text-emerald-700" }
-    if (type === "place")  return { label: (place?.place_type ?? "Place"), cls: "text-teal-700" }
-    if (type === "event")  return { label: (event?.event_type?.replace(/-/g, " ") ?? "Event"), cls: "text-amber-700" }
-    if (type === "person") return { label: "Rider", cls: "text-violet-700" }
-    return { label: (org?.org_type ?? "Org"), cls: "text-muted" }
+    const kind = kindForObjectType(type)
+    const cls = kind ? ENTITY_TEXT_CLASS[kind] : "text-muted"
+    if (type === "board")  return { label: "Snowboard", cls }
+    if (type === "place")  return { label: (place?.place_type ?? "Place"), cls }
+    if (type === "event")  return { label: (event?.event_type?.replace(/-/g, " ") ?? "Event"), cls }
+    if (type === "person") return { label: "Rider", cls }
+    return { label: (org?.org_type ?? "Org"), cls }
   })()
 
   return (
@@ -602,7 +596,7 @@ function CompanionAvatars({ claim, explicitCompanionIds }: { claim: Claim; expli
           const name = person?.display_name ?? "Rider"
           return (
             <CommunityLink key={pid} href={person ? personHref(person, catalog.people) : `/people/${pid}`} title={name}>
-              <div className="w-6 h-6 rounded-full bg-violet-700 border border-violet-600 flex items-center justify-center text-[9px] font-bold text-white hover:bg-violet-500 transition-colors">
+              <div className="w-6 h-6 rounded-full bg-rose-700 border border-rose-600 flex items-center justify-center text-[9px] font-bold text-white hover:bg-rose-500 transition-colors">
                 {initials}
               </div>
             </CommunityLink>
@@ -689,7 +683,7 @@ export function PostCard({ claim, isOwn, readOnly, explicitCompanionIds }: { cla
 
       <div className={cn(
         "postcard group bg-surface border-2 rounded-xl p-5 mb-4 transition-all",
-        accentClass(claim.predicate)
+        frameClassForClaim(claim)
       )}>
         {/* Entity visual block */}
         <EntityBlock
