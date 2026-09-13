@@ -205,10 +205,15 @@ function InstanceRow({ event }: { event: Event }) {
 
 type VoteRow = { id: string; vote: string; user_id: string; suggested_image_url?: string | null }
 
-function EventInstancePhotoBlock({ eventId, eventName, activePersonId }: {
+// BUG-143: this renders the whole header row (thumbnail column + info column) so the
+// photo editor can sit inside the info column, the way the place and board detail
+// pages already do it. Keeping the editor in the narrow thumbnail column let the URL
+// input's intrinsic width widen a `shrink-0` column and squeeze the info block.
+function EventInstanceHeader({ eventId, eventName, activePersonId, children }: {
   eventId: string
   eventName: string
   activePersonId: string
+  children: React.ReactNode
 }) {
   const isAuth = isAuthUser(activePersonId)
 
@@ -346,109 +351,128 @@ function EventInstancePhotoBlock({ eventId, eventName, activePersonId }: {
       {lightboxOpen && displayImageUrl && (
         <ImageLightbox src={displayImageUrl} alt={eventName} onClose={() => setLightboxOpen(false)} />
       )}
-      <div className="shrink-0">
-        {displayImageUrl ? (
-          <button
-            onClick={() => setLightboxOpen(true)}
-            className="block w-24 h-24 rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500 group relative"
-            title="Click to enlarge"
-          >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={displayImageUrl}
-              alt={eventName}
-              className="w-full h-full object-cover bg-surface-hover transition-transform group-hover:scale-105"
-              onError={(e) => { (e.target as HTMLImageElement).closest("button")!.style.display = "none" }}
-            />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-              <span className="opacity-0 group-hover:opacity-100 text-white text-xs font-medium transition-opacity drop-shadow">⤢ enlarge</span>
-            </div>
-          </button>
-        ) : (
-          <div className="w-24 h-24 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-4xl">🏆</div>
-        )}
-        {isAuth && (
-          <div className="flex gap-1 mt-2 justify-center">
+      <div className="flex items-start gap-5">
+        {/* Photo thumbnail. Width is pinned so nothing below it can widen the column. */}
+        <div className="shrink-0 w-24">
+          {displayImageUrl ? (
             <button
-              onClick={() => handleVote("up")}
-              title="Confirm image is correct"
-              className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] transition-colors ${imageVotes.userVote === "up" ? "bg-emerald-800/60 text-emerald-300 border border-emerald-700/50" : "bg-surface border border-border-default text-muted hover:text-foreground"}`}
+              onClick={() => setLightboxOpen(true)}
+              className="block w-24 h-24 rounded-lg overflow-hidden focus:outline-none focus:ring-2 focus:ring-blue-500 group relative"
+              title="Click to enlarge"
             >
-              👍{imageVotes.up > 0 && <span className="ml-0.5">{imageVotes.up}</span>}
-            </button>
-            <button
-              onClick={() => handleVote("flag")}
-              title="Flag as wrong image"
-              className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] transition-colors ${imageVotes.userVote === "flag" ? "bg-red-900/60 text-red-300 border border-red-800/50" : "bg-surface border border-border-default text-muted hover:text-foreground"}`}
-            >
-              🚩{imageVotes.flag > 0 && <span className="ml-0.5">{imageVotes.flag}</span>}
-            </button>
-          </div>
-        )}
-        {isAuth && myImageVoteRow && (
-          <div className="mt-1.5 flex justify-center">
-            <button
-              onClick={handleRemovePhoto}
-              disabled={removingPhoto}
-              className="text-[10px] text-muted hover:text-red-400 transition-colors disabled:opacity-50"
-            >
-              {removingPhoto ? "removing…" : "remove my photo"}
-            </button>
-          </div>
-        )}
-        {isAuth && (
-          <div className="mt-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              className="hidden"
-              onChange={handleFileUpload}
-            />
-            {!showSuggestForm ? (
-              <button
-                onClick={() => { setShowSuggestForm(true); setPhotoError(null) }}
-                className="text-[10px] text-muted hover:text-foreground transition-colors w-full text-center"
-              >
-                {displayImageUrl ? "+ Update" : "+ Add photo"}
-              </button>
-            ) : (
-              <div className="space-y-1.5 mt-1">
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploadingPhoto || suggesting}
-                  className="flex items-center gap-1 px-2 py-1 rounded border border-dashed border-border-default text-[10px] text-muted hover:text-foreground hover:border-blue-600 disabled:opacity-50 transition-colors w-full justify-center"
-                >
-                  {uploadingPhoto ? <span className="animate-pulse">Uploading…</span> : <><span>📁</span> Upload</>}
-                </button>
-                <form onSubmit={handleSuggestImage} className="flex gap-1">
-                  <input
-                    value={suggestUrl}
-                    onChange={(e) => setSuggestUrl(e.target.value)}
-                    placeholder="https://…"
-                    className="flex-1 bg-surface-hover border border-border-default rounded px-2 py-1 text-[10px] text-foreground placeholder-zinc-600 outline-none focus:border-blue-600 min-w-0"
-                  />
-                  <button
-                    type="submit"
-                    disabled={suggesting || uploadingPhoto || !suggestUrl.trim()}
-                    className="px-2 py-1 rounded bg-[#1C1917] text-white text-[10px] font-medium hover:bg-[#292524] disabled:opacity-50 transition-colors"
-                  >
-                    {suggesting ? "…" : "Save"}
-                  </button>
-                </form>
-                {photoError && <p className="text-[10px] text-red-400">{photoError}</p>}
-                <button
-                  type="button"
-                  onClick={() => { setShowSuggestForm(false); setPhotoError(null) }}
-                  className="text-[10px] text-muted hover:text-foreground transition-colors"
-                >
-                  Cancel
-                </button>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={displayImageUrl}
+                alt={eventName}
+                className="w-full h-full object-cover bg-surface-hover transition-transform group-hover:scale-105"
+                onError={(e) => { (e.target as HTMLImageElement).closest("button")!.style.display = "none" }}
+              />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                <span className="opacity-0 group-hover:opacity-100 text-white text-xs font-medium transition-opacity drop-shadow">⤢ enlarge</span>
               </div>
-            )}
-          </div>
-        )}
+            </button>
+          ) : (
+            <div className="w-24 h-24 rounded-lg bg-surface-hover border border-border-default flex items-center justify-center text-4xl">🏆</div>
+          )}
+          {isAuth && (
+            <div className="flex gap-1 mt-2 justify-center">
+              <button
+                onClick={() => handleVote("up")}
+                title="Confirm image is correct"
+                className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] transition-colors ${imageVotes.userVote === "up" ? "bg-emerald-800/60 text-emerald-300 border border-emerald-700/50" : "bg-surface border border-border-default text-muted hover:text-foreground"}`}
+              >
+                👍{imageVotes.up > 0 && <span className="ml-0.5">{imageVotes.up}</span>}
+              </button>
+              <button
+                onClick={() => handleVote("flag")}
+                title="Flag as wrong image"
+                className={`flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] transition-colors ${imageVotes.userVote === "flag" ? "bg-red-900/60 text-red-300 border border-red-800/50" : "bg-surface border border-border-default text-muted hover:text-foreground"}`}
+              >
+                🚩{imageVotes.flag > 0 && <span className="ml-0.5">{imageVotes.flag}</span>}
+              </button>
+            </div>
+          )}
+          {isAuth && myImageVoteRow && (
+            <div className="mt-1.5 flex justify-center">
+              <button
+                onClick={handleRemovePhoto}
+                disabled={removingPhoto}
+                className="text-[10px] text-muted hover:text-red-400 transition-colors disabled:opacity-50"
+              >
+                {removingPhoto ? "removing…" : "remove my photo"}
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          {children}
+
+          {/* Photo upload / URL suggestion. Lives here, not in the thumbnail column,
+              so the form has the full column width to lay out in. */}
+          {isAuth && (
+            <div className="mt-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                className="hidden"
+                onChange={handleFileUpload}
+              />
+              {!showSuggestForm ? (
+                <button
+                  onClick={() => { setShowSuggestForm(true); setPhotoError(null) }}
+                  className="text-xs text-muted hover:text-foreground transition-colors"
+                >
+                  {displayImageUrl ? "+ Update photo" : "+ Add a photo"}
+                </button>
+              ) : (
+                <div className="space-y-2 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingPhoto || suggesting}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-dashed border-border-default text-xs text-muted hover:text-foreground hover:border-blue-600 disabled:opacity-50 transition-colors w-full justify-center"
+                  >
+                    {uploadingPhoto ? (
+                      <span className="animate-pulse">Uploading…</span>
+                    ) : (
+                      <><span>📁</span> Upload a photo from your device</>
+                    )}
+                  </button>
+                  <div className="flex items-center gap-2 text-[10px] text-muted">
+                    <div className="flex-1 h-px bg-border-default" />
+                    <span>or paste an image URL</span>
+                    <div className="flex-1 h-px bg-border-default" />
+                  </div>
+                  <form onSubmit={handleSuggestImage} className="flex gap-2">
+                    <input
+                      value={suggestUrl}
+                      onChange={(e) => setSuggestUrl(e.target.value)}
+                      placeholder="https://…"
+                      className="flex-1 min-w-0 bg-surface-hover border border-border-default rounded-lg px-3 py-1.5 text-xs text-foreground placeholder-zinc-600 outline-none focus:border-blue-600"
+                    />
+                    <button
+                      type="submit"
+                      disabled={suggesting || uploadingPhoto || !suggestUrl.trim()}
+                      className="shrink-0 px-3 py-1.5 rounded-lg bg-[#1C1917] text-white text-xs font-medium hover:bg-[#292524] disabled:opacity-50 transition-colors"
+                    >
+                      {suggesting ? "Saving…" : "Save"}
+                    </button>
+                  </form>
+                  {photoError && <p className="text-xs text-red-400">{photoError}</p>}
+                  <button
+                    type="button"
+                    onClick={() => { setShowSuggestForm(false); setPhotoError(null) }}
+                    className="text-xs text-muted hover:text-foreground transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     </>
   )
@@ -841,65 +865,60 @@ function EventPageInner({ params }: { params: Promise<{ community: string; id: s
 
           {/* Header */}
           <div className="bg-surface border border-border-default rounded-xl p-6 mb-6">
-            <div className="flex items-start gap-5">
-              {/* Photo block */}
-              <EventInstancePhotoBlock
-                eventId={instance.id}
-                eventName={instance.name}
-                activePersonId={activePersonId ?? ""}
-              />
-
-              <div className="flex-1 min-w-0">
-                <div className="text-xs text-muted uppercase tracking-widest mb-1 flex items-center gap-2">
-                  <span>{instance.event_type}</span>
-                  {instance.year && <span className="text-muted">· {instance.year}</span>}
-                </div>
-                <div className="flex items-start justify-between gap-2">
-                  <h1 className="text-2xl font-bold text-foreground">{instance.name}</h1>
-                  {(isEditor || (isAuth && instance.added_by === activePersonId)) && (
-                    <button
-                      onClick={() => setEditingEvent(true)}
-                      className="shrink-0 text-xs text-muted hover:text-foreground transition-colors px-2 py-1 border border-border-default rounded-lg hover:border-blue-500/40"
-                    >
-                      Edit
-                    </button>
-                  )}
-                </div>
-                {instance.description && (
-                  <p className="text-muted text-sm mt-1 leading-relaxed">{instance.description}</p>
-                )}
-                {place ? (
-                  <CommunityLink href={`/places/${placeSlug(place)}`}>
-                    <p className="text-muted text-sm mt-1 hover:text-blue-300 transition-colors">
-                      🏔 {place.name}
-                    </p>
-                  </CommunityLink>
-                ) : (() => {
-                  // Imported editions carry venue/city/country text instead of a linked Place.
-                  const loc = eventLocationText({ venue: instance.venue_name, city: instance.city, country: instance.country })
-                  return loc ? <p className="text-muted text-sm mt-1">🏔 {loc}</p> : null
-                })()}
-                <p className="text-muted text-sm mt-0.5">
-                  {formatEventDateRange(instance.start_date, instance.end_date)}
-                </p>
-                {instance.website_url && (
-                  <a
-                    href={instance.website_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300 transition-colors mt-1"
+            <EventInstanceHeader
+              eventId={instance.id}
+              eventName={instance.name}
+              activePersonId={activePersonId ?? ""}
+            >
+              <div className="text-xs text-muted uppercase tracking-widest mb-1 flex items-center gap-2">
+                <span>{instance.event_type}</span>
+                {instance.year && <span className="text-muted">· {instance.year}</span>}
+              </div>
+              <div className="flex items-start justify-between gap-2">
+                <h1 className="text-2xl font-bold text-foreground">{instance.name}</h1>
+                {(isEditor || (isAuth && instance.added_by === activePersonId)) && (
+                  <button
+                    onClick={() => setEditingEvent(true)}
+                    className="shrink-0 text-xs text-muted hover:text-foreground transition-colors px-2 py-1 border border-border-default rounded-lg hover:border-blue-500/40"
                   >
-                    🔗 Website
-                  </a>
+                    Edit
+                  </button>
                 )}
-                <div className="mt-4 flex gap-6">
-                  <div>
-                    <div className="font-bold text-foreground text-xl">{totalAttendees}</div>
-                    <div className="text-muted text-xs">documented participants</div>
-                  </div>
+              </div>
+              {instance.description && (
+                <p className="text-muted text-sm mt-1 leading-relaxed">{instance.description}</p>
+              )}
+              {place ? (
+                <CommunityLink href={`/places/${placeSlug(place)}`}>
+                  <p className="text-muted text-sm mt-1 hover:text-blue-300 transition-colors">
+                    🏔 {place.name}
+                  </p>
+                </CommunityLink>
+              ) : (() => {
+                // Imported editions carry venue/city/country text instead of a linked Place.
+                const loc = eventLocationText({ venue: instance.venue_name, city: instance.city, country: instance.country })
+                return loc ? <p className="text-muted text-sm mt-1">🏔 {loc}</p> : null
+              })()}
+              <p className="text-muted text-sm mt-0.5">
+                {formatEventDateRange(instance.start_date, instance.end_date)}
+              </p>
+              {instance.website_url && (
+                <a
+                  href={instance.website_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm text-blue-400 hover:text-blue-300 transition-colors mt-1"
+                >
+                  🔗 Website
+                </a>
+              )}
+              <div className="mt-4 flex gap-6">
+                <div>
+                  <div className="font-bold text-foreground text-xl">{totalAttendees}</div>
+                  <div className="text-muted text-xs">documented participants</div>
                 </div>
               </div>
-            </div>
+            </EventInstanceHeader>
           </div>
 
           {/* YouTube embed */}
