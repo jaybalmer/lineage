@@ -11,8 +11,17 @@ import { cn } from "@/lib/utils"
 import type { Story } from "@/types"
 
 type StoryFilter = "all" | "mine"
+// BUG-193: "added" is posted order (created_at desc, the Feed's default);
+// "newest"/"oldest" are timeline order (story_date desc / asc).
+type StorySort = "added" | "newest" | "oldest"
 
 const PAGE_SIZE = 20
+
+const SORT_OPTIONS: { value: StorySort; label: string }[] = [
+  { value: "added",  label: "Recently added" },
+  { value: "newest", label: "Newest first" },
+  { value: "oldest", label: "Oldest first" },
+]
 
 // useSearchParams() needs a Suspense boundary at build time; wrap the body,
 // not the whole route.
@@ -65,6 +74,8 @@ function StoriesPageBody() {
   }, [focusId])
 
   const [filter, setFilter]     = useState<StoryFilter>("all")
+  // BUG-193: the page opens on the most recently POSTED story, like the Feed.
+  const [sort, setSort]         = useState<StorySort>("added")
   const [search, setSearch]     = useState("")
   const [stories, setStories]   = useState<Story[]>([])
   const [loading, setLoading]   = useState(true)
@@ -80,15 +91,20 @@ function StoriesPageBody() {
   // Fetch a page and return the rows; callers apply the result from a .then
   // callback so the mount/refetch effect performs no synchronous setState
   // (react-hooks/set-state-in-effect). Loading flags are set by the callers (the
-  // render-time reset for a filter change, the Load more handler for append).
+  // render-time reset for a filter or sort change, the Load more handler for
+  // append).
   const fetchPage = useCallback(async (off: number) => {
     const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(off) })
     if (filter === "mine" && activePersonId) params.set("author_id", activePersonId)
+    // BUG-193: the order has to come from the route, not a client re-sort, or
+    // Load more would interleave pages out of order.
+    if (sort === "added") params.set("sort", "recent")
+    if (sort === "oldest") params.set("order", "asc")
 
     const data = await fetch(`/api/stories?${params}`).then((r) => r.json()).catch(() => [])
     const rows: Story[] = Array.isArray(data) ? data : []
     return { rows, off }
-  }, [filter, activePersonId])
+  }, [filter, sort, activePersonId])
 
   const applyPage = useCallback((r: { rows: Story[]; off: number }, replace: boolean) => {
     setStories((prev) => replace ? r.rows : [...prev, ...r.rows])
@@ -98,12 +114,14 @@ function StoriesPageBody() {
     else setLoadingMore(false)
   }, [])
 
-  // Reset pagination + show the loading state when the filter changes, during
-  // render rather than with a synchronous setState in the effect below
-  // (react-hooks/set-state-in-effect). The effect then fetches the first page.
-  const [prevFilter, setPrevFilter] = useState(filter)
-  if (filter !== prevFilter) {
-    setPrevFilter(filter)
+  // Reset pagination + show the loading state when the filter or the sort
+  // changes, during render rather than with a synchronous setState in the effect
+  // below (react-hooks/set-state-in-effect). The effect then fetches the first
+  // page, which replaces the list instead of appending to it.
+  const fetchKey = `${filter}|${sort}`
+  const [prevFetchKey, setPrevFetchKey] = useState(fetchKey)
+  if (fetchKey !== prevFetchKey) {
+    setPrevFetchKey(fetchKey)
     setOffset(0)
     setHasMore(true)
     setLoading(true)
@@ -173,23 +191,45 @@ function StoriesPageBody() {
           )}
         </div>
 
-        {/* Filter chips */}
-        <div className="flex items-center gap-2 mb-6">
-          {(["all", "mine"] as StoryFilter[]).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              disabled={f === "mine" && !isAuth}
-              className={cn(
-                "px-3 py-1 rounded-full text-xs font-medium border transition-all capitalize disabled:opacity-40",
-                filter === f
-                  ? "bg-violet-700 border-violet-700 text-white"
-                  : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
-              )}
-            >
-              {f === "mine" ? "My Stories" : "All Stories"}
-            </button>
-          ))}
+        {/* Filter chips + sort toggle. Wraps on narrow screens so neither row
+            pushes the page past the viewport. */}
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+          <div className="flex gap-2">
+            {(["all", "mine"] as StoryFilter[]).map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                disabled={f === "mine" && !isAuth}
+                className={cn(
+                  "px-3 py-1 rounded-full text-xs font-medium border transition-all capitalize disabled:opacity-40",
+                  filter === f
+                    ? "bg-violet-700 border-violet-700 text-white"
+                    : "border-border-default text-muted hover:text-foreground hover:bg-surface-hover"
+                )}
+              >
+                {f === "mine" ? "My Stories" : "All Stories"}
+              </button>
+            ))}
+          </div>
+
+          {/* BUG-193: posted order by default, with both timeline directions
+              available. Same segmented control as the Feed's sort toggle. */}
+          <div className="flex gap-1 bg-surface border border-border-default rounded-lg p-1 ml-auto">
+            {SORT_OPTIONS.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setSort(value)}
+                className={cn(
+                  "px-2.5 py-1.5 rounded-md text-xs font-medium transition-all whitespace-nowrap",
+                  sort === value
+                    ? "bg-surface-active text-foreground"
+                    : "text-muted hover:text-foreground",
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Focused story (email link target) */}
