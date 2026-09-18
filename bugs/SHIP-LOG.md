@@ -2711,3 +2711,39 @@ Completes the funnel-attribution brief on top of the episode-1 carve (#238, whic
 - tsc: clean
 
 Follow-up from verifying #257/#258/#259 on production. Supabase's security advisor flagged function_search_path_mutable on analytics_funnel_summary and analytics_cohort_retention (from #258). Pinned search_path='' on both (safe: security-invoker, read-only, all tables schema-qualified, built-ins resolve via pg_catalog; already service-role-only). Verified advisor count dropped 9->7 (both cleared), functions still return object/array, grants unchanged. The remaining 7 mutable-search_path functions and the 2 pre-existing SECURITY DEFINER anon-executable functions (rls_auto_enable, tag_event_publicly_visible) are pre-existing and out of scope. Also confirmed all three analytics PRs deployed live at commit 07b9a8f (/r/fnrad 302s with correct params, /admin/funnel + /api/admin/funnel gated 307/401, /api/track/event 204).
+
+## 2026-09-13 - Entity color system (feature)
+- type: feature
+- pr: #264
+- branch: feat/entity-color-system
+- ids: none
+- scope: entity-color-system
+- migration: none
+- status: merged
+- tsc: clean
+
+One entity color palette (new src/lib/entity-colors.ts plus six globals.css vars) now feeds every surface that colors an entity type: card frames, the Collective graph nodes and legend, chips, dots, left rails and type labels. Resolves Cory's Sept 13 review: Brands go green (were purple on the list, cyan on chips), Boards go sky blue, Events (contests folded in) go solid amber instead of faded grey, the graph's dark and light palettes now derive from one source so they finally agree, and Riders get a single rose color with membership tier left to MemberBadge and the RiderAvatar ring. A "worked at <brand>" claim now colors by object type (green) rather than predicate (teal). UI only, no schema, no write path; verified live on the logged-out feed, brands list and graph; production build confirms every new class is emitted and all frame/glow values clear 3:1 contrast. Self-merged as SAFE.
+
+## 2026-09-13 - Entity color system: Cory review follow-ups (feature)
+- type: feature
+- pr: #265
+- branch: feat/entity-color-system-followup
+- ids: none
+- scope: entity-color-system
+- migration: none
+- status: merged
+- tsc: clean
+
+Second pass on the entity color system (after #264) from Cory's review. Brand moves to indigo and Place takes green so they no longer read alike (one-line token change). Riders now reflect membership tier everywhere a specific rider shows (row frame + section header on /people, story name-pills, and shared-rider companion dots which now render the real RiderAvatar with ring + photo): founding amber, member orange, rider green, unclaimed muted grey (dashed), catalog grey. RiderAvatar renders the profile photo when present. Events index cards and Boards index covers stop being grey (solid amber / sky); the community event card drops its inner dot. Dark theme gets a thin white outline outside each white postcard so the colored frame reads on the card, not against the near-black page. Also aligned the /t/[slug] stack view to the palette (StackAccent is now an EntityKind) and moved the Feed title to the Calendula wordmark font. UI only; tsc clean; build confirms all new classes emit; indigo and green both clear 3:1; verified live across riders/feed/brands/places/events/boards and dark mode. Self-merged as SAFE.
+
+## 2026-09-18 - FNRad surface reconciliation (feature)
+- type: feature
+- pr: #267
+- branch: feat/fnrad-surface-reconciliation
+- ids: none
+- scope: fnrad-surface-reconciliation
+- migration: none
+- status: merged
+- tsc: clean
+
+FNRad went live as a Founding partner and its three surfaces did not link to each other, so each got a job and the loop closed. On a founding-tier media org the generic "Were you part of the {brand} story?" contribute module is replaced by a Season 12 campaign module (new src/lib/partner-campaigns.ts constants map keyed by orgs.public_slug, new partner-campaign-module.tsx): kicker, headline, this week's challenge read straight from FNRAD_CHALLENGE (name plus link, no fetch), a link to /fnrad, a Listen to the podcast link, and Contribute a story kept as the secondary action; non-media founding orgs and curated-tier orgs keep the old module. /fnrad gained a "Browse the whole FNRad archive on Linestry" link under Episodes (rendered even with zero episodes) plus an FNRad archive footer link, and /t/fnrad_podcast gained a "FNRad on Linestry" header link guarded to the FNRad slug. UI only, no migration; verified live on localhost against real data (campaign module, both archive links, the show-page link, 375px no overflow, no console errors). Self-merged as SAFE.
