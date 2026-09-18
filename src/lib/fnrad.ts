@@ -16,6 +16,20 @@ export const FNRAD_SHOW_SLUG = "fnrad_podcast"
  *  it is just a query string on an href (T7). */
 export const FNRAD_HUB_REF = "fnrad"
 
+/** Route of the public listener hub. Fixed path, so it is a constant everywhere.
+ *  (FNRAD_HUB_REF above is the ref-code string "fnrad"; this is the "/fnrad" path.) */
+export const FNRAD_HUB_HREF = "/fnrad"
+
+/** Brand page of the FNRad org. The slug is name-derived (orgSlug(org) =
+ *  slugify(org.name), rendering as "FNRad_Podcast"), so if the org is ever
+ *  renamed this constant moves with it. The hub never holds the org object, so
+ *  it links to the brand page through this constant rather than deriving it. */
+export const FNRAD_BRAND_HREF = "/snowboarding/brands/FNRad_Podcast"
+
+/** Where "Listen to the podcast" goes: the FNRad YouTube channel. Explicit, not
+ *  read from orgs.website, so the destination does not depend on an editor field. */
+export const FNRAD_LISTEN_HREF = "https://www.youtube.com/@fnradsnowboarding"
+
 /** Per-episode ref code pattern, e.g. fnrad-s12e04. Season is not derivable from
  *  data (AUDIT-4), so this is a helper for minting codes by hand, not a read of
  *  anything. Same pattern the attribution brief's worked example uses (F23). */

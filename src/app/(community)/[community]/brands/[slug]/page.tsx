@@ -18,6 +18,8 @@ import { StoryCard } from "@/components/feed/story-card"
 import { EntityMentions } from "@/components/feed/entity-mentions"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { ShowModule } from "@/components/orgs/show-module"
+import { PartnerCampaignModule } from "@/components/orgs/partner-campaign-module"
+import { campaignForOrg } from "@/lib/partner-campaigns"
 import type { Org, ConfidenceLevel, Predicate, Event, Place, Story, Person } from "@/types"
 
 // ─── Label maps ───────────────────────────────────────────────────────────────
@@ -571,6 +573,10 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
   // ── Curated / partner layer (Phase 2, gated by curation_tier) ──────────────
   const isCurated = org.curation_tier === "curated" || org.curation_tier === "founding"
   const isFounding = org.curation_tier === "founding"
+  // A founding-tier media org (FNRad) with a PARTNER_CAMPAIGNS entry swaps the
+  // generic contribute module for its campaign module (Season 12). Non-media
+  // founding partners and curated-tier orgs keep the contribute module.
+  const campaign = isFounding && org.org_type === "media" ? campaignForOrg(org) : null
   // Validate the editor-authored jsonb defensively; render in stored (editor) order.
   const milestones = Array.isArray(org.brand_milestones)
     ? org.brand_milestones.filter((m) => !!m && typeof m.label === "string" && m.label.trim().length > 0)
@@ -924,7 +930,10 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
               </section>
             )}
 
-            {/* Contribute module */}
+            {/* Contribute module, or the Season 12 campaign module on FNRad */}
+            {campaign ? (
+              <PartnerCampaignModule campaign={campaign} brandColor={brandColor} ctaColor={ctaColor} onContribute={handleContribute} />
+            ) : (
             <section className="rounded-2xl p-5 sm:p-6 bg-surface border" style={{ borderColor: `${brandColor}40` }}>
               <h2 className="text-xl text-foreground mb-1.5" style={{ fontFamily: "var(--font-wordmark)" }}>Were you part of the {org.name} story?</h2>
               <p className="text-sm text-muted font-light max-w-xl mb-4 leading-relaxed">
@@ -955,6 +964,7 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
                 Contribute a story
               </button>
             </section>
+            )}
           </div>
         )}
 
