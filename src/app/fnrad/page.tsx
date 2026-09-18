@@ -13,7 +13,7 @@ import { BrandMark } from "@/components/ui/brand-mark"
 import { ChallengeCard } from "@/components/fnrad/challenge-card"
 import { readShowHub, readChallengeGuest } from "@/lib/public-timeline-read"
 import type { ShowHubEpisode } from "@/lib/public-timeline-read"
-import { FNRAD_SHOW_SLUG, FNRAD_HUB_REF, FNRAD_CHALLENGE } from "@/lib/fnrad"
+import { FNRAD_SHOW_SLUG, FNRAD_HUB_REF, FNRAD_CHALLENGE, FNRAD_BRAND_HREF } from "@/lib/fnrad"
 import {
   EQUITY_POOL_SHARES,
   EQUITY_SNAPSHOT_LABEL,
@@ -177,6 +177,14 @@ export default async function FnradHubPage() {
           </section>
         )}
 
+        {/* Archive link. Rendered even with no episodes: a listener still needs a
+            way into the full brand page and its 308-episode archive. */}
+        <p className="mt-4 text-sm text-white/60">
+          <Link href={FNRAD_BRAND_HREF} className="text-white/85 hover:text-white transition-colors">
+            Browse the whole FNRad archive on Linestry <span aria-hidden="true">&rarr;</span>
+          </Link>
+        </p>
+
         {/* Equity block (D10). Reads the constants; never a literal date or count. */}
         <section className="mt-12 rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-6">
           <h2 className="text-base font-bold text-white" style={displayFont}>
@@ -212,6 +220,9 @@ export default async function FnradHubPage() {
           </Link>
           <Link href="/word" className="text-xs text-white/60 hover:text-white transition-colors">
             linestry, noun. Read the definition.
+          </Link>
+          <Link href={FNRAD_BRAND_HREF} className="text-xs text-white/60 hover:text-white transition-colors">
+            FNRad archive
           </Link>
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-white/40">
             <Link href="/privacy" className="hover:text-white/70 transition-colors">

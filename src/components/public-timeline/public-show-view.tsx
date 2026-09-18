@@ -8,6 +8,7 @@
 import Link from "next/link"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { StackView } from "@/components/public-timeline/stack-view"
+import { FNRAD_SHOW_SLUG, FNRAD_HUB_HREF } from "@/lib/fnrad"
 import type { PublicShowPayload } from "@/lib/public-timeline-read"
 
 function BrandHome() {
@@ -35,12 +36,20 @@ export function PublicShowView({ payload, preview = false }: {
   // page. `live` folds in the Session C schedule, so an episode waiting on its
   // publish_at is not announced here before its time.
   const publicEpisodes = episodes.filter((e) => e.live && e.slug)
+  // This view is generic for every media show; only FNRad has a listener hub to
+  // link back to. owner.slug is the org's public_slug (orgOwnerHeader).
+  const isFnrad = owner.slug === FNRAD_SHOW_SLUG
 
   return (
     <div className="min-h-screen w-full" style={{ background: "#1C1917" }}>
       <main className="mx-auto max-w-xl px-4 py-6 sm:py-8">
         <div className="flex items-center justify-between gap-3 mb-6">
           <BrandHome />
+          {isFnrad && (
+            <Link href={FNRAD_HUB_HREF} className="text-xs font-medium text-white/60 hover:text-white transition-colors">
+              FNRad on Linestry <span aria-hidden="true">&rarr;</span>
+            </Link>
+          )}
         </div>
 
         {preview && (
