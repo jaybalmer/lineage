@@ -2747,3 +2747,15 @@ Second pass on the entity color system (after #264) from Cory's review. Brand mo
 - tsc: clean
 
 FNRad went live as a Founding partner and its three surfaces did not link to each other, so each got a job and the loop closed. On a founding-tier media org the generic "Were you part of the {brand} story?" contribute module is replaced by a Season 12 campaign module (new src/lib/partner-campaigns.ts constants map keyed by orgs.public_slug, new partner-campaign-module.tsx): kicker, headline, this week's challenge read straight from FNRAD_CHALLENGE (name plus link, no fetch), a link to /fnrad, a Listen to the podcast link, and Contribute a story kept as the secondary action; non-media founding orgs and curated-tier orgs keep the old module. /fnrad gained a "Browse the whole FNRad archive on Linestry" link under Episodes (rendered even with zero episodes) plus an FNRad archive footer link, and /t/fnrad_podcast gained a "FNRad on Linestry" header link guarded to the FNRad slug. UI only, no migration; verified live on localhost against real data (campaign module, both archive links, the show-page link, 375px no overflow, no console errors). Self-merged as SAFE.
+
+## 2026-09-18 - FNRad weekly challenge swap to Jose Fernandez (feature)
+- type: feature
+- pr: #268
+- branch: feat/fnrad-challenge-swap-jose-fernandez
+- ids: none
+- scope: fnrad-challenge-swap-jose-fernandez
+- migration: none
+- status: merged
+- tsc: clean
+
+First live test of the FNRad weekly challenge swap. FNRad dropped an unplanned bonus episode (Jose Fernandez, S12 Bonus 2), so the challenge guest swapped from Ingemar Backman to Jose one week early. Code cost was exactly what the listener-landing brief promised: one constant in src/lib/fnrad.ts (guestId + episodeSlug + episodeLabel), Ingemar kept as a commented NEXT block for a two-line swap back. Six consumer files needed no change. The whole non-trivial part was data, not code: the mentions import had minted a duplicate "Jose Fernandez" ghost (9ef7f231, correct spelling, fresh) next to the historical "Jose Fernandes" node (6e104d57, June, carrying the 1985 European Championships + 1986 World Champs stories + a competed_at claim). On Jay's go the two were merged via merge_person_into (dry-run then commit: 3 rows repointed, no dedup conflicts), survivor renamed to the correct spelling, jose_fernandes kept as a redirect alias. That people-table merge is applied to prod out-of-band (GATED, Jay-approved); the PR is code-only, no migration. Both F18 guest checks pass (uuid id, no profiles row so tags permissive). Verified on localhost: hub challenge card, brand-page Season 12 module, and the unified guest page all name Jose; no console errors. Self-merged as SAFE. Swap cost, for the runbook: ~1 constant edit; the merge is the only step that will recur only when an import duplicates a guest.
