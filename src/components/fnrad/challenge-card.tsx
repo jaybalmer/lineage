@@ -69,11 +69,11 @@ export function ChallengeCard(props: {
         <span className="text-sm font-semibold text-white">{guest.display_name}</span>
       </div>
 
-      {/* Episode-1 instance (Appendix A [challenge-ask] / [challenge-body]). For
-          episodes after the first, drop the season framing: "{Guest} was on this
-          week's episode. Add your stories connected to {First}." */}
+      {/* S12 Bonus 2 instance. For a regular season episode, drop the bonus
+          framing: "{Guest} was on this week's episode. Add your stories connected
+          to {First}." */}
       <p className="mt-4 text-lg font-semibold leading-snug text-white">
-        {guest.display_name} is the first guest of Season 12. Add your stories connected to {first}.
+        Join us for this second early-season bonus episode. Season 12 proper starts next episode. Add your stories connected to {first}.
       </p>
       <p className="mt-2 text-sm font-light leading-relaxed text-white/75">
         Your stories and photos of their boards, the events, the videos. If you were there, or you
