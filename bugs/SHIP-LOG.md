@@ -2759,3 +2759,15 @@ FNRad went live as a Founding partner and its three surfaces did not link to eac
 - tsc: clean
 
 First live test of the FNRad weekly challenge swap. FNRad dropped an unplanned bonus episode (Jose Fernandez, S12 Bonus 2), so the challenge guest swapped from Ingemar Backman to Jose one week early. Code cost was exactly what the listener-landing brief promised: one constant in src/lib/fnrad.ts (guestId + episodeSlug + episodeLabel), Ingemar kept as a commented NEXT block for a two-line swap back. Six consumer files needed no change. The whole non-trivial part was data, not code: the mentions import had minted a duplicate "Jose Fernandez" ghost (9ef7f231, correct spelling, fresh) next to the historical "Jose Fernandes" node (6e104d57, June, carrying the 1985 European Championships + 1986 World Champs stories + a competed_at claim). On Jay's go the two were merged via merge_person_into (dry-run then commit: 3 rows repointed, no dedup conflicts), survivor renamed to the correct spelling, jose_fernandes kept as a redirect alias. That people-table merge is applied to prod out-of-band (GATED, Jay-approved); the PR is code-only, no migration. Both F18 guest checks pass (uuid id, no profiles row so tags permissive). Verified on localhost: hub challenge card, brand-page Season 12 module, and the unified guest page all name Jose; no console errors. Self-merged as SAFE. Swap cost, for the runbook: ~1 constant edit; the merge is the only step that will recur only when an import duplicates a guest.
+
+## 2026-09-18 - FNRad challenge card bonus-episode copy (feature)
+- type: feature
+- pr: #269
+- branch: fix/fnrad-challenge-card-bonus-copy
+- ids: none
+- scope: fnrad-challenge-card-bonus-copy
+- migration: none
+- status: merged
+- tsc: clean
+
+Follow-up copy tweak on #268. S12 Bonus 2 is a bonus episode, not the season opener, so the challenge card headline now reads "Join us for this second early-season bonus episode. Season 12 proper starts next episode. Add your stories connected to {first}." in place of "{Guest} is the first guest of Season 12." One line in src/components/fnrad/challenge-card.tsx, UI only, verified on localhost /fnrad. Self-merged as SAFE.
