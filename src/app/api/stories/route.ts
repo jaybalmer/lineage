@@ -26,7 +26,7 @@ function getServiceClient() {
 }
 
 // ── GET /api/stories ─────────────────────────────────────────────────────────
-// Query params: id | author_id | place_id | event_id | org_id | board_id | rider_id | limit | sort
+// Query params: id | author_id | place_id | event_id | org_id | board_id | rider_id | limit | sort | order
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const storyId   = searchParams.get("id")        // single-story fetch (focus pin)
@@ -45,6 +45,10 @@ export async function GET(req: NextRequest) {
   // they were POSTED (created_at), not by when the event happened (story_date).
   // Default stays story_date so every other caller is unchanged.
   const orderColumn = searchParams.get("sort") === "recent" ? "created_at" : "story_date"
+  // BUG-193: the stories index offers an "Oldest first" timeline order, which
+  // needs ascending pagination. Additive and opt-in: only an explicit
+  // order=asc flips it, so every existing caller keeps descending order.
+  const orderAsc = searchParams.get("order") === "asc"
 
   try {
     const supabase = getServiceClient()
@@ -76,7 +80,7 @@ export async function GET(req: NextRequest) {
         boards:story_boards(board_id),
         author:profiles!author_id(display_name, avatar_url)
       `)
-      .order(orderColumn, { ascending: false })
+      .order(orderColumn, { ascending: orderAsc })
       .range(offset, offset + limit - 1)
 
     // Single-story fetch mirrors the stories RLS rule: public, or the viewer
