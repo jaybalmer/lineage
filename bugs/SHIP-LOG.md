@@ -2807,3 +2807,16 @@ Second live run of the FNRad weekly challenge swap, and the first regular-season
 - tsc: clean
 
 Jay asked for FNRad episodes to appear on the show's timeline as story-style cards with the YouTube image, and on each guest's timeline. Built as derived cards (Jay's pick over minting real story rows): one server helper readEpisodeCards (src/lib/episode-cards-server.ts) reads live episodes (public_enabled, past publish_at, has public_slug) by show or by guest via event_guests, and a store-free EpisodeCard renders thumbnail (i.ytimg.com hqdefault), title, date, guest chips, See the episode and Watch on YouTube. Surfaces: brand page All + Stories tabs (via new GET /api/episodes), guest /people/[id] visitor view and owner timeline (FeedView episode item), public show page /t/{show} (cards replace the plain list), and stackless member public timelines (buildProfilePayload). No story rows, so future episodes appear automatically. Verified on localhost against prod data (brand page, Paul Fidrych and Jay Balmer profiles, /t/fnrad_podcast, 375px, no app console errors); the public member-timeline branch is type-checked only, since the one member guest (Jay) has a curated Stack. Data note: the Devun Walsh episode (evt_1785710768741_kerwqf) has no event_guests row, so it shows on the show timeline but on no guest timeline until a guest is added. Self-merged as SAFE.
+
+## 2026-11-04 - data: Devun Walsh added as guest on his FNRad episode (data op)
+- type: data
+- pr: none (single additive DML insert via Supabase MCP on Jay's explicit go; no code change)
+- branch: none
+- commit: none
+- ids: none
+- scope: fnrad-devun-walsh-guest
+- migration: none (one event_guests row inserted: event evt_1785710768741_kerwqf, person 60e46be9-a299-41bc-8030-5d205407f713, position 0, added_by Jay; mirrors what PUT /api/events/[id]/guests writes, no tag_events involved)
+- status: applied
+- tsc: n/a
+
+Follow-up to #272. The FNRad: Devun Walsh episode had no event_guests row, so its episode card showed on the show timeline but on no rider's timeline. Devun Walsh has exactly one node (people, unclaimed, uuid-shaped). Insert was guarded with NOT EXISTS. VERIFIED on the live site: GET /api/episodes?guest=60e46be9-... returns the Devun Walsh episode with him as guest, and the show read now lists a guest on all four FNRad episodes (Paul Fidrych, Jose Fernandes, Devun Walsh, Jay Balmer).
