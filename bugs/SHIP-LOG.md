@@ -2783,3 +2783,15 @@ Follow-up copy tweak on #268. S12 Bonus 2 is a bonus episode, not the season ope
 - tsc: clean
 
 FNRad weekly-challenge guest surname corrected from Fernandez to Fernandes (ends in s). Code carried the fallback guestName + episodeSlug; the display name lived on the people node, the event name, and the event public_slug. All four fixed. Merge held for Jay because the DB step was GATED (row UPDATEs + a live public-slug rename); the old slug is preserved as a redirect alias so the episode link keeps resolving.
+
+## 2026-11-04 - FNRad weekly challenge swap to Paul Fidrych S12E6 (feature)
+- type: feature
+- pr: #271
+- branch: feat/fnrad-challenge-swap-fidrych-s12e6
+- ids: none
+- scope: fnrad-challenge-swap-fidrych-s12e6
+- migration: none
+- status: merged (squash ae0d645, 2026-11-04)
+- tsc: clean
+
+Second live run of the FNRad weekly challenge swap, and the first regular-season one. Challenge guest moved from Jose Fernandes (S12 Bonus 2) to Paul Fidrych (S12E6). Code: the FNRAD_CHALLENGE constant in src/lib/fnrad.ts (guestId af3ece43, guestName, episodeSlug paul_fidrych__fnrad_s12e6, episodeLabel FNRad S12E6) plus one headline line in src/components/fnrad/challenge-card.tsx, where the bonus-episode framing went back to the regular "{Guest} was on this week's episode" copy. Ingemar Backman (fbf34ae7, PR #235) stays pre-flighted as a catch-up option. Six consumer files needed no change. Pre-flight was done before the session: node uuid-shaped, unclaimed, no profiles row (permissive tags, both F18 checks pass); episode event public and slugged; event_guests row at position 0. No data fix needed this time. Verified on localhost: /fnrad card shows Paul with kicker "From FNRad S12E6" and See the episode opens /t/paul_fidrych__fnrad_s12e6; brand-page Season 12 module names Paul; /t/jose_fernandes__fnrad_s12b2 now invites stories about Paul (intended, F3); no console errors. Self-merged as SAFE. Swap cost, for the runbook: 1 constant edit plus 1 copy line (the copy line only because the previous week was a bonus episode); zero data work when the guest node and episode page are clean.
