@@ -4,6 +4,7 @@ import { use, useState, useEffect, useRef } from "react"
 import { Nav } from "@/components/ui/nav"
 import { CLAIMS, getPersonById, getSharedContext } from "@/lib/mock-data"
 import { FeedView } from "@/components/feed/feed-view"
+import type { EpisodeCardData } from "@/lib/episode-cards"
 import { StoryCard } from "@/components/feed/story-card"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { AddPersonConnectionsPopover } from "@/components/feed/add-person-connections-popover"
@@ -61,6 +62,8 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   // Podcast mentions of this rider (published only; the API never returns
   // drafts on the subject-side read).
   const [mentions, setMentions] = useState<Mention[]>([])
+  // Published podcast episodes this person guested on (story-style cards).
+  const [episodes, setEpisodes] = useState<EpisodeCardData[]>([])
   const [showInviteModal, setShowInviteModal] = useState(false)
   // Add-from-profile surfaces (signed-in members, public profile only).
   const [showConnectionsPopover, setShowConnectionsPopover] = useState(false)
@@ -197,6 +200,11 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
       .then((r) => (r.ok ? r.json() : []))
       .then((rows) => setMentions(Array.isArray(rows) ? (rows as Mention[]) : []))
       .catch(() => setMentions([]))
+
+    fetch(`/api/episodes?guest=${encodeURIComponent(resolvedId)}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows) => setEpisodes(Array.isArray(rows) ? (rows as EpisodeCardData[]) : []))
+      .catch(() => setEpisodes([]))
 
     fetch(`/api/claim-requests?node_id=${encodeURIComponent(resolvedId)}`)
       .then((r) => r.json())
@@ -705,7 +713,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
         {/* Sparse-ghost empty state (B-2): an unclaimed profile with nothing in
             the feed body would otherwise show a blank. Reframe it as an
             invitation to help fill in their history. */}
-        {!isCurrentUser && isInvitableNodeStatus(person.node_status) && personClaims.length === 0 && stories.length === 0 && mentions.length === 0 ? (
+        {!isCurrentUser && isInvitableNodeStatus(person.node_status) && personClaims.length === 0 && stories.length === 0 && mentions.length === 0 && episodes.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border-default p-6 text-center">
             <p className="text-sm font-semibold text-foreground mb-1">Nothing here yet</p>
             <p className="text-xs text-muted leading-relaxed max-w-sm mx-auto">
@@ -748,6 +756,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
             claims={personClaims}
             stories={stories}
             mentions={mentions}
+            episodes={episodes}
             personName={person.display_name}
             isOwn={false}
             hideActionButtons={true}

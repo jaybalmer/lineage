@@ -36,21 +36,26 @@ import { IWasThere } from "@/components/public-timeline/i-was-there"
 import { ClaimNodeSheet } from "@/components/ui/claim-node-sheet"
 import { useState } from "react"
 import { StoryMedia } from "@/components/public-timeline/story-media"
+import { EpisodeCard } from "@/components/feed/episode-card"
+import { episodeSortNum, type EpisodeCardData } from "@/lib/episode-cards"
 
 type FeedItem =
   | { kind: "claim"; claim: Claim; sortDate: number }
   | { kind: "story"; story: Story; sortDate: number }
+  | { kind: "episode"; episode: EpisodeCardData; sortDate: number }
 
 // Timeline node colour: claims route through the shared entity palette (object
 // type first, predicate fallback); stories use the story dot.
 function nodeColor(item: FeedItem): string {
   if (item.kind === "story") return ENTITY_DOT_CLASS.story
+  if (item.kind === "episode") return "bg-fuchsia-500"
   return dotClassForClaim(item.claim)
 }
 
 // Within the same date: boards, then places, people, events, orgs, stories.
 function predicateRank(item: FeedItem): number {
   if (item.kind === "story") return 8
+  if (item.kind === "episode") return 7
   const p = item.claim.predicate
   if (p === "owned_board") return 0
   if (p === "rode_at" || p === "worked_at") return 2
@@ -372,6 +377,7 @@ export function PublicTimeline({ payload }: { payload: PublicTimelinePayload }) 
   )
 
   const items: FeedItem[] = [
+    ...(payload.episodes ?? []).map((episode) => ({ kind: "episode" as const, episode, sortDate: episodeSortNum(episode) })),
     ...visibleClaims.map((claim) => ({ kind: "claim" as const, claim, sortDate: dateToSortNum(claim.start_date) })),
     ...payload.stories.map((story) => ({ kind: "story" as const, story, sortDate: dateToSortNum(story.story_date) })),
   ].sort((a, b) => {
@@ -406,7 +412,9 @@ export function PublicTimeline({ payload }: { payload: PublicTimelinePayload }) 
 
           <div>
             {grouped[decade].map((item) => {
-              const key = item.kind === "claim" ? item.claim.id : `story-${item.story.id}`
+              const key = item.kind === "claim" ? item.claim.id
+                : item.kind === "episode" ? `episode-${item.episode.id}`
+                : `story-${item.story.id}`
               return (
                 <div key={key} className="relative pl-9">
                   <div className={cn("absolute left-[7px] top-[20px] w-[22px] h-[22px] rounded-full border-[3px] border-background z-10", nodeColor(item))} />
@@ -416,6 +424,8 @@ export function PublicTimeline({ payload }: { payload: PublicTimelinePayload }) 
                       companionIds={companionMap.get(item.claim.id) ?? []}
                       entities={entities}
                     />
+                  ) : item.kind === "episode" ? (
+                    <EpisodeCard episode={item.episode} />
                   ) : (
                     <PublicStoryCard story={item.story} entities={entities} owner={payload.owner} />
                   )}
