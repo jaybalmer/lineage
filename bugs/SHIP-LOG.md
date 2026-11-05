@@ -2778,8 +2778,8 @@ Follow-up copy tweak on #268. S12 Bonus 2 is a bonus episode, not the season ope
 - branch: fix/jose-fernandes-spelling
 - ids: none
 - scope: fnrad-guest-name-spelling
-- migration: applied (out-of-band GATED SQL, Jay-approved): people.display_name + events.name + events.public_slug renamed Fernandez->Fernandes on node 6e104d57 / event evt_1789777870492_453els, old slug kept as public_slug_aliases redirect
-- status: pending
+- migration: applied (out-of-band GATED SQL, Jay-approved): people.display_name + events.name + events.public_slug renamed Fernandez->Fernandes on node 6e104d57 / event evt_1789777870492_453els, old slug kept as public_slug_aliases redirect, verified 2026-11-04 (people, events, public_slug_aliases all read Fernandes)
+- status: merged (squash 1e0c129, 2026-11-04)
 - tsc: clean
 
 FNRad weekly-challenge guest surname corrected from Fernandez to Fernandes (ends in s). Code carried the fallback guestName + episodeSlug; the display name lived on the people node, the event name, and the event public_slug. All four fixed. Merge held for Jay because the DB step was GATED (row UPDATEs + a live public-slug rename); the old slug is preserved as a redirect alias so the episode link keeps resolving.
