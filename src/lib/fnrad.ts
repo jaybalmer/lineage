@@ -72,14 +72,7 @@ export function hasChallengeGuest(guestId: string): boolean {
  *  page. A null / placeholder guestId means no challenge card anywhere, with no
  *  empty state (D5 render state 3).
  *
- *  Set 2026-09-18 to Jose Fernandes's people.id for the S12 Bonus 2 episode. His
- *  node is uuid-shaped and has no profiles row, so tags are permissive; both F18
- *  pre-flights pass for it. Before this swap the mentions import had minted a
- *  duplicate ghost alongside the historical node; the two were merged into
- *  6e104d57 (survivor keeps the 1985 European Championships history). The name is
- *  "Jose Fernandes" (surname ending in s); the earlier "Fernandez" spelling was
- *  corrected on 2026-09-20 across the node, the event, and the slug (the old
- *  jose_fernandez__fnrad_s12b2 slug is kept as a redirect alias).
+ *  Set 2026-11-04 to Paul Fidrych's people.id for S12E6; uuid-shaped, no profiles row, both F18 pre-flights pass.
  *
  *  episodeSlug and episodeLabel are OPTIONAL and arrive later, when the S12 E01
  *  page exists. episodeSlug is the episode's `public_slug`, NOT its id, because
@@ -89,14 +82,10 @@ export function hasChallengeGuest(guestId: string): boolean {
  *  are hidden when episodeSlug is null; turning them on later is an edit to
  *  these two lines and a deploy (D5 state 2, A8b). */
 export const FNRAD_CHALLENGE = {
-  guestId: "6e104d57-cac1-408a-90f5-5fa890ac3d61", // Jose Fernandes (people.id), set 2026-09-18
-  guestName: "Jose Fernandes", // display fallback if the node is unreadable
-  episodeSlug: "jose_fernandes__fnrad_s12b2" as string | null, // OPTIONAL. The episode's public_slug.
-  episodeLabel: "FNRad S12 Bonus 2" as string | null, // OPTIONAL. What the hub kicker prints.
+  guestId: "af3ece43-cead-4fac-b160-8670cb44311a", // Paul Fidrych (people.id), set 2026-11-04
+  guestName: "Paul Fidrych", // display fallback if the node is unreadable
+  episodeSlug: "paul_fidrych__fnrad_s12e6" as string | null, // OPTIONAL. The episode's public_slug.
+  episodeLabel: "FNRad S12E6" as string | null, // OPTIONAL. What the hub kicker prints.
 } as const
 
-// NEXT (Ingemar Backman episode, expected week of 2026-09-21). Both F18 pre-flights
-// passed for this id on 2026-09-06 (PR #235). Swap back by restoring these values:
-//   guestId: "fbf34ae7-f056-4457-ad90-3be67adac0f1"
-//   guestName: "Ingemar Backman"
-//   episodeSlug / episodeLabel: null until the Ingemar episode page exists
+// Ingemar Backman fbf34ae7-f056-4457-ad90-3be67adac0f1 stays pre-flighted (PR #235) and is available for a catch-up week.
