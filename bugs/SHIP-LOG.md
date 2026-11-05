@@ -2795,3 +2795,15 @@ FNRad weekly-challenge guest surname corrected from Fernandez to Fernandes (ends
 - tsc: clean
 
 Second live run of the FNRad weekly challenge swap, and the first regular-season one. Challenge guest moved from Jose Fernandes (S12 Bonus 2) to Paul Fidrych (S12E6). Code: the FNRAD_CHALLENGE constant in src/lib/fnrad.ts (guestId af3ece43, guestName, episodeSlug paul_fidrych__fnrad_s12e6, episodeLabel FNRad S12E6) plus one headline line in src/components/fnrad/challenge-card.tsx, where the bonus-episode framing went back to the regular "{Guest} was on this week's episode" copy. Ingemar Backman (fbf34ae7, PR #235) stays pre-flighted as a catch-up option. Six consumer files needed no change. Pre-flight was done before the session: node uuid-shaped, unclaimed, no profiles row (permissive tags, both F18 checks pass); episode event public and slugged; event_guests row at position 0. No data fix needed this time. Verified on localhost: /fnrad card shows Paul with kicker "From FNRad S12E6" and See the episode opens /t/paul_fidrych__fnrad_s12e6; brand-page Season 12 module names Paul; /t/jose_fernandes__fnrad_s12b2 now invites stories about Paul (intended, F3); no console errors. Self-merged as SAFE. Swap cost, for the runbook: 1 constant edit plus 1 copy line (the copy line only because the previous week was a bonus episode); zero data work when the guest node and episode page are clean.
+
+## 2026-11-04 - FNRad episodes as story-style timeline cards (feature)
+- type: feature
+- pr: #272
+- branch: feat/fnrad-episode-timeline-cards
+- ids: none
+- scope: fnrad-episode-timeline-cards
+- migration: none
+- status: merged (squash 61d1c7a, 2026-11-04)
+- tsc: clean
+
+Jay asked for FNRad episodes to appear on the show's timeline as story-style cards with the YouTube image, and on each guest's timeline. Built as derived cards (Jay's pick over minting real story rows): one server helper readEpisodeCards (src/lib/episode-cards-server.ts) reads live episodes (public_enabled, past publish_at, has public_slug) by show or by guest via event_guests, and a store-free EpisodeCard renders thumbnail (i.ytimg.com hqdefault), title, date, guest chips, See the episode and Watch on YouTube. Surfaces: brand page All + Stories tabs (via new GET /api/episodes), guest /people/[id] visitor view and owner timeline (FeedView episode item), public show page /t/{show} (cards replace the plain list), and stackless member public timelines (buildProfilePayload). No story rows, so future episodes appear automatically. Verified on localhost against prod data (brand page, Paul Fidrych and Jay Balmer profiles, /t/fnrad_podcast, 375px, no app console errors); the public member-timeline branch is type-checked only, since the one member guest (Jay) has a curated Stack. Data note: the Devun Walsh episode (evt_1785710768741_kerwqf) has no event_guests row, so it shows on the show timeline but on no guest timeline until a guest is added. Self-merged as SAFE.
