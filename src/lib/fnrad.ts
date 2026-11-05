@@ -72,13 +72,14 @@ export function hasChallengeGuest(guestId: string): boolean {
  *  page. A null / placeholder guestId means no challenge card anywhere, with no
  *  empty state (D5 render state 3).
  *
- *  Set 2026-09-18 to Jose Fernandez's people.id for the S12 Bonus 2 episode. His
+ *  Set 2026-09-18 to Jose Fernandes's people.id for the S12 Bonus 2 episode. His
  *  node is uuid-shaped and has no profiles row, so tags are permissive; both F18
  *  pre-flights pass for it. Before this swap the mentions import had minted a
- *  duplicate "Jose Fernandez" ghost alongside the historical (misspelled) "Jose
- *  Fernandes" node; the two were merged into 6e104d57 (survivor keeps the 1985
- *  European Championships history) and the survivor renamed to the correct
- *  spelling, so the challenge points at one node.
+ *  duplicate ghost alongside the historical node; the two were merged into
+ *  6e104d57 (survivor keeps the 1985 European Championships history). The name is
+ *  "Jose Fernandes" (surname ending in s); the earlier "Fernandez" spelling was
+ *  corrected on 2026-09-20 across the node, the event, and the slug (the old
+ *  jose_fernandez__fnrad_s12b2 slug is kept as a redirect alias).
  *
  *  episodeSlug and episodeLabel are OPTIONAL and arrive later, when the S12 E01
  *  page exists. episodeSlug is the episode's `public_slug`, NOT its id, because
@@ -88,9 +89,9 @@ export function hasChallengeGuest(guestId: string): boolean {
  *  are hidden when episodeSlug is null; turning them on later is an edit to
  *  these two lines and a deploy (D5 state 2, A8b). */
 export const FNRAD_CHALLENGE = {
-  guestId: "6e104d57-cac1-408a-90f5-5fa890ac3d61", // Jose Fernandez (people.id), set 2026-09-18
-  guestName: "Jose Fernandez", // display fallback if the node is unreadable
-  episodeSlug: "jose_fernandez__fnrad_s12b2" as string | null, // OPTIONAL. The episode's public_slug.
+  guestId: "6e104d57-cac1-408a-90f5-5fa890ac3d61", // Jose Fernandes (people.id), set 2026-09-18
+  guestName: "Jose Fernandes", // display fallback if the node is unreadable
+  episodeSlug: "jose_fernandes__fnrad_s12b2" as string | null, // OPTIONAL. The episode's public_slug.
   episodeLabel: "FNRad S12 Bonus 2" as string | null, // OPTIONAL. What the hub kicker prints.
 } as const
 
