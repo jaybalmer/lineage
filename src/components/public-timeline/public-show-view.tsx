@@ -3,11 +3,12 @@
 // FNRad Featured Timelines Phase 3: the chromeless public show page at /t/[slug]
 // for a media show (org with org_type='media'). Same dark ground + store-free
 // StackView as the profile/episode views, with a show-shaped header (logo, name,
-// description) plus a published-episode list. Read-only in v1.
+// description) plus published episodes as story-style cards. Read-only in v1.
 
 import Link from "next/link"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { StackView } from "@/components/public-timeline/stack-view"
+import { EpisodeCard } from "@/components/feed/episode-card"
 import { FNRAD_SHOW_SLUG, FNRAD_HUB_HREF } from "@/lib/fnrad"
 import type { PublicShowPayload } from "@/lib/public-timeline-read"
 
@@ -31,11 +32,7 @@ export function PublicShowView({ payload, preview = false }: {
   /** Editor-only pre-publish render (B4): banner-marked, otherwise identical. */
   preview?: boolean
 }) {
-  const { owner, entries, episodes, stories, entities } = payload
-  // The public show page links only to episodes that are LIVE and have their own
-  // page. `live` folds in the Session C schedule, so an episode waiting on its
-  // publish_at is not announced here before its time.
-  const publicEpisodes = episodes.filter((e) => e.live && e.slug)
+  const { owner, entries, episodeCards, stories, entities } = payload
   // This view is generic for every media show; only FNRad has a listener hub to
   // link back to. owner.slug is the org's public_slug (orgOwnerHeader).
   const isFnrad = owner.slug === FNRAD_SHOW_SLUG
@@ -88,27 +85,14 @@ export function PublicShowView({ payload, preview = false }: {
           </>
         )}
 
-        {/* Episodes */}
-        {publicEpisodes.length > 0 && (
+        {/* Episodes: story-style cards (YouTube thumbnail, date, guests), newest
+            first. episodeCards is already filtered to live episodes with a page. */}
+        {episodeCards.length > 0 && (
           <section className="mt-10">
             <div className="text-[10px] font-semibold uppercase tracking-widest text-white/40 mb-3">Episodes</div>
-            <div className="flex flex-col gap-2">
-              {publicEpisodes.map((e) => (
-                <Link
-                  key={e.id}
-                  href={`/t/${e.slug}`}
-                  className="flex items-center justify-between gap-3 rounded-xl bg-white/5 border border-white/10 px-4 py-3 hover:bg-white/10 transition-colors"
-                >
-                  <div className="min-w-0">
-                    <div className="text-sm font-medium text-white truncate">{e.title}</div>
-                    {(e.episode_number != null || e.year) && (
-                      <div className="text-xs text-white/50">
-                        {[e.episode_number != null ? `Episode ${e.episode_number}` : null, e.year ? String(e.year) : null].filter(Boolean).join(" · ")}
-                      </div>
-                    )}
-                  </div>
-                  <span className="text-white/40 text-sm shrink-0">→</span>
-                </Link>
+            <div className="flex flex-col">
+              {episodeCards.map((e) => (
+                <EpisodeCard key={e.id} episode={e} />
               ))}
             </div>
           </section>

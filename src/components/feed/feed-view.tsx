@@ -8,6 +8,8 @@ import { StoryCard } from "@/components/feed/story-card"
 import { MentionRow } from "@/components/feed/mention-row"
 import { MentionEpisodeGroup } from "@/components/feed/mention-episode-group"
 import { groupMentionsByEpisode } from "@/lib/mentions"
+import { EpisodeCard } from "@/components/feed/episode-card"
+import { episodeSortNum, type EpisodeCardData } from "@/lib/episode-cards"
 import { StartCard } from "@/components/feed/start-card"
 import { AddClaimModal } from "@/components/ui/add-claim-modal"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
@@ -70,6 +72,7 @@ type FeedItem =
   | { kind: "day"; day: RidingDay; sortDate: number }
   | { kind: "story"; story: Story; sortDate: number }
   | { kind: "mention"; mentions: Mention[]; sortDate: number }
+  | { kind: "episode"; episode: EpisodeCardData; sortDate: number }
   | { kind: "riding_start"; year: number; sortDate: number }
 
 // Timeline node color. Claims route through the shared entity palette (object
@@ -81,7 +84,7 @@ function nodeColor(item: FeedItem): string {
   if (item.kind === "riding_start") return "bg-amber-500"
   if (item.kind === "day") return "bg-emerald-600"
   if (item.kind === "story") return ENTITY_DOT_CLASS.story
-  if (item.kind === "mention") return "bg-fuchsia-500"
+  if (item.kind === "mention" || item.kind === "episode") return "bg-fuchsia-500"
   return dotClassForClaim(item.claim)
 }
 
@@ -91,6 +94,7 @@ function predicateRank(item: FeedItem): number {
   if (item.kind === "day") return 9
   if (item.kind === "story") return 8
   if (item.kind === "mention") return 7
+  if (item.kind === "episode") return 7
   const p = item.claim.predicate
   if (p === "owned_board") return 0
   if (p === "rode_at" || p === "worked_at") return 2
@@ -122,6 +126,7 @@ export function FeedView({
   days = [],
   stories = [],
   mentions = [],
+  episodes = [],
   personName,
   isOwn,
   hideActionButtons = false,
@@ -141,6 +146,9 @@ export function FeedView({
   stories?: Story[]
   /** Podcast mentions of this person, already filtered to published upstream. */
   mentions?: Mention[]
+  /** Published podcast episodes this person guested on, rendered as story-style
+   *  cards. Shown under All and Stories. */
+  episodes?: EpisodeCardData[]
   personName: string
   isOwn?: boolean
   hideActionButtons?: boolean
@@ -245,18 +253,22 @@ export function FeedView({
         }))
       : []
 
+    const episodeItems: FeedItem[] = filter === "all" || filter === "stories"
+      ? episodes.map((episode) => ({ kind: "episode" as const, episode, sortDate: episodeSortNum(episode) }))
+      : []
+
     // Inject "Riding Since" milestone at Jan 1 of that year — visible on "all" filter only
     const ridingStartItem: FeedItem[] =
       ridingSince && filter === "all"
         ? [{ kind: "riding_start" as const, year: ridingSince, sortDate: ridingSince * 10000 + 101 }]
         : []
 
-    return [...claimItems, ...dayItems, ...storyItems, ...mentionItems, ...ridingStartItem].sort((a, b) => {
+    return [...claimItems, ...dayItems, ...storyItems, ...mentionItems, ...episodeItems, ...ridingStartItem].sort((a, b) => {
       const dir = order === "asc" ? 1 : -1
       if (a.sortDate !== b.sortDate) return dir * (a.sortDate - b.sortDate)
       return predicateRank(a) - predicateRank(b)
     })
-  }, [groupedClaims, days, stories, mentions, filter, ridingSince, order, eventDateById])
+  }, [groupedClaims, days, stories, mentions, episodes, filter, ridingSince, order, eventDateById])
 
   const grouped = useMemo(() => groupByDecade(items), [items])
   const decades = Object.keys(grouped).sort((a, b) => {
@@ -295,13 +307,13 @@ export function FeedView({
       people: countCat("people"),
       orgs: countCat("orgs"),
       events: countCat("events"),
-      stories: stories.length,
+      stories: stories.length + episodes.length,
       // Deliberately NOT folded into `all`: countTimelineEntries also drives the
       // owner's "Entry #N" celebration, and a mention is something someone else
       // said about you, not an entry you made.
       mentions: mentions.length,
     }
-  }, [groupedClaims, days, stories, mentions])
+  }, [groupedClaims, days, stories, mentions, episodes])
 
   return (
     <div>
@@ -412,6 +424,7 @@ export function FeedView({
                         : item.kind === "day" ? item.day.id
                         : item.kind === "story" ? `story-${item.story.id}`
                         : item.kind === "mention" ? `mention-${item.mentions[0]?.id}`
+                        : item.kind === "episode" ? `episode-${item.episode.id}`
                         : `riding-start-${item.year}`
                       return (
                         <div key={key} className={cn("relative pl-9", entranceClass())} style={entranceStyle()}>
@@ -437,6 +450,8 @@ export function FeedView({
                             <DayPostCard day={item.day} isOwn={isOwn} />
                           ) : item.kind === "story" ? (
                             <StoryCard story={item.story} isOwn={isOwn} onDelete={onStoryDeleted} />
+                          ) : item.kind === "episode" ? (
+                            <EpisodeCard episode={item.episode} />
                           ) : item.kind === "mention" ? (
                             item.mentions.length === 1 ? (
                               <MentionRow mention={item.mentions[0]} context="timeline" />

@@ -18,6 +18,8 @@ import { eventSlug, placeSlug, boardSlug } from "@/lib/mock-data"
 import { mentionHref } from "@/lib/mention-links"
 import { FNRAD_CHALLENGE, hasChallengeGuest } from "@/lib/fnrad"
 import { nameToSlug } from "@/lib/utils"
+import { readEpisodeCards } from "@/lib/episode-cards-server"
+import type { EpisodeCardData } from "@/lib/episode-cards"
 import type {
   Claim, Story, EntityType, Predicate, MentionSubjectType,
   PublicStackEntry, PublicStackEntryType, PublicStackCategoryKey,
@@ -98,6 +100,8 @@ export interface PublicTimelinePayload {
   entities: PublicTimelineEntities
   /** Phase 3 reads this to fork timeline vs stack; Phase 2 always renders timeline. */
   default_view: "timeline" | "stack" | null
+  /** Published podcast episodes the owner guested on, as story-style cards. */
+  episodes?: EpisodeCardData[]
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -412,7 +416,11 @@ async function buildProfilePayload(
     .select("*")
     .eq("subject_id", ownerId)
     .eq("visibility", "public")
-  const [claimsRes, stories] = await Promise.all([claimsP, readOwnerStories(db, ownerId)])
+  const [claimsRes, stories, episodes] = await Promise.all([
+    claimsP,
+    readOwnerStories(db, ownerId),
+    readEpisodeCards({ guestId: ownerId }).catch(() => [] as EpisodeCardData[]),
+  ])
   const claims = (claimsRes.data ?? []) as Claim[]
 
   const entities = await resolveEntities(db, claims, stories)
@@ -446,6 +454,7 @@ async function buildProfilePayload(
     stories,
     entities,
     default_view: profile.public_timeline_default_view ?? null,
+    episodes,
   }
 }
 
@@ -1612,6 +1621,8 @@ export interface PublicShowPayload {
   owner: PublicTimelineOwner
   entries: ResolvedStackEntry[]
   episodes: PublicShowEpisode[]
+  /** Live episodes as story-style cards (thumbnail, date, guests). */
+  episodeCards: EpisodeCardData[]
   stories: Story[]
   entities: PublicTimelineEntities
 }
@@ -1649,7 +1660,10 @@ export async function readOrgStack(
   if (!org) return null
   if (opts.requireEnabled && org.public_enabled !== true) return null
 
-  const { entries, stories, entities } = await loadOwnerStack(db, "org", org.id)
+  const [{ entries, stories, entities }, episodeCards] = await Promise.all([
+    loadOwnerStack(db, "org", org.id),
+    readEpisodeCards({ showOrgId: org.id }).catch(() => [] as EpisodeCardData[]),
+  ])
 
   // Episode list: every event linked to this show, newest first.
   const { data: epRows } = await db
@@ -1684,7 +1698,7 @@ export async function readOrgStack(
   // (orgId, no requireEnabled) keeps the full list for editors.
   const visibleEpisodes = opts.requireEnabled ? episodes.filter((e) => e.live) : episodes
 
-  return { owner: orgOwnerHeader(org), entries, episodes: visibleEpisodes, stories, entities }
+  return { owner: orgOwnerHeader(org), entries, episodes: visibleEpisodes, episodeCards, stories, entities }
 }
 
 /** Owner-only header for the show OG image (no stack resolution). */

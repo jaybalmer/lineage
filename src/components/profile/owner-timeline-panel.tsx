@@ -25,6 +25,7 @@ import { readSeenIds, writeSeenIds, isRecentlyCreated } from "@/lib/seen-celebra
 import { groupRodeAtCompanions, countTimelineEntries } from "@/lib/companion-grouping"
 import { estimateShares } from "@/lib/equity-offer"
 import type { Claim, CelebrationPayload, Mention, PrivacyLevel, Story } from "@/types"
+import type { EpisodeCardData } from "@/lib/episode-cards"
 
 // ─── FTUE helpers ─────────────────────────────────────────────────────────────
 
@@ -238,6 +239,8 @@ export function OwnerTimelinePanel() {
   // Podcast mentions of the owner. Third-party artifacts, so they are read-only
   // here and never counted as the owner's own timeline entries.
   const [mentions,       setMentions]          = useState<Mention[]>([])
+  // Published podcast episodes the owner guested on (story-style cards).
+  const [episodes,       setEpisodes]          = useState<EpisodeCardData[]>([])
   const [claimDefaultFilter, setClaimDefaultFilter] = useState<string>("all")
   // Lifted so the summary stat tiles can drive the timeline filter (BUG-034).
   const [timelineFilter, setTimelineFilter]    = useState<FilterType>("all")
@@ -429,6 +432,11 @@ export function OwnerTimelinePanel() {
       .then((r) => (r.ok ? r.json() : []))
       .then((rows) => setMentions(Array.isArray(rows) ? (rows as Mention[]) : []))
       .catch(() => setMentions([]))
+
+    fetch(`/api/episodes?guest=${encodeURIComponent(activePersonId)}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((rows) => setEpisodes(Array.isArray(rows) ? (rows as EpisodeCardData[]) : []))
+      .catch(() => setEpisodes([]))
 
     // Contributions: stories this author kept off their own timeline.
     fetch(`/api/stories?author_id=${activePersonId}&on_timeline=false&limit=100`)
@@ -934,6 +942,7 @@ export function OwnerTimelinePanel() {
           days={myDays}
           stories={stories}
           mentions={mentions}
+          episodes={episodes}
           personName={person?.display_name ?? "Your"}
           isOwn={true}
           hideActionButtons={true}

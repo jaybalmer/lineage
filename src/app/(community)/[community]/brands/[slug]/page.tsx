@@ -15,6 +15,8 @@ import { usePersonHref } from "@/lib/use-person-href"
 import { useCanonicalPath } from "@/lib/use-canonical-path"
 import { RiderAvatar } from "@/components/ui/rider-avatar"
 import { StoryCard } from "@/components/feed/story-card"
+import { EpisodeCard } from "@/components/feed/episode-card"
+import type { EpisodeCardData } from "@/lib/episode-cards"
 import { EntityMentions } from "@/components/feed/entity-mentions"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { ShowModule } from "@/components/orgs/show-module"
@@ -444,6 +446,19 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
       .then((data) => { if (Array.isArray(data)) setOrgStories(data as Story[]) })
   }, [org.id])
 
+  // A media show's published episodes, rendered as story-style cards on the
+  // All and Stories timelines (derived from the episode events, no story rows).
+  const [orgEpisodes, setOrgEpisodes] = useState<EpisodeCardData[]>([])
+  const episodesFetchedRef = useRef(false)
+  useEffect(() => {
+    if (org.org_type !== "media" || episodesFetchedRef.current) return
+    episodesFetchedRef.current = true
+    fetch(`/api/episodes?show=${encodeURIComponent(org.id)}`)
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => { if (Array.isArray(data)) setOrgEpisodes(data as EpisodeCardData[]) })
+      .catch(() => {})
+  }, [org.id, org.org_type])
+
   // All claims in catalog + session store
   const allClaims = [...catalog.claims, ...storeClaims]
 
@@ -485,7 +500,8 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
     | { kind: "event";  year: number; claim?: typeof organizedClaims[0]; event: Event }
     | { kind: "place";  year: number; claim: typeof locatedAtClaims[0]; place: Place }
     | { kind: "series"; year: number; series: typeof brandSeries[0] }
-    | { kind: "story";  year: number; story: Story }
+    | { kind: "story";  year: number; story: Story; date?: string }
+    | { kind: "episode"; year: number; episode: EpisodeCardData; date?: string }
 
   const decadeGroups = useMemo(() => {
     const items: AllItem[] = []
@@ -521,7 +537,11 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
     // Stories linked to this brand
     orgStories.forEach((story) => {
       const y = story.story_date ? parseInt(story.story_date.slice(0, 4)) : null
-      if (y) items.push({ kind: "story", year: y, story })
+      if (y) items.push({ kind: "story", year: y, story, date: story.story_date })
+    })
+    // Published episodes of this show
+    orgEpisodes.forEach((episode) => {
+      if (episode.year) items.push({ kind: "episode", year: episode.year, episode, date: episode.date ?? undefined })
     })
 
     const byDecade = new Map<number, AllItem[]>()
@@ -535,9 +555,22 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
       .sort(([a], [b]) => b - a)
       .map(([decade, entries]) => ({
         label: `${decade}s`,
-        entries: [...entries].sort((a, b) => b.year - a.year),
+        // Same year: dated items (stories, episodes) newest first.
+        entries: [...entries].sort((a, b) =>
+          b.year - a.year ||
+          ((b.kind === "story" || b.kind === "episode" ? b.date ?? "" : "")
+            .localeCompare(a.kind === "story" || a.kind === "episode" ? a.date ?? "" : ""))),
       }))
-  }, [peopleClaims, orgBoards, organizedClaims, extraBrandEvents, brandSeries, locatedAtClaims, orgStories])
+  }, [peopleClaims, orgBoards, organizedClaims, extraBrandEvents, brandSeries, locatedAtClaims, orgStories, orgEpisodes])
+
+  // Stories tab: member stories and published episodes on one date-ordered list.
+  const storyTabItems = useMemo(() => {
+    const items: ({ kind: "story"; story: Story; date: string } | { kind: "episode"; episode: EpisodeCardData; date: string })[] = [
+      ...orgStories.map((story) => ({ kind: "story" as const, story, date: story.story_date ?? "" })),
+      ...orgEpisodes.map((episode) => ({ kind: "episode" as const, episode, date: episode.date ?? String(episode.year ?? "") })),
+    ]
+    return items.sort((a, b) => b.date.localeCompare(a.date))
+  }, [orgStories, orgEpisodes])
 
   // Events tab: organized claims + brand-linked events merged into one list,
   // sorted chronologically ascending by event year (BUG-094). Events without a
@@ -559,7 +592,7 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
   const initials = org.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
 
   const totalEvents = organizedClaims.length + extraBrandEvents.length + brandSeries.length
-  const hasNoContent = peopleClaims.length === 0 && orgBoards.length === 0 && totalEvents === 0 && locatedAtClaims.length === 0 && orgStories.length === 0
+  const hasNoContent = peopleClaims.length === 0 && orgBoards.length === 0 && totalEvents === 0 && locatedAtClaims.length === 0 && orgStories.length === 0 && orgEpisodes.length === 0
 
   const tabs: { key: FeedTab; label: string; count?: number }[] = [
     { key: "all", label: "All" },
@@ -567,7 +600,7 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
     { key: "boards", label: "Boards", count: orgBoards.length },
     { key: "events", label: "Events", count: totalEvents },
     { key: "places", label: "Places", count: locatedAtClaims.length },
-    { key: "stories", label: "Stories", count: orgStories.length },
+    { key: "stories", label: "Stories", count: orgStories.length + orgEpisodes.length },
   ]
 
   // ── Curated / partner layer (Phase 2, gated by curation_tier) ──────────────
@@ -1134,6 +1167,10 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
                           )
                         }
 
+                        if (item.kind === "episode") {
+                          return <EpisodeCard key={`ep-${item.episode.id}`} episode={item.episode} />
+                        }
+
                         if (item.kind === "story") {
                           return (
                             <StoryCard
@@ -1342,7 +1379,7 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
                     </button>
                   )}
                 </div>
-                {orgStories.length === 0 ? (
+                {storyTabItems.length === 0 ? (
                   <div className="py-12 text-center">
                     <div className="text-sm text-muted mb-1">No stories yet for this brand.</div>
                     {isAuth && (
@@ -1355,11 +1392,13 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
                     )}
                   </div>
                 ) : (
-                  orgStories.map((s) => (
+                  storyTabItems.map((item) => item.kind === "episode" ? (
+                    <EpisodeCard key={`ep-${item.episode.id}`} episode={item.episode} />
+                  ) : (
                     <StoryCard
-                      key={s.id}
-                      story={s}
-                      isOwn={s.author_id === activePersonId}
+                      key={item.story.id}
+                      story={item.story}
+                      isOwn={item.story.author_id === activePersonId}
                       onDelete={(sid) => setOrgStories((prev) => prev.filter((x) => x.id !== sid))}
                     />
                   ))
