@@ -51,6 +51,8 @@ export type NodeFlag =
   | "catalog_duplicate"
   /** A one-word catalog name overlaps, listed but not blocking (T4d). */
   | "weak_candidate"
+  /** An editor picked the catalog row; edits and re-checks never undo it. */
+  | "manual_match"
 
 // ── copy (brief section 7) ──────────────────────────────────────────────────
 
@@ -72,6 +74,7 @@ export const FLAG_LABEL: Record<NodeFlag, string> = {
   some_inferred: "Name inferred sometimes",
   catalog_duplicate: "Catalog duplicate to merge",
   weak_candidate: "One-word catalog name nearby",
+  manual_match: "Match picked by hand",
 }
 
 // ── normalization ───────────────────────────────────────────────────────────
@@ -378,6 +381,60 @@ export function inferenceFlags(mentionCount: number, inferredCount: number): Nod
   if (mentionCount > 0 && inferredCount === mentionCount) return ["all_inferred"]
   if (inferredCount > 0) return ["some_inferred"]
   return []
+}
+
+// ── decisions (Phase 2) ─────────────────────────────────────────────────────
+
+/**
+ * Why a node cannot be approved yet, or null when it can.
+ *
+ * A node is publishable only once it is resolved: matched to a catalog row, or
+ * confirmed new with every column its table requires (boards.model_year and
+ * events.start_date are NOT NULL, D8 / D9). Approving anything else would let
+ * Phase 3 mint a node the catalog cannot hold.
+ */
+export function approveBlocker(node: {
+  subject_type: StagingSubjectType
+  resolution: NodeResolution
+  subject_id: string | null
+  ghost: StagingGhost | null
+}): string | null {
+  const g = node.ghost ?? {}
+  switch (node.resolution) {
+    case "matched":
+      return node.subject_id ? null : "Matched but no catalog row is set. Pick a match."
+    case "new":
+      if (node.subject_type === "board" && (!g.brand || !g.model || typeof g.model_year !== "number")) {
+        return "A new board needs a brand, a model and a model year."
+      }
+      if (node.subject_type === "event" && ghostYear(g) === null) return "A new event needs a year."
+      return null
+    case "needs_detail":
+      return node.subject_type === "board" ? "Needs a year: pick a catalog board or enter a model year." : "Needs a year: pick a dated event or enter a year."
+    case "review":
+      return "Close match: pick the catalog row or confirm it is new first."
+    case "ambiguous":
+      return "Several catalog rows match: pick one first."
+    default:
+      return "Not checked against the catalog yet."
+  }
+}
+
+/** Ghost fields an editor may fill, per type (T8). Anything else is ignored. */
+export const GHOST_FIELDS: Record<StagingSubjectType, string[]> = {
+  person: [],
+  place: ["place_type", "region", "country"],
+  org: ["org_type", "brand_category", "country"],
+  board: ["brand", "model", "model_year", "shape"],
+  event: ["start_date", "event_type"],
+}
+
+/** Plural-aware reason line for the bulk previews (T11). */
+export function reasonsLine(parts: [number, string, string][]): string {
+  return parts
+    .filter(([n]) => n > 0)
+    .map(([n, one, many]) => `${n} ${n === 1 ? one : many}`)
+    .join(", ")
 }
 
 // ── episodes ────────────────────────────────────────────────────────────────

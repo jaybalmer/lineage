@@ -1,23 +1,23 @@
 // Podcast archive staging: shared presentational pieces (server components).
 //
-// Read-only in Phase 1: no handlers, no client state. Filters and paging are
-// plain links and a GET form, so every view is a URL the server renders from
-// SQL. Phase 2 adds the decision controls to these same cards.
+// Server components. Filters and paging are plain links and a GET form, so
+// every view is a URL the server renders from SQL. The Phase 2 decision
+// controls are client islands from ./staging-actions, dropped into these cards.
 
 import Link from "next/link"
 import type { ReactNode } from "react"
 import { Nav } from "@/components/ui/nav"
 import { cn } from "@/lib/utils"
 import { formatTimestamp } from "@/lib/mentions"
-import { ENTITY_CHIP_CLASS, kindForObjectType } from "@/lib/entity-colors"
 import {
   FLAG_LABEL,
   RESOLUTION_LABEL,
   TYPE_LABEL,
   videoLink,
 } from "@/lib/podcast-staging"
-import type { NodeFlag, NodeResolution, StagingSubjectType, StoryDecision } from "@/lib/podcast-staging"
-import type { CastChip, StoryCardData } from "@/lib/podcast-staging-queries"
+import type { NodeDecision, NodeFlag, NodeResolution, StagingSubjectType, StoryDecision } from "@/lib/podcast-staging"
+import type { StoryCardData } from "@/lib/podcast-staging-queries"
+import { CastChipControl, StoryActions } from "./staging-actions"
 
 export const BASE = "/admin/podcast/staging"
 
@@ -102,30 +102,19 @@ export function TypeLabel({ type }: { type: StagingSubjectType }) {
   return <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">{TYPE_LABEL[type]}</span>
 }
 
-/** Entity chip. Dashed border marks a name inferred from captions (copy, section 7). */
-export function NodeChip({ chip, current }: { chip: CastChip; current?: boolean }) {
-  const kind = kindForObjectType(chip.subject_type)
-  const tone = kind ? ENTITY_CHIP_CLASS[kind] : "bg-surface-2 border-border-default text-foreground"
-  const title = chip.inferred
-    ? `Name inferred. Captions read: ${chip.heard_as ?? "(nothing recorded)"}`
-    : chip.heard_as
-      ? `Captions read: ${chip.heard_as}`
-      : undefined
-  return (
-    <Link
-      href={`${BASE}/nodes/${chip.node_id}`}
-      title={title}
-      className={cn(
-        "inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs",
-        tone,
-        chip.inferred && "border-dashed",
-        current && "ring-2 ring-offset-1 ring-[var(--accent)]",
-      )}
-    >
-      {chip.name}
-      {chip.inferred && <span aria-label="name inferred">?</span>}
-    </Link>
-  )
+const NODE_DECISION_TONE: Record<NodeDecision, string> = {
+  pending: "text-muted",
+  approved: "text-emerald-700 dark:text-emerald-300",
+  hold: "text-amber-700 dark:text-amber-300",
+  rejected: "text-red-700 dark:text-red-300",
+}
+
+const NODE_DECISION_LABEL: Record<NodeDecision, string> = {
+  pending: "Pending", approved: "Approved", hold: "On hold", rejected: "Rejected",
+}
+
+export function NodeDecisionLabel({ decision }: { decision: NodeDecision }) {
+  return <span className={cn("text-[11px] font-semibold", NODE_DECISION_TONE[decision])}>{NODE_DECISION_LABEL[decision]}</span>
 }
 
 const DECISION_LABEL: Record<StoryDecision, string> = {
@@ -135,11 +124,21 @@ const DECISION_LABEL: Record<StoryDecision, string> = {
   hold_sensitive: "Held as sensitive",
 }
 
-/** One story: timestamped video link, excerpt, full cast. */
+const DECISION_TONE: Record<StoryDecision, string> = {
+  pending: "text-muted",
+  approved: "text-emerald-700 dark:text-emerald-300",
+  trimmed: "text-muted",
+  hold_sensitive: "text-amber-700 dark:text-amber-300",
+}
+
+/** One story: timestamped video link, excerpt, full cast, decision controls. */
 export function StoryCard({ story, showEpisode, currentNodeId }: { story: StoryCardData; showEpisode?: boolean; currentNodeId?: string }) {
   const trimmed = story.decision === "trimmed"
   return (
-    <article className={cn("rounded-xl border border-border-default bg-surface p-4", trimmed && "opacity-60")}>
+    <article className={cn(
+      "rounded-xl border bg-surface p-4",
+      story.decision === "approved" ? "border-emerald-500/40" : story.decision === "hold_sensitive" ? "border-amber-500/50" : "border-border-default",
+    )}>
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         {story.episode ? (
           <a
@@ -155,7 +154,7 @@ export function StoryCard({ story, showEpisode, currentNodeId }: { story: StoryC
         )}
         <h3 className="text-sm font-semibold text-foreground">{story.title}</h3>
         {story.decision !== "pending" && (
-          <span className="text-[11px] text-muted">{DECISION_LABEL[story.decision]}</span>
+          <span className={cn("text-[11px] font-semibold", DECISION_TONE[story.decision])}>{DECISION_LABEL[story.decision]}</span>
         )}
       </div>
       {showEpisode && story.episode && (
@@ -165,7 +164,7 @@ export function StoryCard({ story, showEpisode, currentNodeId }: { story: StoryC
           {story.episode.air_date ? ` · ${story.episode.air_date.slice(0, 4)}` : ""}
         </Link>
       )}
-      <p className="mt-2 text-sm text-foreground/90 leading-relaxed">{story.excerpt}</p>
+      <p className={cn("mt-2 text-sm text-foreground/90 leading-relaxed", trimmed && "opacity-60")}>{story.excerpt}</p>
       {trimmed && (story.activity || story.skip_reason) && (
         <p className="mt-1 text-xs text-muted">
           Trimmed{story.activity ? ` (${story.activity})` : ""}{story.skip_reason ? `: ${story.skip_reason}` : ""}
@@ -174,10 +173,11 @@ export function StoryCard({ story, showEpisode, currentNodeId }: { story: StoryC
       {story.cast.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
           {story.cast.map((c) => (
-            <NodeChip key={c.mention_id} chip={c} current={c.node_id === currentNodeId} />
+            <CastChipControl key={c.mention_id} chip={c} current={c.node_id === currentNodeId} />
           ))}
         </div>
       )}
+      <StoryActions story={story} />
     </article>
   )
 }

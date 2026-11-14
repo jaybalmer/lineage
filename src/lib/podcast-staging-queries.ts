@@ -25,6 +25,7 @@ export const PAGE_SIZE = 50
 
 const RESOLUTIONS: NodeResolution[] = ["unresolved", "matched", "ambiguous", "review", "new", "needs_detail"]
 const STORY_DECISIONS: StoryDecision[] = ["pending", "approved", "trimmed", "hold_sensitive"]
+const NODE_DECISIONS: NodeDecision[] = ["pending", "approved", "hold", "rejected"]
 
 // ── shapes ──────────────────────────────────────────────────────────────────
 
@@ -71,6 +72,8 @@ export type CastChip = {
   resolution: NodeResolution
   heard_as: string | null
   inferred: boolean
+  /** "rejected" drops this subject from an otherwise approved story (T9). */
+  decision: "inherit" | "rejected"
 }
 
 export type StoryEpisode = {
@@ -90,6 +93,8 @@ export type StoryCardData = {
   decision: StoryDecision
   activity: string | null
   skip_reason: string | null
+  /** D11: newer seed content waiting beside a decided story. */
+  revision_pending: { excerpt?: string; activity?: string | null; skip_reason?: string | null; decision?: string } | null
   episode: StoryEpisode | null
   cast: CastChip[]
 }
@@ -102,6 +107,7 @@ export type NodeFilters = {
   type?: StagingSubjectType | null
   resolution?: NodeResolution | null
   flagged?: boolean
+  decision?: NodeDecision | null
   q?: string | null
   page?: number
 }
@@ -111,7 +117,9 @@ export function parseNodeFilters(sp: Record<string, string | string[] | undefine
   const one = (k: string) => (Array.isArray(sp[k]) ? sp[k]?.[0] : sp[k]) as string | undefined
   const type = one("type")
   const resolution = one("resolution")
+  const decision = one("decision")
   return {
+    decision: decision && NODE_DECISIONS.includes(decision as NodeDecision) ? (decision as NodeDecision) : null,
     type: type && STAGING_SUBJECT_TYPES.includes(type as StagingSubjectType) ? (type as StagingSubjectType) : null,
     resolution: resolution && RESOLUTIONS.includes(resolution as NodeResolution) ? (resolution as NodeResolution) : null,
     flagged: one("flagged") === "1",
@@ -148,6 +156,7 @@ export async function listNodes(db: SupabaseClient, f: NodeFilters): Promise<Pag
   if (f.type) q = q.eq("subject_type", f.type)
   if (f.resolution) q = q.eq("resolution", f.resolution)
   if (f.flagged) q = q.neq("flags", "{}")
+  if (f.decision) q = q.eq("decision", f.decision)
   if (f.q) q = q.ilike("name", likeTerm(f.q))
   const [from, to] = range(page)
   const { data, count, error } = await q
@@ -165,6 +174,7 @@ export async function nodeFacetCounts(db: SupabaseClient): Promise<{
   flagged: number
   byType: Record<string, number>
   byResolution: Record<string, number>
+  byDecision: Record<string, number>
 }> {
   // Head-only counts: a single select is capped at 1000 rows and the archive
   // will hold several thousand nodes, so never pull rows to count them.
@@ -174,15 +184,17 @@ export async function nodeFacetCounts(db: SupabaseClient): Promise<{
     if (error) throw new Error(`node facets: ${error.message}`)
     return n ?? 0
   }
-  const [total, flagged, typeCounts, resolutionCounts] = await Promise.all([
+  const [total, flagged, typeCounts, resolutionCounts, decisionCounts] = await Promise.all([
     count(base()),
     count(base().neq("flags", "{}")),
     Promise.all(STAGING_SUBJECT_TYPES.map((t) => count(base().eq("subject_type", t)))),
     Promise.all(RESOLUTIONS.map((r) => count(base().eq("resolution", r)))),
+    Promise.all(NODE_DECISIONS.map((d) => count(base().eq("decision", d)))),
   ])
   return {
     total,
     flagged,
+    byDecision: Object.fromEntries(NODE_DECISIONS.map((d, i) => [d, decisionCounts[i]])),
     byType: Object.fromEntries(STAGING_SUBJECT_TYPES.map((t, i) => [t, typeCounts[i]])),
     byResolution: Object.fromEntries(RESOLUTIONS.map((r, i) => [r, resolutionCounts[i]])),
   }
@@ -190,6 +202,8 @@ export async function nodeFacetCounts(db: SupabaseClient): Promise<{
 
 export type NodeDetail = NodeListRow & {
   ghost: Record<string, unknown>
+  decided_at: string | null
+  also_known_as: { id: string; name: string; subject_type: StagingSubjectType } | null
   stories: StoryCardData[]
 }
 
@@ -202,7 +216,17 @@ export async function getNode(db: SupabaseClient, id: string): Promise<NodeDetai
   if (error) throw new Error(`get node: ${error.message}`)
   if (!node) return null
 
-  const { data: ghostRow } = await db.from("podcast_staging_nodes").select("ghost").eq("id", id).maybeSingle()
+  const { data: extraRow } = await db
+    .from("podcast_staging_nodes")
+    .select("ghost, decided_at, also_known_as")
+    .eq("id", id)
+    .maybeSingle()
+  const extra = extraRow as { ghost: Record<string, unknown> | null; decided_at: string | null; also_known_as: string | null } | null
+  let aka: { id: string; name: string; subject_type: StagingSubjectType } | null = null
+  if (extra?.also_known_as) {
+    const { data: akaRow } = await db.from("podcast_staging_nodes").select("id, name, subject_type").eq("id", extra.also_known_as).maybeSingle()
+    aka = (akaRow as typeof aka) ?? null
+  }
 
   const { data: mentions, error: mErr } = await db
     .from("podcast_staging_mentions")
@@ -221,7 +245,9 @@ export async function getNode(db: SupabaseClient, id: string): Promise<NodeDetai
 
   return {
     ...(node as NodeListRow),
-    ghost: ((ghostRow as { ghost: Record<string, unknown> } | null)?.ghost ?? {}) as Record<string, unknown>,
+    ghost: extra?.ghost ?? {},
+    decided_at: extra?.decided_at ?? null,
+    also_known_as: aka,
     stories,
   }
 }
@@ -297,9 +323,9 @@ async function storiesByIds(db: SupabaseClient, ids: string[]): Promise<StoryCar
     const { data, error } = await db
       .from("podcast_staging_stories")
       .select(
-        "id, timestamp_seconds, title, excerpt, decision, activity, skip_reason, " +
+        "id, timestamp_seconds, title, excerpt, decision, activity, skip_reason, revision_pending, " +
           "episode:podcast_staging_episodes(id, archive_label, guest, episode_name, video_id, air_date), " +
-          "mentions:podcast_staging_mentions(id, heard_as, inferred, node:podcast_staging_nodes(id, name, subject_type, resolution))",
+          "mentions:podcast_staging_mentions(id, heard_as, inferred, decision, node:podcast_staging_nodes(id, name, subject_type, resolution))",
       )
       .in("id", chunk)
     if (error) throw new Error(`stories: ${error.message}`)
@@ -311,8 +337,9 @@ async function storiesByIds(db: SupabaseClient, ids: string[]): Promise<StoryCar
       decision: StoryDecision
       activity: string | null
       skip_reason: string | null
+      revision_pending: StoryCardData["revision_pending"]
       episode: StoryEpisode | null
-      mentions: { id: string; heard_as: string | null; inferred: boolean; node: { id: string; name: string; subject_type: StagingSubjectType; resolution: NodeResolution } | null }[]
+      mentions: { id: string; heard_as: string | null; inferred: boolean; decision: "inherit" | "rejected"; node: { id: string; name: string; subject_type: StagingSubjectType; resolution: NodeResolution } | null }[]
     }[]) {
       out.push({
         id: s.id,
@@ -322,6 +349,7 @@ async function storiesByIds(db: SupabaseClient, ids: string[]): Promise<StoryCar
         decision: s.decision,
         activity: s.activity,
         skip_reason: s.skip_reason,
+        revision_pending: s.revision_pending,
         episode: s.episode,
         cast: (s.mentions ?? [])
           .filter((m) => m.node)
@@ -333,10 +361,66 @@ async function storiesByIds(db: SupabaseClient, ids: string[]): Promise<StoryCar
             resolution: m.node!.resolution,
             heard_as: m.heard_as,
             inferred: m.inferred,
+            decision: m.decision,
           }))
           .sort((a, b) => STAGING_SUBJECT_TYPES.indexOf(a.subject_type) - STAGING_SUBJECT_TYPES.indexOf(b.subject_type) || a.name.localeCompare(b.name)),
       })
     }
   }
   return out
+}
+
+// ── catalog search (the "pick a match" picker) ──────────────────────────────
+
+export type CatalogHit = { id: string; label: string }
+
+/** Up to 20 catalog rows of one type whose name contains the term. Episodes excluded. */
+export async function searchCatalog(db: SupabaseClient, type: StagingSubjectType, q: string): Promise<CatalogHit[]> {
+  const term = likeTerm(q)
+  if (type === "person") {
+    const [{ data: people }, { data: profiles }] = await Promise.all([
+      db.from("people").select("id, display_name, node_status").ilike("display_name", term).limit(20),
+      db.from("profiles").select("id, display_name, is_archived").ilike("display_name", term).limit(20),
+    ])
+    const out: CatalogHit[] = []
+    const seen = new Set<string>()
+    for (const p of (profiles ?? []) as { id: string; display_name: string; is_archived: boolean | null }[]) {
+      if (p.is_archived) continue
+      seen.add(p.id)
+      out.push({ id: p.id, label: `${p.display_name} (member)` })
+    }
+    for (const p of (people ?? []) as { id: string; display_name: string; node_status: string | null }[]) {
+      if (!seen.has(p.id)) out.push({ id: p.id, label: `${p.display_name} (${p.node_status})` })
+    }
+    return out.slice(0, 20)
+  }
+  if (type === "place") {
+    const { data } = await db.from("places").select("id, name, place_type").ilike("name", term).order("name").limit(20)
+    return ((data ?? []) as { id: string; name: string; place_type: string | null }[]).map((p) => ({ id: p.id, label: `${p.name} (${p.place_type})` }))
+  }
+  if (type === "org") {
+    const { data } = await db.from("orgs").select("id, name, org_type").ilike("name", term).order("name").limit(20)
+    return ((data ?? []) as { id: string; name: string; org_type: string | null }[]).map((o) => ({ id: o.id, label: `${o.name} (${o.org_type})` }))
+  }
+  if (type === "event") {
+    const { data } = await db
+      .from("events")
+      .select("id, name, year")
+      .ilike("name", term)
+      .neq("event_type", "episode")
+      .order("year")
+      .limit(20)
+    return ((data ?? []) as { id: string; name: string; year: number | null }[]).map((e) => ({ id: e.id, label: `${e.name}${e.year ? ` (${e.year})` : ""}` }))
+  }
+  // Boards: every word must appear in the brand or the model.
+  let bq = db.from("boards").select("id, brand, model, model_year")
+  for (const w of q.split(/\s+/).filter(Boolean).slice(0, 4)) {
+    const t = likeTerm(w)
+    bq = bq.or(`brand.ilike.${t},model.ilike.${t}`)
+  }
+  const { data } = await bq.order("brand").order("model").order("model_year").limit(20)
+  return ((data ?? []) as { id: string; brand: string; model: string; model_year: number | null }[]).map((b) => ({
+    id: b.id,
+    label: `${b.brand} ${b.model}${b.model_year ? ` ${b.model_year}` : ""}`,
+  }))
 }
