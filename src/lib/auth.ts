@@ -196,3 +196,28 @@ export async function requireEditorPage(): Promise<void> {
   const isEditor = profile?.is_editor || profile?.membership_tier === "founding"
   if (!isEditor) redirect("/")
 }
+
+/**
+ * Strict page gate: the page-level twin of requireModerator().
+ *
+ * requireEditorPage() lets founding members through (is_editor OR founding).
+ * This one requires is_editor = true, for surfaces that hold unreviewed claims
+ * about real people (podcast archive staging, brief D5). Anonymous visitors go
+ * to sign-in; signed-in users without is_editor (founding members included) are
+ * sent back to /admin, which the layout gate still lets them see.
+ */
+export async function requireModeratorPage(): Promise<{ userId: string }> {
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) redirect("/auth/signin")
+
+  const db = getServiceClient()
+  const { data: profile } = await db
+    .from("profiles")
+    .select("is_editor")
+    .eq("id", user.id)
+    .single()
+
+  if (!profile?.is_editor) redirect("/admin")
+  return { userId: user.id }
+}
