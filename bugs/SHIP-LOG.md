@@ -2833,3 +2833,16 @@ Follow-up to #272. The FNRad: Devun Walsh episode had no event_guests row, so it
 - tsc: clean
 
 Phase 1 of podcast-archive-staging-brief-v2: four isolated, RLS-on podcast_staging_* tables, requireModeratorPage (is_editor only), scripts/load-podcast-staging.mjs (idempotent loader plus T4 resolver, runs the src/lib TS directly so there is no mirror), and a read-only /admin/podcast/staging surface (Nodes, Episodes, Stories). Pilot loaded: 10 episodes, 247 stories, 320 nodes, 916 mentions (893 in kept stories), catalog counts unchanged, second load a no-op, S3E17 Ingemar not attached to the live S12E2. Signed-in page render and the founding-non-editor redirect were not exercised (no session minted); anonymous 401/redirect and every query were. Found in passing: the single-episode importer's board index reads one select capped at 1000 of 3,673 boards.
+
+## 2026-11-14 - Mention importer pages catalog reads (bug)
+- type: bug
+- pr: #274
+- branch: fix/mention-import-paged-index
+- commit: 6646621
+- ids: none
+- scope: mention-import-paged-index
+- migration: none
+- status: merged
+- tsc: clean
+
+Follow-up to #273. loadIndex in src/lib/mention-import-server.ts and scripts/import-mentions.mjs read each catalog table in one select capped at 1000 rows (boards = 3,673), so board subjects matched against about a quarter of the catalog. Both now page with .order("id").range() via a selectAll helper; a failed page read throws and the import route returns it as a JSON error. Matching rules unchanged. Verified by dry run against FNRad #21 with a temporary log: board index 3673 rows, a board at row ~3,500 surfaced as a candidate.
