@@ -113,6 +113,28 @@ async function resolveEpisode(
 // One read per table per run, held in memory. Matching in memory rather than
 // per-row SQL is what makes the near-miss scan affordable at all, and it lets a
 // ghost created mid-run be visible to later rows (rememberCreated).
+//
+// Every read is paged: PostgREST caps a single select at 1000 rows, and boards
+// alone is several times that, so an unpaged read silently matched against a
+// fraction of the catalog and minted duplicate ghosts. Mirrors selectAll in
+// podcast-staging-server.ts.
+
+const PAGE = 1000
+
+async function selectAll<T>(
+  db: ReturnType<typeof getServiceClient>,
+  table: string,
+  cols: string,
+): Promise<T[]> {
+  const out: T[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await db.from(table).select(cols).order("id").range(from, from + PAGE - 1)
+    if (error) throw new Error(`read ${table}: ${error.message}`)
+    const rows = (data ?? []) as T[]
+    out.push(...rows)
+    if (rows.length < PAGE) return out
+  }
+}
 
 async function loadIndex(
   db: ReturnType<typeof getServiceClient>,
@@ -128,37 +150,39 @@ async function loadIndex(
     // person spans BOTH people and profiles: the app's people catalog is the
     // union of the two, and a mention against a member must carry the profile
     // id or it never lands on their real timeline.
-    const [{ data: people }, { data: profiles }] = await Promise.all([
-      db.from("people").select("id, display_name, node_status"),
-      db.from("profiles").select("id, display_name, is_archived"),
+    const [people, profiles] = await Promise.all([
+      selectAll<{ id: string; display_name: string | null; node_status: string | null }>(db, "people", "id, display_name, node_status"),
+      selectAll<{ id: string; display_name: string | null; is_archived: boolean | null }>(db, "profiles", "id, display_name, is_archived"),
     ])
-    for (const p of (profiles ?? []) as { id: string; display_name: string | null; is_archived: boolean | null }[]) {
+    for (const p of profiles) {
       if (p.is_archived || !p.display_name) continue
       rows.push({ id: p.id, name: p.display_name, label: `${p.display_name} (member)` })
     }
     const seen = new Set(rows.map((r) => r.id))
-    for (const p of (people ?? []) as { id: string; display_name: string | null; node_status: string | null }[]) {
+    for (const p of people) {
       if (seen.has(p.id) || !p.display_name) continue
       rows.push({ id: p.id, name: p.display_name, label: `${p.display_name} (${p.node_status})` })
     }
   } else if (type === "place") {
-    const { data } = await db.from("places").select("id, name, place_type")
-    rows = ((data ?? []) as { id: string; name: string; place_type: string | null }[]).map((p) => ({
+    const data = await selectAll<{ id: string; name: string; place_type: string | null }>(db, "places", "id, name, place_type")
+    rows = data.map((p) => ({
       id: p.id, name: p.name, label: `${p.name} (${p.place_type})`,
     }))
   } else if (type === "org") {
-    const { data } = await db.from("orgs").select("id, name, org_type")
-    rows = ((data ?? []) as { id: string; name: string; org_type: string | null }[]).map((o) => ({
+    const data = await selectAll<{ id: string; name: string; org_type: string | null }>(db, "orgs", "id, name, org_type")
+    rows = data.map((o) => ({
       id: o.id, name: o.name, label: `${o.name} (${o.org_type})`,
     }))
   } else if (type === "event") {
-    const { data } = await db.from("events").select("id, name, year")
-    rows = ((data ?? []) as { id: string; name: string; year: number | null }[]).map((e) => ({
+    const data = await selectAll<{ id: string; name: string; year: number | null }>(db, "events", "id, name, year")
+    rows = data.map((e) => ({
       id: e.id, name: e.name, label: `${e.name}${e.year ? ` (${e.year})` : ""}`,
     }))
   } else if (type === "board") {
-    const { data } = await db.from("boards").select("id, brand, model, model_year")
-    rows = ((data ?? []) as { id: string; brand: string | null; model: string | null; model_year: number | null }[]).map((b) => ({
+    const data = await selectAll<{ id: string; brand: string | null; model: string | null; model_year: number | null }>(
+      db, "boards", "id, brand, model, model_year",
+    )
+    rows = data.map((b) => ({
       id: b.id,
       name: `${b.brand ?? ""} ${b.model ?? ""}`.trim(),
       brand: b.brand,
