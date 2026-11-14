@@ -36,7 +36,7 @@ const WRITE_BATCH = 500
  * Read every row of a table. PostgREST caps one select at 1000 rows, and the
  * boards table holds over 3,600, so a single select silently drops most of it.
  */
-async function selectAll<T>(db: SupabaseClient, table: string, cols: string): Promise<T[]> {
+export async function selectAll<T>(db: SupabaseClient, table: string, cols: string): Promise<T[]> {
   const out: T[] = []
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await db.from(table).select(cols).order("id").range(from, from + PAGE - 1)
@@ -55,42 +55,54 @@ async function selectAll<T>(db: SupabaseClient, table: string, cols: string): Pr
 export type CatalogIndex = Record<StagingSubjectType, CatalogEntry[]>
 
 export async function loadCatalogIndex(db: SupabaseClient): Promise<CatalogIndex> {
-  const [people, profiles, places, orgs, events, boards] = await Promise.all([
-    selectAll<{ id: string; display_name: string | null; node_status: string | null }>(db, "people", "id, display_name, node_status"),
-    selectAll<{ id: string; display_name: string | null; is_archived: boolean | null }>(db, "profiles", "id, display_name, is_archived"),
-    selectAll<{ id: string; name: string; place_type: string | null }>(db, "places", "id, name, place_type"),
-    selectAll<{ id: string; name: string; org_type: string | null }>(db, "orgs", "id, name, org_type"),
-    selectAll<{ id: string; name: string; year: number | null; event_type: string | null }>(db, "events", "id, name, year, event_type"),
-    selectAll<{ id: string; brand: string | null; model: string | null; model_year: number | null }>(db, "boards", "id, brand, model, model_year"),
-  ])
+  const [person, place, org, event, board] = await Promise.all(
+    (["person", "place", "org", "event", "board"] as const).map((t) => loadCatalogType(db, t)),
+  )
+  return { person, place, org, event, board }
+}
 
-  const person: CatalogEntry[] = []
-  for (const p of profiles) {
-    if (p.is_archived || !p.display_name) continue
-    person.push({ id: p.id, name: p.display_name, label: `${p.display_name} (member)` })
+/** One type's catalog entries, read in full. Per-node actions use this alone. */
+export async function loadCatalogType(db: SupabaseClient, type: StagingSubjectType): Promise<CatalogEntry[]> {
+  if (type === "person") {
+    const [people, profiles] = await Promise.all([
+      selectAll<{ id: string; display_name: string | null; node_status: string | null }>(db, "people", "id, display_name, node_status"),
+      selectAll<{ id: string; display_name: string | null; is_archived: boolean | null }>(db, "profiles", "id, display_name, is_archived"),
+    ])
+    const person: CatalogEntry[] = []
+    for (const p of profiles) {
+      if (p.is_archived || !p.display_name) continue
+      person.push({ id: p.id, name: p.display_name, label: `${p.display_name} (member)` })
+    }
+    const seen = new Set(person.map((r) => r.id))
+    for (const p of people) {
+      if (seen.has(p.id) || !p.display_name) continue
+      person.push({ id: p.id, name: p.display_name, label: `${p.display_name} (${p.node_status})` })
+    }
+    return person
   }
-  const seen = new Set(person.map((r) => r.id))
-  for (const p of people) {
-    if (seen.has(p.id) || !p.display_name) continue
-    person.push({ id: p.id, name: p.display_name, label: `${p.display_name} (${p.node_status})` })
+  if (type === "place") {
+    const places = await selectAll<{ id: string; name: string; place_type: string | null }>(db, "places", "id, name, place_type")
+    return places.map((p) => ({ id: p.id, name: p.name, label: `${p.name} (${p.place_type})` }))
   }
-
-  return {
-    person,
-    place: places.map((p) => ({ id: p.id, name: p.name, label: `${p.name} (${p.place_type})` })),
-    org: orgs.map((o) => ({ id: o.id, name: o.name, label: `${o.name} (${o.org_type})` })),
-    event: events
+  if (type === "org") {
+    const orgs = await selectAll<{ id: string; name: string; org_type: string | null }>(db, "orgs", "id, name, org_type")
+    return orgs.map((o) => ({ id: o.id, name: o.name, label: `${o.name} (${o.org_type})` }))
+  }
+  if (type === "event") {
+    const events = await selectAll<{ id: string; name: string; year: number | null; event_type: string | null }>(db, "events", "id, name, year, event_type")
+    return events
       .filter((e) => e.event_type !== "episode")
-      .map((e) => ({ id: e.id, name: e.name, year: e.year, label: `${e.name}${e.year ? ` (${e.year})` : ""}` })),
-    board: boards.map((b) => ({
-      id: b.id,
-      name: `${b.brand ?? ""} ${b.model ?? ""}`.trim(),
-      brand: b.brand,
-      model: b.model,
-      model_year: b.model_year,
-      label: `${b.brand} ${b.model}${b.model_year ? ` ${b.model_year}` : ""}`,
-    })),
+      .map((e) => ({ id: e.id, name: e.name, year: e.year, label: `${e.name}${e.year ? ` (${e.year})` : ""}` }))
   }
+  const boards = await selectAll<{ id: string; brand: string | null; model: string | null; model_year: number | null }>(db, "boards", "id, brand, model, model_year")
+  return boards.map((b) => ({
+    id: b.id,
+    name: `${b.brand ?? ""} ${b.model ?? ""}`.trim(),
+    brand: b.brand,
+    model: b.model,
+    model_year: b.model_year,
+    label: `${b.brand} ${b.model}${b.model_year ? ` ${b.model_year}` : ""}`,
+  }))
 }
 
 // ── loader input ────────────────────────────────────────────────────────────
@@ -255,7 +267,7 @@ function canonical(v: unknown): unknown {
   }
   return v ?? null
 }
-const sameJson = (a: unknown, b: unknown) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b))
+export const sameJson = (a: unknown, b: unknown) => JSON.stringify(canonical(a)) === JSON.stringify(canonical(b))
 
 async function insertBatched(db: SupabaseClient, table: string, rows: Record<string, unknown>[]): Promise<void> {
   for (let i = 0; i < rows.length; i += WRITE_BATCH) {

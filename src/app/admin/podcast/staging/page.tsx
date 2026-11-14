@@ -16,14 +16,16 @@ import {
   BASE,
   Empty,
   FlagList,
+  NodeDecisionLabel,
   Pager,
   ResolutionBadge,
   StagingShell,
   StoryCard,
   TypeLabel,
 } from "./staging-ui"
+import { NodesToolbar } from "./staging-actions"
 
-// Podcast archive staging, Phase 1: the read-only review surface.
+// Podcast archive staging: the review surface (Phase 1 views, Phase 2 decisions).
 //
 // /admin/podcast/staging                 Nodes (default)
 // /admin/podcast/staging?tab=episodes    Episodes
@@ -38,6 +40,8 @@ export const dynamic = "force-dynamic"
 type SP = Record<string, string | string[] | undefined>
 
 const RESOLUTION_ORDER: NodeResolution[] = ["matched", "ambiguous", "review", "new", "needs_detail"]
+
+const DECISION_CHIP = { pending: "Pending", approved: "Approved", hold: "On hold", rejected: "Rejected" } as const
 
 export default async function PodcastStagingPage({ searchParams }: { searchParams: Promise<SP> }) {
   await requireModeratorPage()
@@ -62,6 +66,7 @@ function nodesHref(f: NodeFilters, patch: Partial<NodeFilters>): string {
   if (next.type) p.set("type", next.type)
   if (next.resolution) p.set("resolution", next.resolution)
   if (next.flagged) p.set("flagged", "1")
+  if (next.decision) p.set("decision", next.decision)
   if (next.q) p.set("q", next.q)
   if (next.page && next.page > 1) p.set("page", String(next.page))
   const s = p.toString()
@@ -94,6 +99,7 @@ async function NodesTab({ db, filters }: { db: ReturnType<typeof getServiceClien
         {filters.type && <input type="hidden" name="type" value={filters.type} />}
         {filters.resolution && <input type="hidden" name="resolution" value={filters.resolution} />}
         {filters.flagged && <input type="hidden" name="flagged" value="1" />}
+        {filters.decision && <input type="hidden" name="decision" value={filters.decision} />}
         <label htmlFor="node-search" className="sr-only">Search nodes</label>
         <input
           id="node-search"
@@ -124,6 +130,16 @@ async function NodesTab({ db, filters }: { db: ReturnType<typeof getServiceClien
           Flagged {facets.flagged}
         </FilterChip>
       </div>
+      <div className="flex gap-1.5 overflow-x-auto pb-3">
+        <FilterChip href={nodesHref(filters, { decision: null })} active={!filters.decision}>Any decision</FilterChip>
+        {(["pending", "approved", "hold", "rejected"] as const).map((d) => (
+          <FilterChip key={d} href={nodesHref(filters, { decision: d })} active={filters.decision === d}>
+            {DECISION_CHIP[d]} {facets.byDecision[d] ?? 0}
+          </FilterChip>
+        ))}
+      </div>
+
+      <NodesToolbar type={filters.type ?? null} />
 
       <p className="text-xs text-muted mb-2">{list.total} {list.total === 1 ? "node" : "nodes"}</p>
 
@@ -149,6 +165,7 @@ async function NodesTab({ db, filters }: { db: ReturnType<typeof getServiceClien
                     </Link>
                     <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                       <TypeLabel type={n.subject_type} />
+                      {n.decision !== "pending" && <NodeDecisionLabel decision={n.decision} />}
                       <FlagList flags={n.flags} />
                     </div>
                   </td>

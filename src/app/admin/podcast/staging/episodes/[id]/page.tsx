@@ -3,8 +3,10 @@ import { notFound } from "next/navigation"
 import { getServiceClient, requireModeratorPage } from "@/lib/auth"
 import { getEpisode } from "@/lib/podcast-staging-queries"
 import { BASE, Empty, StagingShell, StoryCard } from "../../staging-ui"
+import { EpisodeBulkApprove } from "../../staging-actions"
 
-// One staged episode: its stories in order. Read-only in Phase 1.
+// One staged episode: its stories in order, each with decision controls, plus
+// the bulk approve (pending stories only; trimmed and sensitive never swept up).
 
 export const dynamic = "force-dynamic"
 
@@ -14,6 +16,10 @@ export default async function StagingEpisodePage({ params }: { params: Promise<{
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound()
   const ep = await getEpisode(getServiceClient(), id)
   if (!ep) notFound()
+
+  const approved = ep.stories.filter((s) => s.decision === "approved").length
+  const held = ep.stories.filter((s) => s.decision === "hold_sensitive").length
+  const pending = ep.stories.filter((s) => s.decision === "pending").length
 
   const meta = [
     ep.archive_label,
@@ -39,6 +45,11 @@ export default async function StagingEpisodePage({ params }: { params: Promise<{
           {ep.episode_event_id ? " · Already live as an episode page" : " · Not live yet"}
         </p>
         {ep.notes && <p className="text-xs text-muted mt-1">{ep.notes}</p>}
+        <p className="text-xs text-muted mt-1">
+          Status: <span className="text-foreground capitalize">{ep.status.replace("_", " ")}</span>
+          {" · "}{approved} approved, {held} held as sensitive, {pending} pending
+        </p>
+        <div className="mt-3"><EpisodeBulkApprove episodeId={ep.id} /></div>
       </header>
       {ep.stories.length === 0 ? (
         <Empty>No stories staged for this episode.</Empty>
