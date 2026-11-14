@@ -1148,11 +1148,6 @@ export interface PublicEpisodePayload {
   /** Total matching linked stories before the cap, so the view can offer
    *  "See all on the episode". */
   linkedTotal: number
-  /** FNRad Listener Landing (D5): this week's challenge spotlight, resolved from
-   *  FNRAD_CHALLENGE.guestId, NOT from this episode's own guests. Same person on
-   *  every surface. Null when no guest is configured, in which case the episode
-   *  page renders no challenge card (D5 render state 3). */
-  challengeGuest: PublicPersonLite | null
 }
 
 /** Map an episode event row to the shared owner header shape (display_name =
@@ -1443,14 +1438,9 @@ export async function readEventStack(
     if (bucket) bucket.push(m.subject_id)
   }
 
-  // FNRad challenge spotlight (D5): resolve FNRAD_CHALLENGE.guestId in the same
-  // pass so the episode page can render this week's challenge without a second
-  // read. The guest need not be one of this episode's own guests.
-  const challengeGuestId = hasChallengeGuest(FNRAD_CHALLENGE.guestId) ? FNRAD_CHALLENGE.guestId : null
-
   const { entries, stories, entities } = await loadOwnerStack(db, "event", event.id, {
     seed: {
-      person: [...guestIds, ...mentionSeed.person, ...(challengeGuestId ? [challengeGuestId] : [])],
+      person: [...guestIds, ...mentionSeed.person],
       place: mentionSeed.place,
       event: mentionSeed.event,
       org: mentionSeed.org,
@@ -1516,7 +1506,6 @@ export async function readEventStack(
     linkedEntries,
     linkedStories,
     linkedTotal: linkedAll.length,
-    challengeGuest: challengeGuestFromEntities(entities),
   }
 }
 
@@ -1537,8 +1526,8 @@ function challengeGuestFromEntities(entities: PublicTimelineEntities): PublicPer
   )
 }
 
-/** Resolve the FNRad weekly-challenge spotlight for a surface that does not
- *  already hold resolved entities (the /fnrad hub, T6 step 5). One person read.
+/** Resolve the FNRad weekly-challenge spotlight for the /fnrad hub (T6 step 5).
+ *  Individual episode pages no longer show the challenge (Jay, 2026-11-14). One person read.
  *  Returns null when no guest is configured (D5 render state 3). */
 export async function readChallengeGuest(): Promise<PublicPersonLite | null> {
   if (!hasChallengeGuest(FNRAD_CHALLENGE.guestId)) return null
