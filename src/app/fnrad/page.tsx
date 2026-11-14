@@ -138,7 +138,6 @@ export default async function FnradHubPage() {
           <div className="mt-10">
             <ChallengeCard
               guest={challengeGuest}
-              mode="hub"
               episodeSlug={FNRAD_CHALLENGE.episodeSlug}
               episodeLabel={FNRAD_CHALLENGE.episodeLabel}
             />

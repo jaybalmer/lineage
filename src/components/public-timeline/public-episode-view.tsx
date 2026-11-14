@@ -9,7 +9,6 @@ import Link from "next/link"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { StackView } from "@/components/public-timeline/stack-view"
 import { PublicMentionGroup } from "@/components/public-timeline/public-mention-group"
-import { ChallengeCard } from "@/components/fnrad/challenge-card"
 import { groupMentionsByMoment } from "@/lib/mentions"
 import { FNRAD_HUB_REF } from "@/lib/fnrad"
 import { parseYouTubeId } from "@/lib/utils"
@@ -60,7 +59,7 @@ export function PublicEpisodeView({ payload, preview = false }: {
   /** Editor-only pre-publish render (B4): banner-marked, otherwise identical. */
   preview?: boolean
 }) {
-  const { owner, meta, entries, stories, entities, mentions, linkedEntries, linkedStories, linkedTotal, challengeGuest } = payload
+  const { owner, meta, entries, stories, entities, mentions, linkedEntries, linkedStories, linkedTotal } = payload
   const ytId = meta.media_url ? parseYouTubeId(meta.media_url) : null
   // Two distinct editor-only states: never published, and published but waiting
   // on its scheduled time. Both only ever render for an editor (an anonymous
@@ -180,15 +179,6 @@ export function PublicEpisodeView({ payload, preview = false }: {
             Start your timeline
           </Link>
         </section>
-
-        {/* This week's challenge (D5). Same person as the hub, from
-            FNRAD_CHALLENGE.guestId, NOT this episode's own guests. Absent when no
-            guest is configured (D5 render state 3). */}
-        {challengeGuest && (
-          <div className="mb-6">
-            <ChallengeCard guest={challengeGuest} mode="episode" />
-          </div>
-        )}
 
         {/* Featured set */}
         {entries.length > 0 && (

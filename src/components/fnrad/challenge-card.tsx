@@ -1,14 +1,15 @@
 // FNRad Listener Landing (features/fnrad-listener-landing-brief.md), T5.
 //
-// This week's challenge, shared by the /fnrad hub and the public episode page.
+// This week's challenge on the /fnrad listener hub. It used to render on every
+// public episode page too; that was removed (Jay, 2026-11-14), so the card now
+// has one caller and no episode mode.
 // It has no interactive part of its own: everything it does is a link, which is
 // why a guest-story challenge is cheaper to render than the mark-based one it
 // replaced (D5, risk 12). Renders on the dark ground both surfaces use.
 //
 // The spotlight is ALWAYS the one person from FNRAD_CHALLENGE.guestId, resolved
 // by the caller. It never takes a list and never indexes an episode's own guests
-// (meta.guests), which is what makes the hub and the episode page structurally
-// unable to name different people (D5, A8c). "No guest" is expressed by not
+// (meta.guests), so it can never name the wrong person (D5, A8c). "No guest" is expressed by not
 // mounting the card, so the `guest` prop is non-optional (D5 render state 3).
 
 import Link from "next/link"
@@ -40,20 +41,19 @@ export function ChallengeCard(props: {
   /** The ONE person from FNRAD_CHALLENGE.guestId, already resolved by the caller.
    *  Non-optional: "no guest" is expressed by not mounting the card. */
   guest: ChallengeGuest
-  mode: "hub" | "episode"
-  /** Hub mode only, OPTIONAL: the episode's public_slug. Null until the S12 E01
-   *  page exists; it is the single switch for the kicker + "See the episode". */
+  /** OPTIONAL: the challenge episode's public_slug; the single switch for the
+   *  kicker + "See the episode". */
   episodeSlug?: string | null
-  /** Hub mode only, OPTIONAL: what the "From {episode}" kicker prints. Rendered
-   *  only when episodeSlug is also a non-empty string. */
+  /** OPTIONAL: what the "From {episode}" kicker prints. Rendered only when
+   *  episodeSlug is also a non-empty string. */
   episodeLabel?: string | null
 }) {
-  const { guest, mode, episodeSlug, episodeLabel } = props
+  const { guest, episodeSlug, episodeLabel } = props
   const first = guest.display_name.split(" ")[0]
 
-  // episodeSlug is the single switch for the hub kicker + secondary: a kicker
+  // episodeSlug is the single switch for the kicker + secondary: a kicker
   // naming an episode the listener cannot open is worse than no kicker (D5, T5).
-  const hasEpisode = mode === "hub" && typeof episodeSlug === "string" && episodeSlug.length > 0
+  const hasEpisode = typeof episodeSlug === "string" && episodeSlug.length > 0
 
   return (
     <section className="rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-6">
@@ -87,14 +87,6 @@ export function ChallengeCard(props: {
         <p className="mt-2 text-xs text-white/45">You will need an account. It takes a minute and it is free.</p>
       </div>
 
-      {mode === "episode" && (
-        <Link
-          href={`/people/${guest.id}`}
-          className="mt-3 inline-block text-xs font-medium text-white/60 transition-colors hover:text-white"
-        >
-          Or open their page
-        </Link>
-      )}
       {hasEpisode && (
         <Link
           href={`/t/${episodeSlug}`}
