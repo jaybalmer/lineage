@@ -2820,3 +2820,16 @@ Jay asked for FNRad episodes to appear on the show's timeline as story-style car
 - tsc: n/a
 
 Follow-up to #272. The FNRad: Devun Walsh episode had no event_guests row, so its episode card showed on the show timeline but on no rider's timeline. Devun Walsh has exactly one node (people, unclaimed, uuid-shaped). Insert was guarded with NOT EXISTS. VERIFIED on the live site: GET /api/episodes?guest=60e46be9-... returns the Devun Walsh episode with him as guest, and the show read now lists a guest on all four FNRad episodes (Paul Fidrych, Jose Fernandes, Devun Walsh, Jay Balmer).
+
+## 2026-11-14 - Podcast archive staging Phase 1: tables, loader, read-only review (feature)
+- type: feature
+- pr: #273
+- branch: feature/podcast-archive-staging-p1
+- commit: d411839
+- ids: none
+- scope: podcast-archive-staging-p1
+- migration: applied supabase/migrations/20261114000001_podcast_staging.sql + 20261114000002_podcast_staging_list_views.sql (both SAFE: new tables, views, indexes, RLS and revokes on objects created this session; applied via Supabase MCP before merge and verified)
+- status: merged
+- tsc: clean
+
+Phase 1 of podcast-archive-staging-brief-v2: four isolated, RLS-on podcast_staging_* tables, requireModeratorPage (is_editor only), scripts/load-podcast-staging.mjs (idempotent loader plus T4 resolver, runs the src/lib TS directly so there is no mirror), and a read-only /admin/podcast/staging surface (Nodes, Episodes, Stories). Pilot loaded: 10 episodes, 247 stories, 320 nodes, 916 mentions (893 in kept stories), catalog counts unchanged, second load a no-op, S3E17 Ingemar not attached to the live S12E2. Signed-in page render and the founding-non-editor redirect were not exercised (no session minted); anonymous 401/redirect and every query were. Found in passing: the single-episode importer's board index reads one select capped at 1000 of 3,673 boards.
