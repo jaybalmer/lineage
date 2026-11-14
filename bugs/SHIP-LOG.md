@@ -2864,10 +2864,11 @@ Phase 2 of podcast-archive-staging-brief-v2 (T7 to T12): story decisions (approv
 - type: feature
 - pr: #276
 - branch: feature/podcast-archive-staging-p3
+- commit: 0f43274
 - ids: none
 - scope: podcast-archive-staging-p3
 - migration: applied supabase/migrations/20261114000004_podcast_staging_publish_created.sql (SAFE: ADD COLUMN published_created/published_at/published_by on staging tables; applied via Supabase MCP and verified)
-- status: pending
+- status: merged
 - tsc: clean
 
 Phase 3 of podcast-archive-staging-brief-v2 (T13 to T17), HUMAN-RUN, so merge waits for Jay. Publish creates the episode hidden and writes mentions as published; GET /api/mentions now serves only live-episode mentions (Jay's F11 call: the episode flag is the single switch; no visible change today). One code path for dry run and apply, fresh exact catalog check before minting nodes, skip-existing mentions, ids written back, re-run is a no-op, no tokens; unpublish deletes only the mentions a batch inserted and lists created nodes. Iguchi episode reviewed in staging on Jay's instruction; its dry run: 1 hidden episode, 6 new nodes (4 people, 2 places), 34 mentions, 3 left out. Deferred: the merge (must precede the first live publish so the read gate is deployed) and the Iguchi live publish, both awaiting Jay's go.
