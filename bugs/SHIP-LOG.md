@@ -2885,3 +2885,16 @@ Phase 3 of podcast-archive-staging-brief-v2 (T13 to T17), HUMAN-RUN, so merge wa
 - tsc: n/a
 
 First archive episode live after the Phase 3 publish (#276). Verified on linestry.com: /t/fnrad_bryan_iguchi returns 200 with the new title and stories, the episode serves its 34 published mentions, and Craig Kelly's timeline went from 6 to 8 mentions (the two Iguchi stories), proving the episode flag is the switch.
+
+## 2026-11-14 - FNRad: weekly challenge card removed from individual episode pages (feature)
+- type: feature
+- pr: #277
+- branch: feature/remove-episode-challenge-card
+- commit: 825c2af
+- ids: none
+- scope: fnrad-episode-challenge-card-removal
+- migration: none
+- status: merged
+- tsc: clean
+
+Jay's call: "This week's challenge" stays on the /fnrad hub and the brand-page campaign module but no longer renders on each public episode page. Removed the render, the challengeGuest payload field and its extra person lookup, and the card's unused episode mode. Verified localhost vs production on three episodes (present on prod, gone locally) and /fnrad unchanged.
