@@ -3,7 +3,7 @@ import { notFound } from "next/navigation"
 import { getServiceClient, requireModeratorPage } from "@/lib/auth"
 import { getEpisode } from "@/lib/podcast-staging-queries"
 import { BASE, Empty, StagingShell, StoryCard } from "../../staging-ui"
-import { EpisodeBulkApprove } from "../../staging-actions"
+import { EpisodeBulkApprove, PublishPanel } from "../../staging-actions"
 
 // One staged episode: its stories in order, each with decision controls, plus
 // the bulk approve (pending stories only; trimmed and sensitive never swept up).
@@ -42,7 +42,8 @@ export default async function StagingEpisodePage({ params }: { params: Promise<{
           <a href={`https://www.youtube.com/watch?v=${ep.video_id}`} target="_blank" rel="noreferrer" className="text-[var(--accent-strong)] hover:underline">
             Watch on YouTube
           </a>
-          {ep.episode_event_id ? " · Already live as an episode page" : " · Not live yet"}
+          {ep.episode_event_id ? " · Has an episode page" : " · No episode page yet"}
+          {ep.published_mentions > 0 && ` · ${ep.published_mentions} mentions published`}
         </p>
         {ep.notes && <p className="text-xs text-muted mt-1">{ep.notes}</p>}
         <p className="text-xs text-muted mt-1">
@@ -51,6 +52,9 @@ export default async function StagingEpisodePage({ params }: { params: Promise<{
         </p>
         <div className="mt-3"><EpisodeBulkApprove episodeId={ep.id} /></div>
       </header>
+      <div className="mb-6">
+        <PublishPanel episodeId={ep.id} episodeEventId={ep.episode_event_id} publishedMentions={ep.published_mentions} />
+      </div>
       {ep.stories.length === 0 ? (
         <Empty>No stories staged for this episode.</Empty>
       ) : (

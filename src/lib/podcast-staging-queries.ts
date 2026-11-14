@@ -266,7 +266,7 @@ export async function listEpisodes(db: SupabaseClient, page = 1): Promise<Paged<
   return { rows: (data ?? []) as EpisodeListRow[], total: count ?? 0, page, pageSize: PAGE_SIZE }
 }
 
-export async function getEpisode(db: SupabaseClient, id: string): Promise<(EpisodeListRow & { notes: string | null; stories: StoryCardData[] }) | null> {
+export async function getEpisode(db: SupabaseClient, id: string): Promise<(EpisodeListRow & { notes: string | null; published_mentions: number; stories: StoryCardData[] }) | null> {
   const { data: ep, error } = await db
     .from("podcast_staging_episode_stats")
     .select("id, archive_label, guest, episode_name, proposed_episode_number, air_date, video_id, status, episode_event_id, series_note, wave, story_count, trimmed_count, mention_count, inferred_count")
@@ -284,7 +284,18 @@ export async function getEpisode(db: SupabaseClient, id: string): Promise<(Episo
   if (sErr) throw new Error(`episode stories: ${sErr.message}`)
   const stories = await storiesByIds(db, ((storyRows ?? []) as { id: string }[]).map((s) => s.id))
   stories.sort((a, b) => a.timestamp_seconds - b.timestamp_seconds)
-  return { ...(ep as EpisodeListRow), notes: (extra as { notes: string | null } | null)?.notes ?? null, stories }
+  // How many of this episode's staged mentions a publish has written out.
+  let published = 0
+  const storyIdList = stories.map((st) => st.id)
+  for (let i = 0; i < storyIdList.length; i += 150) {
+    const { count } = await db
+      .from("podcast_staging_mentions")
+      .select("id", { count: "exact", head: true })
+      .in("story_id", storyIdList.slice(i, i + 150))
+      .not("published_mention_id", "is", null)
+    published += count ?? 0
+  }
+  return { ...(ep as EpisodeListRow), notes: (extra as { notes: string | null } | null)?.notes ?? null, published_mentions: published, stories }
 }
 
 // ── stories ─────────────────────────────────────────────────────────────────

@@ -37,6 +37,39 @@ export async function readPublishedMentions(episodeId: string): Promise<Mention[
   return (data ?? []) as Mention[]
 }
 
+/**
+ * Drop mentions whose episode is not live (public_enabled AND past publish_at,
+ * the same isEpisodeLive rule the episode page uses).
+ *
+ * Podcast archive staging, Phase 3 (brief F11): bulk publishing creates a
+ * HIDDEN episode and writes its mentions as published, so the episode's public
+ * flag is the single switch. Without this filter those stories would reach a
+ * person's timeline before the episode page they link to is public.
+ *
+ * MIRROR of isEpisodeLive in public-timeline-read.ts, inlined because that
+ * module imports this one. Keep the two rules identical.
+ */
+function episodeIsLive(row: { public_enabled: boolean | null; publish_at: string | null }, now: number): boolean {
+  if (row.public_enabled !== true) return false
+  if (!row.publish_at) return true
+  const at = Date.parse(row.publish_at)
+  return Number.isFinite(at) && at <= now
+}
+
+export async function filterLiveEpisodes(rows: Mention[]): Promise<Mention[]> {
+  if (rows.length === 0) return []
+  const db = getServiceClient()
+  const ids = Array.from(new Set(rows.map((m) => m.episode_event_id)))
+  const { data } = await db.from("events").select("id, public_enabled, publish_at").in("id", ids)
+  const now = Date.now()
+  const live = new Set(
+    ((data ?? []) as { id: string; public_enabled: boolean | null; publish_at: string | null }[])
+      .filter((e) => episodeIsLive(e, now))
+      .map((e) => e.id),
+  )
+  return rows.filter((m) => live.has(m.episode_event_id))
+}
+
 /** Attach { episode } context to a set of raw mention rows, in place of a join. */
 export async function hydrateEpisodes(rows: Mention[]): Promise<Mention[]> {
   if (rows.length === 0) return []

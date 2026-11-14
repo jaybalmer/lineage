@@ -596,3 +596,205 @@ export function NodesToolbar({ type }: { type: StagingSubjectType | null }) {
     </div>
   )
 }
+
+// ── publish (Phase 3, T14 / T17) ────────────────────────────────────────────
+
+type PublishPlan = {
+  episodes_to_create: number
+  nodes_to_create: Record<StagingSubjectType, number>
+  nodes_to_create_total: number
+  mentions_to_insert: number
+  already_published: number
+  excluded: { episode: string; story: string; timestamp_seconds: number; node: string; reason: string }[]
+  excluded_by_reason: Record<string, number>
+  result?: {
+    episodes_created: number
+    episodes_attached: number
+    nodes_created: number
+    nodes_matched_at_publish: number
+    mentions_inserted: number
+    mentions_skipped_existing: number
+    refusals: string[]
+  }
+}
+
+type UnpublishPlan = {
+  mentions_to_delete: number
+  created_nodes: { id: string; name: string; subject_type: StagingSubjectType; subject_id: string }[]
+  created_episode_event_id: string | null
+  deleted?: number
+}
+
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+
+/**
+ * Dry run first, always (T14). The sentence and the reasons come from the same
+ * code path that writes, so what is shown is what will happen.
+ */
+export function PublishPanel({
+  episodeId, episodeEventId, publishedMentions,
+}: {
+  episodeId: string
+  episodeEventId: string | null
+  publishedMentions: number
+}) {
+  const { run, busy, error } = useAction()
+  const [plan, setPlan] = useState<PublishPlan | null>(null)
+  const [done, setDone] = useState<PublishPlan["result"] | null>(null)
+  const [unplan, setUnplan] = useState<UnpublishPlan | null>(null)
+  const [unDone, setUnDone] = useState<number | null>(null)
+  const [showRows, setShowRows] = useState(false)
+
+  const dry = async () => {
+    setDone(null)
+    setUnDone(null)
+    const r = await run(`${API}/publish`, "POST", { episodeIds: [episodeId], dryRun: true }, { refresh: false })
+    if (r) setPlan(r as unknown as PublishPlan)
+  }
+
+  const typeLine = plan
+    ? (Object.entries(plan.nodes_to_create) as [StagingSubjectType, number][])
+        .filter(([, n]) => n > 0)
+        .map(([t, n]) => `${n} ${TYPE_LABEL[t].toLowerCase()}${n === 1 ? "" : "s"}`)
+        .join(", ")
+    : ""
+
+  return (
+    <section className="rounded-xl border border-border-default bg-surface p-4">
+      <h3 className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">Publish</h3>
+      <p className="text-xs text-muted mb-3">
+        Publishing creates the episode hidden, any new nodes, and the mentions. Nothing shows on a timeline until the
+        episode is made public from its episode page.
+      </p>
+
+      {!plan && (
+        <button type="button" disabled={busy} onClick={dry} className={btnNeutral}>
+          {busy ? "Checking..." : "Check what would publish"}
+        </button>
+      )}
+
+      {plan && (
+        <div className="text-sm">
+          <p className="text-foreground">
+            This will create {plural(plan.episodes_to_create, "episode", "episodes")} and{" "}
+            {plural(plan.nodes_to_create_total, "new node", "new nodes")}
+            {typeLine ? ` (${typeLine})` : ""}, and publish {plural(plan.mentions_to_insert, "mention", "mentions")}.{" "}
+            {plural(plan.excluded.length, "row is", "rows are")} left out.
+            {plan.already_published > 0 && ` ${plan.already_published} already published.`}
+          </p>
+          {Object.keys(plan.excluded_by_reason).length > 0 && (
+            <ul className="mt-2 text-xs text-muted space-y-0.5">
+              {Object.entries(plan.excluded_by_reason)
+                .sort((a, b) => b[1] - a[1])
+                .map(([reason, n]) => <li key={reason}>{n} &middot; {reason}</li>)}
+            </ul>
+          )}
+          {plan.excluded.length > 0 && (
+            <button type="button" onClick={() => setShowRows((v) => !v)} className="text-xs text-[var(--accent-strong)] hover:underline mt-1">
+              {showRows ? "Hide" : "Show"} the left-out rows
+            </button>
+          )}
+          {showRows && (
+            <ul className="mt-1 max-h-64 overflow-y-auto text-xs text-muted border border-border-default rounded-lg divide-y divide-border-default">
+              {plan.excluded.slice(0, 200).map((r, i) => (
+                <li key={i} className="px-2 py-1">
+                  <span className="text-foreground">{r.node}</span> in &ldquo;{r.story}&rdquo;: {r.reason}
+                </li>
+              ))}
+            </ul>
+          )}
+          <div className="flex gap-2 mt-3">
+            <button
+              type="button"
+              disabled={busy || plan.mentions_to_insert === 0}
+              onClick={async () => {
+                const r = await run(`${API}/publish`, "POST", { episodeIds: [episodeId], dryRun: false })
+                if (r) {
+                  setDone((r as unknown as PublishPlan).result ?? null)
+                  setPlan(null)
+                }
+              }}
+              className={btnPrimary}
+            >
+              Publish {plural(plan.mentions_to_insert, "mention", "mentions")}
+            </button>
+            <button type="button" onClick={() => setPlan(null)} className={btnNeutral}>Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {done && (
+        <div className="mt-3 text-sm">
+          <p className="text-foreground">
+            Published {plural(done.mentions_inserted, "mention", "mentions")}.{" "}
+            {done.episodes_created > 0 && `Created the episode (hidden). `}
+            {done.episodes_attached > 0 && `Attached to an existing episode. `}
+            {done.nodes_created > 0 && `Created ${plural(done.nodes_created, "node", "nodes")}. `}
+            {done.nodes_matched_at_publish > 0 && `${plural(done.nodes_matched_at_publish, "node", "nodes")} matched the catalog at publish. `}
+            {done.mentions_skipped_existing > 0 && `${done.mentions_skipped_existing} already existed.`}
+          </p>
+          {done.refusals.length > 0 && (
+            <ul className="mt-1 text-xs text-red-700 dark:text-red-300">
+              {done.refusals.map((r, i) => <li key={i}>{r}</li>)}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {episodeEventId && (
+        <p className="text-xs mt-3">
+          <a href={`/snowboarding/events/${episodeEventId}`} target="_blank" rel="noreferrer" className="text-[var(--accent-strong)] hover:underline">
+            Open the episode page
+          </a>
+          <span className="text-muted"> to make it public when you are ready.</span>
+        </p>
+      )}
+
+      {publishedMentions > 0 && (
+        <div className="mt-4 pt-3 border-t border-border-default">
+          {unplan ? (
+            <div className="text-sm">
+              <p className="text-foreground">
+                Unpublish removes the {plural(unplan.mentions_to_delete, "mention", "mentions")} this episode published.
+                {unplan.created_nodes.length > 0 && ` The ${plural(unplan.created_nodes.length, "node", "nodes")} it created stay in the catalog: `}
+                {unplan.created_nodes.map((n) => n.name).join(", ")}
+                {unplan.created_episode_event_id && ". The episode event it created stays too"}.
+              </p>
+              <div className="flex gap-2 mt-2">
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={async () => {
+                    const r = await run(`${API}/unpublish`, "POST", { episode_id: episodeId, dryRun: false })
+                    if (r) {
+                      setUnDone(Number(r.deleted ?? 0))
+                      setUnplan(null)
+                    }
+                  }}
+                  className={btnDanger}
+                >
+                  Unpublish
+                </button>
+                <button type="button" onClick={() => setUnplan(null)} className={btnNeutral}>Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={busy}
+              onClick={async () => {
+                const r = await run(`${API}/unpublish`, "POST", { episode_id: episodeId, dryRun: true }, { refresh: false })
+                if (r) setUnplan(r as unknown as UnpublishPlan)
+              }}
+              className={btnDanger}
+            >
+              Unpublish this episode
+            </button>
+          )}
+          {unDone !== null && <p className="text-xs text-muted mt-1">Removed {plural(unDone, "mention", "mentions")}.</p>}
+        </div>
+      )}
+      <ErrorLine error={error} />
+    </section>
+  )
+}
