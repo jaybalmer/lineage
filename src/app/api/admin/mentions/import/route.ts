@@ -44,7 +44,14 @@ export async function POST(req: NextRequest) {
 
   const apply = dryRun === false
 
-  const result = await runMentionImport(seed, { actorId: user.id, apply })
+  let result: Awaited<ReturnType<typeof runMentionImport>>
+  try {
+    result = await runMentionImport(seed, { actorId: user.id, apply })
+  } catch (err) {
+    // A failed catalog page read throws rather than matching against a partial
+    // index (which would mint duplicate ghosts).
+    return NextResponse.json({ error: err instanceof Error ? err.message : "Import failed" }, { status: 500 })
+  }
   if ("error" in result) {
     return NextResponse.json({ error: result.error }, { status: 400 })
   }

@@ -315,35 +315,49 @@ const sameName = (a, b) => String(a ?? "").trim().toLowerCase() === String(b ?? 
 // ghost created mid-run be visible to later rows (see rememberCreated).
 const indexCache = new Map()
 
+// Every read is paged: PostgREST caps a single select at 1000 rows, and boards
+// alone is several times that. Mirrors selectAll in mention-import-server.ts.
+const PAGE = 1000
+async function selectAll(table, cols) {
+  const out = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await db.from(table).select(cols).order("id").range(from, from + PAGE - 1)
+    if (error) throw new Error(`read ${table}: ${error.message}`)
+    const rows = data ?? []
+    out.push(...rows)
+    if (rows.length < PAGE) return out
+  }
+}
+
 async function loadIndex(type) {
   if (indexCache.has(type)) return indexCache.get(type)
   let rows = []
   if (type === "person") {
-    const [{ data: people }, { data: profiles }] = await Promise.all([
-      db.from("people").select("id, display_name, node_status"),
-      db.from("profiles").select("id, display_name, is_archived"),
+    const [people, profiles] = await Promise.all([
+      selectAll("people", "id, display_name, node_status"),
+      selectAll("profiles", "id, display_name, is_archived"),
     ])
-    for (const p of profiles ?? []) {
+    for (const p of profiles) {
       if (p.is_archived || !p.display_name) continue
       rows.push({ id: p.id, name: p.display_name, label: `${p.display_name} (member)` })
     }
     const seen = new Set(rows.map((r) => r.id))
-    for (const p of people ?? []) {
+    for (const p of people) {
       if (seen.has(p.id) || !p.display_name) continue
       rows.push({ id: p.id, name: p.display_name, label: `${p.display_name} (${p.node_status})` })
     }
   } else if (type === "place") {
-    const { data } = await db.from("places").select("id, name, place_type")
-    rows = (data ?? []).map((p) => ({ id: p.id, name: p.name, label: `${p.name} (${p.place_type})` }))
+    const data = await selectAll("places", "id, name, place_type")
+    rows = data.map((p) => ({ id: p.id, name: p.name, label: `${p.name} (${p.place_type})` }))
   } else if (type === "org") {
-    const { data } = await db.from("orgs").select("id, name, org_type")
-    rows = (data ?? []).map((o) => ({ id: o.id, name: o.name, label: `${o.name} (${o.org_type})` }))
+    const data = await selectAll("orgs", "id, name, org_type")
+    rows = data.map((o) => ({ id: o.id, name: o.name, label: `${o.name} (${o.org_type})` }))
   } else if (type === "event") {
-    const { data } = await db.from("events").select("id, name, year")
-    rows = (data ?? []).map((e) => ({ id: e.id, name: e.name, label: `${e.name}${e.year ? ` (${e.year})` : ""}` }))
+    const data = await selectAll("events", "id, name, year")
+    rows = data.map((e) => ({ id: e.id, name: e.name, label: `${e.name}${e.year ? ` (${e.year})` : ""}` }))
   } else {
-    const { data } = await db.from("boards").select("id, brand, model, model_year")
-    rows = (data ?? []).map((b) => ({
+    const data = await selectAll("boards", "id, brand, model, model_year")
+    rows = data.map((b) => ({
       id: b.id,
       name: `${b.brand ?? ""} ${b.model ?? ""}`.trim(),
       brand: b.brand, model: b.model, model_year: b.model_year,
