@@ -2846,3 +2846,16 @@ Phase 1 of podcast-archive-staging-brief-v2: four isolated, RLS-on podcast_stagi
 - tsc: clean
 
 Follow-up to #273. loadIndex in src/lib/mention-import-server.ts and scripts/import-mentions.mjs read each catalog table in one select capped at 1000 rows (boards = 3,673), so board subjects matched against about a quarter of the catalog. Both now page with .order("id").range() via a selectAll helper; a failed page read throws and the import route returns it as a JSON error. Matching rules unchanged. Verified by dry run against FNRad #21 with a temporary log: board index 3673 rows, a board at row ~3,500 surfaced as a candidate.
+
+## 2026-11-14 - Podcast archive staging Phase 2: decisions, merges and bulk approve (feature)
+- type: feature
+- pr: #275
+- branch: feature/podcast-archive-staging-p2
+- commit: 68107e2
+- ids: none
+- scope: podcast-archive-staging-p2
+- migration: applied supabase/migrations/20261114000003_podcast_staging_mention_audit.sql (SAFE: ADD COLUMN decided_by, decided_at on podcast_staging_mentions; applied via Supabase MCP before merge and verified)
+- status: merged
+- tsc: clean
+
+Phase 2 of podcast-archive-staging-brief-v2 (T7 to T12): story decisions (approve, trim, hold as sensitive, restore, seed revisions), node decisions (approve gated on being resolved and creatable, hold, reject, reset, rename, pick match, confirm new, ghost fields with re-resolve, same-type merge, cross-type also-known-as), mention drop and repoint, bulk approve with in-page previews that never sweep sensitive, trimmed or all-inferred rows, and Re-check against catalog. Every decision stamps decided_by/decided_at; hand-picked matches carry a manual_match flag so re-checks never undo them. Every action was exercised against staging (merge and repoint on a deleted fixture); the pilot was left untouched and catalog counts unchanged. The signed-in UI was not clicked through (no session minted).
