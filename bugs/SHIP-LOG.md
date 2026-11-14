@@ -2859,3 +2859,15 @@ Follow-up to #273. loadIndex in src/lib/mention-import-server.ts and scripts/imp
 - tsc: clean
 
 Phase 2 of podcast-archive-staging-brief-v2 (T7 to T12): story decisions (approve, trim, hold as sensitive, restore, seed revisions), node decisions (approve gated on being resolved and creatable, hold, reject, reset, rename, pick match, confirm new, ghost fields with re-resolve, same-type merge, cross-type also-known-as), mention drop and repoint, bulk approve with in-page previews that never sweep sensitive, trimmed or all-inferred rows, and Re-check against catalog. Every decision stamps decided_by/decided_at; hand-picked matches carry a manual_match flag so re-checks never undo them. Every action was exercised against staging (merge and repoint on a deleted fixture); the pilot was left untouched and catalog counts unchanged. The signed-in UI was not clicked through (no session minted).
+
+## 2026-11-14 - Podcast archive staging Phase 3: publish, dry run and unpublish (feature)
+- type: feature
+- pr: #276
+- branch: feature/podcast-archive-staging-p3
+- ids: none
+- scope: podcast-archive-staging-p3
+- migration: applied supabase/migrations/20261114000004_podcast_staging_publish_created.sql (SAFE: ADD COLUMN published_created/published_at/published_by on staging tables; applied via Supabase MCP and verified)
+- status: pending
+- tsc: clean
+
+Phase 3 of podcast-archive-staging-brief-v2 (T13 to T17), HUMAN-RUN, so merge waits for Jay. Publish creates the episode hidden and writes mentions as published; GET /api/mentions now serves only live-episode mentions (Jay's F11 call: the episode flag is the single switch; no visible change today). One code path for dry run and apply, fresh exact catalog check before minting nodes, skip-existing mentions, ids written back, re-run is a no-op, no tokens; unpublish deletes only the mentions a batch inserted and lists created nodes. Iguchi episode reviewed in staging on Jay's instruction; its dry run: 1 hidden episode, 6 new nodes (4 people, 2 places), 34 mentions, 3 left out. Deferred: the merge (must precede the first live publish so the read gate is deployed) and the Iguchi live publish, both awaiting Jay's go.
