@@ -73,6 +73,7 @@ export default async function StagingNodePage({
         <p className="text-sm text-muted mt-1">
           {node.story_count} {node.story_count === 1 ? "story" : "stories"} across {node.episode_count}{" "}
           {node.episode_count === 1 ? "episode" : "episodes"}
+          {node.kept_episode_count !== node.episode_count && ` (${node.kept_episode_count} with kept stories)`}
           {node.inferred_count > 0 && ` · name inferred in ${node.inferred_count} of ${node.mention_count}`}
         </p>
         <div className="mt-2"><FlagList flags={node.flags} /></div>

@@ -152,7 +152,8 @@ async function NodesTab({ db, filters }: { db: ReturnType<typeof getServiceClien
             <thead className="bg-surface-2 text-[11px] uppercase tracking-wide text-muted">
               <tr>
                 <th className="text-left font-semibold px-3 py-2">Name</th>
-                <th className="text-right font-semibold px-2 py-2 hidden sm:table-cell" title="Episodes">Eps</th>
+                <th className="text-right font-semibold px-2 py-2 hidden sm:table-cell" title="Every episode this node is mentioned in">Eps</th>
+                <th className="text-right font-semibold px-2 py-2 hidden sm:table-cell" title="Episodes with at least one story that is not trimmed">Kept eps</th>
                 <th className="text-right font-semibold px-2 py-2" title="Stories">Stories</th>
                 {STATUS_COLS.map((c) => (
                   <th key={c.key} title={c.title} className={cn("text-right font-semibold px-2 py-2", !c.mobile && "hidden sm:table-cell")}>
@@ -176,6 +177,9 @@ async function NodesTab({ db, filters }: { db: ReturnType<typeof getServiceClien
                     </div>
                   </td>
                   <td className="px-2 py-2 text-right tabular-nums text-muted hidden sm:table-cell">{n.episode_count}</td>
+                  <td className={cn("px-2 py-2 text-right tabular-nums hidden sm:table-cell", n.kept_episode_count === 0 ? "text-muted/50" : "text-foreground")}>
+                    {n.kept_episode_count}
+                  </td>
                   <td className="px-2 py-2 text-right tabular-nums text-foreground">
                     {n.story_count}
                     {n.inferred_count > 0 && (
