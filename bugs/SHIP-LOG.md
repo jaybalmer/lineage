@@ -2937,3 +2937,16 @@ Episodes tab shows Pending, Approved, Ready, Published, Held, Trimmed per episod
 - tsc: clean
 
 Follow-up to #278 after Jay looked for the columns on the "By person or node" tab: same Pending, Approved, Ready, Published, Held, Trimmed counts per node. Verified view rows via SQL; signed-in admin page not exercised in a browser.
+
+## 2026-11-15 - podcast staging: node page stories paged 25 at a time (feature)
+- type: feature
+- pr: #280
+- branch: claude/podcast-mentions-paging
+- commit: 556dad3
+- ids: none
+- scope: podcast-staging-node-story-paging
+- migration: none
+- status: merged
+- tsc: clean
+
+Jay reported long staging pages slowing his computer. Node pages rendered every story (1,210 for Erik Traulsen) and truncated at the 1,000-row cap; now 25 per page with decision filter chips and exact counts. Query verified against prod; signed-in page not exercised in a browser. Public mention lists (person timeline, entity pages) are also unpaged; grouping proposal pending Jay's call.
