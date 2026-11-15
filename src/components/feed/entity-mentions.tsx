@@ -16,11 +16,15 @@
 // The read is public and published-only (GET /api/mentions never returns a
 // draft on the subject-side path, by design: that path feeds public timelines).
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { MentionRow } from "@/components/feed/mention-row"
 import { MentionEpisodeGroup } from "@/components/feed/mention-episode-group"
-import { groupMentionsByEpisode } from "@/lib/mentions"
+import { MentionYearGroup } from "@/components/feed/mention-year-group"
+import { groupMentionsByEpisode, rollupEpisodesByYear } from "@/lib/mentions"
 import type { Mention, MentionSubjectType } from "@/types"
+
+/** Cards shown before "Show more": a busy brand has a year card per year. */
+const INITIAL_ITEMS = 8
 
 export function EntityMentions({
   subjectType,
@@ -32,6 +36,7 @@ export function EntityMentions({
   className?: string
 }) {
   const [mentions, setMentions] = useState<Mention[]>([])
+  const [showAll, setShowAll] = useState(false)
 
   useEffect(() => {
     if (!subjectId) return
@@ -55,21 +60,39 @@ export function EntityMentions({
     return () => { live = false }
   }, [subjectType, subjectId])
 
+  const items = useMemo(
+    () => rollupEpisodesByYear(groupMentionsByEpisode(mentions), (g) => g.items[0].episode?.start_date?.slice(0, 4) || null),
+    [mentions],
+  )
+
   if (mentions.length === 0) return null
+  const shown = showAll ? items : items.slice(0, INITIAL_ITEMS)
 
   return (
     <section className={className}>
       <h2 className="text-xs font-semibold text-muted uppercase tracking-widest mb-3">
         Talked about on the podcast
       </h2>
-      {/* Same episode grouping as a rider timeline (BUG-172); the newest-episode
-          -first sort above is preserved because grouping keeps input order. */}
-      {groupMentionsByEpisode(mentions).map((g) =>
-        g.items.length === 1 ? (
-          <MentionRow key={`mention-${g.items[0].id}`} mention={g.items[0]} context="timeline" />
+      {/* Same episode grouping as a rider timeline (BUG-172), then a busy air
+          year folds into one year card. Newest first is preserved because
+          both groupings keep input order. */}
+      {shown.map((r) =>
+        r.kind === "year" ? (
+          <MentionYearGroup key={r.key} year={r.year} groups={r.groups} mentionCount={r.mentionCount} />
+        ) : r.group.items.length === 1 ? (
+          <MentionRow key={`mention-${r.group.items[0].id}`} mention={r.group.items[0]} context="timeline" />
         ) : (
-          <MentionEpisodeGroup key={g.key} mentions={g.items} />
+          <MentionEpisodeGroup key={r.group.key} mentions={r.group.items} />
         )
+      )}
+      {items.length > INITIAL_ITEMS && (
+        <button
+          type="button"
+          onClick={() => setShowAll((v) => !v)}
+          className="mt-1 text-xs font-medium text-accent-strong hover:underline"
+        >
+          {showAll ? "Show less" : `Show ${items.length - INITIAL_ITEMS} more`}
+        </button>
       )}
     </section>
   )
