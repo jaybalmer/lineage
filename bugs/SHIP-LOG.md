@@ -2924,3 +2924,16 @@ All 1,210 Erik Traulsen stories now trimmed (197 were already). None were approv
 - tsc: clean
 
 Episodes tab shows Pending, Approved, Ready, Published, Held, Trimmed per episode; episode header shows the same. Verified view totals via SQL (11,911 stories = 9,063 pending + 12 approved + 2,836 trimmed). Signed-in admin page not exercised in a browser.
+
+## 2026-11-15 - podcast staging: story status columns on the Nodes tab (feature)
+- type: feature
+- pr: #279
+- branch: claude/podcast-staging-node-status-columns
+- commit: 8bf0cf9
+- ids: none
+- scope: podcast-staging-node-status-columns
+- migration: 20261115000002_podcast_staging_node_status_counts.sql (SAFE, CREATE OR REPLACE VIEW appending columns; applied before merge and verified)
+- status: merged
+- tsc: clean
+
+Follow-up to #278 after Jay looked for the columns on the "By person or node" tab: same Pending, Approved, Ready, Published, Held, Trimmed counts per node. Verified view rows via SQL; signed-in admin page not exercised in a browser.
