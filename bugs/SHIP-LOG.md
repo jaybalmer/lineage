@@ -2898,3 +2898,29 @@ First archive episode live after the Phase 3 publish (#276). Verified on linestr
 - tsc: clean
 
 Jay's call: "This week's challenge" stays on the /fnrad hub and the brand-page campaign module but no longer renders on each public episode page. Removed the render, the challengeGuest payload field and its extra person lookup, and the card's unused episode mode. Verified localhost vs production on three episodes (present on prod, gone locally) and /fnrad unchanged.
+
+## 2026-11-15 - data: FNRad archive staging, Erik Traulsen host stories bulk-trimmed (data op)
+- type: data
+- pr: none (on Jay's explicit go in chat; staging review decisions only, no code change)
+- branch: none
+- commit: none
+- ids: none
+- scope: fnrad-archive-host-story-trim
+- migration: none (GATED-class UPDATE of existing podcast_staging_stories rows, approved by Jay: 1,013 pending stories mentioning the Erik Traulsen node set decision='trimmed', skip_reason 'host-story bulk trim 2026-11-15: Erik Traulsen tagged, mostly how he met guests'; reversible by that skip_reason)
+- status: applied
+- tsc: n/a
+
+All 1,210 Erik Traulsen stories now trimmed (197 were already). None were approved or in a published episode.
+
+## 2026-11-15 - podcast staging: story status columns on the Episodes tab (feature)
+- type: feature
+- pr: #278
+- branch: claude/podcast-staging-status-columns
+- commit: 5674059
+- ids: none
+- scope: podcast-staging-episode-status-columns
+- migration: 20261115000001_podcast_staging_episode_status_counts.sql (SAFE, CREATE OR REPLACE VIEW appending columns; applied before merge and verified)
+- status: merged
+- tsc: clean
+
+Episodes tab shows Pending, Approved, Ready, Published, Held, Trimmed per episode; episode header shows the same. Verified view totals via SQL (11,911 stories = 9,063 pending + 12 approved + 2,836 trimmed). Signed-in admin page not exercised in a browser.
