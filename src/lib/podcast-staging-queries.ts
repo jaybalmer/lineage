@@ -62,6 +62,12 @@ export type EpisodeListRow = {
   trimmed_count: number
   mention_count: number
   inferred_count: number
+  pending_count: number
+  approved_count: number
+  held_count: number
+  /** Approved stories with at least one mention that will publish and has not yet. */
+  ready_count: number
+  published_story_count: number
 }
 
 export type CastChip = {
@@ -258,7 +264,7 @@ export async function listEpisodes(db: SupabaseClient, page = 1): Promise<Paged<
   const [from, to] = range(page)
   const { data, count, error } = await db
     .from("podcast_staging_episode_stats")
-    .select("id, archive_label, guest, episode_name, proposed_episode_number, air_date, video_id, status, episode_event_id, series_note, wave, story_count, trimmed_count, mention_count, inferred_count", { count: "exact" })
+    .select("id, archive_label, guest, episode_name, proposed_episode_number, air_date, video_id, status, episode_event_id, series_note, wave, story_count, trimmed_count, mention_count, inferred_count, pending_count, approved_count, held_count, ready_count, published_story_count", { count: "exact" })
     .order("air_date", { ascending: true, nullsFirst: false })
     .order("episode_name", { ascending: true })
     .range(from, to)
@@ -269,7 +275,7 @@ export async function listEpisodes(db: SupabaseClient, page = 1): Promise<Paged<
 export async function getEpisode(db: SupabaseClient, id: string): Promise<(EpisodeListRow & { notes: string | null; published_mentions: number; stories: StoryCardData[] }) | null> {
   const { data: ep, error } = await db
     .from("podcast_staging_episode_stats")
-    .select("id, archive_label, guest, episode_name, proposed_episode_number, air_date, video_id, status, episode_event_id, series_note, wave, story_count, trimmed_count, mention_count, inferred_count")
+    .select("id, archive_label, guest, episode_name, proposed_episode_number, air_date, video_id, status, episode_event_id, series_note, wave, story_count, trimmed_count, mention_count, inferred_count, pending_count, approved_count, held_count, ready_count, published_story_count")
     .eq("id", id)
     .maybeSingle()
   if (error) throw new Error(`get episode: ${error.message}`)

@@ -35,7 +35,7 @@ export default async function StagingEpisodePage({ params }: { params: Promise<{
         <h2 className="text-xl font-bold text-foreground">{ep.episode_name}</h2>
         <p className="text-sm text-muted mt-1">{meta.join(" · ")}</p>
         <p className="text-sm text-muted mt-1">
-          {ep.story_count} stories, {ep.trimmed_count} trimmed, {ep.mention_count} mentions
+          {ep.story_count} stories: {ep.pending_count} pending, {ep.approved_count} approved ({ep.ready_count} ready to publish, {ep.published_story_count} published), {ep.held_count} held, {ep.trimmed_count} trimmed · {ep.mention_count} mentions
           {ep.inferred_count > 0 && ` (${ep.inferred_count} with an inferred name)`}
         </p>
         <p className="text-xs text-muted mt-1">
