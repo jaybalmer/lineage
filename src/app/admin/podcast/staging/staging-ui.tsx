@@ -183,6 +183,23 @@ export function StoryCard({ story, showEpisode, currentNodeId }: { story: StoryC
 }
 
 /** Previous / next links that keep the current filters. */
+export function FilterChip({ href, active, children }: { href: string; active: boolean; children: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "true" : undefined}
+      className={cn(
+        "shrink-0 px-2.5 py-1 rounded-full border text-xs transition-colors",
+        active
+          ? "bg-surface-active border-foreground/30 text-foreground font-semibold"
+          : "bg-surface border-border-default text-muted hover:text-foreground hover:bg-surface-hover",
+      )}
+    >
+      {children}
+    </Link>
+  )
+}
+
 export function Pager({
   page, pageSize, total, hrefFor,
 }: { page: number; pageSize: number; total: number; hrefFor: (page: number) => string }) {
