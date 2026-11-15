@@ -40,6 +40,8 @@ export type NodeListRow = {
   decision: NodeDecision
   heard_as: string[]
   episode_count: number
+  /** Episodes with at least one non-trimmed story mentioning this node. */
+  kept_episode_count: number
   story_count: number
   kept_story_count: number
   mention_count: number
@@ -164,7 +166,7 @@ export async function listNodes(db: SupabaseClient, f: NodeFilters): Promise<Pag
   const page = f.page ?? 1
   let q = db
     .from("podcast_staging_node_stats")
-    .select("id, subject_type, name, resolution, subject_id, candidates, flags, decision, heard_as, episode_count, story_count, kept_story_count, mention_count, inferred_count, pending_count, approved_count, held_count, trimmed_count, ready_count, published_story_count", { count: "exact" })
+    .select("id, subject_type, name, resolution, subject_id, candidates, flags, decision, heard_as, episode_count, kept_episode_count, story_count, kept_story_count, mention_count, inferred_count, pending_count, approved_count, held_count, trimmed_count, ready_count, published_story_count", { count: "exact" })
     .is("merged_into", null)
   if (f.type) q = q.eq("subject_type", f.type)
   if (f.resolution) q = q.eq("resolution", f.resolution)
@@ -280,7 +282,7 @@ export async function getNode(
 ): Promise<NodeDetail | null> {
   const { data: node, error } = await db
     .from("podcast_staging_node_stats")
-    .select("id, subject_type, name, resolution, subject_id, candidates, flags, decision, heard_as, episode_count, story_count, kept_story_count, mention_count, inferred_count, pending_count, approved_count, held_count, trimmed_count, ready_count, published_story_count")
+    .select("id, subject_type, name, resolution, subject_id, candidates, flags, decision, heard_as, episode_count, kept_episode_count, story_count, kept_story_count, mention_count, inferred_count, pending_count, approved_count, held_count, trimmed_count, ready_count, published_story_count")
     .eq("id", id)
     .maybeSingle()
   if (error) throw new Error(`get node: ${error.message}`)
