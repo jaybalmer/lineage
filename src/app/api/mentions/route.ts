@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
 import { getServiceClient, isEditorSession } from "@/lib/auth"
 import { MENTION_SUBJECT_TYPES } from "@/lib/mentions"
-import { filterLiveEpisodes, hydrateEpisodes } from "@/lib/mentions-server"
+import { filterLiveEpisodes, hydrateEpisodes, readSubjectMentionsCapped, readSubjectMentionYear } from "@/lib/mentions-server"
 import type { Mention, MentionSubjectType } from "@/types"
 
 // Podcast pass Session B: public mention reads.
 //
 // GET /api/mentions?episode_id=X                       every mention on an episode
 // GET /api/mentions?subject_type=person&subject_id=Y   every mention of a subject
+// GET /api/mentions?subject_type=&subject_id=&shape=capped
+//     { mentions, years, total }: every mention up to SUBJECT_MENTION_CAP, else
+//     full rows for unfolded years plus a count-only stub per folded year
+// GET /api/mentions?subject_type=&subject_id=&year=YYYY
+//     every mention of the subject on episodes that aired that year (what a
+//     stub year card loads when opened)
 //
 // Published rows on LIVE episodes only (public_enabled and past publish_at).
 // `?include_drafts=1` is honored ONLY for an editor session, and only on the
@@ -30,6 +36,24 @@ export async function GET(req: NextRequest) {
   }
   if (subjectType && !MENTION_SUBJECT_TYPES.includes(subjectType as MentionSubjectType)) {
     return NextResponse.json({ error: "Invalid subject_type" }, { status: 400 })
+  }
+
+  const noStore = { headers: { "Cache-Control": "no-store, max-age=0" } }
+  const shape = searchParams.get("shape")
+  const year = searchParams.get("year")?.trim() || null
+  if (subjectType && subjectId && !episodeId && (shape === "capped" || year)) {
+    if (year && !/^\d{4}$/.test(year)) {
+      return NextResponse.json({ error: "year must be YYYY" }, { status: 400 })
+    }
+    try {
+      const st = subjectType as MentionSubjectType
+      const body = year
+        ? await readSubjectMentionYear(st, subjectId, year)
+        : await readSubjectMentionsCapped(st, subjectId)
+      return NextResponse.json(body, noStore)
+    } catch (e) {
+      return NextResponse.json({ error: e instanceof Error ? e.message : "read failed" }, { status: 500 })
+    }
   }
 
   const includeDrafts = Boolean(episodeId) && wantsDrafts && (await isEditorSession())

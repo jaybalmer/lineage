@@ -5,7 +5,7 @@
 // pulls next/headers into a client bundle. The server-side episode hydration
 // lives in mentions-server.ts for exactly that reason.
 
-import type { MentionSubjectType } from "@/types"
+import type { Mention, MentionSubjectType } from "@/types"
 
 export const MENTION_SUBJECT_TYPES: MentionSubjectType[] = [
   "person", "place", "org", "board", "event",
@@ -179,6 +179,70 @@ export function rollupEpisodesByYear<T>(
     })
   }
   return out
+}
+
+/**
+ * Mentions a subject page downloads up front (Jay, 2026-11-15). At or under this
+ * the page gets every mention, exactly as before. Above it, each year that would
+ * fold into a year card arrives as a count only (MentionYearStub) and its
+ * mentions load when the reader opens that card. Set from the archive's shape:
+ * 99% of subjects have 93 or fewer kept mentions, while Burton has about 750 and
+ * Craig Kelly about 550, and those big pages are also the most visited.
+ */
+export const SUBJECT_MENTION_CAP = 100
+
+/** A folded year whose mentions have not been downloaded yet. */
+export type MentionYearStub = {
+  year: string
+  episodeCount: number
+  mentionCount: number
+  /** The show name when every episode that year is one show, else null. */
+  showName: string | null
+  /** Latest episode air date in the year (YYYY-MM-DD), for placement. */
+  latestDate: string
+}
+
+/** GET /api/mentions?subject_type=&subject_id=&shape=capped */
+export type SubjectMentionsPayload = {
+  mentions: Mention[]
+  years: MentionYearStub[]
+  total: number
+}
+
+function subjectQuery(subjectType: MentionSubjectType, subjectId: string): string {
+  return `subject_type=${subjectType}&subject_id=${encodeURIComponent(subjectId)}`
+}
+
+/** A subject's mentions, capped: never throws, an error reads as empty. */
+export async function fetchSubjectMentions(
+  subjectType: MentionSubjectType,
+  subjectId: string,
+): Promise<SubjectMentionsPayload> {
+  const empty: SubjectMentionsPayload = { mentions: [], years: [], total: 0 }
+  try {
+    const r = await fetch(`/api/mentions?${subjectQuery(subjectType, subjectId)}&shape=capped`)
+    if (!r.ok) return empty
+    const d = (await r.json()) as Partial<SubjectMentionsPayload>
+    return {
+      mentions: Array.isArray(d.mentions) ? d.mentions : [],
+      years: Array.isArray(d.years) ? d.years : [],
+      total: typeof d.total === "number" ? d.total : 0,
+    }
+  } catch {
+    return empty
+  }
+}
+
+/** The mentions of one folded year, fetched when its card is opened. */
+export async function fetchSubjectMentionYear(
+  subjectType: MentionSubjectType,
+  subjectId: string,
+  year: string,
+): Promise<Mention[]> {
+  const r = await fetch(`/api/mentions?${subjectQuery(subjectType, subjectId)}&year=${encodeURIComponent(year)}`)
+  if (!r.ok) throw new Error(`mentions ${r.status}`)
+  const d = await r.json()
+  return Array.isArray(d) ? (d as Mention[]) : []
 }
 
 /** Seconds to `mm:ss`, or `h:mm:ss` past the hour mark. */

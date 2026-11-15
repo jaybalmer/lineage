@@ -36,6 +36,8 @@ import { InviteToClaimSheet } from "@/components/ui/invite-to-claim-sheet"
 import { VouchCard, type ClaimRequestWithClaimant } from "@/components/ui/vouch-card"
 import { isClaimRequestOpen, userHasOpenClaim, pluralize } from "@/lib/claim-request-helpers"
 import type { Claim, ClaimRequestStatus, MembershipState, Mention, Person, Story } from "@/types"
+import { fetchSubjectMentions } from "@/lib/mentions"
+import type { MentionYearStub } from "@/lib/mentions"
 
 export default function RiderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
@@ -62,6 +64,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
   // Podcast mentions of this rider (published only; the API never returns
   // drafts on the subject-side read).
   const [mentions, setMentions] = useState<Mention[]>([])
+  const [mentionYears, setMentionYears] = useState<MentionYearStub[]>([])
   // Published podcast episodes this person guested on (story-style cards).
   const [episodes, setEpisodes] = useState<EpisodeCardData[]>([])
   const [showInviteModal, setShowInviteModal] = useState(false)
@@ -196,10 +199,12 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
     // Podcast mentions. Not gated on isProperUuid: a mention can name any
     // catalog person, including the mixed-type ids that predate the UUID
     // backfill.
-    fetch(`/api/mentions?subject_type=person&subject_id=${encodeURIComponent(resolvedId)}`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((rows) => setMentions(Array.isArray(rows) ? (rows as Mention[]) : []))
-      .catch(() => setMentions([]))
+    // Capped read: over SUBJECT_MENTION_CAP, busy years arrive as counts and
+    // load when their card is opened.
+    fetchSubjectMentions("person", resolvedId).then((p) => {
+      setMentions(p.mentions)
+      setMentionYears(p.years)
+    })
 
     fetch(`/api/episodes?guest=${encodeURIComponent(resolvedId)}`)
       .then((r) => (r.ok ? r.json() : []))
@@ -713,7 +718,7 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
         {/* Sparse-ghost empty state (B-2): an unclaimed profile with nothing in
             the feed body would otherwise show a blank. Reframe it as an
             invitation to help fill in their history. */}
-        {!isCurrentUser && isInvitableNodeStatus(person.node_status) && personClaims.length === 0 && stories.length === 0 && mentions.length === 0 && episodes.length === 0 ? (
+        {!isCurrentUser && isInvitableNodeStatus(person.node_status) && personClaims.length === 0 && stories.length === 0 && mentions.length === 0 && mentionYears.length === 0 && episodes.length === 0 ? (
           <div className="rounded-xl border border-dashed border-border-default p-6 text-center">
             <p className="text-sm font-semibold text-foreground mb-1">Nothing here yet</p>
             <p className="text-xs text-muted leading-relaxed max-w-sm mx-auto">
@@ -756,6 +761,8 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
             claims={personClaims}
             stories={stories}
             mentions={mentions}
+            mentionYears={mentionYears}
+            mentionSubject={resolvedId ? { type: "person", id: resolvedId } : undefined}
             episodes={episodes}
             personName={person.display_name}
             isOwn={false}
