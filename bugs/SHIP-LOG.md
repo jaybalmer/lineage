@@ -2950,3 +2950,16 @@ Follow-up to #278 after Jay looked for the columns on the "By person or node" ta
 - tsc: clean
 
 Jay reported long staging pages slowing his computer. Node pages rendered every story (1,210 for Erik Traulsen) and truncated at the 1,000-row cap; now 25 per page with decision filter chips and exact counts. Query verified against prod; signed-in page not exercised in a browser. Public mention lists (person timeline, entity pages) are also unpaged; grouping proposal pending Jay's call.
+
+## 2026-11-15 - mentions: busy air year of podcast mentions folds into one card (feature)
+- type: feature
+- pr: #281
+- branch: claude/public-mention-year-rollup
+- commit: 97dcebe
+- ids: none
+- scope: public-mention-year-rollup
+- migration: none
+- status: merged
+- tsc: clean
+
+Jay's call: on person timelines and entity pages, an air year with more than 3 episodes for a subject folds into "Talked about N times in Y FNRad Podcast episodes in <year>", opening to the episode cards; entity pages cap at 8 cards with Show more. Verified on localhost (threshold temporarily 0 to render the card; unchanged at 3). Follow-up if needed: lazy-load mentions per card, since /api/mentions still returns every row for a subject.
