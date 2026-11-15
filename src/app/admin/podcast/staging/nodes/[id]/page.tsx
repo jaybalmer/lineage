@@ -2,23 +2,49 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import { getServiceClient, requireModeratorPage } from "@/lib/auth"
 import { TYPE_LABEL, approveBlocker } from "@/lib/podcast-staging"
-import { getNode } from "@/lib/podcast-staging-queries"
-import { BASE, Empty, FlagList, ResolutionBadge, StagingShell, StoryCard } from "../../staging-ui"
+import { getNode, parseNodeStoryFilters } from "@/lib/podcast-staging-queries"
+import { BASE, Empty, FilterChip, FlagList, Pager, ResolutionBadge, StagingShell, StoryCard } from "../../staging-ui"
 import { NodeDecisionBar, NodeEditPanel, NodeMatchPanel } from "../../staging-actions"
 import type { NodeActionsProps } from "../../staging-actions"
 
 // One node across the whole archive: its decision, its catalog match, edits
 // (rename, details, merge, also-known-as), and every story that names it from
-// every episode, oldest first, each with its timestamped video link.
+// every episode, oldest first, each with its timestamped video link. Stories
+// are paged (25 at a time) and filterable by decision: a busy node has 1,000+.
 
 export const dynamic = "force-dynamic"
 
-export default async function StagingNodePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function StagingNodePage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   await requireModeratorPage()
   const { id } = await params
   if (!/^[0-9a-f-]{36}$/i.test(id)) notFound()
-  const node = await getNode(getServiceClient(), id)
+  const f = parseNodeStoryFilters(await searchParams)
+  const node = await getNode(getServiceClient(), id, f)
   if (!node) notFound()
+
+  const storyHref = (patch: { decision?: string | null; page?: number }) => {
+    const p = new URLSearchParams()
+    const decision = "decision" in patch ? patch.decision : f.decision
+    if (decision) p.set("decision", decision)
+    if (patch.page && patch.page > 1) p.set("page", String(patch.page))
+    const qs = p.toString()
+    return `${BASE}/nodes/${node.id}${qs ? `?${qs}` : ""}#stories`
+  }
+  const chips: { decision: string | null; label: string; count: number }[] = [
+    { decision: null, label: "All", count: node.story_count },
+    { decision: "pending", label: "Pending", count: node.pending_count },
+    { decision: "approved", label: "Approved", count: node.approved_count },
+    { decision: "hold_sensitive", label: "Held", count: node.held_count },
+    { decision: "trimmed", label: "Trimmed", count: node.trimmed_count },
+  ]
+  const firstShown = node.storyTotal === 0 ? 0 : (node.storyPage - 1) * node.storyPageSize + 1
+  const lastShown = Math.min(node.storyPage * node.storyPageSize, node.storyTotal)
 
   const props: NodeActionsProps = {
     id: node.id,
@@ -67,15 +93,28 @@ export default async function StagingNodePage({ params }: { params: Promise<{ id
 
       <NodeEditPanel node={props} />
 
-      <section>
+      <section id="stories" className="scroll-mt-4">
         <h3 className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">Stories</h3>
+        <div className="flex gap-1.5 overflow-x-auto pb-3">
+          {chips.map((c) => (
+            <FilterChip key={c.label} href={storyHref({ decision: c.decision })} active={f.decision === c.decision}>
+              {c.label} {c.count}
+            </FilterChip>
+          ))}
+        </div>
         {node.stories.length === 0 ? (
-          <Empty>No stories name this node.</Empty>
+          <Empty>{f.decision ? "No stories with this decision." : "No stories name this node."}</Empty>
         ) : (
-          <div className="space-y-3">
-            {node.stories.map((s) => <StoryCard key={s.id} story={s} showEpisode currentNodeId={node.id} />)}
-          </div>
+          <>
+            <p className="text-xs text-muted mb-2">
+              Showing {firstShown} to {lastShown} of {node.storyTotal}, oldest first
+            </p>
+            <div className="space-y-3">
+              {node.stories.map((s) => <StoryCard key={s.id} story={s} showEpisode currentNodeId={node.id} />)}
+            </div>
+          </>
         )}
+        <Pager page={node.storyPage} pageSize={node.storyPageSize} total={node.storyTotal} hrefFor={(p) => storyHref({ page: p })} />
       </section>
     </StagingShell>
   )

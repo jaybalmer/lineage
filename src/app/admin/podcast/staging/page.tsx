@@ -22,6 +22,7 @@ import {
   StagingShell,
   StoryCard,
   TypeLabel,
+  FilterChip,
 } from "./staging-ui"
 import { NodesToolbar } from "./staging-actions"
 
@@ -89,22 +90,6 @@ function nodesHref(f: NodeFilters, patch: Partial<NodeFilters>): string {
   return s ? `${BASE}?${s}` : BASE
 }
 
-function FilterChip({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      aria-current={active ? "true" : undefined}
-      className={cn(
-        "shrink-0 px-2.5 py-1 rounded-full border text-xs transition-colors",
-        active
-          ? "bg-surface-active border-foreground/30 text-foreground font-semibold"
-          : "bg-surface border-border-default text-muted hover:text-foreground hover:bg-surface-hover",
-      )}
-    >
-      {children}
-    </Link>
-  )
-}
 
 async function NodesTab({ db, filters }: { db: ReturnType<typeof getServiceClient>; filters: NodeFilters }) {
   const [list, facets] = await Promise.all([listNodes(db, filters), nodeFacetCounts(db)])

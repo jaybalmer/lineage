@@ -217,10 +217,67 @@ export type NodeDetail = NodeListRow & {
   ghost: Record<string, unknown>
   decided_at: string | null
   also_known_as: { id: string; name: string; subject_type: StagingSubjectType } | null
+  /** One page of this node's stories (NODE_STORY_PAGE_SIZE), not all of them. */
   stories: StoryCardData[]
+  storyTotal: number
+  storyPage: number
+  storyPageSize: number
+  storyDecision: StoryDecision | null
 }
 
-export async function getNode(db: SupabaseClient, id: string): Promise<NodeDetail | null> {
+/** Stories per page on a node page. A busy node (the host, Burton) has 800 to 1,200. */
+export const NODE_STORY_PAGE_SIZE = 25
+
+export function parseNodeStoryFilters(sp: Record<string, string | string[] | undefined>): { decision: StoryDecision | null; page: number } {
+  const one = (k: string) => (Array.isArray(sp[k]) ? sp[k]?.[0] : sp[k]) as string | undefined
+  const decision = one("decision")
+  return {
+    decision: decision && STORY_DECISIONS.includes(decision as StoryDecision) ? (decision as StoryDecision) : null,
+    page: Math.max(1, Number(one("page")) || 1),
+  }
+}
+
+/**
+ * One page of the stories that name a node, oldest air date first, then by
+ * position in the episode. Only the light sort keys are read for the whole set
+ * (in 1,000-row pages, the PostgREST cap); full cards are built for one page.
+ */
+async function nodeStoryPage(
+  db: SupabaseClient,
+  nodeId: string,
+  opts: { decision: StoryDecision | null; page: number },
+): Promise<Paged<StoryCardData>> {
+  type Key = { id: string; t: number; air: string }
+  const keys = new Map<string, Key>()
+  for (let from = 0; ; from += 1000) {
+    let q = db
+      .from("podcast_staging_mentions")
+      .select("story:podcast_staging_stories!inner(id, decision, timestamp_seconds, episode:podcast_staging_episodes(air_date))")
+      .eq("node_id", nodeId)
+    if (opts.decision) q = q.eq("story.decision", opts.decision)
+    const { data, error } = await q.order("id", { ascending: true }).range(from, from + 999)
+    if (error) throw new Error(`node stories: ${error.message}`)
+    const rows = (data ?? []) as unknown as { story: { id: string; timestamp_seconds: number; episode: { air_date: string | null } | null } | null }[]
+    for (const r of rows) {
+      if (r.story) keys.set(r.story.id, { id: r.story.id, t: r.story.timestamp_seconds, air: r.story.episode?.air_date ?? "" })
+    }
+    if (rows.length < 1000) break
+  }
+  const ordered = [...keys.values()].sort((a, b) => (a.air === b.air ? a.t - b.t : a.air < b.air ? -1 : 1))
+  const total = ordered.length
+  const page = Math.min(opts.page, Math.max(1, Math.ceil(total / NODE_STORY_PAGE_SIZE)))
+  const ids = ordered.slice((page - 1) * NODE_STORY_PAGE_SIZE, page * NODE_STORY_PAGE_SIZE).map((k) => k.id)
+  const rows = await storiesByIds(db, ids)
+  const pos = new Map(ids.map((sid, i) => [sid, i]))
+  rows.sort((a, b) => (pos.get(a.id) ?? 0) - (pos.get(b.id) ?? 0))
+  return { rows, total, page, pageSize: NODE_STORY_PAGE_SIZE }
+}
+
+export async function getNode(
+  db: SupabaseClient,
+  id: string,
+  opts: { decision: StoryDecision | null; page: number } = { decision: null, page: 1 },
+): Promise<NodeDetail | null> {
   const { data: node, error } = await db
     .from("podcast_staging_node_stats")
     .select("id, subject_type, name, resolution, subject_id, candidates, flags, decision, heard_as, episode_count, story_count, kept_story_count, mention_count, inferred_count, pending_count, approved_count, held_count, trimmed_count, ready_count, published_story_count")
@@ -241,27 +298,18 @@ export async function getNode(db: SupabaseClient, id: string): Promise<NodeDetai
     aka = (akaRow as typeof aka) ?? null
   }
 
-  const { data: mentions, error: mErr } = await db
-    .from("podcast_staging_mentions")
-    .select("story_id")
-    .eq("node_id", id)
-    .range(0, 9999)
-  if (mErr) throw new Error(`node mentions: ${mErr.message}`)
-  const storyIds = [...new Set(((mentions ?? []) as { story_id: string }[]).map((m) => m.story_id))]
-  const stories = await storiesByIds(db, storyIds)
-  // Across episodes, oldest air date first, then position in the episode.
-  stories.sort((a, b) =>
-    (a.episode?.air_date ?? "") === (b.episode?.air_date ?? "")
-      ? a.timestamp_seconds - b.timestamp_seconds
-      : (a.episode?.air_date ?? "") < (b.episode?.air_date ?? "") ? -1 : 1,
-  )
+  const storyPage = await nodeStoryPage(db, id, opts)
 
   return {
     ...(node as NodeListRow),
     ghost: extra?.ghost ?? {},
     decided_at: extra?.decided_at ?? null,
     also_known_as: aka,
-    stories,
+    stories: storyPage.rows,
+    storyTotal: storyPage.total,
+    storyPage: storyPage.page,
+    storyPageSize: storyPage.pageSize,
+    storyDecision: opts.decision,
   }
 }
 
