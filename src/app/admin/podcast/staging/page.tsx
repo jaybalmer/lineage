@@ -200,6 +200,22 @@ async function NodesTab({ db, filters }: { db: ReturnType<typeof getServiceClien
 
 // ── episodes ────────────────────────────────────────────────────────────────
 
+// Story status columns on the Episodes tab, in review order.
+const EPISODE_COUNT_COLS: {
+  key: "pending_count" | "approved_count" | "ready_count" | "published_story_count" | "held_count" | "trimmed_count"
+  label: string
+  title: string
+  tone: string
+  mobile?: boolean
+}[] = [
+  { key: "pending_count", label: "Pending", title: "Stories not decided yet", tone: "text-foreground", mobile: true },
+  { key: "approved_count", label: "Approved", title: "Stories approved", tone: "text-foreground" },
+  { key: "ready_count", label: "Ready", title: "Approved stories with at least one approved node, not yet published", tone: "text-emerald-600 dark:text-emerald-400 font-semibold", mobile: true },
+  { key: "published_story_count", label: "Published", title: "Stories with at least one published mention", tone: "text-[var(--accent-strong)]" },
+  { key: "held_count", label: "Held", title: "Stories held as sensitive", tone: "text-amber-600 dark:text-amber-400" },
+  { key: "trimmed_count", label: "Trimmed", title: "Stories trimmed", tone: "text-muted" },
+]
+
 async function EpisodesTab({ db, page }: { db: ReturnType<typeof getServiceClient>; page: number }) {
   const list = await listEpisodes(db, page)
   if (list.rows.length === 0) return <Empty>No episodes are staged yet. Run scripts/load-podcast-staging.mjs.</Empty>
@@ -212,8 +228,12 @@ async function EpisodesTab({ db, page }: { db: ReturnType<typeof getServiceClien
             <tr>
               <th className="text-left font-semibold px-3 py-2">Episode</th>
               <th className="text-right font-semibold px-2 py-2">Stories</th>
-              <th className="text-right font-semibold px-2 py-2 hidden sm:table-cell">Trimmed</th>
-              <th className="text-right font-semibold px-2 py-2 hidden sm:table-cell">Mentions</th>
+              {EPISODE_COUNT_COLS.map((c) => (
+                <th key={c.key} title={c.title} className={cn("text-right font-semibold px-2 py-2", !c.mobile && "hidden sm:table-cell")}>
+                  {c.label}
+                </th>
+              ))}
+              <th className="text-right font-semibold px-2 py-2 hidden md:table-cell">Mentions</th>
               <th className="text-left font-semibold px-3 py-2">Status</th>
             </tr>
           </thead>
@@ -229,9 +249,19 @@ async function EpisodesTab({ db, page }: { db: ReturnType<typeof getServiceClien
                     {e.series_note ? ` · ${e.series_note}` : ""}
                   </div>
                 </td>
-                <td className="px-2 py-2 text-right tabular-nums text-muted">{e.story_count}</td>
-                <td className="px-2 py-2 text-right tabular-nums text-muted hidden sm:table-cell">{e.trimmed_count}</td>
-                <td className="px-2 py-2 text-right tabular-nums text-muted hidden sm:table-cell">{e.mention_count}</td>
+                <td className="px-2 py-2 text-right tabular-nums text-foreground">{e.story_count}</td>
+                {EPISODE_COUNT_COLS.map((c) => {
+                  const v = e[c.key]
+                  return (
+                    <td
+                      key={c.key}
+                      className={cn("px-2 py-2 text-right tabular-nums", v ? c.tone : "text-muted/50", !c.mobile && "hidden sm:table-cell")}
+                    >
+                      {v}
+                    </td>
+                  )
+                })}
+                <td className="px-2 py-2 text-right tabular-nums text-muted hidden md:table-cell">{e.mention_count}</td>
                 <td className="px-3 py-2 text-xs">
                   <span className="capitalize text-foreground">{e.status.replace("_", " ")}</span>
                   {e.episode_event_id && <div className="text-[11px] text-muted">Already live</div>}
