@@ -128,6 +128,59 @@ export function groupMentionsByEpisode<
   return order.map((key) => byKey.get(key)!)
 }
 
+/** A year folds into one card once it holds MORE than this many episodes. */
+export const YEAR_ROLLUP_THRESHOLD = 3
+
+export type MentionYearItem<T> =
+  | { kind: "episode"; group: EpisodeGroup<T> }
+  | { kind: "year"; key: string; year: string; groups: EpisodeGroup<T>[]; mentionCount: number }
+
+/**
+ * Fold a subject's episode groups by air year (Jay, 2026-11-15).
+ *
+ * Once the FNRad archive publishes, a rider like Craig Kelly is named in about
+ * 170 episodes and Burton in about 200, so one card per episode buries the rest
+ * of a timeline. Any year with more than `threshold` episodes becomes a single
+ * "talked about N times in Y episodes in <year>" card that opens to the episode
+ * cards; quieter years keep their episode cards as before.
+ *
+ * The year is the episode's AIR year (when it was talked about), not when the
+ * story happened. Groups with no year are never folded. A year card takes the
+ * position of its first group, so input order is preserved, and the groups
+ * inside keep input order too.
+ */
+export function rollupEpisodesByYear<T>(
+  groups: EpisodeGroup<T>[],
+  yearOf: (g: EpisodeGroup<T>) => string | null,
+  threshold = YEAR_ROLLUP_THRESHOLD,
+): MentionYearItem<T>[] {
+  const byYear = new Map<string, EpisodeGroup<T>[]>()
+  for (const g of groups) {
+    const y = yearOf(g)
+    if (y) byYear.set(y, [...(byYear.get(y) ?? []), g])
+  }
+  const out: MentionYearItem<T>[] = []
+  const placed = new Set<string>()
+  for (const g of groups) {
+    const y = yearOf(g)
+    const yearGroups = y ? byYear.get(y)! : null
+    if (!y || !yearGroups || yearGroups.length <= threshold) {
+      out.push({ kind: "episode", group: g })
+      continue
+    }
+    if (placed.has(y)) continue
+    placed.add(y)
+    out.push({
+      kind: "year",
+      key: `year:${y}`,
+      year: y,
+      groups: yearGroups,
+      mentionCount: yearGroups.reduce((n, x) => n + x.items.length, 0),
+    })
+  }
+  return out
+}
+
 /** Seconds to `mm:ss`, or `h:mm:ss` past the hour mark. */
 export function formatTimestamp(seconds: number): string {
   const s = Math.max(0, Math.floor(seconds))

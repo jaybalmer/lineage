@@ -7,7 +7,9 @@ import { DayPostCard } from "@/components/feed/day-post-card"
 import { StoryCard } from "@/components/feed/story-card"
 import { MentionRow } from "@/components/feed/mention-row"
 import { MentionEpisodeGroup } from "@/components/feed/mention-episode-group"
-import { groupMentionsByEpisode } from "@/lib/mentions"
+import { MentionYearGroup } from "@/components/feed/mention-year-group"
+import { groupMentionsByEpisode, rollupEpisodesByYear } from "@/lib/mentions"
+import type { EpisodeGroup } from "@/lib/mentions"
 import { EpisodeCard } from "@/components/feed/episode-card"
 import { episodeSortNum, type EpisodeCardData } from "@/lib/episode-cards"
 import { StartCard } from "@/components/feed/start-card"
@@ -72,6 +74,7 @@ type FeedItem =
   | { kind: "day"; day: RidingDay; sortDate: number }
   | { kind: "story"; story: Story; sortDate: number }
   | { kind: "mention"; mentions: Mention[]; sortDate: number }
+  | { kind: "mention_year"; year: string; groups: EpisodeGroup<Mention>[]; mentionCount: number; sortDate: number }
   | { kind: "episode"; episode: EpisodeCardData; sortDate: number }
   | { kind: "riding_start"; year: number; sortDate: number }
 
@@ -84,7 +87,7 @@ function nodeColor(item: FeedItem): string {
   if (item.kind === "riding_start") return "bg-amber-500"
   if (item.kind === "day") return "bg-emerald-600"
   if (item.kind === "story") return ENTITY_DOT_CLASS.story
-  if (item.kind === "mention" || item.kind === "episode") return "bg-fuchsia-500"
+  if (item.kind === "mention" || item.kind === "mention_year" || item.kind === "episode") return "bg-fuchsia-500"
   return dotClassForClaim(item.claim)
 }
 
@@ -93,7 +96,7 @@ function predicateRank(item: FeedItem): number {
   if (item.kind === "riding_start") return -1
   if (item.kind === "day") return 9
   if (item.kind === "story") return 8
-  if (item.kind === "mention") return 7
+  if (item.kind === "mention" || item.kind === "mention_year") return 7
   if (item.kind === "episode") return 7
   const p = item.claim.predicate
   if (p === "owned_board") return 0
@@ -245,12 +248,23 @@ export function FeedView({
     // Mentions from the same episode fold into one card (BUG-172), sitting on
     // the shared episode date, padded like every other partial date. A lone
     // mention stays a bare row (the render branch renders a group of 1 as one).
+    // A year with more than three episodes folds again into one year card,
+    // placed at that year's latest episode date (rollupEpisodesByYear).
     const mentionItems: FeedItem[] = filter === "all" || filter === "mentions"
-      ? groupMentionsByEpisode(mentions).map((g) => ({
-          kind: "mention" as const,
-          mentions: g.items,
-          sortDate: dateToSortNum(g.items[0].episode?.start_date),
-        }))
+      ? rollupEpisodesByYear(
+          groupMentionsByEpisode(mentions),
+          (g) => g.items[0].episode?.start_date?.slice(0, 4) || null,
+        ).map((r): FeedItem =>
+          r.kind === "episode"
+            ? { kind: "mention", mentions: r.group.items, sortDate: dateToSortNum(r.group.items[0].episode?.start_date) }
+            : {
+                kind: "mention_year",
+                year: r.year,
+                groups: r.groups,
+                mentionCount: r.mentionCount,
+                sortDate: Math.max(...r.groups.map((g) => dateToSortNum(g.items[0].episode?.start_date))),
+              },
+        )
       : []
 
     const episodeItems: FeedItem[] = filter === "all" || filter === "stories"
@@ -424,6 +438,7 @@ export function FeedView({
                         : item.kind === "day" ? item.day.id
                         : item.kind === "story" ? `story-${item.story.id}`
                         : item.kind === "mention" ? `mention-${item.mentions[0]?.id}`
+                        : item.kind === "mention_year" ? `mention-year-${item.year}`
                         : item.kind === "episode" ? `episode-${item.episode.id}`
                         : `riding-start-${item.year}`
                       return (
@@ -458,6 +473,8 @@ export function FeedView({
                             ) : (
                               <MentionEpisodeGroup mentions={item.mentions} />
                             )
+                          ) : item.kind === "mention_year" ? (
+                            <MentionYearGroup year={item.year} groups={item.groups} mentionCount={item.mentionCount} />
                           ) : person ? (
                             <StartCard person={person} claims={claims} isOwn={isOwn} />
                           ) : null}
