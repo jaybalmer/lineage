@@ -9,10 +9,16 @@
 // episodes inside, newest first, each as the usual MentionRow (one mention) or
 // MentionEpisodeGroup (several), which keep their own expand controls.
 //
+// On a subject with more than SUBJECT_MENTION_CAP mentions the card can arrive
+// as a count-only stub (no `groups`, a `load` instead). It then fetches its
+// mentions the first time it is opened and keeps them, so the page never
+// downloads a year the reader does not open.
+//
 // The year is when the episode aired, which is why the copy says "talked
 // about", not "in <year>" as if the stories happened then.
 
 import { useState } from "react"
+import { groupMentionsByEpisode } from "@/lib/mentions"
 import { MentionRow } from "@/components/feed/mention-row"
 import { MentionEpisodeGroup } from "@/components/feed/mention-episode-group"
 import type { EpisodeGroup } from "@/lib/mentions"
@@ -20,17 +26,51 @@ import type { Mention } from "@/types"
 
 export function MentionYearGroup({
   year,
-  groups,
+  groups: initialGroups,
   mentionCount,
+  episodeCount,
+  showName = null,
+  load,
 }: {
   year: string
-  groups: EpisodeGroup<Mention>[]
+  /** The year's episode groups, when they were downloaded with the page. */
+  groups?: EpisodeGroup<Mention>[]
   mentionCount: number
+  /** Required with `load`; defaults to groups.length. */
+  episodeCount?: number
+  /** Stub mode: the show name the server resolved, when there is one. */
+  showName?: string | null
+  /** Stub mode: fetch this year's mentions on first open. */
+  load?: () => Promise<Mention[]>
 }) {
   const [open, setOpen] = useState(false)
-  const shows = new Set(groups.map((g) => g.items[0]?.episode?.show_name).filter(Boolean))
-  const show = shows.size === 1 ? `${[...shows][0]} ` : ""
-  const sorted = [...groups].sort((a, b) =>
+  const [fetched, setFetched] = useState<EpisodeGroup<Mention>[] | null>(null)
+  const [status, setStatus] = useState<"idle" | "loading" | "error">("idle")
+  const groups = initialGroups ?? fetched
+  const count = episodeCount ?? initialGroups?.length ?? 0
+
+  const fetchYear = () => {
+    if (!load || status === "loading") return
+    setStatus("loading")
+    load()
+      .then((rows) => {
+        setFetched(groupMentionsByEpisode(rows))
+        setStatus("idle")
+      })
+      .catch(() => setStatus("error"))
+  }
+
+  const toggle = () => {
+    if (!open && !groups) fetchYear()
+    setOpen((v) => !v)
+  }
+
+  let show = showName ? `${showName} ` : ""
+  if (groups) {
+    const shows = new Set(groups.map((g) => g.items[0]?.episode?.show_name).filter(Boolean))
+    show = shows.size === 1 ? `${[...shows][0]} ` : ""
+  }
+  const sorted = [...(groups ?? [])].sort((a, b) =>
     (b.items[0]?.episode?.start_date ?? "").localeCompare(a.items[0]?.episode?.start_date ?? ""),
   )
 
@@ -40,11 +80,26 @@ export function MentionYearGroup({
         <span className="text-xs text-fuchsia-500" aria-hidden>🎙</span>
         <span className="text-sm text-foreground">
           Talked about {mentionCount} {mentionCount === 1 ? "time" : "times"} in{" "}
-          <span className="font-semibold">{groups.length} {show}{groups.length === 1 ? "episode" : "episodes"}</span> in {year}
+          <span className="font-semibold">{count} {show}{count === 1 ? "episode" : "episodes"}</span> in {year}
         </span>
       </div>
 
-      {open && (
+      {open && !groups && (
+        <p className="mt-3 text-xs text-muted" role="status">
+          {status === "error" ? (
+            <>
+              Could not load these episodes.{" "}
+              <button type="button" onClick={fetchYear} className="font-medium text-accent-strong hover:underline">
+                Try again
+              </button>
+            </>
+          ) : (
+            "Loading episodes..."
+          )}
+        </p>
+      )}
+
+      {open && groups && (
         <div className="mt-3 space-y-0">
           {sorted.map((g) =>
             g.items.length === 1 ? (
@@ -58,11 +113,11 @@ export function MentionYearGroup({
 
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
         aria-expanded={open}
         className="mt-2 text-[11px] font-medium text-accent-strong hover:underline"
       >
-        {open ? "Show less" : groups.length === 1 ? "Show the episode" : `Show the ${groups.length} episodes`}
+        {open ? "Show less" : count === 1 ? "Show the episode" : `Show the ${count} episodes`}
       </button>
     </div>
   )

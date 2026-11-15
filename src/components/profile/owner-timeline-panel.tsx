@@ -25,6 +25,8 @@ import { readSeenIds, writeSeenIds, isRecentlyCreated } from "@/lib/seen-celebra
 import { groupRodeAtCompanions, countTimelineEntries } from "@/lib/companion-grouping"
 import { estimateShares } from "@/lib/equity-offer"
 import type { Claim, CelebrationPayload, Mention, PrivacyLevel, Story } from "@/types"
+import { fetchSubjectMentions } from "@/lib/mentions"
+import type { MentionYearStub } from "@/lib/mentions"
 import type { EpisodeCardData } from "@/lib/episode-cards"
 
 // ─── FTUE helpers ─────────────────────────────────────────────────────────────
@@ -239,6 +241,7 @@ export function OwnerTimelinePanel() {
   // Podcast mentions of the owner. Third-party artifacts, so they are read-only
   // here and never counted as the owner's own timeline entries.
   const [mentions,       setMentions]          = useState<Mention[]>([])
+  const [mentionYears, setMentionYears] = useState<MentionYearStub[]>([])
   // Published podcast episodes the owner guested on (story-style cards).
   const [episodes,       setEpisodes]          = useState<EpisodeCardData[]>([])
   const [claimDefaultFilter, setClaimDefaultFilter] = useState<string>("all")
@@ -428,10 +431,12 @@ export function OwnerTimelinePanel() {
 
     // Podcast mentions of the owner. Published only (the subject-side read
     // never returns drafts), so the owner sees exactly what visitors see.
-    fetch(`/api/mentions?subject_type=person&subject_id=${encodeURIComponent(activePersonId)}`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((rows) => setMentions(Array.isArray(rows) ? (rows as Mention[]) : []))
-      .catch(() => setMentions([]))
+    // Capped read: over SUBJECT_MENTION_CAP, busy years arrive as counts and
+    // load when their card is opened.
+    fetchSubjectMentions("person", activePersonId).then((p) => {
+      setMentions(p.mentions)
+      setMentionYears(p.years)
+    })
 
     fetch(`/api/episodes?guest=${encodeURIComponent(activePersonId)}`)
       .then((r) => (r.ok ? r.json() : []))
@@ -942,6 +947,8 @@ export function OwnerTimelinePanel() {
           days={myDays}
           stories={stories}
           mentions={mentions}
+          mentionYears={mentionYears}
+          mentionSubject={activePersonId ? { type: "person", id: activePersonId } : undefined}
           episodes={episodes}
           personName={person?.display_name ?? "Your"}
           isOwn={true}

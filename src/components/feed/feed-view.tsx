@@ -1,15 +1,15 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import type { Claim, Mention, Person, RidingDay, Story } from "@/types"
+import type { Claim, Mention, MentionSubjectType, Person, RidingDay, Story } from "@/types"
 import { PostCard } from "@/components/feed/post-card"
 import { DayPostCard } from "@/components/feed/day-post-card"
 import { StoryCard } from "@/components/feed/story-card"
 import { MentionRow } from "@/components/feed/mention-row"
 import { MentionEpisodeGroup } from "@/components/feed/mention-episode-group"
 import { MentionYearGroup } from "@/components/feed/mention-year-group"
-import { groupMentionsByEpisode, rollupEpisodesByYear } from "@/lib/mentions"
-import type { EpisodeGroup } from "@/lib/mentions"
+import { fetchSubjectMentionYear, groupMentionsByEpisode, rollupEpisodesByYear } from "@/lib/mentions"
+import type { EpisodeGroup, MentionYearStub } from "@/lib/mentions"
 import { EpisodeCard } from "@/components/feed/episode-card"
 import { episodeSortNum, type EpisodeCardData } from "@/lib/episode-cards"
 import { StartCard } from "@/components/feed/start-card"
@@ -74,7 +74,7 @@ type FeedItem =
   | { kind: "day"; day: RidingDay; sortDate: number }
   | { kind: "story"; story: Story; sortDate: number }
   | { kind: "mention"; mentions: Mention[]; sortDate: number }
-  | { kind: "mention_year"; year: string; groups: EpisodeGroup<Mention>[]; mentionCount: number; sortDate: number }
+  | { kind: "mention_year"; year: string; groups?: EpisodeGroup<Mention>[]; stub?: MentionYearStub; mentionCount: number; sortDate: number }
   | { kind: "episode"; episode: EpisodeCardData; sortDate: number }
   | { kind: "riding_start"; year: number; sortDate: number }
 
@@ -129,6 +129,8 @@ export function FeedView({
   days = [],
   stories = [],
   mentions = [],
+  mentionYears = [],
+  mentionSubject,
   episodes = [],
   personName,
   isOwn,
@@ -149,6 +151,11 @@ export function FeedView({
   stories?: Story[]
   /** Podcast mentions of this person, already filtered to published upstream. */
   mentions?: Mention[]
+  /** Folded years whose mentions were not downloaded with the page (a subject
+   *  over SUBJECT_MENTION_CAP). Each renders as a year card that fetches its
+   *  mentions from `mentionSubject` when opened. */
+  mentionYears?: MentionYearStub[]
+  mentionSubject?: { type: MentionSubjectType; id: string }
   /** Published podcast episodes this person guested on, rendered as story-style
    *  cards. Shown under All and Stories. */
   episodes?: EpisodeCardData[]
@@ -264,6 +271,16 @@ export function FeedView({
                 mentionCount: r.mentionCount,
                 sortDate: Math.max(...r.groups.map((g) => dateToSortNum(g.items[0].episode?.start_date))),
               },
+        ).concat(
+          mentionSubject
+            ? mentionYears.map((y): FeedItem => ({
+                kind: "mention_year",
+                year: y.year,
+                stub: y,
+                mentionCount: y.mentionCount,
+                sortDate: dateToSortNum(y.latestDate),
+              }))
+            : [],
         )
       : []
 
@@ -282,7 +299,7 @@ export function FeedView({
       if (a.sortDate !== b.sortDate) return dir * (a.sortDate - b.sortDate)
       return predicateRank(a) - predicateRank(b)
     })
-  }, [groupedClaims, days, stories, mentions, episodes, filter, ridingSince, order, eventDateById])
+  }, [groupedClaims, days, stories, mentions, mentionYears, mentionSubject, episodes, filter, ridingSince, order, eventDateById])
 
   const grouped = useMemo(() => groupByDecade(items), [items])
   const decades = Object.keys(grouped).sort((a, b) => {
@@ -325,9 +342,9 @@ export function FeedView({
       // Deliberately NOT folded into `all`: countTimelineEntries also drives the
       // owner's "Entry #N" celebration, and a mention is something someone else
       // said about you, not an entry you made.
-      mentions: mentions.length,
+      mentions: mentions.length + mentionYears.reduce((n, y) => n + y.mentionCount, 0),
     }
-  }, [groupedClaims, days, stories, mentions, episodes])
+  }, [groupedClaims, days, stories, mentions, mentionYears, episodes])
 
   return (
     <div>
@@ -369,7 +386,7 @@ export function FeedView({
       {/* Filter chips with counts */}
       {!hideFilters && (
       <div className="flex gap-2 flex-wrap mb-6">
-        {(Object.keys(FILTER_LABELS) as FilterType[]).filter((f) => f !== "mentions" || mentions.length > 0).map((f) => {
+        {(Object.keys(FILTER_LABELS) as FilterType[]).filter((f) => f !== "mentions" || filterCounts.mentions > 0).map((f) => {
           const isStoriesChip = f === "stories"
           const count = filterCounts[f]
           const active = filter === f
@@ -474,7 +491,17 @@ export function FeedView({
                               <MentionEpisodeGroup mentions={item.mentions} />
                             )
                           ) : item.kind === "mention_year" ? (
-                            <MentionYearGroup year={item.year} groups={item.groups} mentionCount={item.mentionCount} />
+                            item.stub && mentionSubject ? (
+                              <MentionYearGroup
+                                year={item.year}
+                                mentionCount={item.mentionCount}
+                                episodeCount={item.stub.episodeCount}
+                                showName={item.stub.showName}
+                                load={() => fetchSubjectMentionYear(mentionSubject.type, mentionSubject.id, item.year)}
+                              />
+                            ) : (
+                              <MentionYearGroup year={item.year} groups={item.groups} mentionCount={item.mentionCount} />
+                            )
                           ) : person ? (
                             <StartCard person={person} claims={claims} isOwn={isOwn} />
                           ) : null}
