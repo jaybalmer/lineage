@@ -2976,3 +2976,16 @@ Jay's call: on person timelines and entity pages, an air year with more than 3 e
 - tsc: clean
 
 Closes the #281 follow-up. New capped read (/api/mentions ... &shape=capped): at or under 100 mentions a subject gets every row exactly as before (99% of subjects); above it, years the rollup would fold arrive as count-only stubs and each loads via &year=YYYY when its card is opened. Person profile, owner timeline and EntityMentions use it. Verified on localhost against prod data (identical sets under the cap; stub path forced with cap 1, then reverted). Owner timeline panel not exercised signed in.
+
+## 2026-11-15 - podcast staging: Kept eps column on the Nodes tab (feature)
+- type: feature
+- pr: #283
+- branch: claude/staging-kept-eps
+- commit: be0931b
+- ids: none
+- scope: podcast-staging-kept-episodes
+- migration: 20261115000003_podcast_staging_node_kept_episodes.sql (SAFE, applied: view appends kept_episode_count)
+- status: merged
+- tsc: clean
+
+Jay asked for an Eps column that counts only episodes with kept (non-trimmed) stories. Added "Kept eps" beside "Eps" and a note on the node page header. Verified in prod: Erik Traulsen 225 / 0, Craig Kelly 170 / 157. Admin page not opened in a browser.
