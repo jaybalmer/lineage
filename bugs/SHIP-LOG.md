@@ -2963,3 +2963,16 @@ Jay reported long staging pages slowing his computer. Node pages rendered every 
 - tsc: clean
 
 Jay's call: on person timelines and entity pages, an air year with more than 3 episodes for a subject folds into "Talked about N times in Y FNRad Podcast episodes in <year>", opening to the episode cards; entity pages cap at 8 cards with Show more. Verified on localhost (threshold temporarily 0 to render the card; unchanged at 3). Follow-up if needed: lazy-load mentions per card, since /api/mentions still returns every row for a subject.
+
+## 2026-11-15 - mentions: subject pages download at most 100 mentions, busy years load on open (feature)
+- type: feature
+- pr: #282
+- branch: claude/capped-subject-mentions
+- commit: 36715eb
+- ids: none
+- scope: capped-subject-mentions
+- migration: none
+- status: merged
+- tsc: clean
+
+Closes the #281 follow-up. New capped read (/api/mentions ... &shape=capped): at or under 100 mentions a subject gets every row exactly as before (99% of subjects); above it, years the rollup would fold arrive as count-only stubs and each loads via &year=YYYY when its card is opened. Person profile, owner timeline and EntityMentions use it. Verified on localhost against prod data (identical sets under the cap; stub path forced with cap 1, then reverted). Owner timeline panel not exercised signed in.
