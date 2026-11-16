@@ -2989,3 +2989,16 @@ Closes the #281 follow-up. New capped read (/api/mentions ... &shape=capped): at
 - tsc: clean
 
 Jay asked for an Eps column that counts only episodes with kept (non-trimmed) stories. Added "Kept eps" beside "Eps" and a note on the node page header. Verified in prod: Erik Traulsen 225 / 0, Craig Kelly 170 / 157. Admin page not opened in a browser.
+
+## 2026-11-15 - podcast staging: sort Nodes tab by kept eps (feature)
+- type: feature
+- pr: #284
+- branch: claude/staging-sort-kept-eps
+- commit: 50b4411
+- ids: none
+- scope: podcast-staging-sort-kept-episodes
+- migration: none
+- status: merged
+- tsc: clean
+
+Nodes list now orders by kept_episode_count, then episode_count, story_count, name. Verified ordering in prod (Burton 198, Craig Kelly 157, Sims 130); all-trimmed Erik Traulsen no longer leads. Admin page not opened in a browser.
