@@ -3028,3 +3028,16 @@ Part A of podcast-staging-sort-and-sketches-brief-v1. Nodes tab headers (Name, E
 - tsc: clean
 
 Part B of podcast-staging-sort-and-sketches-brief-v1 on the recommended defaults. Fourth staging tab ?tab=sketches ports Constellation/Loom/Path/Map + panel from viz-template.html; live payload from GET /api/admin/podcast-staging/sketches (requireModerator, gzipped: 4.3 MB JSON / 1.76 MB wire, near Vercel's 4.5 MB cap, so watch growth). Trimmed and host hidden by default with toggles. Added d3 7.9.0 + topojson-client 3.1.0; map data in src/data/podcast-sketches/. Engine verified on a prod payload in a throwaway local page; signed-in admin tab not opened in a browser. Parts C (decisions in panel, dates, replays) still open.
+
+## 2026-11-16 - podcast staging: decisions and dates in the sketches (feature)
+- type: feature
+- pr: #287
+- branch: claude/podcast-staging-sketch-decisions
+- commit: 45da6d3
+- ids: none
+- scope: podcast-staging-sketch-decisions
+- migration: 20261116000001_podcast_staging_story_dates.sql (SAFE, applied + verified)
+- status: merged
+- tsc: clean
+
+Part C of podcast-staging-sort-and-sketches-brief-v1. Sketch panel story cards carry StoryActions (portals, new onDecided prop); node header shows decision + staging link; start/end_year + date_* + replay_of columns; loader --dates / --replays modes (logic in src/lib/podcast-staging-dates.ts); Path draws >3-year ranges as faint spans. Replays loaded (97/97). Dates dry run 11911/11911 matched but NOT applied: check_dates.py still shows 24 problems across 8 batches; run `--dates <podcast_archive> --apply` once those are fixed. Successful save path not exercised (no editor session).
