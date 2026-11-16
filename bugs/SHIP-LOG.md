@@ -3053,3 +3053,15 @@ Part C of podcast-staging-sort-and-sketches-brief-v1. Sketch panel story cards c
 - tsc: n/a
 
 Closes the dates load deferred in the #287 entry. Jay reviewed the 23 checker-flagged stories: 14 kept (reviewed flag), Dhani Jones S5E32 17:08 corrected to 1982, 8 Mikey Rencz stories resolved by relabelling staged episode bu1lTZAi9qg from S4E24/2019-04-17 to S10E18/2025-03-05 (staging row, manifest row, seed + dates files). check_dates.py now skips plausibility checks for reviewed stories; 0 problems in all 14 folders. --dates --apply wrote 11,911 (9,712 dated, 2,199 undatable). Open: 6 more staged episodes mislabelled by bad manifest twin links (S4E20 x3 Plug eps, S3E18 x2, S4E3 x1), not changed.
+
+## 2026-11-16 - podcast staging: manifest twin takeover fix (bug, no BUG id)
+- type: feature
+- pr: #288
+- branch: claude/podcast-staging-twin-label-fix
+- ids: none
+- scope: podcast-staging-twin-label-fix
+- migration: none (data: 6 targeted UPDATEs on podcast_staging_episodes, GATED, approved by Jay in chat, applied + verified)
+- status: pending
+- tsc: clean
+
+manifestByVideo() let an earlier manifest row's twin ids claim another episode's video; own ids now always win. Six unpublished staged episodes corrected to what the fixed logic produces (Plug S5E29b/S5E30b/S5E32, Craig Kelly S4E21 + SPECIAL Post 2026, Jess Kimura S8E27). Full diff of 290 seeds vs staging: 6 before, 0 after; no shared label/air-date pairs. Merge waiting on Jay per the GATED-session exception.
