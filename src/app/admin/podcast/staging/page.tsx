@@ -26,12 +26,14 @@ import {
   FilterChip,
 } from "./staging-ui"
 import { NodesToolbar } from "./staging-actions"
+import { SketchesTab } from "./sketches/sketches-tab"
 
 // Podcast archive staging: the review surface (Phase 1 views, Phase 2 decisions).
 //
 // /admin/podcast/staging                 Nodes (default)
 // /admin/podcast/staging?tab=episodes    Episodes
 // /admin/podcast/staging?tab=stories     All stories
+// /admin/podcast/staging?tab=sketches    Sketches (client-drawn from a live payload)
 //
 // Strict gate (brief D5): requireModeratorPage() wants is_editor = true. The
 // /admin layout already lets founding members in; this page sends them back to
@@ -64,7 +66,8 @@ const DECISION_CHIP = { pending: "Pending", approved: "Approved", hold: "On hold
 export default async function PodcastStagingPage({ searchParams }: { searchParams: Promise<SP> }) {
   await requireModeratorPage()
   const sp = await searchParams
-  const tab = sp.tab === "episodes" ? "episodes" : sp.tab === "stories" ? "stories" : "nodes"
+  const tab =
+    sp.tab === "episodes" ? "episodes" : sp.tab === "stories" ? "stories" : sp.tab === "sketches" ? "sketches" : "nodes"
   const db = getServiceClient()
 
   return (
@@ -72,6 +75,7 @@ export default async function PodcastStagingPage({ searchParams }: { searchParam
       {tab === "nodes" && <NodesTab db={db} filters={parseNodeFilters(sp)} />}
       {tab === "episodes" && <EpisodesTab db={db} page={Math.max(1, Number(sp.page) || 1)} />}
       {tab === "stories" && <StoriesTab db={db} sp={sp} />}
+      {tab === "sketches" && <SketchesTab />}
     </StagingShell>
   )
 }
