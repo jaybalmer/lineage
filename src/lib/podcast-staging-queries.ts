@@ -175,6 +175,7 @@ export async function listNodes(db: SupabaseClient, f: NodeFilters): Promise<Pag
   if (f.q) q = q.ilike("name", likeTerm(f.q))
   const [from, to] = range(page)
   const { data, count, error } = await q
+    .order("kept_episode_count", { ascending: false })
     .order("episode_count", { ascending: false })
     .order("story_count", { ascending: false })
     .order("name", { ascending: true })
