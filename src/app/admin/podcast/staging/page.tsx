@@ -153,7 +153,7 @@ async function NodesTab({ db, filters }: { db: ReturnType<typeof getServiceClien
               <tr>
                 <th className="text-left font-semibold px-3 py-2">Name</th>
                 <th className="text-right font-semibold px-2 py-2 hidden sm:table-cell" title="Every episode this node is mentioned in">Eps</th>
-                <th className="text-right font-semibold px-2 py-2 hidden sm:table-cell" title="Episodes with at least one story that is not trimmed">Kept eps</th>
+                <th className="text-right font-semibold px-2 py-2 hidden sm:table-cell" title="Episodes with at least one story that is not trimmed. The list is sorted by this">Kept eps &darr;</th>
                 <th className="text-right font-semibold px-2 py-2" title="Stories">Stories</th>
                 {STATUS_COLS.map((c) => (
                   <th key={c.key} title={c.title} className={cn("text-right font-semibold px-2 py-2", !c.mobile && "hidden sm:table-cell")}>
