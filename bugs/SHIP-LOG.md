@@ -3041,3 +3041,15 @@ Part B of podcast-staging-sort-and-sketches-brief-v1 on the recommended defaults
 - tsc: clean
 
 Part C of podcast-staging-sort-and-sketches-brief-v1. Sketch panel story cards carry StoryActions (portals, new onDecided prop); node header shows decision + staging link; start/end_year + date_* + replay_of columns; loader --dates / --replays modes (logic in src/lib/podcast-staging-dates.ts); Path draws >3-year ranges as faint spans. Replays loaded (97/97). Dates dry run 11911/11911 matched but NOT applied: check_dates.py still shows 24 problems across 8 batches; run `--dates <podcast_archive> --apply` once those are fixed. Successful save path not exercised (no editor session).
+
+## 2026-11-16 - podcast staging: story dates loaded (data, follows #287)
+- type: feature
+- pr: none (data only; code shipped in #287)
+- branch: none
+- ids: none
+- scope: podcast-staging-sketch-decisions
+- migration: none new; dates backfill into the #287 columns applied (SAFE) + Rencz episode label UPDATE (GATED, approved by Jay in chat)
+- status: merged
+- tsc: n/a
+
+Closes the dates load deferred in the #287 entry. Jay reviewed the 23 checker-flagged stories: 14 kept (reviewed flag), Dhani Jones S5E32 17:08 corrected to 1982, 8 Mikey Rencz stories resolved by relabelling staged episode bu1lTZAi9qg from S4E24/2019-04-17 to S10E18/2025-03-05 (staging row, manifest row, seed + dates files). check_dates.py now skips plausibility checks for reviewed stories; 0 problems in all 14 folders. --dates --apply wrote 11,911 (9,712 dated, 2,199 undatable). Open: 6 more staged episodes mislabelled by bad manifest twin links (S4E20 x3 Plug eps, S3E18 x2, S4E3 x1), not changed.
