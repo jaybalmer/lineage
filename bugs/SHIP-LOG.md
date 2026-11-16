@@ -3015,3 +3015,16 @@ Nodes list now orders by kept_episode_count, then episode_count, story_count, na
 - tsc: clean
 
 Part A of podcast-staging-sort-and-sketches-brief-v1. Nodes tab headers (Name, Eps, Kept eps, Stories, new Mentions, six status columns) sort on click via whitelisted sort/dir params; default is now episode_count desc, mention_count desc, name (replaces #284). Pre-flight: Erik Traulsen leads at 225 eps / 1210 mentions. Real listNodes run against prod for every acceptance case; signed-in page render not opened in a browser (no editor session in preview).
+
+## 2026-11-16 - podcast staging: Sketches tab (feature)
+- type: feature
+- pr: #286
+- branch: claude/podcast-staging-sketches
+- commit: ff68ce2
+- ids: none
+- scope: podcast-staging-sketches
+- migration: none
+- status: merged
+- tsc: clean
+
+Part B of podcast-staging-sort-and-sketches-brief-v1 on the recommended defaults. Fourth staging tab ?tab=sketches ports Constellation/Loom/Path/Map + panel from viz-template.html; live payload from GET /api/admin/podcast-staging/sketches (requireModerator, gzipped: 4.3 MB JSON / 1.76 MB wire, near Vercel's 4.5 MB cap, so watch growth). Trimmed and host hidden by default with toggles. Added d3 7.9.0 + topojson-client 3.1.0; map data in src/data/podcast-sketches/. Engine verified on a prod payload in a throwaway local page; signed-in admin tab not opened in a browser. Parts C (decisions in panel, dates, replays) still open.
