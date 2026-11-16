@@ -11,7 +11,8 @@ import {
   parseNodeFilters,
   parseStoryFilters,
 } from "@/lib/podcast-staging-queries"
-import type { NodeFilters } from "@/lib/podcast-staging-queries"
+import { DEFAULT_NODE_SORT, defaultNodeSortDir, effectiveNodeSort } from "@/lib/podcast-staging-queries"
+import type { NodeFilters, NodeSortKey } from "@/lib/podcast-staging-queries"
 import {
   BASE,
   Empty,
@@ -85,9 +86,42 @@ function nodesHref(f: NodeFilters, patch: Partial<NodeFilters>): string {
   if (next.flagged) p.set("flagged", "1")
   if (next.decision) p.set("decision", next.decision)
   if (next.q) p.set("q", next.q)
+  // Only write sort/dir when they differ from the defaults, so the plain URL stays plain.
+  const eff = effectiveNodeSort(next)
+  if (eff.sort !== DEFAULT_NODE_SORT) p.set("sort", eff.sort)
+  if (eff.dir !== defaultNodeSortDir(eff.sort)) p.set("dir", eff.dir)
   if (next.page && next.page > 1) p.set("page", String(next.page))
   const s = p.toString()
   return s ? `${BASE}?${s}` : BASE
+}
+
+/**
+ * A sortable column header. It links to the same filters on page 1 sorted by
+ * this column; on the active column it flips the direction. Only the active
+ * header shows an arrow.
+ */
+function SortTh({
+  f, col, label, title, align = "right", className,
+}: { f: NodeFilters; col: NodeSortKey; label: string; title?: string; align?: "left" | "right"; className?: string }) {
+  const { sort, dir } = effectiveNodeSort(f)
+  const active = sort === col
+  const nextDir = active ? (dir === "asc" ? "desc" : "asc") : defaultNodeSortDir(col)
+  return (
+    <th
+      scope="col"
+      title={title}
+      aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : undefined}
+      className={cn("font-semibold px-2 py-2", align === "left" ? "text-left px-3" : "text-right", className)}
+    >
+      <Link
+        href={nodesHref(f, { sort: col, dir: nextDir })}
+        className={cn("inline-flex items-center gap-0.5 hover:text-foreground", active && "text-foreground")}
+      >
+        {label}
+        {active && <span aria-hidden="true">{dir === "asc" ? "\u2191" : "\u2193"}</span>}
+      </Link>
+    </th>
+  )
 }
 
 
@@ -101,6 +135,8 @@ async function NodesTab({ db, filters }: { db: ReturnType<typeof getServiceClien
         {filters.resolution && <input type="hidden" name="resolution" value={filters.resolution} />}
         {filters.flagged && <input type="hidden" name="flagged" value="1" />}
         {filters.decision && <input type="hidden" name="decision" value={filters.decision} />}
+        {filters.sort && <input type="hidden" name="sort" value={filters.sort} />}
+        {filters.dir && <input type="hidden" name="dir" value={filters.dir} />}
         <label htmlFor="node-search" className="sr-only">Search nodes</label>
         <input
           id="node-search"
@@ -151,14 +187,13 @@ async function NodesTab({ db, filters }: { db: ReturnType<typeof getServiceClien
           <table className="w-full text-sm">
             <thead className="bg-surface-2 text-[11px] uppercase tracking-wide text-muted">
               <tr>
-                <th className="text-left font-semibold px-3 py-2">Name</th>
-                <th className="text-right font-semibold px-2 py-2 hidden sm:table-cell" title="Every episode this node is mentioned in">Eps</th>
-                <th className="text-right font-semibold px-2 py-2 hidden sm:table-cell" title="Episodes with at least one story that is not trimmed. The list is sorted by this">Kept eps &darr;</th>
-                <th className="text-right font-semibold px-2 py-2" title="Stories">Stories</th>
+                <SortTh f={filters} col="name" label="Name" align="left" />
+                <SortTh f={filters} col="episode_count" label="Eps" title="Every episode this node is mentioned in" className="hidden sm:table-cell" />
+                <SortTh f={filters} col="kept_episode_count" label="Kept eps" title="Episodes with at least one story that is not trimmed" className="hidden sm:table-cell" />
+                <SortTh f={filters} col="story_count" label="Stories" title="Stories" />
+                <SortTh f={filters} col="mention_count" label="Mentions" title="Every mention of this node across all stories" className="hidden sm:table-cell" />
                 {STATUS_COLS.map((c) => (
-                  <th key={c.key} title={c.title} className={cn("text-right font-semibold px-2 py-2", !c.mobile && "hidden sm:table-cell")}>
-                    {c.label}
-                  </th>
+                  <SortTh key={c.key} f={filters} col={c.key} label={c.label} title={c.title} className={cn(!c.mobile && "hidden sm:table-cell")} />
                 ))}
                 <th className="text-left font-semibold px-3 py-2">Catalog</th>
               </tr>
@@ -186,6 +221,7 @@ async function NodesTab({ db, filters }: { db: ReturnType<typeof getServiceClien
                       <div className="text-[10px]" title="Mentions whose name was inferred">{n.inferred_count} inferred</div>
                     )}
                   </td>
+                  <td className="px-2 py-2 text-right tabular-nums text-muted hidden sm:table-cell">{n.mention_count}</td>
                   {STATUS_COLS.map((c) => {
                     const v = n[c.key]
                     return (
