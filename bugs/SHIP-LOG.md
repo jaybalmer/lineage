@@ -3002,3 +3002,16 @@ Jay asked for an Eps column that counts only episodes with kept (non-trimmed) st
 - tsc: clean
 
 Nodes list now orders by kept_episode_count, then episode_count, story_count, name. Verified ordering in prod (Burton 198, Craig Kelly 157, Sims 130); all-trimmed Erik Traulsen no longer leads. Admin page not opened in a browser.
+
+## 2026-11-16 - podcast staging: sortable Nodes columns (feature)
+- type: feature
+- pr: #285
+- branch: claude/podcast-staging-sortable-columns-3b048c
+- commit: 029e221
+- ids: none
+- scope: podcast-staging-sortable-columns
+- migration: none
+- status: merged
+- tsc: clean
+
+Part A of podcast-staging-sort-and-sketches-brief-v1. Nodes tab headers (Name, Eps, Kept eps, Stories, new Mentions, six status columns) sort on click via whitelisted sort/dir params; default is now episode_count desc, mention_count desc, name (replaces #284). Pre-flight: Erik Traulsen leads at 225 eps / 1210 mentions. Real listNodes run against prod for every acceptance case; signed-in page render not opened in a browser (no editor session in preview).
