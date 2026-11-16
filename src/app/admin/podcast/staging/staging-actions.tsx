@@ -159,13 +159,28 @@ function CatalogPicker({ type, onPick }: { type: StagingSubjectType; onPick: (hi
 
 // ── story (T7) ──────────────────────────────────────────────────────────────
 
-export function StoryActions({ story }: { story: Pick<StoryCardData, "id" | "decision" | "revision_pending" | "excerpt"> }) {
+/**
+ * Story decision controls. On the server-rendered staging pages they refresh
+ * the route after a save. Pass `onDecided` (the Sketches panel does) to skip
+ * the refresh and get the saved decision back instead, to update in place.
+ */
+export function StoryActions({
+  story,
+  onDecided,
+}: {
+  story: Pick<StoryCardData, "id" | "decision" | "revision_pending" | "excerpt">
+  onDecided?: (decision: StoryDecision) => void
+}) {
   const { run, busy, error } = useAction()
   const [trimming, setTrimming] = useState(false)
   const [activity, setActivity] = useState("")
   const [reason, setReason] = useState("")
   const url = `${API}/stories/${story.id}`
-  const act = (action: string, extra: Record<string, unknown> = {}) => run(url, "PATCH", { action, ...extra })
+  const act = async (action: string, extra: Record<string, unknown> = {}) => {
+    const json = await run(url, "PATCH", { action, ...extra }, { refresh: !onDecided })
+    if (json && onDecided && typeof json.decision === "string") onDecided(json.decision as StoryDecision)
+    return json
+  }
   const d: StoryDecision = story.decision
 
   return (

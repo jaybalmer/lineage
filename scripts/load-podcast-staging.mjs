@@ -13,6 +13,12 @@
 //       load into staging, then resolve every undecided node
 //   node scripts/load-podcast-staging.mjs --resolve-only [--apply]
 //       re-check staged nodes against the catalog without loading seeds
+//   node scripts/load-podcast-staging.mjs --dates <podcast_archive dir> [--apply]
+//       Pass A story dates: reads every <folder>/dates/<slug>.json under the
+//       dir and fills the date columns on matching staged stories. Prints
+//       matched, unmatched and already-loaded counts; --dry-run is the default.
+//   node scripts/load-podcast-staging.mjs --replays <replays.json> [--apply]
+//       marks each replayed copy with replay_of = its original story
 //
 // The pilot fixture lives in the main checkout only (podcast_archive/ is
 // ignored locally), so from a worktree pass absolute paths:
@@ -28,7 +34,7 @@
 // Re-runs are safe (D11): decisions are never overwritten, and new seed content
 // for a decided story lands in revision_pending.
 
-import { readFileSync, readdirSync, existsSync } from "node:fs"
+import { readFileSync, readdirSync, existsSync, statSync } from "node:fs"
 import { join, resolve, dirname } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { registerHooks } from "node:module"
@@ -102,9 +108,17 @@ function parseCsv(text) {
 const args = process.argv.slice(2)
 const apply = args.includes("--apply")
 const resolveOnly = args.includes("--resolve-only")
-const positional = args.filter((a) => !a.startsWith("--"))
+// --dates and --replays take a path value.
+const valueOf = (flag) => { const i = args.indexOf(flag); return i >= 0 ? args[i + 1] : undefined }
+const datesDir = valueOf("--dates")
+const replaysFile = valueOf("--replays")
+const flagValues = new Set([datesDir, replaysFile].filter(Boolean))
+const positional = args.filter((a) => !a.startsWith("--") && !flagValues.has(a))
 
-if (!resolveOnly && positional.length < 2) {
+if (args.includes("--dates") && !datesDir) { console.error("--dates needs the podcast_archive directory"); process.exit(1) }
+if (args.includes("--replays") && !replaysFile) { console.error("--replays needs the path to replays.json"); process.exit(1) }
+
+if (!resolveOnly && !datesDir && !replaysFile && positional.length < 2) {
   console.error("Usage: node scripts/load-podcast-staging.mjs <manifest.csv> <seeds-dir> [--apply]\n       node scripts/load-podcast-staging.mjs --resolve-only [--apply]")
   process.exit(1)
 }
@@ -121,6 +135,36 @@ const db = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_
 const { loadStaging, resolveStaging } = await import(pathToFileURL(join(SRC, "lib", "podcast-staging-server.ts")).href)
 
 console.log(apply ? "MODE: apply (writes to podcast_staging_* only)" : "MODE: dry run (no writes)")
+
+function printDateReport(label, r, extra = "") {
+  console.log(`\n${label}`)
+  console.log(`  matched ${r.matched}, already loaded ${r.alreadyLoaded}, to write ${r.matched - r.alreadyLoaded}, written ${r.written}, unmatched ${r.unmatched.length}${extra}`)
+  const shown = r.unmatched.slice(0, 40)
+  for (const u of shown) console.log(`    - ${u.where}: ${u.why}`)
+  if (r.unmatched.length > shown.length) console.log(`    ... and ${r.unmatched.length - shown.length} more`)
+}
+
+if (datesDir || replaysFile) {
+  const { loadStoryDates, loadReplays } = await import(pathToFileURL(join(SRC, "lib", "podcast-staging-dates.ts")).href)
+  if (datesDir) {
+    // Every <folder>/dates/<slug>.json under the archive (pilot + batches); summary.json is the checker's, not a dates file.
+    const files = readdirSync(datesDir, { recursive: true })
+      .map(String)
+      .filter((f) => /(^|\/)dates\/[^/]+\.json$/.test(f) && !f.endsWith("/summary.json"))
+      .filter((f) => statSync(join(datesDir, f)).isFile())
+      .sort()
+      .map((f) => ({ file: f, ...JSON.parse(readFileSync(join(datesDir, f), "utf8")) }))
+    console.log(`dates files: ${files.length}`)
+    const r = await loadStoryDates(db, files, { apply })
+    printDateReport("DATES", r, `, staged stories with no dates row ${r.stagedWithoutDates}`)
+  }
+  if (replaysFile) {
+    const replays = JSON.parse(readFileSync(replaysFile, "utf8"))
+    console.log(`replay pairs: ${replays.length}`)
+    printDateReport("REPLAYS", await loadReplays(db, replays, { apply }))
+  }
+  process.exit(0)
+}
 
 if (!resolveOnly) {
   const [manifestPath, seedsDir] = positional
