@@ -37,7 +37,10 @@
 .sk-root * { box-sizing: border-box; }
 .sk-root .sk-bar { display: flex; gap: 8px 14px; align-items: center; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid var(--line); }
 .sk-root .sk-sub { color: var(--mut); margin: 0; padding: 6px 14px; font-size: 12px; border-bottom: 1px solid var(--line); }
-.sk-root button, .sk-root select, .sk-root input { font: 500 13px var(--font-body), system-ui, sans-serif; color: var(--fg); }
+/* :where() keeps these base rules below Tailwind utilities, so the staging
+   decision controls rendered into story cards keep their own colors. */
+:where(.sk-root) :where(button, select, input) { font: 500 13px var(--font-body), system-ui, sans-serif; color: var(--fg); }
+.sk-root .sk-actions { margin-top: 2px; }
 .sk-root .sk-tab, .sk-root .sk-chipbtn { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
 .sk-root .sk-tab[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .sk-root .sk-chipbtn { display: inline-flex; gap: 6px; align-items: center; }
@@ -78,7 +81,7 @@
 .sk-root .sk-story b { font: 700 14px/1.3 var(--font-body), system-ui, sans-serif; display: block; margin-bottom: 3px; }
 .sk-root .sk-story p { margin: 0 0 6px; }
 .sk-root .sk-story .sk-m { color: var(--mut); font-size: 12px; }
-.sk-root a { color: var(--acc); }
+:where(.sk-root) a { color: var(--acc); }
 .sk-root .sk-more { margin-top: 6px; }
 .sk-root .sk-note { color: var(--mut); font-size: 12px; margin: 10px 0 0; max-width: 60ch; }
 .sk-root .sk-spark { display: block; margin: 4px 0 0; }

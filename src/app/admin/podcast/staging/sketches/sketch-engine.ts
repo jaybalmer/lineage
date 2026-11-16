@@ -10,16 +10,22 @@
 //     `.sk-root` rules in sketches.css), read off the root, not :root;
 //   - canvas text uses the app's body font, read off the root;
 //   - dark mode follows the app's `.dark` class on <html>;
-//   - stories have no years until the dating pass lands in staging (Part C),
-//     so the Loom, Path and sparkline say so instead of drawing empty axes;
-//   - trimmed stories, when shown, draw dimmed with a "Trimmed" label.
+//   - years come from the Pass A columns in staging, not from the wording of
+//     the story; with none loaded the Loom and Path say so (Part B);
+//   - a story dated across more than 3 years is a "span": the Path draws it
+//     as a faint bar, not a dot per year, and the Loom leaves it out (C5);
+//   - trimmed stories, when shown, draw dimmed with a "Trimmed" label;
+//   - each story card carries a slot for the staging decision controls, which
+//     React fills through portals (C1); the selected node shows its decision
+//     and a link to its staging page (C2).
 
 import * as d3 from "d3"
 import { feature } from "topojson-client"
 import type { Topology, GeometryCollection } from "topojson-specification"
 
 export type EngineNode = { name: string; t: number; eps: number; st: number; id: string; decision: string; trimmedOnly: boolean }
-export type EngineStory = { ep: number; ts: number; title: string; ex: string; ids: number[]; ys: number[]; decision: string; id: string }
+/** ys: every year of a story dated within a 3-year range. span: [start, end] for a wider range. */
+export type EngineStory = { ep: number; ts: number; title: string; ex: string; ids: number[]; ys: number[]; span: [number, number] | null; decision: string; id: string }
 export type EngineData = {
   N: EngineNode[]
   S: EngineStory[]
@@ -28,6 +34,19 @@ export type EngineData = {
   meta: { episodes: number; stories_with_year: number; trimmed_shown: boolean; host_shown: boolean }
 }
 export type MapAssets = { land: Topology; coords: Record<string, [number, number]> }
+/** An empty element on a story card where the host renders that story's decision controls. */
+export type ActionSlot = { el: HTMLElement; id: string; decision: string }
+export type EngineOptions = {
+  /** Called after every panel render with the story-card slots now on screen (replacing the last set). */
+  onActionSlots?: (slots: ActionSlot[]) => void
+  /** Staging page for a node, linked from the panel header. */
+  nodeHref?: (id: string) => string
+}
+export type EngineHandle = {
+  destroy: () => void
+  /** A decision was saved: update the card in place, and drop a newly trimmed story from the drawing when trimmed stories are hidden. */
+  setStoryDecision: (storyId: string, decision: string) => void
+}
 
 type Node = EngineNode & { i: number; stories: Story[]; years: Record<number, number>; _m?: number; px?: number; py?: number }
 type Story = Omit<EngineStory, never> & { i: number }
@@ -36,6 +55,7 @@ type SimNode = d3.SimulationNodeDatum & { n: Node; r: number; x: number; y: numb
 type SimLink = { source: SimNode | number; target: SimNode | number; w: number }
 type View = "net" | "loom" | "path" | "map"
 
+const DECISION_LABEL: Record<string, string> = { pending: "pending", approved: "approved", hold: "on hold", rejected: "rejected" }
 const TN = ["Person", "Place", "Brand or shop", "Event", "Board"]
 const TN_PLURAL = ["People", "Places", "Brands and shops", "Events", "Boards"]
 const TV = ["--person", "--place", "--org", "--event", "--board"]
@@ -60,8 +80,8 @@ const MARKUP = `
 
 const esc = (s: unknown) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c] as string)
 
-/** Mount the sketches into `root`. Returns a cleanup function. */
-export function mountSketches(root: HTMLElement, D: EngineData, loadMap: () => Promise<MapAssets>): () => void {
+/** Mount the sketches into `root`. */
+export function mountSketches(root: HTMLElement, D: EngineData, loadMap: () => Promise<MapAssets>, opts: EngineOptions = {}): EngineHandle {
   root.innerHTML = MARKUP
   const $ = <T extends Element = HTMLElement>(s: string) => root.querySelector(s) as T
   const css = (v: string) => getComputedStyle(root).getPropertyValue(v).trim()
@@ -75,7 +95,13 @@ export function mountSketches(root: HTMLElement, D: EngineData, loadMap: () => P
   const N: Node[] = D.N.map((n, i) => ({ ...n, i, stories: [], years: {} }))
   const S: Story[] = D.S.map((s, i) => ({ ...s, i }))
   S.forEach((s) => s.ids.forEach((id) => { const n = N[id]; n.stories.push(s); s.ys.forEach((y) => (n.years[y] = (n.years[y] || 0) + 1)) }))
-  const anyYears = D.meta.stories_with_year > 0
+  const anyYears = S.some((s) => s.ys.length > 0 || s.span !== null)
+  const isDated = (s: Story) => s.ys.length > 0 || s.span !== null
+  const yearText = (s: Story) => {
+    if (s.span) return `${s.span[0]} to ${s.span[1]}`
+    if (!s.ys.length) return ""
+    return s.ys.length === 1 ? String(s.ys[0]) : `${s.ys[0]} to ${s.ys[s.ys.length - 1]}`
+  }
 
   const state: { view: View; types: boolean[]; count: number; sel: number | null; year: number | null; pair: number | null } = {
     view: "net", types: [true, true, true, true, true], count: 140, sel: null, year: null, pair: null,
@@ -210,13 +236,15 @@ export function mountSketches(root: HTMLElement, D: EngineData, loadMap: () => P
   })
 
   /* ---------- path: one thread, its connections by year ---------- */
-  type Co = { id: number; total: number; dated: number; y: Record<number, number>; first?: number; last?: number; ds?: number[] }
+  type Co = { id: number; total: number; dated: number; y: Record<number, number>; spans: [number, number][]; first?: number; last?: number; ds?: number[] }
   function coOf(n: Node) {
     const co = new Map<number, Co>()
     n.stories.forEach((s) => s.ids.forEach((id) => {
       if (id === n.i) return
-      let c = co.get(id); if (!c) { c = { id, total: 0, dated: 0, y: {} }; co.set(id, c) }
-      c.total++; if (s.ys.length) { c.dated++; s.ys.forEach((y) => (c!.y[y] = (c!.y[y] || 0) + 1)) }
+      let c = co.get(id); if (!c) { c = { id, total: 0, dated: 0, y: {}, spans: [] }; co.set(id, c) }
+      c.total++
+      if (s.ys.length) { c.dated++; s.ys.forEach((y) => (c!.y[y] = (c!.y[y] || 0) + 1)) }
+      else if (s.span) { c.dated++; c.spans.push(s.span) }
     }))
     return co
   }
@@ -226,12 +254,16 @@ export function mountSketches(root: HTMLElement, D: EngineData, loadMap: () => P
     if (state.sel == null) { msg(`<text x="0" y="30" fill="var(--mut)" font-family="${esc(FONT)}" font-size="14">Pick a rider, brand or place from the list on the right to see its path.</text>`); return }
     const n = N[state.sel], co = coOf(n), K = [12, 9, 9, 6, 5]
     if (!anyYears) { noDates(sv, $("#sk-pathnote"), `The Path draws ${n.name} year by year once story years are in staging.`); return }
-    const ys = Object.keys(n.years).map(Number).filter((y) => y >= 1968 && y <= 2026)
+    const ownSpans = n.stories.filter((s) => s.span).map((s) => s.span as [number, number])
+    const ys = [...Object.keys(n.years).map(Number), ...ownSpans.flat()].filter((y) => y >= 1968 && y <= 2026)
     if (!ys.length) { msg(`<text x="0" y="30" fill="var(--mut)" font-family="${esc(FONT)}" font-size="14">None of the stories about ${esc(n.name)} have a year, so there is no path to draw yet.</text>`); return }
+    const clampY = (y: number) => Math.max(Math.min(...ys) - 1, Math.min(Math.max(...ys) + 1, y))
     const a = Math.min(...ys) - 1, b = Math.max(...ys) + 1, L = 210
     const cw = Math.max(13, Math.min(22, Math.floor(($("#sk-stage").clientWidth - L - 110) / (b - a + 1)))), rh = 20, X = (y: number) => L + (y - a + 0.5) * cw, Wd = L + (b - a + 1) * cw + 90
     let y0 = 74, h = `<g font-family="${esc(FONT)}" font-size="11">`
-    const mx = Math.max(...Object.values(n.years))
+    const mx = Math.max(1, ...Object.values(n.years))
+    // C5: wide-range stories (more than 3 years) as faint spans, under the bars.
+    ownSpans.forEach(([p, q]) => { h += `<rect x="${X(clampY(p)) - cw / 2}" y="44" width="${(clampY(q) - clampY(p) + 1) * cw}" height="6" rx="3" fill="var(${TV[n.t]})" opacity=".14"><title>A story about ${esc(n.name)} dated ${p} to ${q}</title></rect>` })
     for (let y = a; y <= b; y++) if (y % 5 === 0) h += `<text x="${X(y)}" y="12" text-anchor="middle" fill="var(--mut)">${y}</text>`
     h += `<text x="${L - 10}" y="46" text-anchor="end" fill="var(--fg)" font-weight="700" font-size="13">${esc(n.name)}</text><line x1="${X(a)}" x2="${X(b)}" y1="50" y2="50" stroke="var(${TV[n.t]})" stroke-width="2"/>`
     for (let y = a; y <= b; y++) { const c = n.years[y] || 0; if (c) { const bh = 4 + (c / mx) * 26; h += `<rect class="py" data-y="${y}" x="${X(y) - cw / 2 + 1.5}" y="${50 - bh}" width="${cw - 3}" height="${bh}" rx="3" fill="var(${TV[n.t]})" style="cursor:pointer"><title>${y}: ${c} ${c > 1 ? "stories" : "story"} about ${esc(n.name)}</title></rect>` } }
@@ -242,12 +274,17 @@ export function mountSketches(root: HTMLElement, D: EngineData, loadMap: () => P
       if (!state.types[t]) return
       const ls = [...co.values()].filter((c) => N[c.id].t === t).sort((p, q) => q.total - p.total).slice(0, K[t])
       if (!ls.length) return
-      ls.forEach((c) => { const d = Object.keys(c.y).map(Number).filter((y) => y >= a && y <= b); c.first = d.length ? Math.min(...d) : 9999; c.last = d.length ? Math.max(...d) : 0; c.ds = d })
+      ls.forEach((c) => {
+        const d = Object.keys(c.y).map(Number).filter((y) => y >= a && y <= b)
+        const ends = c.spans.flat().map(clampY)
+        c.first = d.length || ends.length ? Math.min(...d, ...ends) : 9999; c.last = d.length ? Math.max(...d) : 0; c.ds = d
+      })
       ls.sort((p, q) => p.first! - q.first! || q.total - p.total)
       body += `<text x="0" y="${y0 + 13}" fill="var(--mut)" font-weight="700">${nm}</text>`; y0 += 20
       ls.forEach((c) => {
         const m = N[c.id], cy = y0 + rh / 2, mxc = Math.max(1, ...Object.values(c.y))
         body += `<text class="pl" data-n="${c.id}" x="${L - 10}" y="${cy + 1}" text-anchor="end" dominant-baseline="middle" fill="var(--fg)" font-weight="${state.pair === c.id ? 700 : 300}" style="cursor:pointer">${esc(m.name.length > 30 ? m.name.slice(0, 29) + "…" : m.name)}</text>`
+        c.spans.forEach(([p, q]) => { body += `<rect class="pl" data-n="${c.id}" x="${X(clampY(p)) - cw / 2}" y="${cy - 4}" width="${(clampY(q) - clampY(p) + 1) * cw}" height="8" rx="4" fill="var(${TV[t]})" opacity=".14" style="cursor:pointer"><title>${esc(n.name)} and ${esc(m.name)}: a story dated ${p} to ${q}</title></rect>` })
         if (c.ds!.length) body += `<line x1="${X(c.first!)}" x2="${X(c.last!)}" y1="${cy}" y2="${cy}" stroke="var(${TV[t]})" stroke-width="2" opacity=".45"/>`
         c.ds!.forEach((y) => { active[y] = Math.max(active[y] || 0, cy); body += `<circle class="pd" data-n="${c.id}" data-y="${y}" cx="${X(y)}" cy="${cy}" r="${(3.5 + (3.5 * c.y[y]) / mxc).toFixed(1)}" fill="var(${TV[t]})" stroke="var(--bg)" stroke-width="2" style="cursor:pointer"><title>${esc(n.name)} and ${esc(m.name)}, ${y}: ${c.y[y]} ${c.y[y] > 1 ? "stories" : "story"}</title></circle>` })
         const und = c.total - c.dated
@@ -258,8 +295,8 @@ export function mountSketches(root: HTMLElement, D: EngineData, loadMap: () => P
     let weave = ""
     for (const y in active) weave += `<line x1="${X(+y)}" x2="${X(+y)}" y1="52" y2="${active[y]}" stroke="var(--line)"/>`
     h += weave + body + "</g>"; sv.setAttribute("width", String(Wd)); sv.setAttribute("height", String(y0 + 10)); sv.setAttribute("viewBox", `0 0 ${Wd} ${y0 + 10}`); sv.innerHTML = h
-    const dated = n.stories.filter((s) => s.ys.length).length
-    $("#sk-pathnote").textContent = `The bar row is ${n.name}: stories per year. Below it, each line is someone or something told in the same stories, starting at the first year they are told together. A dot is a year with shared stories. Only ${dated} of ${n.stories.length} stories about ${n.name} have a year; "more" counts the shared stories that do not.`
+    const dated = n.stories.filter(isDated).length
+    $("#sk-pathnote").textContent = `The bar row is ${n.name}: stories per year. Below it, each line is someone or something told in the same stories, starting at the first year they are told together. A dot is a year with shared stories; a faint bar is a story dated across more than 3 years. ${dated} of ${n.stories.length} stories about ${n.name} have a date; "more" counts the shared stories that do not.`
   }
   on($("#sk-path"), "click", (e) => {
     const t = e.target as SVGElement & { dataset: DOMStringMap }
@@ -362,10 +399,16 @@ export function mountSketches(root: HTMLElement, D: EngineData, loadMap: () => P
   }
   function storyHtml(s: Story) {
     const e = D.E[s.ep], m = Math.floor(s.ts / 60), sec = String(s.ts % 60).padStart(2, "0"), trimmed = s.decision === "trimmed"
-    return `<div class="sk-story${trimmed ? " sk-trimmed" : ""}"><b>${esc(s.title)}</b><p>${esc(s.ex)}</p><div class="sk-m">${trimmed ? "Trimmed · " : ""}${esc(e[0])}${e[1] && e[1] !== "SPECIAL" ? " · " + esc(e[1]) : ""}${e[2] ? " · " + esc(e[2].slice(0, 4)) : ""} · <a href="https://www.youtube.com/watch?v=${encodeURIComponent(e[3])}&t=${s.ts}s" target="_blank" rel="noopener">watch at ${m}:${sec}</a>${s.ys.length ? " · mentions " + s.ys.join(", ") : ""}</div></div>`
+    return `<div class="sk-story${trimmed ? " sk-trimmed" : ""}"><b>${esc(s.title)}</b><p>${esc(s.ex)}</p><div class="sk-m">${trimmed ? "Trimmed · " : ""}${esc(e[0])}${e[1] && e[1] !== "SPECIAL" ? " · " + esc(e[1]) : ""}${e[2] ? " · " + esc(e[2].slice(0, 4)) : ""} · <a href="https://www.youtube.com/watch?v=${encodeURIComponent(e[3])}&t=${s.ts}s" target="_blank" rel="noopener">watch at ${m}:${sec}</a>${isDated(s) ? " · dated " + yearText(s) : ""}</div><div class="sk-actions" data-actions="${esc(s.id)}" data-decision="${esc(s.decision)}"></div></div>`
   }
   let lim = 25
   function panel() {
+    drawPanel()
+    if (opts.onActionSlots) {
+      opts.onActionSlots([...root.querySelectorAll<HTMLElement>("[data-actions]")].map((el) => ({ el, id: el.dataset.actions!, decision: el.dataset.decision! })))
+    }
+  }
+  function drawPanel() {
     const p = $("#sk-panel")
     if (state.sel == null && state.year == null) {
       const top = (t: number) => N.filter((n) => n.t === t).slice(0, 8).map((n) => `<button class="sk-link sk-t${n.t}" data-n="${n.i}"><span class="sk-dot"></span>${esc(n.name)} <small>${n.eps}</small></button>`).join("")
@@ -385,7 +428,7 @@ export function mountSketches(root: HTMLElement, D: EngineData, loadMap: () => P
     const nb = neighbors(n, 400), by = (t: number) => nb.filter((x) => N[x[0]].t === t).slice(0, 8).map((x) => `<button class="sk-link sk-t${t}" data-n="${x[0]}"><span class="sk-dot"></span>${esc(N[x[0]].name)} <small>${x[1]}</small></button>`).join("")
     const views: [View, string][] = [["net", "Constellation"], ["loom", "Loom"], ["path", "Path"], ["map", "Map"]]
     p.innerHTML =
-      `<h2>${esc(n.name)}</h2><div class="sk-kind sk-t${n.t}"><span class="sk-dot"></span>${TN[n.t]}</div><div class="sk-nums"><div><b>${n.eps}</b><span>episodes</span></div><div><b>${n.st}</b><span>stories</span></div><div><b>${nb.length}</b><span>connections</span></div></div><div class="sk-pviews" role="group" aria-label="View this thread as">${views.map((v) => `<button class="sk-tab" data-sv="${v[0]}" aria-pressed="${state.view === v[0]}">${v[1]}</button>`).join("")}</div>${spark(n)}` +
+      `<h2>${esc(n.name)}</h2><div class="sk-kind sk-t${n.t}"><span class="sk-dot"></span>${TN[n.t]} · Node ${esc(DECISION_LABEL[n.decision] ?? n.decision)}${opts.nodeHref ? ` · <a href="${esc(opts.nodeHref(n.id))}">Open in staging</a>` : ""}</div><div class="sk-nums"><div><b>${n.eps}</b><span>episodes</span></div><div><b>${n.st}</b><span>stories</span></div><div><b>${nb.length}</b><span>connections</span></div></div><div class="sk-pviews" role="group" aria-label="View this thread as">${views.map((v) => `<button class="sk-tab" data-sv="${v[0]}" aria-pressed="${state.view === v[0]}">${v[1]}</button>`).join("")}</div>${spark(n)}` +
       TN.map((_, i) => { const h = by(i); return h ? `<h3>${TN_PLURAL[i]} in the same stories</h3>${h}` : "" }).join("") +
       `<h3>${pr || state.year != null ? `${ss.length} ${ss.length === 1 ? "story" : "stories"}${pr ? " with " + esc(pr.name) : ""}${state.year != null ? " that mention " + state.year : ""} <button class="sk-tab" id="sk-clry" style="margin-left:6px">All stories</button>${pr ? ` <button class="sk-tab" data-n="${pr.i}">Open ${esc(pr.name)}</button>` : ""}` : "Stories"}</h3>` +
       ss.slice(0, lim).map(storyHtml).join("") + (ss.length > lim ? `<button class="sk-tab sk-more" id="sk-more">Show more (${ss.length - lim} left)</button>` : "")
@@ -394,6 +437,7 @@ export function mountSketches(root: HTMLElement, D: EngineData, loadMap: () => P
     const target = e.target as HTMLElement
     const sv = target.closest<HTMLElement>("[data-sv]"); if (sv) { setView(sv.dataset.sv as View); return }
     const b = target.closest<HTMLElement>("[data-n]"); if (b) { state.year = null; select(+b.dataset.n!); return }
+    if (target.closest(".sk-actions")) return // the decision controls handle their own clicks
     if (target.id === "sk-more") { lim += 40; panel() }
     if (target.id === "sk-clry") { state.year = null; state.pair = null; render() }
   })
@@ -448,10 +492,31 @@ export function mountSketches(root: HTMLElement, D: EngineData, loadMap: () => P
   setView("net")
   d3.select(cv).call(zm.transform, d3.zoomIdentity.translate(W * 0.2, H * 0.2).scale(0.6))
 
-  return () => {
-    disposed = true
-    sim?.stop()
-    cleanups.forEach((f) => f())
-    root.innerHTML = ""
+  function setStoryDecision(storyId: string, decision: string) {
+    const st = S.find((x) => x.id === storyId)
+    if (!st) return
+    st.decision = decision
+    if (decision === "trimmed" && !D.meta.trimmed_shown) {
+      // Trimmed stories are hidden: take this one out of every thread it was in.
+      st.ids.forEach((id) => {
+        const n = N[id]
+        n.stories = n.stories.filter((x) => x !== st); n.st = n.stories.length
+        st.ys.forEach((y) => { n.years[y] = (n.years[y] || 1) - 1; if (!n.years[y]) delete n.years[y] })
+      })
+      S.splice(S.indexOf(st), 1)
+    }
+    st.ids.forEach((id) => { const n = N[id]; n.trimmedOnly = n.stories.length > 0 && n.stories.every((x) => x.decision === "trimmed") })
+    rebuild(); panel()
+  }
+
+  return {
+    setStoryDecision,
+    destroy: () => {
+      disposed = true
+      sim?.stop()
+      opts.onActionSlots?.([])
+      cleanups.forEach((f) => f())
+      root.innerHTML = ""
+    },
   }
 }

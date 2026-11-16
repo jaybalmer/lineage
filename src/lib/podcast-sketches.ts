@@ -9,8 +9,9 @@
 // 3 MB. The client fetches it once per tab open and keeps it in component
 // state, never in the Zustand store or localStorage.
 //
-// Stories have no dates in staging yet (Part C adds them), so there is no year
-// field here. The client draws the year views empty-safe.
+// Dates come from the Pass A columns (Part C); a story with none sends nulls
+// and the client draws the year views empty-safe. Replayed copies of an earlier
+// episode's story (replay_of set) are left out, so each story draws once.
 
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { NodeDecision, StagingSubjectType, StoryDecision } from "@/lib/podcast-staging"
@@ -25,8 +26,8 @@ export const SKETCH_HOST_NAMES = ["erik traulsen"]
 export type SketchEpisode = [string, string, string, string, string]
 /** [staging node id, name, type index into SKETCH_TYPES, decision, is host] */
 export type SketchNode = [string, string, number, NodeDecision, boolean]
-/** [episode index, timestamp seconds, title, excerpt, node indexes, decision, staging story id] */
-export type SketchStory = [number, number, string, string, number[], StoryDecision, string]
+/** [episode index, timestamp seconds, title, excerpt, node indexes, decision, staging story id, start year, end year] */
+export type SketchStory = [number, number, string, string, number[], StoryDecision, string, number | null, number | null]
 
 export type SketchPayload = {
   episodes: SketchEpisode[]
@@ -86,13 +87,13 @@ function shorten(ex: string): string {
 
 export async function buildSketchPayload(db: SupabaseClient): Promise<SketchPayload> {
   type Ep = { id: string; guest: string | null; episode_name: string; archive_label: string | null; air_date: string | null; video_id: string }
-  type St = { id: string; episode_id: string; timestamp_seconds: number; title: string; excerpt: string; decision: StoryDecision }
+  type St = { id: string; episode_id: string; timestamp_seconds: number; title: string; excerpt: string; decision: StoryDecision; start_year: number | null; end_year: number | null }
   type Me = { id: string; story_id: string; node_id: string }
   type No = { id: string; name: string; subject_type: StagingSubjectType; decision: NodeDecision }
 
   const [eps, stories, mentions, nodes] = await Promise.all([
     readAll<Ep>(db, "podcast_staging_episodes", "id, guest, episode_name, archive_label, air_date, video_id"),
-    readAll<St>(db, "podcast_staging_stories", "id, episode_id, timestamp_seconds, title, excerpt, decision"),
+    readAll<St>(db, "podcast_staging_stories", "id, episode_id, timestamp_seconds, title, excerpt, decision, start_year, end_year", { isNull: "replay_of" }),
     // A rejected mention drops that subject from an otherwise kept story.
     readAll<Me>(db, "podcast_staging_mentions", "id, story_id, node_id", { neq: ["decision", "rejected"] }),
     readAll<No>(db, "podcast_staging_nodes", "id, name, subject_type, decision", { isNull: "merged_into" }),
@@ -130,7 +131,7 @@ export async function buildSketchPayload(db: SupabaseClient): Promise<SketchPayl
     const ids = (byStory.get(s.id) ?? []).map((id) => nIdx.get(id)).filter((i): i is number => i !== undefined)
     const ei = epIdx.get(s.episode_id)
     if (!ids.length || ei === undefined) continue
-    outStories.push([ei, s.timestamp_seconds, s.title, shorten(s.excerpt ?? ""), ids, s.decision, s.id])
+    outStories.push([ei, s.timestamp_seconds, s.title, shorten(s.excerpt ?? ""), ids, s.decision, s.id, s.start_year, s.start_year == null ? null : (s.end_year ?? s.start_year)])
   }
   outStories.sort((a, b) => a[0] - b[0] || a[1] - b[1])
 
