@@ -118,6 +118,31 @@ export type Paged<T> = { rows: T[]; total: number; page: number; pageSize: numbe
 
 // ── filters ─────────────────────────────────────────────────────────────────
 
+/** Columns the Nodes list can sort by (the URL `sort` param). Anything else falls back to the default. */
+export const NODE_SORT_KEYS = [
+  "name",
+  "episode_count",
+  "kept_episode_count",
+  "story_count",
+  "mention_count",
+  "pending_count",
+  "approved_count",
+  "ready_count",
+  "published_story_count",
+  "held_count",
+  "trimmed_count",
+] as const
+export type NodeSortKey = (typeof NODE_SORT_KEYS)[number]
+export type SortDir = "asc" | "desc"
+
+/** Default list order: most total episodes first. */
+export const DEFAULT_NODE_SORT: NodeSortKey = "episode_count"
+
+/** First-click direction for a column: names A to Z, counts biggest first. */
+export function defaultNodeSortDir(key: NodeSortKey): SortDir {
+  return key === "name" ? "asc" : "desc"
+}
+
 export type NodeFilters = {
   type?: StagingSubjectType | null
   resolution?: NodeResolution | null
@@ -125,6 +150,16 @@ export type NodeFilters = {
   decision?: NodeDecision | null
   q?: string | null
   page?: number
+  /** null means the default (DEFAULT_NODE_SORT). */
+  sort?: NodeSortKey | null
+  /** null means the column's default direction. */
+  dir?: SortDir | null
+}
+
+/** The sort actually applied, with defaults filled in. */
+export function effectiveNodeSort(f: NodeFilters): { sort: NodeSortKey; dir: SortDir } {
+  const sort = f.sort ?? DEFAULT_NODE_SORT
+  return { sort, dir: f.dir ?? defaultNodeSortDir(sort) }
 }
 
 /** Parse filters from URL search params, dropping anything not on the list. */
@@ -133,7 +168,11 @@ export function parseNodeFilters(sp: Record<string, string | string[] | undefine
   const type = one("type")
   const resolution = one("resolution")
   const decision = one("decision")
+  const sort = one("sort")
+  const dir = one("dir")
   return {
+    sort: sort && (NODE_SORT_KEYS as readonly string[]).includes(sort) ? (sort as NodeSortKey) : null,
+    dir: dir === "asc" || dir === "desc" ? dir : null,
     decision: decision && NODE_DECISIONS.includes(decision as NodeDecision) ? (decision as NodeDecision) : null,
     type: type && STAGING_SUBJECT_TYPES.includes(type as StagingSubjectType) ? (type as StagingSubjectType) : null,
     resolution: resolution && RESOLUTIONS.includes(resolution as NodeResolution) ? (resolution as NodeResolution) : null,
@@ -174,12 +213,15 @@ export async function listNodes(db: SupabaseClient, f: NodeFilters): Promise<Pag
   if (f.decision) q = q.eq("decision", f.decision)
   if (f.q) q = q.ilike("name", likeTerm(f.q))
   const [from, to] = range(page)
-  const { data, count, error } = await q
-    .order("kept_episode_count", { ascending: false })
-    .order("episode_count", { ascending: false })
-    .order("story_count", { ascending: false })
-    .order("name", { ascending: true })
-    .range(from, to)
+  // The chosen column first, then the default tie-breakers (most episodes,
+  // most mentions, name A to Z), skipping whichever one is already the sort.
+  const { sort, dir } = effectiveNodeSort(f)
+  q = q.order(sort, { ascending: dir === "asc" })
+  const tieBreakers: [NodeSortKey, boolean][] = [["episode_count", false], ["mention_count", false], ["name", true]]
+  for (const [col, ascending] of tieBreakers) if (col !== sort) q = q.order(col, { ascending })
+  // Stable paging: ids break any remaining ties.
+  q = q.order("id", { ascending: true })
+  const { data, count, error } = await q.range(from, to)
   if (error) throw new Error(`list nodes: ${error.message}`)
   return { rows: (data ?? []) as NodeListRow[], total: count ?? 0, page, pageSize: PAGE_SIZE }
 }
