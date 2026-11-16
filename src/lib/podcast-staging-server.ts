@@ -184,14 +184,22 @@ function seriesNote(title: string | undefined): string | null {
   return null
 }
 
-function manifestByVideo(manifest: ManifestRow[]): Map<string, ManifestRow> {
+/**
+ * Video id to manifest row. A row's own ids (canonical_video_id, youtube_id)
+ * always win; twin ids only fill in for videos that have no row of their own.
+ * Before 2026-11-16 this was a single first-wins pass over own and twin ids
+ * together, so an earlier row listing another episode's video as a twin took
+ * that episode over (S4E20 claimed three Plug episodes, S3E18 two Craig Kelly
+ * episodes, S4E3 a later Jess Kimura episode).
+ */
+export function manifestByVideo(manifest: ManifestRow[]): Map<string, ManifestRow> {
   const out = new Map<string, ManifestRow>()
-  for (const r of manifest) {
-    for (const v of [r.canonical_video_id, r.youtube_id, ...(r.twin_video_ids ?? "").split(/[\s;|]+/)]) {
-      const id = (v ?? "").trim()
-      if (id && !out.has(id)) out.set(id, r)
-    }
+  const add = (v: string | undefined, r: ManifestRow) => {
+    const id = (v ?? "").trim()
+    if (id && !out.has(id)) out.set(id, r)
   }
+  for (const r of manifest) { add(r.canonical_video_id, r); add(r.youtube_id, r) }
+  for (const r of manifest) for (const v of (r.twin_video_ids ?? "").split(/[\s;|]+/)) add(v, r)
   return out
 }
 
