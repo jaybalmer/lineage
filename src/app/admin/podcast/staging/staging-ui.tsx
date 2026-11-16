@@ -21,19 +21,21 @@ import { CastChipControl, StoryActions } from "./staging-actions"
 
 export const BASE = "/admin/podcast/staging"
 
-export type StagingTab = "nodes" | "episodes" | "stories"
+export type StagingTab = "nodes" | "episodes" | "stories" | "sketches"
 
 const TABS: { id: StagingTab; label: string; href: string }[] = [
   { id: "nodes", label: "By person or node", href: BASE },
   { id: "episodes", label: "By episode", href: `${BASE}?tab=episodes` },
   { id: "stories", label: "All stories", href: `${BASE}?tab=stories` },
+  { id: "sketches", label: "Sketches", href: `${BASE}?tab=sketches` },
 ]
 
 export function StagingShell({ tab, children }: { tab: StagingTab; children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background">
       <Nav />
-      <div className="max-w-5xl mx-auto px-4 py-8 pb-32">
+      {/* The sketches are a full-width workbench; the list views keep the reading width. */}
+      <div className={cn("mx-auto px-4 py-8 pb-32", tab === "sketches" ? "max-w-[1600px]" : "max-w-5xl")}>
         <div className="mb-6">
           <Link href="/admin" className="text-xs text-muted hover:text-foreground transition-colors">
             &larr; Dataset Editor

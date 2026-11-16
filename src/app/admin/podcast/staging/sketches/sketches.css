@@ -1,0 +1,89 @@
+/* Podcast archive sketches (admin only). Ported from podcast_archive's
+   viz-template.html, scoped under .sk-root so nothing leaks into the app.
+   Colors: the app's theme tokens, and the entity palette from
+   src/lib/entity-colors.ts (frame in light, glow in dark). Keep the five
+   entity values below in step with ENTITY_COLORS. */
+
+.sk-root {
+  --bg: var(--background);
+  --sur: var(--surface);
+  --fg: var(--foreground);
+  --mut: var(--muted);
+  --line: var(--border);
+  --acc: var(--accent-strong);
+  --person: #be123c; /* rider frame */
+  --place: #15803d;  /* place frame */
+  --org: #4338ca;    /* brand frame */
+  --event: #b45309;  /* event frame */
+  --board: #0284c7;  /* board frame */
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 15rem);
+  min-height: 560px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--fg);
+  font: 300 14px/1.5 var(--font-body), system-ui, sans-serif;
+}
+.dark .sk-root {
+  --person: #fb7185; /* rider glow */
+  --place: #4ade80;  /* place glow */
+  --org: #818cf8;    /* brand glow */
+  --event: #fbbf24;  /* event glow */
+  --board: #38bdf8;  /* board glow */
+}
+.sk-root * { box-sizing: border-box; }
+.sk-root .sk-bar { display: flex; gap: 8px 14px; align-items: center; flex-wrap: wrap; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.sk-root .sk-sub { color: var(--mut); margin: 0; padding: 6px 14px; font-size: 12px; border-bottom: 1px solid var(--line); }
+.sk-root button, .sk-root select, .sk-root input { font: 500 13px var(--font-body), system-ui, sans-serif; color: var(--fg); }
+.sk-root .sk-tab, .sk-root .sk-chipbtn { background: none; border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; cursor: pointer; }
+.sk-root .sk-tab[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.sk-root .sk-chipbtn { display: inline-flex; gap: 6px; align-items: center; }
+.sk-root .sk-chipbtn[aria-pressed="false"] { opacity: 0.4; }
+.sk-root .sk-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c); display: inline-block; flex: none; }
+.sk-root .sk-t0 { --c: var(--person); }
+.sk-root .sk-t1 { --c: var(--place); }
+.sk-root .sk-t2 { --c: var(--org); }
+.sk-root .sk-t3 { --c: var(--event); }
+.sk-root .sk-t4 { --c: var(--board); }
+.sk-root :focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
+.sk-root label { color: var(--mut); display: inline-flex; gap: 6px; align-items: center; }
+.sk-root input[type="range"] { width: 120px; }
+.sk-root input[type="search"] { background: var(--sur); border: 1px solid var(--line); border-radius: 8px; padding: 5px 10px; width: 190px; }
+.sk-root .sk-main { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) 380px; }
+.sk-root #sk-stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
+.sk-root #sk-net { width: 100%; height: 100%; display: block; cursor: grab; }
+.sk-root #sk-loomwrap, .sk-root #sk-pathwrap { position: absolute; inset: 0; overflow: auto; padding: 12px 20px 30px; display: none; }
+.sk-root #sk-map { width: 100%; height: 100%; display: none; cursor: grab; }
+.sk-root #sk-mapui { position: absolute; left: 14px; top: 12px; display: none; gap: 6px; flex-wrap: wrap; max-width: 70%; }
+.sk-root #sk-mapui .sk-tab { background: var(--bg); }
+.sk-root #sk-mapnote { position: absolute; left: 14px; bottom: 10px; margin: 0; background: var(--bg); padding: 4px 8px; border-radius: 6px; }
+.sk-root #sk-loom, .sk-root #sk-path { display: block; }
+.sk-root #sk-tip { position: absolute; pointer-events: none; background: var(--fg); color: var(--bg); padding: 5px 9px; border-radius: 6px; font-size: 12px; display: none; max-width: 260px; z-index: 3; }
+.sk-root aside { border-left: 1px solid var(--line); overflow: auto; padding: 16px 18px 40px; background: var(--sur); }
+.sk-root aside h2 { font: 800 19px/1.2 var(--font-display), var(--font-body), system-ui, sans-serif; margin: 0 0 2px; text-wrap: balance; }
+.sk-root .sk-pviews { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 12px; }
+.sk-root .sk-pviews .sk-tab { padding: 4px 10px; font-size: 12px; }
+.sk-root .sk-kind { font: 500 12px var(--font-body), system-ui, sans-serif; color: var(--mut); display: flex; gap: 6px; align-items: center; margin-bottom: 10px; }
+.sk-root .sk-nums { display: flex; gap: 18px; margin: 8px 0 12px; }
+.sk-root .sk-nums b { font: 700 18px var(--font-body), system-ui, sans-serif; display: block; font-variant-numeric: tabular-nums; }
+.sk-root .sk-nums span { color: var(--mut); font-size: 12px; }
+.sk-root h3 { font: 700 12px var(--font-body), system-ui, sans-serif; color: var(--mut); margin: 16px 0 6px; }
+.sk-root .sk-link { display: inline-flex; gap: 6px; align-items: center; background: var(--bg); border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; margin: 0 5px 5px 0; cursor: pointer; font-weight: 300; }
+.sk-root .sk-link small { color: var(--mut); font-variant-numeric: tabular-nums; }
+.sk-root .sk-story { background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; margin-bottom: 8px; }
+.sk-root .sk-story.sk-trimmed { opacity: 0.5; }
+.sk-root .sk-story b { font: 700 14px/1.3 var(--font-body), system-ui, sans-serif; display: block; margin-bottom: 3px; }
+.sk-root .sk-story p { margin: 0 0 6px; }
+.sk-root .sk-story .sk-m { color: var(--mut); font-size: 12px; }
+.sk-root a { color: var(--acc); }
+.sk-root .sk-more { margin-top: 6px; }
+.sk-root .sk-note { color: var(--mut); font-size: 12px; margin: 10px 0 0; max-width: 60ch; }
+.sk-root .sk-spark { display: block; margin: 4px 0 0; }
+@media (max-width: 860px) {
+  .sk-root { height: auto; }
+  .sk-root .sk-main { grid-template-columns: 1fr; grid-template-rows: 420px auto; }
+  .sk-root aside { border-left: 0; border-top: 1px solid var(--line); max-height: 60vh; }
+}
