@@ -3058,10 +3058,11 @@ Closes the dates load deferred in the #287 entry. Jay reviewed the 23 checker-fl
 - type: feature
 - pr: #288
 - branch: claude/podcast-staging-twin-label-fix
+- commit: 5b50185
 - ids: none
 - scope: podcast-staging-twin-label-fix
 - migration: none (data: 6 targeted UPDATEs on podcast_staging_episodes, GATED, approved by Jay in chat, applied + verified)
-- status: pending
+- status: merged
 - tsc: clean
 
-manifestByVideo() let an earlier manifest row's twin ids claim another episode's video; own ids now always win. Six unpublished staged episodes corrected to what the fixed logic produces (Plug S5E29b/S5E30b/S5E32, Craig Kelly S4E21 + SPECIAL Post 2026, Jess Kimura S8E27). Full diff of 290 seeds vs staging: 6 before, 0 after; no shared label/air-date pairs. Merge waiting on Jay per the GATED-session exception.
+manifestByVideo() let an earlier manifest row's twin ids claim another episode's video; own ids now always win. Six unpublished staged episodes corrected to what the fixed logic produces (Plug S5E29b/S5E30b/S5E32, Craig Kelly S4E21 + SPECIAL Post 2026, Jess Kimura S8E27). Full diff of 290 seeds vs staging: 6 before, 0 after; no shared label/air-date pairs. Merged by Claude after Jay approved the merge in chat.
