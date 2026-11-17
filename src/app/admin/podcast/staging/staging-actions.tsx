@@ -506,7 +506,7 @@ export function NodeEditPanel({ node }: { node: NodeActionsProps }) {
 
 // ── bulk (T10, T11) ─────────────────────────────────────────────────────────
 
-type Preview = { count: number; left_out: number; reasons: string; already_approved?: number }
+type Preview = { count: number; left_out: number; reasons: string; already_approved?: number; sample?: string[] }
 
 function BulkApprove({
   label, body, sentence, doneLabel,
@@ -524,6 +524,9 @@ function BulkApprove({
       {preview ? (
         <div className="rounded-lg border border-border-default bg-surface p-3 text-sm">
           <p className="text-foreground">{sentence(preview)}</p>
+          {!!preview.sample?.length && (
+            <p className="text-xs text-muted mt-1">Includes: {preview.sample.join("; ")}</p>
+          )}
           <div className="flex gap-2 mt-2">
             <button
               type="button"
@@ -577,6 +580,21 @@ export function EpisodeBulkApprove({ episodeId }: { episodeId: string }) {
   )
 }
 
+export function StoriesConfidentApprove() {
+  return (
+    <BulkApprove
+      label="Approve confident stories"
+      body={{ kind: "confident_stories" }}
+      sentence={(p) =>
+        p.count === 0
+          ? `No pending stories pass the confidence rules.${p.left_out ? ` ${p.left_out} left for review: ${p.reasons}.` : ""}`
+          : `Approve ${p.count} confident ${p.count === 1 ? "story" : "stories"} across all episodes? Nothing publishes until an episode is published. ${p.left_out} ${p.left_out === 1 ? "stays" : "stay"} for review${p.left_out ? `: ${p.reasons}` : ""}.`
+      }
+      doneLabel={(n) => `Approved ${n} ${n === 1 ? "story" : "stories"}.`}
+    />
+  )
+}
+
 export function NodesToolbar({ type }: { type: StagingSubjectType | null }) {
   const { run, busy, error } = useAction()
   const [recheck, setRecheck] = useState<string | null>(null)
@@ -590,6 +608,16 @@ export function NodesToolbar({ type }: { type: StagingSubjectType | null }) {
           p.count === 0
             ? `No pending exact ${scope}matches to approve.${p.left_out ? ` ${p.left_out} left out: ${p.reasons}.` : ""}`
             : `Approve ${p.count} exact ${scope}catalog ${p.count === 1 ? "match" : "matches"}? ${p.left_out} pending ${p.left_out === 1 ? "node is" : "nodes are"} left out${p.left_out ? `: ${p.reasons}` : ""}.`
+        }
+        doneLabel={(n) => `Approved ${n} ${n === 1 ? "node" : "nodes"}.`}
+      />
+      <BulkApprove
+        label={`Approve confident ${scope}nodes`}
+        body={{ kind: "confident_nodes", type }}
+        sentence={(p) =>
+          p.count === 0
+            ? `No pending ${scope}nodes pass the confidence rules.${p.left_out ? ` ${p.left_out} left for review: ${p.reasons}.` : ""}`
+            : `Approve ${p.count} confident ${scope}${p.count === 1 ? "node" : "nodes"}? Nothing publishes until an episode is published. ${p.left_out} ${p.left_out === 1 ? "stays" : "stay"} for review${p.left_out ? `: ${p.reasons}` : ""}.`
         }
         doneLabel={(n) => `Approved ${n} ${n === 1 ? "node" : "nodes"}.`}
       />

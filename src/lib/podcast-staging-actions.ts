@@ -16,6 +16,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import {
   GHOST_FIELDS,
+  STAGING_SUBJECT_TYPES as STAGING_TYPES,
+  TYPE_LABEL,
   approveBlocker,
   inferenceFlags,
   reasonsLine,
@@ -32,6 +34,15 @@ import type {
   StoryDecision,
 } from "@/lib/podcast-staging"
 import { loadCatalogType, resolveStaging } from "@/lib/podcast-staging-server"
+import {
+  NODE_HOLD_LABEL,
+  STORY_HOLD_LABEL,
+  nearTwinIds,
+  nodeHoldReason,
+  storyHoldReason,
+  tallyLine,
+} from "@/lib/podcast-staging-confidence"
+import type { ConfidenceNode, ConfidenceStory, NodeHoldReason, StoryHoldReason } from "@/lib/podcast-staging-confidence"
 
 export type ActionResult<T = Record<string, unknown>> =
   | ({ ok: true } & T)
@@ -614,4 +625,163 @@ export async function bulkApproveExactNodes(
 export async function recheckCatalog(db: SupabaseClient): Promise<ActionResult<{ checked: number; changed: number; skipped_decided: number }>> {
   const r = await resolveStaging(db, { apply: true })
   return { ok: true, checked: r.checked, changed: r.changed, skipped_decided: r.skippedDecided }
+}
+
+// ── confidence pass (auto-approve) ─────────────────────────────────────────
+//
+// Rules live in src/lib/podcast-staging-confidence.ts. Same contract as the
+// other bulk actions: dry run by default, only pending rows move, stamped with
+// the editor. Every row in one apply shares ONE decided_at, so a batch can be
+// found (and reset) by that timestamp if a rule turns out too loose.
+
+async function pageAll<T>(fetchPage: (from: number) => PromiseLike<{ data: unknown; error: { message: string } | null }>): Promise<T[] | string> {
+  const rows: T[] = []
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await fetchPage(from)
+    if (error) return error.message
+    const page = (data ?? []) as T[]
+    rows.push(...page)
+    if (page.length < 1000) break
+  }
+  return rows
+}
+
+async function approveIds(db: SupabaseClient, table: string, ids: string[], patch: Record<string, unknown>): Promise<string | null> {
+  for (let i = 0; i < ids.length; i += 200) {
+    const { error } = await db.from(table).update(patch).in("id", ids.slice(i, i + 200)).eq("decision", "pending").is("decided_by", null)
+    if (error) return error.message
+  }
+  return null
+}
+
+export type ConfidencePreview = BulkPreview & { sample: string[]; decided_at: string | null }
+
+export async function bulkApproveConfidentNodes(
+  db: SupabaseClient,
+  actorId: string,
+  type: unknown,
+  apply: boolean,
+): Promise<ActionResult<ConfidencePreview>> {
+  const t = typeof type === "string" && (STAGING_TYPES as string[]).includes(type) ? (type as StagingSubjectType) : null
+  // Every live node feeds the twin check (a decided node can still be the twin
+  // a new one would duplicate); only pending ones are candidates.
+  const nodes = await pageAll<Omit<ConfidenceNode, "episode_count" | "mention_count" | "inferred_count" | "kept_story_count">>((from) =>
+    db
+      .from("podcast_staging_nodes")
+      .select("id, subject_type, name, normalized_name, resolution, subject_id, ghost, heard_as, flags, decision, merged_into, decided_by")
+      .is("merged_into", null)
+      .order("id")
+      .range(from, from + 999),
+  )
+  if (typeof nodes === "string") return fail(500, nodes)
+  const stats = await pageAll<{ id: string; episode_count: number; mention_count: number; inferred_count: number; kept_story_count: number }>((from) =>
+    db.from("podcast_staging_node_stats").select("id, episode_count, mention_count, inferred_count, kept_story_count").order("id").range(from, from + 999),
+  )
+  if (typeof stats === "string") return fail(500, stats)
+  const byId = new Map(stats.map((s) => [s.id, s]))
+  const twins = nearTwinIds(nodes)
+
+  const pending = nodes.filter((n) => n.decision === "pending" && (!t || n.subject_type === t))
+  const eligible: ConfidenceNode[] = []
+  const counts: Partial<Record<NodeHoldReason, number>> = {}
+  for (const n of pending) {
+    const s = byId.get(n.id)
+    const full: ConfidenceNode = {
+      ...n,
+      episode_count: Number(s?.episode_count ?? 0),
+      mention_count: Number(s?.mention_count ?? 0),
+      inferred_count: Number(s?.inferred_count ?? 0),
+      kept_story_count: Number(s?.kept_story_count ?? 0),
+    }
+    const r = nodeHoldReason(full, twins)
+    if (r) counts[r] = (counts[r] ?? 0) + 1
+    else eligible.push(full)
+  }
+
+  let decidedAt: string | null = null
+  if (apply && eligible.length) {
+    decidedAt = new Date().toISOString()
+    const err = await approveIds(db, "podcast_staging_nodes", eligible.map((n) => n.id), {
+      decision: "approved",
+      decided_by: actorId,
+      decided_at: decidedAt,
+      updated_at: decidedAt,
+    })
+    if (err) return fail(500, err)
+  }
+
+  return {
+    ok: true,
+    count: eligible.length,
+    left_out: pending.length - eligible.length,
+    reasons: tallyLine(counts, NODE_HOLD_LABEL),
+    sample: [...eligible].sort((a, b) => a.episode_count - b.episode_count).slice(0, 12).map((n) => `${n.name} (${TYPE_LABEL[n.subject_type]}, ${n.episode_count} ep)`),
+    decided_at: decidedAt,
+    applied: apply,
+  }
+}
+
+export async function bulkApproveConfidentStories(
+  db: SupabaseClient,
+  actorId: string,
+  apply: boolean,
+): Promise<ActionResult<ConfidencePreview>> {
+  const stories = await pageAll<Omit<ConfidenceStory, "kept_mentions" | "direct_mentions"> & { episode_id: string }>((from) =>
+    db
+      .from("podcast_staging_stories")
+      .select("id, episode_id, title, excerpt, decision, decided_by, revision_pending")
+      .eq("decision", "pending")
+      .order("id")
+      .range(from, from + 999),
+  )
+  if (typeof stories === "string") return fail(500, stories)
+  const mentions = await pageAll<{ story_id: string; inferred: boolean }>((from) =>
+    db.from("podcast_staging_mentions").select("story_id, inferred").eq("decision", "inherit").order("id").range(from, from + 999),
+  )
+  if (typeof mentions === "string") return fail(500, mentions)
+  const kept = new Map<string, { kept: number; direct: number }>()
+  for (const m of mentions) {
+    const c = kept.get(m.story_id) ?? { kept: 0, direct: 0 }
+    c.kept++
+    if (!m.inferred) c.direct++
+    kept.set(m.story_id, c)
+  }
+
+  const eligible: (typeof stories)[number][] = []
+  const counts: Partial<Record<StoryHoldReason, number>> = {}
+  for (const s of stories) {
+    const c = kept.get(s.id) ?? { kept: 0, direct: 0 }
+    const r = storyHoldReason({ ...s, kept_mentions: c.kept, direct_mentions: c.direct })
+    if (r) counts[r] = (counts[r] ?? 0) + 1
+    else eligible.push(s)
+  }
+
+  let decidedAt: string | null = null
+  if (apply && eligible.length) {
+    decidedAt = new Date().toISOString()
+    const err = await approveIds(db, "podcast_staging_stories", eligible.map((s) => s.id), {
+      decision: "approved",
+      activity: null,
+      skip_reason: null,
+      decided_by: actorId,
+      decided_at: decidedAt,
+      updated_at: decidedAt,
+    })
+    if (err) return fail(500, err)
+    // Same as a single decision: an episode with decisions is in review.
+    const episodes = [...new Set(eligible.map((s) => s.episode_id))]
+    for (let i = 0; i < episodes.length; i += 200) {
+      await db.from("podcast_staging_episodes").update({ status: "in_review", updated_at: decidedAt }).in("id", episodes.slice(i, i + 200)).eq("status", "loaded")
+    }
+  }
+
+  return {
+    ok: true,
+    count: eligible.length,
+    left_out: stories.length - eligible.length,
+    reasons: tallyLine(counts, STORY_HOLD_LABEL),
+    sample: eligible.slice(0, 12).map((s) => s.title),
+    decided_at: decidedAt,
+    applied: apply,
+  }
 }

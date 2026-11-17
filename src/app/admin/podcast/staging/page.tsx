@@ -25,7 +25,7 @@ import {
   TypeLabel,
   FilterChip,
 } from "./staging-ui"
-import { NodesToolbar } from "./staging-actions"
+import { NodesToolbar, StoriesConfidentApprove } from "./staging-actions"
 import { SketchesTab } from "./sketches/sketches-tab"
 
 // Podcast archive staging: the review surface (Phase 1 views, Phase 2 decisions).
@@ -355,6 +355,9 @@ async function StoriesTab({ db, sp }: { db: ReturnType<typeof getServiceClient>;
         <FilterChip href={href({ decision: "pending" })} active={f.decision === "pending"}>Pending</FilterChip>
         <FilterChip href={href({ decision: "trimmed" })} active={f.decision === "trimmed"}>Trimmed</FilterChip>
         <FilterChip href={href({ decision: "hold_sensitive" })} active={f.decision === "hold_sensitive"}>Held as sensitive</FilterChip>
+      </div>
+      <div className="mb-3">
+        <StoriesConfidentApprove />
       </div>
       <p className="text-xs text-muted mb-2">{list.total} {list.total === 1 ? "story" : "stories"}</p>
       {list.rows.length === 0 ? (
