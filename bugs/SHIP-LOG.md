@@ -3079,3 +3079,15 @@ manifestByVideo() let an earlier manifest row's twin ids claim another episode's
 - tsc: clean
 
 "Approve confident nodes" (Nodes tab) and "Approve confident stories" (Stories tab), dry run first. Rules in src/lib/podcast-staging-confidence.ts. Prod dry run: 2,111 of 5,063 pending nodes and 8,371 of 9,009 pending stories pass; 2,952 nodes and 638 stories left for manual review. Applied to prod 2026-11-17 after Jay approved in chat (GATED bulk UPDATE of staging rows only, stamped decided_by Jay): nodes batch decided_at 2026-11-17T20:43:39.647Z (2,111), stories batch decided_at 2026-11-17T20:43:53.670Z (8,371). Verified: 2,952 nodes and 638 stories still pending. Merged by Claude.
+
+## 2026-11-17 - podcast staging: one-word inferred person nodes rejected (data)
+- type: feature
+- pr: none (data only, uses #289 code paths)
+- branch: none
+- ids: none
+- scope: podcast-staging-confidence-pass
+- migration: none (data: GATED staging-only UPDATEs, approved by Jay in chat, applied + verified)
+- status: merged
+- tsc: n/a
+
+129 mentions of one-word all-inferred person nodes repointed via patchMention to the single matching full-name person in the same episode (10 more were already covered by that person in the story). Then 604 one-word all-inferred person nodes rejected, batch decided_at 2026-11-17T20:55:38.386Z, decided_by Jay. Verified: 0 approved stories left with no live node; 2,348 nodes pending, 1,030 of them all-inferred.
