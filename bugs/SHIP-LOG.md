@@ -3066,3 +3066,16 @@ Closes the dates load deferred in the #287 entry. Jay reviewed the 23 checker-fl
 - tsc: clean
 
 manifestByVideo() let an earlier manifest row's twin ids claim another episode's video; own ids now always win. Six unpublished staged episodes corrected to what the fixed logic produces (Plug S5E29b/S5E30b/S5E32, Craig Kelly S4E21 + SPECIAL Post 2026, Jess Kimura S8E27). Full diff of 290 seeds vs staging: 6 before, 0 after; no shared label/air-date pairs. Merged by Claude after Jay approved the merge in chat.
+
+## 2026-11-17 - podcast staging: confidence pass auto-approve
+- type: feature
+- pr: #289
+- branch: claude/auto-approve-confidence-909563
+- commit: 825eaa7
+- ids: none
+- scope: podcast-staging-confidence-pass
+- migration: none
+- status: merged
+- tsc: clean
+
+"Approve confident nodes" (Nodes tab) and "Approve confident stories" (Stories tab), dry run first. Rules in src/lib/podcast-staging-confidence.ts. Prod dry run: 2,111 of 5,063 pending nodes and 8,371 of 9,009 pending stories pass; 2,952 nodes and 638 stories left for manual review. The approvals have NOT been applied to prod yet (bulk UPDATE of existing staging rows, GATED, waiting on Jay). Merged by Claude.
