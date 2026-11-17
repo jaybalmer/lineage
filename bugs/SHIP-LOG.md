@@ -3074,8 +3074,8 @@ manifestByVideo() let an earlier manifest row's twin ids claim another episode's
 - commit: 825eaa7
 - ids: none
 - scope: podcast-staging-confidence-pass
-- migration: none
+- migration: none (data: confidence pass applied, GATED, approved by Jay, verified)
 - status: merged
 - tsc: clean
 
-"Approve confident nodes" (Nodes tab) and "Approve confident stories" (Stories tab), dry run first. Rules in src/lib/podcast-staging-confidence.ts. Prod dry run: 2,111 of 5,063 pending nodes and 8,371 of 9,009 pending stories pass; 2,952 nodes and 638 stories left for manual review. The approvals have NOT been applied to prod yet (bulk UPDATE of existing staging rows, GATED, waiting on Jay). Merged by Claude.
+"Approve confident nodes" (Nodes tab) and "Approve confident stories" (Stories tab), dry run first. Rules in src/lib/podcast-staging-confidence.ts. Prod dry run: 2,111 of 5,063 pending nodes and 8,371 of 9,009 pending stories pass; 2,952 nodes and 638 stories left for manual review. Applied to prod 2026-11-17 after Jay approved in chat (GATED bulk UPDATE of staging rows only, stamped decided_by Jay): nodes batch decided_at 2026-11-17T20:43:39.647Z (2,111), stories batch decided_at 2026-11-17T20:43:53.670Z (8,371). Verified: 2,952 nodes and 638 stories still pending. Merged by Claude.
