@@ -247,6 +247,24 @@ export function ArchiveExplorer({
     if (j != null) trackEvent("content", "fnrad_archive_pair_opened", { type: ARCHIVE_TYPES[index.nodes[j][0]] })
   }
 
+  // Reset view: back to the whole archive. Clears the selected node, the pair,
+  // the year and the retold story, drops ?focus and ?view, and refits the zoom.
+  const resetView = () => {
+    selectedRef.current = null
+    setSelected(null)
+    setPair(null)
+    setYear(null)
+    setRetoldId(null)
+    setBackStack([])
+    setResetKey((k) => k + 1)
+    const url = new URL(window.location.href)
+    url.searchParams.delete("focus")
+    url.searchParams.delete("view")
+    window.history.replaceState(window.history.state, "", url)
+    document.title = "The FNRad Archive on Linestry"
+    trackEvent("content", "fnrad_archive_reset", {})
+  }
+
   const back = () => {
     const prev = backStack[backStack.length - 1]
     if (prev == null) return
@@ -397,7 +415,7 @@ export function ArchiveExplorer({
         {view === "sky" && (
           <button
             type="button"
-            onClick={() => setResetKey((k) => k + 1)}
+            onClick={resetView}
             className="ml-auto hidden rounded-full border border-white/10 px-3 py-1.5 text-xs font-medium text-white/60 hover:text-white md:block"
           >
             Reset view
