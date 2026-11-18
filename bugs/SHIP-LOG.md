@@ -3116,3 +3116,16 @@ publishEpisodes (src/lib/podcast-staging-publish.ts) run over all 290 staged epi
 - tsc: clean
 
 /fnrad/archive: cached live-data index (src/lib/fnrad-archive.ts, tag fnrad-archive), server-rendered lists and episodes, client search + d3 constellation (desktop sky, mobile focused ring) + node panel, ?focus= share links. /fnrad repointed to the archive (hero CTA, band, Latest episodes 10, links); readShowHub limit + paged mentions read (1,000-row cap regression after the archive went live). Brand campaign module archive link. Jay checked the preview and approved; merged by Claude. Follow-ups: per-node OG image, Part C episode labels (additive migration, separate PR).
+
+## 2026-11-18 - FNRad episode labels, archive brief Part C (feature)
+- type: feature
+- pr: #291
+- branch: feat/fnrad-episode-labels
+- commit: 2d5f1ad
+- ids: none
+- scope: fnrad-archive-surface-part-c
+- migration: 20261118000001_events_episode_label.sql (SAFE, applied to prod before merge, verified) + SAFE backfill of the new column (287 from staging archive_label, 9 pre-staging set by hand; 296/296 FNRad episodes labelled)
+- status: merged
+- tsc: clean
+
+events.episode_label + episodeDisplayLabel() (S10E15 -> "S10 E15", S9BONUS8 -> "S9 Bonus 8", SPECIAL -> "Special"). Publish writes it from archive_label. Public "Episode N" / "#N" renderings replaced on /fnrad, the archive, /t/{slug}, show module, episode page and mention row; episode_number stays internal. Archive cache key bumped to v2. Merged by Claude.
