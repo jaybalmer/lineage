@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react"
 import { CommunityLink } from "@/components/ui/community-link"
 import Link from "next/link"
 import { Nav } from "@/components/ui/nav"
+import { ArchiveCard } from "@/components/fnrad/archive-card"
 import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import {
   CommunityTimeline,
@@ -231,6 +232,9 @@ export default function CommunityHome() {
       )}
 
       <div className="max-w-4xl mx-auto px-6 pb-12">
+        {/* The FNRad Archive (front-doors brief, A4): snowboarding only. */}
+        {activeCommunitySlug === "snowboarding" && <ArchiveCard placement="community" className="mb-8" />}
+
         {/* Stats grid — quick navigation to the category pages */}
         {stats && (
           <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-8">

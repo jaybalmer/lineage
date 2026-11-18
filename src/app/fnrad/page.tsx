@@ -11,10 +11,11 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { ChallengeCard } from "@/components/fnrad/challenge-card"
+import { ArchiveCard } from "@/components/fnrad/archive-card"
 import { readShowHub, readChallengeGuest } from "@/lib/public-timeline-read"
 import type { ShowHubEpisode } from "@/lib/public-timeline-read"
-import { FNRAD_SHOW_SLUG, FNRAD_HUB_REF, FNRAD_CHALLENGE, FNRAD_ARCHIVE_HREF, episodeDisplayLabel } from "@/lib/fnrad"
-import { archiveScaleLine, readArchiveIndex } from "@/lib/fnrad-archive"
+import { FNRAD_SHOW_SLUG, FNRAD_HUB_REF, FNRAD_CHALLENGE, FNRAD_ARCHIVE_HREF, FNRAD_BRAND_HREF, episodeDisplayLabel } from "@/lib/fnrad"
+import { getArchiveCardData, readArchiveIndex } from "@/lib/fnrad-archive"
 import {
   EQUITY_POOL_SHARES,
   EQUITY_SNAPSHOT_LABEL,
@@ -73,11 +74,13 @@ function EpisodeNames({ episode }: { episode: ShowHubEpisode }) {
 }
 
 export default async function FnradHubPage() {
-  const [hub, challengeGuest, archive] = await Promise.all([
+  const [hub, challengeGuest, archive, archiveCard] = await Promise.all([
     readShowHub(FNRAD_SHOW_SLUG, { limit: LATEST_EPISODES }),
     readChallengeGuest(),
     readArchiveIndex(),
+    getArchiveCardData(),
   ])
+  const showLogo = hub?.owner.avatar_url ?? null
   const episodes = hub?.episodes ?? []
   const archiveEpisodes = archive.totals.episodes
 
@@ -85,7 +88,7 @@ export default async function FnradHubPage() {
     <div className="dark min-h-screen w-full" style={{ background: "#1C1917" }}>
       <main className="mx-auto max-w-xl px-4 py-6 sm:py-8">
         {/* Header */}
-        <header className="mb-8">
+        <header className="mb-8 flex items-center justify-between gap-4">
           <Link
             href="/"
             aria-label="Linestry home"
@@ -95,6 +98,20 @@ export default async function FnradHubPage() {
             <span className="text-sm font-bold" style={displayFont}>
               Linestry
             </span>
+          </Link>
+          {/* The show's own logo, linking to its brand page (D7). Text lockup when
+              the org has no logo or the hub read degraded. */}
+          <Link
+            href={FNRAD_BRAND_HREF}
+            aria-label="FNRad Podcast on Linestry"
+            className="inline-flex items-center gap-2 text-sm font-semibold text-white/80 hover:text-white transition-colors"
+          >
+            {showLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={showLogo} alt="FNRad Podcast" className="h-9 w-9 rounded-lg object-cover ring-1 ring-white/15" />
+            ) : (
+              "FNRad Podcast"
+            )}
           </Link>
         </header>
 
@@ -127,7 +144,7 @@ export default async function FnradHubPage() {
             href={FNRAD_ARCHIVE_HREF}
             className="text-sm font-medium text-white/70 hover:text-white transition-colors"
           >
-            Look around first
+            Explore the archive
           </Link>
         </div>
 
@@ -137,6 +154,10 @@ export default async function FnradHubPage() {
           <p>See who else was there, and when your lines crossed theirs.</p>
           <p>Add your half of the day. Most of this history is still in people&apos;s heads.</p>
         </div>
+
+        {/* The FNRad Archive (front-doors brief A6): above this week's challenge.
+            Replaces the old text band (D12). Absent when the archive is empty. */}
+        <ArchiveCard placement="fnrad" data={archiveCard} className="mt-10" />
 
         {/* This week's challenge (D5). Absent entirely when no guest is configured. */}
         {challengeGuest && (
@@ -148,23 +169,6 @@ export default async function FnradHubPage() {
             />
           </div>
         )}
-
-        {/* Archive band (brief B4). Server-rendered, no constellation here. */}
-        <section className="mt-10 rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-6">
-          <h2 className="text-base font-bold text-white" style={displayFont}>
-            The whole FNRad archive, connected.
-          </h2>
-          <p className="mt-2 text-sm font-light leading-relaxed text-white/75">
-            Every episode, every rider, every story, linked across fifty years of snowboarding.
-          </p>
-          {archiveEpisodes > 0 && <p className="mt-3 text-xs font-medium text-white/50">{archiveScaleLine(archive.totals)}</p>}
-          <Link
-            href={FNRAD_ARCHIVE_HREF}
-            className="mt-4 inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
-          >
-            Explore the archive <span aria-hidden="true">&rarr;</span>
-          </Link>
-        </section>
 
         {/* Episodes. Absent entirely when the list is empty (degraded read or no
             live episodes); a listener does not need to be told the list is empty. */}
