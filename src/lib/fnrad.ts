@@ -97,3 +97,23 @@ export const FNRAD_CHALLENGE = {
 } as const
 
 // Ingemar Backman fbf34ae7-f056-4457-ad90-3be67adac0f1 stays pre-flighted (PR #235) and is available for a catch-up week.
+
+/** How listeners know an episode (FNRad Archive brief, Part C4). The stored
+ *  label is the show's own (events.episode_label, from the staging archive
+ *  label); this prints it. Null in, null out: a surface with no label shows the
+ *  year alone and never falls back to the internal episode_number.
+ *    S10E15 -> "S10 E15"    S3E1b -> "S3 E1b"     S9BONUS8 -> "S9 Bonus 8"
+ *    S12BONUS -> "S12 Bonus"  SPECIAL -> "Special"   S5 -> "Season 5" */
+export function episodeDisplayLabel(e: { episode_label?: string | null } | null | undefined): string | null {
+  const raw = e?.episode_label?.trim()
+  if (!raw) return null
+  const u = raw.toUpperCase()
+  if (u === "SPECIAL") return "Special"
+  let m = u.match(/^S0*(\d+)E0*(\d+)([A-Z]?)$/)
+  if (m) return `S${m[1]} E${m[2]}${m[3].toLowerCase()}`
+  m = u.match(/^S0*(\d+)BONUS0*(\d*)$/)
+  if (m) return m[2] ? `S${m[1]} Bonus ${m[2]}` : `S${m[1]} Bonus`
+  m = u.match(/^S0*(\d+)$/)
+  if (m) return `Season ${m[1]}`
+  return raw
+}

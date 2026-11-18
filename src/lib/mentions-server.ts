@@ -80,7 +80,7 @@ export async function hydrateEpisodes(rows: Mention[]): Promise<Mention[]> {
   const episodeIds = Array.from(new Set(rows.map((m) => m.episode_event_id)))
   const { data: events } = await db
     .from("events")
-    .select("id, name, start_date, episode_number, media_url, show_org_id")
+    .select("id, name, start_date, episode_number, episode_label, media_url, show_org_id")
     .in("id", episodeIds)
 
   const eventRows = (events ?? []) as {
@@ -88,6 +88,7 @@ export async function hydrateEpisodes(rows: Mention[]): Promise<Mention[]> {
     name: string
     start_date?: string
     episode_number?: number | null
+    episode_label?: string | null
     media_url?: string | null
     show_org_id?: string | null
   }[]
@@ -112,6 +113,7 @@ export async function hydrateEpisodes(rows: Mention[]): Promise<Mention[]> {
         name: ev.name,
         start_date: ev.start_date,
         episode_number: ev.episode_number ?? null,
+        episode_label: ev.episode_label ?? null,
         media_url: ev.media_url ?? null,
         show_org_id: ev.show_org_id ?? null,
         show_name: ev.show_org_id ? showNames.get(ev.show_org_id) ?? null : null,

@@ -1055,7 +1055,7 @@ const PREDICATE_RESULT_LABEL: Partial<Record<Predicate, string>> = {
 // event_image_votes), so it is intentionally absent here — selecting it 404s the
 // whole read.
 const EVENT_STACK_COLS =
-  "id, name, description, event_type, year, start_date, episode_number, media_url, show_org_id, public_slug, public_enabled, publish_at"
+  "id, name, description, event_type, year, start_date, episode_number, episode_label, media_url, show_org_id, public_slug, public_enabled, publish_at"
 
 type EventStackRow = {
   id: string
@@ -1065,6 +1065,7 @@ type EventStackRow = {
   year: number | null
   start_date: string | null
   episode_number: number | null
+  episode_label: string | null
   media_url: string | null
   show_org_id: string | null
   public_slug: string | null
@@ -1100,6 +1101,7 @@ export interface PublicEpisodeShow {
 
 export interface PublicEpisodeMeta {
   episode_number: number | null
+  episode_label: string | null
   media_url: string | null
   date: string | null
   show: PublicEpisodeShow | null
@@ -1491,6 +1493,7 @@ export async function readEventStack(
     owner: eventOwnerHeader(event),
     meta: {
       episode_number: event.episode_number ?? null,
+      episode_label: event.episode_label ?? null,
       media_url: event.media_url ?? null,
       date: event.start_date ?? null,
       show,
@@ -1598,6 +1601,7 @@ export interface PublicShowEpisode {
   id: string
   title: string
   episode_number: number | null
+  episode_label: string | null
   year: number | null
   slug: string | null
   public_enabled: boolean
@@ -1657,10 +1661,10 @@ export async function readOrgStack(
   // Episode list: every event linked to this show, newest first.
   const { data: epRows } = await db
     .from("events")
-    .select("id, name, episode_number, year, start_date, public_slug, public_enabled, publish_at")
+    .select("id, name, episode_number, episode_label, year, start_date, public_slug, public_enabled, publish_at")
     .eq("show_org_id", org.id)
   const episodes: PublicShowEpisode[] = ((epRows ?? []) as {
-    id: string; name: string | null; episode_number: number | null
+    id: string; name: string | null; episode_number: number | null; episode_label: string | null
     year: number | null; start_date: string | null; public_slug: string | null
     public_enabled: boolean | null; publish_at: string | null
   }[])
@@ -1668,6 +1672,7 @@ export async function readOrgStack(
       id: e.id,
       title: e.name ?? "Episode",
       episode_number: e.episode_number ?? null,
+      episode_label: e.episode_label ?? null,
       year: e.year ?? yearOf(e.start_date),
       slug: e.public_slug ?? null,
       public_enabled: e.public_enabled === true,

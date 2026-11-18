@@ -440,8 +440,10 @@ export interface Event {
   show_org_id?: string | null
   /** Podcast audio/video link for an episode (YouTube parsed via parseYouTubeId). */
   media_url?: string | null
-  /** Episode number within the show. */
+  /** Episode number within the show. Internal (ordering, seed matching); never displayed. */
   episode_number?: number | null
+  /** The show's own label (S10E15, S9BONUS8, SPECIAL). Display via episodeDisplayLabel(). */
+  episode_label?: string | null
   /** Collision-safe slug in the shared /t/{slug} namespace; minted on first enable. */
   public_slug?: string | null
   /** Opt-in gate for the public, login-free chromeless episode page. Default false. */
@@ -508,6 +510,7 @@ export interface Mention {
     name: string
     start_date?: string
     episode_number?: number | null
+    episode_label?: string | null
     media_url?: string | null
     show_org_id?: string | null
     show_name?: string | null

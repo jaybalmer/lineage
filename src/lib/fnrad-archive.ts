@@ -15,7 +15,7 @@
 
 import { unstable_cache } from "next/cache"
 import { getServiceClient } from "@/lib/auth"
-import { FNRAD_HOST_NAMES, FNRAD_SHOW_SLUG } from "@/lib/fnrad"
+import { FNRAD_HOST_NAMES, FNRAD_SHOW_SLUG, episodeDisplayLabel } from "@/lib/fnrad"
 import { mentionHref } from "@/lib/mention-links"
 import type { PublicTimelineEntities } from "@/lib/public-timeline-read"
 import type { MentionSubjectType } from "@/types"
@@ -46,11 +46,10 @@ function isLive(row: { public_enabled: boolean | null; publish_at: string | null
   return Number.isFinite(at) && at <= now
 }
 
-/** Until episode labels ship (brief Part C), the same rendering /fnrad uses. */
-function episodeLabel(e: { episode_number: number | null; year: number | null }): string {
-  return [e.episode_number != null ? `Episode ${e.episode_number}` : null, e.year ? String(e.year) : null]
-    .filter(Boolean)
-    .join(" · ")
+/** The show's own label and the year, never the internal episode_number (Part C). */
+function episodeLabel(e: { episode_label: string | null; year: number | null; start_date: string | null }): string {
+  const year = e.year ?? (e.start_date ? Number(e.start_date.slice(0, 4)) : null)
+  return [episodeDisplayLabel(e), year ? String(year) : null].filter(Boolean).join(" · ")
 }
 
 type EpisodeRow = {
@@ -59,7 +58,7 @@ type EpisodeRow = {
   public_slug: string | null
   start_date: string | null
   year: number | null
-  episode_number: number | null
+  episode_label: string | null
   public_enabled: boolean | null
   publish_at: string | null
 }
@@ -130,7 +129,7 @@ export async function buildArchiveIndex(): Promise<ArchiveIndex> {
   for (let from = 0; ; from += PAGE) {
     const { data, error } = await db
       .from("events")
-      .select("id, name, public_slug, start_date, year, episode_number, public_enabled, publish_at")
+      .select("id, name, public_slug, start_date, year, episode_label, public_enabled, publish_at")
       .eq("event_type", "episode")
       .eq("show_org_id", showId)
       .order("id")
@@ -269,7 +268,7 @@ export async function buildArchiveIndex(): Promise<ArchiveIndex> {
 
 /** The shared, cached index. One build per hour, or per invalidation. A failed
  *  build throws (and is not cached); callers fall back to emptyArchiveIndex(). */
-export const getArchiveIndex = unstable_cache(buildArchiveIndex, ["fnrad-archive-index-v1"], {
+export const getArchiveIndex = unstable_cache(buildArchiveIndex, ["fnrad-archive-index-v2"], {
   revalidate: 3600,
   tags: [FNRAD_ARCHIVE_TAG],
 })

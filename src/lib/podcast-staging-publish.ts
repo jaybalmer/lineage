@@ -304,6 +304,10 @@ export async function publishEpisodes(
     if (twin) {
       eventId = twin.id
       result.episodes_attached++
+      // Part C2: fill the show's label on an attached event only when it has none.
+      if (e.archive_label) {
+        await db.from("events").update({ episode_label: e.archive_label }).eq("id", eventId).is("episode_label", null)
+      }
     } else {
       eventId = genId("evt")
       const year = e.air_date ? Number(e.air_date.slice(0, 4)) : null
@@ -315,6 +319,7 @@ export async function publishEpisodes(
         start_date: e.air_date,
         year,
         episode_number: e.proposed_episode_number,
+        episode_label: e.archive_label,
         media_url: e.media_url ?? `https://www.youtube.com/watch?v=${e.video_id}`,
         community_status: "verified",
         added_by: actorId,
