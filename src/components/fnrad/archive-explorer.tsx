@@ -247,21 +247,27 @@ export function ArchiveExplorer({
     if (j != null) trackEvent("content", "fnrad_archive_pair_opened", { type: ARCHIVE_TYPES[index.nodes[j][0]] })
   }
 
-  // Reset view: back to the whole archive. Clears the selected node, the pair,
-  // the year and the retold story, drops ?focus and ?view, and refits the zoom.
-  const resetView = () => {
+  // Close the selected node: clears it, the pair, the year and the retold
+  // story, and drops ?focus and ?view. The zoom stays where it is.
+  const clearSelection = () => {
     selectedRef.current = null
     setSelected(null)
     setPair(null)
     setYear(null)
     setRetoldId(null)
     setBackStack([])
-    setResetKey((k) => k + 1)
+    if (view === "path") setViewState("sky")
     const url = new URL(window.location.href)
     url.searchParams.delete("focus")
     url.searchParams.delete("view")
     window.history.replaceState(window.history.state, "", url)
     document.title = "The FNRad Archive on Linestry"
+  }
+
+  // Reset view: the whole archive again, with the zoom refit.
+  const resetView = () => {
+    clearSelection()
+    setResetKey((k) => k + 1)
     trackEvent("content", "fnrad_archive_reset", {})
   }
 
@@ -479,7 +485,14 @@ export function ArchiveExplorer({
                   nodeSet={nodeSet}
                   neighbours={neighbours}
                   selected={mobile ? centre : selected}
-                  onSelect={(i) => select(i, "constellation")}
+                  onSelect={(i) => {
+                    // A second click on the selected star closes it, as in the Sketches.
+                    if (!mobile && i === selectedRef.current) clearSelection()
+                    else select(i, "constellation")
+                  }}
+                  onBackground={() => {
+                    if (selectedRef.current != null) clearSelection()
+                  }}
                   mobile={mobile}
                   resetKey={resetKey}
                   baseCount={SKY_SIZE}
@@ -532,6 +545,7 @@ export function ArchiveExplorer({
               onYear={setYear}
               onOpen={(j) => select(j, "chip")}
               onShowPath={() => setView("path")}
+              onClose={selected != null ? clearSelection : undefined}
             />
           ) : (
             <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm font-light leading-relaxed text-white/60">
@@ -622,6 +636,7 @@ function NodePanel({
   onYear,
   onOpen,
   onShowPath,
+  onClose,
 }: {
   index: ArchiveIndex
   i: number
@@ -635,6 +650,8 @@ function NodePanel({
   onYear: (y: number | null) => void
   onOpen: (j: number) => void
   onShowPath: () => void
+  /** Close the node (clears the selection). Absent when nothing is selected. */
+  onClose?: () => void
 }) {
   const n = index.nodes[i]
   const [type, id, name, href, eps, storyCount] = n
@@ -658,6 +675,17 @@ function NodePanel({
       <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white/45">
         <span className="h-2 w-2 rounded-full" style={{ background: color(type) }} />
         {TYPE_SINGULAR[type]}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={`Close ${name}`}
+            title="Close"
+            className="-mr-2 -mt-1 ml-auto flex h-8 w-8 items-center justify-center rounded-full text-base font-normal normal-case tracking-normal text-white/55 hover:bg-white/10 hover:text-white"
+          >
+            <span aria-hidden="true">&times;</span>
+          </button>
+        )}
       </div>
       <h3 className="mt-2 text-xl font-extrabold leading-tight text-white" style={{ fontFamily: "var(--font-display)" }}>
         {name}
