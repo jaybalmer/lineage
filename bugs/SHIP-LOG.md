@@ -3129,3 +3129,16 @@ publishEpisodes (src/lib/podcast-staging-publish.ts) run over all 290 staged epi
 - tsc: clean
 
 events.episode_label + episodeDisplayLabel() (S10E15 -> "S10 E15", S9BONUS8 -> "S9 Bonus 8", SPECIAL -> "Special"). Publish writes it from archive_label. Public "Episode N" / "#N" renderings replaced on /fnrad, the archive, /t/{slug}, show module, episode page and mention row; episode_number stays internal. Archive cache key bumped to v2. Merged by Claude.
+
+## 2026-11-18 - FNRad Archive per-node share image (feature)
+- type: feature
+- pr: #292
+- branch: feat/fnrad-archive-og
+- commit: e950be2
+- ids: none
+- scope: fnrad-archive-surface-og
+- migration: none
+- status: merged
+- tsc: clean
+
+GET /fnrad/archive/og[?focus=type:id]: next/og share card (default: headline + scale line; node: name, counts, 3 strongest connections, ring of top 10 in entity colours). og:image / twitter:image wired for default and focused views; Calendula traced for the route. Verified on prod. Closes brief D6. Merged by Claude.
