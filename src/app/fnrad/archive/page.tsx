@@ -16,7 +16,7 @@ import Link from "next/link"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { ArchiveExplorer, ArchiveListMore } from "@/components/fnrad/archive-explorer"
 import { TrackedLink } from "@/components/fnrad/tracked-link"
-import { FNRAD_ARCHIVE_HREF, FNRAD_ARCHIVE_LOGO, FNRAD_BRAND_HREF, FNRAD_CHALLENGE, FNRAD_EPISODES_HREF, FNRAD_HUB_HREF, FNRAD_HUB_REF, hasChallengeGuest } from "@/lib/fnrad"
+import { FNRAD_ARCHIVE_HREF, FNRAD_ARCHIVE_MARK, FNRAD_BRAND_HREF, FNRAD_CHALLENGE, FNRAD_EPISODES_HREF, FNRAD_HUB_HREF, FNRAD_HUB_REF, hasChallengeGuest } from "@/lib/fnrad"
 import { ARCHIVE_TYPES, REPORT_HREF, TYPE_LABELS, archiveScaleLine, findFocus, readArchiveIndex } from "@/lib/fnrad-archive"
 import type { ArchiveIndex } from "@/lib/fnrad-archive"
 import { ENTITY_COLORS } from "@/lib/entity-colors"
@@ -117,26 +117,29 @@ export default async function FnradArchivePage({ searchParams }: { searchParams:
         </header>
 
         {/* Kicker + H1 + intro + scale line */}
-        <div className="max-w-2xl">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
-            FNRad Podcast · Presented by Linestry
-          </p>
-          {/* The archive's logo is the heading; its alt text is the page title. */}
-          <h1 className="mt-4">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={FNRAD_ARCHIVE_LOGO.src}
-              width={FNRAD_ARCHIVE_LOGO.width}
-              height={FNRAD_ARCHIVE_LOGO.height}
-              alt="The FNRad Archive"
-              className="h-auto w-[260px] sm:w-[360px]"
-            />
+        {/* Same scale and presentation as the archive card (one voice for the
+            archive everywhere): the small mark as the kicker, then the card's
+            headline, body and scale line. */}
+        <div className="max-w-xl">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={FNRAD_ARCHIVE_MARK.src}
+            width={FNRAD_ARCHIVE_MARK.width}
+            height={FNRAD_ARCHIVE_MARK.height}
+            alt="The FNRad Archive"
+            className="h-11 w-auto"
+          />
+          <h1
+            className="mt-3 text-2xl sm:text-[1.7rem] font-extrabold tracking-tight text-white leading-tight"
+            style={displayFont}
+          >
+            Twelve seasons of snowboarding stories, connected.
           </h1>
-          <p className="mt-4 text-base font-light leading-relaxed text-white/80">
-            Twelve seasons of FNRad, mapped. Every rider, hill, board, brand and contest the guests talked about,
-            linked to the stories they told and to each other.
+          <p className="mt-3 text-sm font-light leading-relaxed text-white/80">
+            We mapped every story told on FNRad to the riders, hills, brands and boards in it, so you can follow any
+            name through fifty years of snowboarding.
           </p>
-          {t.episodes > 0 && <p className="mt-4 text-sm font-medium text-white/60">{archiveScaleLine(t)}</p>}
+          {t.episodes > 0 && <p className="mt-3 text-xs font-medium text-white/55">{archiveScaleLine(t)}</p>}
         </div>
 
         {/* Search + constellation + panel */}
