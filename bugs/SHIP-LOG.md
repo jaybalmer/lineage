@@ -3142,3 +3142,29 @@ events.episode_label + episodeDisplayLabel() (S10E15 -> "S10 E15", S9BONUS8 -> "
 - tsc: clean
 
 GET /fnrad/archive/og[?focus=type:id]: next/og share card (default: headline + scale line; node: name, counts, 3 strongest connections, ring of top 10 in entity colours). og:image / twitter:image wired for default and focused views; Calendula traced for the route. Verified on prod. Closes brief D6. Merged by Claude.
+
+## 2026-11-18 - FNRad Archive front doors PR 1: archive card + placements + nav (feature)
+- type: feature
+- pr: #293
+- branch: feat/fnrad-archive-card
+- commit: 8d3cd90
+- ids: none
+- scope: fnrad-archive-front-doors-pr1
+- migration: none
+- status: merged
+- tsc: clean
+
+ArchiveCard (live constellation laid out on the server with d3-force, inline SVG, no d3 shipped) on home, /snowboarding and /fnrad (above the challenge, old text band removed). Public GET /api/fnrad/archive/card. "FNRad Archive" fourth nav lens. /FNRad any case 301s to lowercase. /fnrad header FNRad logo to brand page; CTA "Explore the archive". Merged by Claude.
+
+## 2026-11-18 - FNRad Archive front doors PR 2: episodes page + brand page (feature)
+- type: feature
+- pr: #294
+- branch: feat/fnrad-episodes-brand-page
+- commit: 87ee6dd
+- ids: none
+- scope: fnrad-archive-front-doors-pr2
+- migration: none
+- status: merged
+- tsc: clean
+
+/fnrad/episodes searchable list with per-episode story counts (index key v3). Archive and /fnrad episode links repointed. FNRad brand page order Heritage, Timeline, Archive card, Season 12, Episodes card (ShowModule variant="card", editor disclosure keeps old rows), archive-total header stats, brand pages no longer open scrolled to the tabs. Editor view (B-4) not exercised in browser; check on device. Merged by Claude.
