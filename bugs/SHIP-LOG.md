@@ -3103,3 +3103,16 @@ manifestByVideo() let an earlier manifest row's twin ids claim another episode's
 - tsc: n/a
 
 publishEpisodes (src/lib/podcast-staging-publish.ts) run over all 290 staged episodes, actor Jay: 286 episode events created, 2,072 new unverified/unclaimed catalog nodes (person 1,043, place 413, org 565, board 2, event 49), 26,407 mentions inserted, 0 refusals; 4 episodes had nothing approved. Left out until approved: 4,459 mentions on pending nodes (incl. Bucket B/C review), 2,059 on unapproved stories; re-running publish attaches them to the existing episodes. Then all 286 new episodes made public with a minted public_slug (ensureUniquePublicSlug, same as the episode page toggle). Verified: 287 of 287 staged episode events public, 0 without slug, 0 future-scheduled.
+
+## 2026-11-18 - FNRad Archive public surface, Parts A and B (feature)
+- type: feature
+- pr: #290
+- branch: feat/fnrad-archive-surface
+- commit: da48492
+- ids: none
+- scope: fnrad-archive-surface
+- migration: none
+- status: pending
+- tsc: clean
+
+/fnrad/archive: cached live-data index (src/lib/fnrad-archive.ts, tag fnrad-archive), server-rendered lists and episodes, client search + d3 constellation (desktop sky, mobile focused ring) + node panel, ?focus= share links. /fnrad repointed to the archive (hero CTA, band, Latest episodes 10, links); readShowHub limit + paged mentions read (1,000-row cap regression after the archive went live). Brand campaign module archive link. Pending: Jay's phone check of the preview before merge (brief asks for it). Follow-ups: per-node OG image, Part C episode labels (additive migration, separate PR).
