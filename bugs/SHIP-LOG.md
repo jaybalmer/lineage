@@ -3091,3 +3091,15 @@ manifestByVideo() let an earlier manifest row's twin ids claim another episode's
 - tsc: n/a
 
 129 mentions of one-word all-inferred person nodes repointed via patchMention to the single matching full-name person in the same episode (10 more were already covered by that person in the story). Then 604 one-word all-inferred person nodes rejected, batch decided_at 2026-11-17T20:55:38.386Z, decided_by Jay. Verified: 0 approved stories left with no live node; 2,348 nodes pending, 1,030 of them all-inferred.
+
+## 2026-11-17 - podcast archive: approved content published and episodes made public (data)
+- type: feature
+- pr: none (data only, uses existing publishEpisodes + event public-link slug paths)
+- branch: none
+- ids: none
+- scope: podcast-archive-publish
+- migration: none (data: catalog inserts + events.public_enabled flip, requested by Jay in chat, applied + verified)
+- status: merged
+- tsc: n/a
+
+publishEpisodes (src/lib/podcast-staging-publish.ts) run over all 290 staged episodes, actor Jay: 286 episode events created, 2,072 new unverified/unclaimed catalog nodes (person 1,043, place 413, org 565, board 2, event 49), 26,407 mentions inserted, 0 refusals; 4 episodes had nothing approved. Left out until approved: 4,459 mentions on pending nodes (incl. Bucket B/C review), 2,059 on unapproved stories; re-running publish attaches them to the existing episodes. Then all 286 new episodes made public with a minted public_slug (ensureUniquePublicSlug, same as the episode page toggle). Verified: 287 of 287 staged episode events public, 0 without slug, 0 future-scheduled.
