@@ -14,13 +14,15 @@
 // episode's story (replay_of set) are left out, so each story draws once.
 
 import type { SupabaseClient } from "@supabase/supabase-js"
+import { FNRAD_HOST_NAMES } from "@/lib/fnrad"
 import type { NodeDecision, StagingSubjectType, StoryDecision } from "@/lib/podcast-staging"
 
 /** Sketch type index order. Drives colors and the type chips in the sketch. */
 export const SKETCH_TYPES: StagingSubjectType[] = ["person", "place", "org", "event", "board"]
 
 /** The show's host. In every episode, so the sketches leave him out by default (brief B4). */
-export const SKETCH_HOST_NAMES = ["erik traulsen"]
+/** The host, left out of the sketches. Lives in fnrad.ts so the public archive shares it. */
+export const SKETCH_HOST_NAMES = FNRAD_HOST_NAMES
 
 /** [title, archive label, air date (YYYY-MM-DD or ""), YouTube video id, staging episode id] */
 export type SketchEpisode = [string, string, string, string, string]

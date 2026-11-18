@@ -64,6 +64,11 @@ export function PartnerCampaignModule({
         <Link href={campaign.hubHref} className="font-medium hover:opacity-80 transition-opacity" style={{ color: brandColor }}>
           {campaign.hubLabel} <span aria-hidden="true">&rarr;</span>
         </Link>
+        {campaign.archiveHref && (
+          <Link href={campaign.archiveHref} className="font-medium hover:opacity-80 transition-opacity" style={{ color: brandColor }}>
+            {campaign.archiveLabel ?? "Explore the archive"} <span aria-hidden="true">&rarr;</span>
+          </Link>
+        )}
         <a
           href={campaign.listenHref}
           target="_blank"

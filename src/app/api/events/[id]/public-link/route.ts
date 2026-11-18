@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
+import { revalidateTag } from "next/cache"
+import { FNRAD_ARCHIVE_TAG } from "@/lib/fnrad-archive-shared"
 import { requireEditor, getServiceClient } from "@/lib/auth"
 import { ensureUniquePublicSlug } from "@/lib/public-slug"
 
@@ -37,7 +39,15 @@ export async function GET(
   })
 }
 
-export async function PATCH(
+// Flipping an episode live or hidden, or rescheduling it, changes what the FNRad
+// Archive index may show, so a successful write drops its cached build.
+export async function PATCH(...args: Parameters<typeof patchPublicLink>) {
+  const res = await patchPublicLink(...args)
+  if (res.ok) revalidateTag(FNRAD_ARCHIVE_TAG, { expire: 0 })
+  return res
+}
+
+async function patchPublicLink(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {

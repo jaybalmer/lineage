@@ -13,7 +13,8 @@ import { BrandMark } from "@/components/ui/brand-mark"
 import { ChallengeCard } from "@/components/fnrad/challenge-card"
 import { readShowHub, readChallengeGuest } from "@/lib/public-timeline-read"
 import type { ShowHubEpisode } from "@/lib/public-timeline-read"
-import { FNRAD_SHOW_SLUG, FNRAD_HUB_REF, FNRAD_CHALLENGE, FNRAD_BRAND_HREF } from "@/lib/fnrad"
+import { FNRAD_SHOW_SLUG, FNRAD_HUB_REF, FNRAD_CHALLENGE, FNRAD_ARCHIVE_HREF } from "@/lib/fnrad"
+import { archiveScaleLine, readArchiveIndex } from "@/lib/fnrad-archive"
 import {
   EQUITY_POOL_SHARES,
   EQUITY_SNAPSHOT_LABEL,
@@ -43,6 +44,8 @@ export const metadata: Metadata = {
 
 const displayFont = { fontFamily: "var(--font-display)" }
 const ONBOARDING_HREF = `/onboarding?ref=${FNRAD_HUB_REF}`
+/** The hub lists the latest few; the archive holds every episode (brief B5). */
+const LATEST_EPISODES = 10
 
 function EpisodeNames({ episode }: { episode: ShowHubEpisode }) {
   if (episode.mentionNames.length === 0) {
@@ -70,11 +73,13 @@ function EpisodeNames({ episode }: { episode: ShowHubEpisode }) {
 }
 
 export default async function FnradHubPage() {
-  const [hub, challengeGuest] = await Promise.all([
-    readShowHub(FNRAD_SHOW_SLUG),
+  const [hub, challengeGuest, archive] = await Promise.all([
+    readShowHub(FNRAD_SHOW_SLUG, { limit: LATEST_EPISODES }),
     readChallengeGuest(),
+    readArchiveIndex(),
   ])
   const episodes = hub?.episodes ?? []
+  const archiveEpisodes = archive.totals.episodes
 
   return (
     <div className="dark min-h-screen w-full" style={{ background: "#1C1917" }}>
@@ -119,7 +124,7 @@ export default async function FnradHubPage() {
             <span aria-hidden="true">&rarr;</span>
           </Link>
           <Link
-            href="/snowboarding"
+            href={FNRAD_ARCHIVE_HREF}
             className="text-sm font-medium text-white/70 hover:text-white transition-colors"
           >
             Look around first
@@ -144,12 +149,29 @@ export default async function FnradHubPage() {
           </div>
         )}
 
+        {/* Archive band (brief B4). Server-rendered, no constellation here. */}
+        <section className="mt-10 rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-6">
+          <h2 className="text-base font-bold text-white" style={displayFont}>
+            The whole FNRad archive, connected.
+          </h2>
+          <p className="mt-2 text-sm font-light leading-relaxed text-white/75">
+            Every episode, every rider, every story, linked across fifty years of snowboarding.
+          </p>
+          {archiveEpisodes > 0 && <p className="mt-3 text-xs font-medium text-white/50">{archiveScaleLine(archive.totals)}</p>}
+          <Link
+            href={FNRAD_ARCHIVE_HREF}
+            className="mt-4 inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+          >
+            Explore the archive <span aria-hidden="true">&rarr;</span>
+          </Link>
+        </section>
+
         {/* Episodes. Absent entirely when the list is empty (degraded read or no
             live episodes); a listener does not need to be told the list is empty. */}
         {episodes.length > 0 && (
           <section className="mt-10">
             <div className="text-[10px] font-semibold uppercase tracking-widest text-white/40 mb-3">
-              Episodes
+              Latest episodes
             </div>
             <div className="flex flex-col gap-3">
               {episodes.map((ep) => {
@@ -177,10 +199,11 @@ export default async function FnradHubPage() {
         )}
 
         {/* Archive link. Rendered even with no episodes: a listener still needs a
-            way into the full brand page and its 308-episode archive. */}
+            way into every episode. */}
         <p className="mt-4 text-sm text-white/60">
-          <Link href={FNRAD_BRAND_HREF} className="text-white/85 hover:text-white transition-colors">
-            Browse the whole FNRad archive on Linestry <span aria-hidden="true">&rarr;</span>
+          <Link href={`${FNRAD_ARCHIVE_HREF}#episodes`} className="text-white/85 hover:text-white transition-colors">
+            {archiveEpisodes > 0 ? `All ${archiveEpisodes.toLocaleString("en-US")} episodes in the archive` : "Browse the whole FNRad archive"}{" "}
+            <span aria-hidden="true">&rarr;</span>
           </Link>
         </p>
 
@@ -220,7 +243,7 @@ export default async function FnradHubPage() {
           <Link href="/word" className="text-xs text-white/60 hover:text-white transition-colors">
             linestry, noun. Read the definition.
           </Link>
-          <Link href={FNRAD_BRAND_HREF} className="text-xs text-white/60 hover:text-white transition-colors">
+          <Link href={FNRAD_ARCHIVE_HREF} className="text-xs text-white/60 hover:text-white transition-colors">
             FNRad archive
           </Link>
           <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-white/40">

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
+import { revalidateTag } from "next/cache"
+import { FNRAD_ARCHIVE_TAG } from "@/lib/fnrad-archive-shared"
 import { requireModerator, getServiceClient } from "@/lib/auth"
 import { isUuid } from "@/lib/podcast-staging-actions"
 import { unpublishEpisode } from "@/lib/podcast-staging-publish"
@@ -20,6 +22,8 @@ export async function POST(req: NextRequest) {
   try {
     const result = await unpublishEpisode(getServiceClient(), user.id, body!.episode_id as string, { apply: body?.dryRun === false })
     if ("error" in result) return NextResponse.json(result, { status: 404 })
+    // The FNRad Archive index counts published mentions; drop its cached build.
+    if (result.applied) revalidateTag(FNRAD_ARCHIVE_TAG, { expire: 0 })
     return NextResponse.json(result)
   } catch (e) {
     return NextResponse.json({ error: (e as Error).message }, { status: 500 })
