@@ -50,6 +50,20 @@ export type ArchiveNodeStory = [string, number, string, string, number | null, n
 /** media: episode event id to its media URL, for "Listen at" links. */
 export type ArchiveNodeStories = { stories: ArchiveNodeStory[]; media: Record<string, string> }
 
+/** A story told more than once (Retold): [entry id, title, years as written,
+ *  kind, tellings, subjects named across them as "typeIndex:id"]. Each telling:
+ *  [episode event id, timestamp seconds, role, story title, excerpt]. Roles:
+ *  did_it, was_there, heard_about, other. */
+export type ArchiveRetelling = [
+  string,
+  string,
+  string | null,
+  "same_event" | "same_teller",
+  [string, number, string | null, string, string][],
+  string[],
+]
+export type ArchiveRetold = { entries: ArchiveRetelling[]; media: Record<string, string> }
+
 /** A story dated across more than this many years is a span: drawn as a faint
  *  bar on the Path, never a dot per year (the Sketches rule). */
 export const SPAN_YEARS = 3

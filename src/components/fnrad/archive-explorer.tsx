@@ -19,6 +19,7 @@ import type { ArchiveIndex, ArchiveNodeStories, ArchiveNodeStory } from "@/lib/f
 import { parseYouTubeId } from "@/lib/utils"
 import { ENTITY_COLORS } from "@/lib/entity-colors"
 import { ArchivePath } from "./archive-path"
+import { RetoldList, RetoldPanel, useRetold } from "./archive-retold"
 
 const ArchiveConstellation = dynamic(() => import("./archive-constellation"), {
   ssr: false,
@@ -36,7 +37,7 @@ const SKY_MAX = 400
 const SKY_MIN_EPISODES = 2
 const LIST_PAGE = 25
 
-export type ArchiveView = "sky" | "path"
+export type ArchiveView = "sky" | "path" | "retold"
 
 
 type Source = "constellation" | "search" | "list" | "chip" | "focus"
@@ -135,7 +136,8 @@ export function ArchiveExplorer({
   browse?: ReactNode
 }) {
   const [selected, setSelected] = useState<number | null>(initialFocus)
-  const [view, setViewState] = useState<ArchiveView>(initialFocus != null ? initialView : "sky")
+  const [view, setViewState] = useState<ArchiveView>(initialFocus != null || initialView === "retold" ? initialView : "sky")
+  const [retoldId, setRetoldId] = useState<string | null>(null)
   const [pair, setPair] = useState<number | null>(null)
   const [year, setYear] = useState<number | null>(null)
   const [mobile, setMobile] = useState<boolean | null>(null)
@@ -190,6 +192,11 @@ export function ArchiveExplorer({
   }, [centre])
 
   const stories = useNodeStories(index, centre)
+  const retold = useRetold(view === "retold")
+  const retoldEntry = useMemo(
+    () => (retoldId && retold.data ? retold.data.entries.find((e) => e[0] === retoldId) ?? null : null),
+    [retoldId, retold.data],
+  )
 
   const writeUrl = useCallback(
     (i: number | null, v: ArchiveView) => {
@@ -200,6 +207,7 @@ export function ArchiveExplorer({
         document.title = `${n[2]} in the FNRad Archive`
       }
       if (v === "path" && i != null) url.searchParams.set("view", "path")
+      else if (v === "retold") url.searchParams.set("view", "retold")
       else url.searchParams.delete("view")
       window.history.replaceState(window.history.state, "", url)
     },
@@ -367,6 +375,7 @@ export function ArchiveExplorer({
         <div className="flex gap-1.5" role="group" aria-label="View the archive as">
           {viewTab("sky", "Constellation")}
           {viewTab("path", "Path")}
+          {viewTab("retold", "Retold")}
         </div>
         <span className="mx-1 hidden h-5 w-px bg-white/15 md:block" aria-hidden="true" />
         <div className="hidden flex-wrap gap-2 md:flex">
@@ -399,7 +408,27 @@ export function ArchiveExplorer({
       {/* Drawing + panel */}
       <div className="mt-4 md:grid md:grid-cols-[minmax(0,1fr)_320px] md:items-start md:gap-4">
         <div className="relative min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-black/20">
-          {view === "path" ? (
+          {view === "retold" ? (
+            retold.status === "ready" ? (
+              <RetoldList
+                index={index}
+                data={retold.data!}
+                focus={selected}
+                selectedId={retoldId}
+                onSelect={(id) => {
+                  setRetoldId(id)
+                  trackEvent("content", "fnrad_archive_retold_opened", {})
+                  if (window.matchMedia("(max-width: 767px)").matches) {
+                    requestAnimationFrame(() => panelRef.current?.scrollIntoView({ block: "start", behavior: "smooth" }))
+                  }
+                }}
+              />
+            ) : retold.status === "failed" ? (
+              <p className="px-5 py-10 text-sm font-light text-white/60">Retold stories did not load. Try again in a moment.</p>
+            ) : (
+              <p className="px-5 py-10 text-sm font-light text-white/50">Finding the stories told more than once…</p>
+            )
+          ) : view === "path" ? (
             centre == null ? (
               <p className="px-5 py-10 text-sm font-light text-white/60">
                 Pick a rider, place or brand, from the search or the map, to see their path year by year.
@@ -457,7 +486,20 @@ export function ArchiveExplorer({
           )}
         </div>
         <div ref={panelRef} className="mt-4 md:mt-0">
-          {centre != null ? (
+          {view === "retold" && retoldEntry ? (
+            <RetoldPanel
+              index={index}
+              entry={retoldEntry}
+              media={retold.data!.media}
+              keyToIndex={keyToIndex}
+              onOpenNode={(j) => select(j, "chip")}
+              onClose={() => setRetoldId(null)}
+            />
+          ) : view === "retold" && selected == null ? (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-5 text-sm font-light leading-relaxed text-white/60">
+              Pick a story from the list to read every telling of it, side by side.
+            </div>
+          ) : centre != null ? (
             <NodePanel
               key={centre}
               index={index}
@@ -616,7 +658,7 @@ function NodePanel({
         ))}
       </dl>
 
-      {view === "sky" && (
+      {view !== "path" && (
         <button
           type="button"
           onClick={() => {

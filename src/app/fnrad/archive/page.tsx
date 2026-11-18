@@ -96,7 +96,7 @@ export default async function FnradArchivePage({ searchParams }: { searchParams:
   const { focus, view } = await searchParams
   const index = await readArchiveIndex()
   const initialFocus = findFocus(index, focus)
-  const initialView = view === "path" && initialFocus != null ? "path" : "sky"
+  const initialView = view === "path" && initialFocus != null ? "path" : view === "retold" ? "retold" : "sky"
   const t = index.totals
 
   return (
