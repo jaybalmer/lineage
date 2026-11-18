@@ -123,7 +123,10 @@ export async function buildArchiveIndex(): Promise<ArchiveIndex> {
   const db = getServiceClient()
   const now = Date.now()
 
-  const { data: show } = await db.from("orgs").select("id").eq("public_slug", FNRAD_SHOW_SLUG).maybeSingle()
+  // A failed lookup must throw, not read as "no show": an empty index returned
+  // here used to be cached for the hour and blanked /fnrad/archive.
+  const { data: show, error: showError } = await db.from("orgs").select("id").eq("public_slug", FNRAD_SHOW_SLUG).maybeSingle()
+  if (showError) throw new Error(`show: ${showError.message}`)
   const showId = (show as { id: string } | null)?.id
   if (!showId) return emptyIndex()
 
@@ -274,9 +277,18 @@ export async function buildArchiveIndex(): Promise<ArchiveIndex> {
   }
 }
 
+/** Never cache an empty index. The live archive always has episodes, so an
+ *  empty build means a read went wrong; throwing keeps it out of the cache and
+ *  the next request rebuilds, instead of serving an empty archive for an hour. */
+async function buildNonEmptyArchiveIndex(): Promise<ArchiveIndex> {
+  const index = await buildArchiveIndex()
+  if (!index.totals.episodes || !index.nodes.length) throw new Error("empty archive index, not caching")
+  return index
+}
+
 /** The shared, cached index. One build per hour, or per invalidation. A failed
- *  build throws (and is not cached); callers fall back to emptyArchiveIndex(). */
-export const getArchiveIndex = unstable_cache(buildArchiveIndex, ["fnrad-archive-index-v3"], {
+ *  or empty build throws (and is not cached); callers fall back to emptyIndex(). */
+export const getArchiveIndex = unstable_cache(buildNonEmptyArchiveIndex, ["fnrad-archive-index-v4"], {
   revalidate: 3600,
   tags: [FNRAD_ARCHIVE_TAG],
 })
