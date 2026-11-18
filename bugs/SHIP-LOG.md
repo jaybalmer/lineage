@@ -3108,11 +3108,11 @@ publishEpisodes (src/lib/podcast-staging-publish.ts) run over all 290 staged epi
 - type: feature
 - pr: #290
 - branch: feat/fnrad-archive-surface
-- commit: da48492
+- commit: 18fc14a
 - ids: none
 - scope: fnrad-archive-surface
 - migration: none
-- status: pending
+- status: merged
 - tsc: clean
 
-/fnrad/archive: cached live-data index (src/lib/fnrad-archive.ts, tag fnrad-archive), server-rendered lists and episodes, client search + d3 constellation (desktop sky, mobile focused ring) + node panel, ?focus= share links. /fnrad repointed to the archive (hero CTA, band, Latest episodes 10, links); readShowHub limit + paged mentions read (1,000-row cap regression after the archive went live). Brand campaign module archive link. Pending: Jay's phone check of the preview before merge (brief asks for it). Follow-ups: per-node OG image, Part C episode labels (additive migration, separate PR).
+/fnrad/archive: cached live-data index (src/lib/fnrad-archive.ts, tag fnrad-archive), server-rendered lists and episodes, client search + d3 constellation (desktop sky, mobile focused ring) + node panel, ?focus= share links. /fnrad repointed to the archive (hero CTA, band, Latest episodes 10, links); readShowHub limit + paged mentions read (1,000-row cap regression after the archive went live). Brand campaign module archive link. Jay checked the preview and approved; merged by Claude. Follow-ups: per-node OG image, Part C episode labels (additive migration, separate PR).
