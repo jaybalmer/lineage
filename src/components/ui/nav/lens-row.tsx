@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { FNRAD_ARCHIVE_HREF } from "@/lib/fnrad"
 
 interface LensRowProps {
   communitySlug: string
@@ -12,7 +13,11 @@ interface LensRowProps {
 }
 
 /**
- * Lens row: Community / Feed / My Timeline. Same three slots in every scope.
+ * Lens row: Community / Feed / My Timeline / FNRad Archive. Same four slots in
+ * every scope. The fourth slot amends the locked three-slot row (nav model v1)
+ * on purpose, for as long as the FNRad Archive is the lead feature
+ * (briefs/fnrad-archive-front-doors-brief-v1.md, D6). It never lights up: the
+ * archive page is chromeless, so the nav is never on screen there.
  * Destinations resolve through the active community slug, which falls back to
  * the default community at global scope (D1 in the Phase 2 brief), so the row
  * is functionally identical in both scopes at launch.
@@ -53,6 +58,7 @@ export function LensRow({ communitySlug, pathname, isAuth, myTimelineHref }: Len
     { id: "community", label: "Community",   href: communityHref, active: communityActive },
     { id: "feed",      label: "Feed",        href: feedHref,      active: feedActive },
     { id: "timeline",  label: timelineLabel, href: timelineHref,  active: timelineActive },
+    { id: "archive",   label: "FNRad Archive", href: FNRAD_ARCHIVE_HREF, active: false },
   ]
 
   return (

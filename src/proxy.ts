@@ -9,6 +9,8 @@ import { safeReturnTo } from "@/lib/safe-redirect"
  * convention). Same matcher and behaviour as before; the function is now
  * exported as `proxy` instead of `middleware`.
  *
+ *   0. /FNRad (any case) -> /fnrad, query kept.
+ *
  *   1. Person-node redirects (PB-008 Phase 2 Session 1):
  *        /[community]/riders/<seg>  -> /people/<canonical-seg>
  *        /riders/<seg>              -> /people/<canonical-seg>   (legacy top-level)
@@ -139,6 +141,18 @@ function trackRedirect(
 }
 
 export async function proxy(request: NextRequest) {
+  // ── Layer 0: /FNRad, /FNRAD, /FNRad/archive -> lowercase (front-doors brief A6) ──
+  // Every route under /fnrad is a static lowercase segment, so lowercasing the
+  // whole pathname is safe. The query is kept untouched: focus ids are case-sensitive.
+  {
+    const p = request.nextUrl.pathname
+    if (p.split("/")[1]?.toLowerCase() === "fnrad" && p !== p.toLowerCase()) {
+      const url = request.nextUrl.clone()
+      url.pathname = p.toLowerCase()
+      return NextResponse.redirect(url, 301)
+    }
+  }
+
   // ── Layer 1: person-node redirects ──
   const personTarget = await resolvePersonRedirect(request)
   if (personTarget) {

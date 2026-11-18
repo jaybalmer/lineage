@@ -285,3 +285,24 @@ body {
   line-height: 1.62;
   font-weight: 300;
 }
+
+/* ─── FNRad archive card sky drift (fnrad-archive-front-doors brief, A2) ────
+   One slow transform on the whole sky. No per-node motion; off under reduced
+   motion. */
+@keyframes archive-sky-drift {
+  from { transform: translate(0, 0) scale(1); }
+  to   { transform: translate(-18px, 8px) scale(1.04); }
+}
+.archive-sky-drift {
+  transform-box: view-box;
+  transform-origin: 70% 50%;
+  animation: archive-sky-drift 70s ease-in-out infinite alternate;
+}
+@media (prefers-reduced-motion: reduce) {
+  .archive-sky-drift { animation: none; }
+}
+/* Narrow card: the sky sits above the text, so pull the cluster (laid out in
+   the right of the 1000 x 600 viewBox) back to centre and enlarge it a little. */
+@container (max-width: 40rem) {
+  .archive-sky-frame { transform: translate(-395px, -100px) scale(1.25); }
+}

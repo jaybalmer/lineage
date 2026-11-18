@@ -27,6 +27,22 @@ export type ArchiveIndex = {
   episodes: ArchiveEpisode[]
 }
 
+/** The archive card's data (briefs/fnrad-archive-front-doors-brief-v1.md, A1).
+ *  The sky is laid out on the server into a 1000 x 600 viewBox, so the card
+ *  draws inline SVG and never loads d3. */
+export type ArchiveCardData = {
+  totals: ArchiveIndex["totals"]
+  scaleLine: string
+  sky: {
+    /** [x, y, r, type index, label or null] */
+    nodes: [number, number, number, number, string | null][]
+    /** [node a, node b] into sky.nodes */
+    edges: [number, number][]
+  }
+  /** Top person, place and brand by story count (D5), up to 3. */
+  featured: { type: number; name: string; stories: number; focus: string; href: string }[]
+}
+
 /** Parse ?focus={type}:{id} against the index. Null on anything unknown. */
 export function findFocus(index: ArchiveIndex, focus: string | string[] | undefined): number | null {
   if (typeof focus !== "string") return null

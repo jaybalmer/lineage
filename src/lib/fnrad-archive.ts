@@ -14,16 +14,18 @@
 // up without waiting for the hour.
 
 import { unstable_cache } from "next/cache"
+import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation, forceX, forceY } from "d3-force"
+import type { SimulationLinkDatum, SimulationNodeDatum } from "d3-force"
 import { getServiceClient } from "@/lib/auth"
-import { FNRAD_HOST_NAMES, FNRAD_SHOW_SLUG, episodeDisplayLabel } from "@/lib/fnrad"
+import { FNRAD_ARCHIVE_HREF, FNRAD_HOST_NAMES, FNRAD_SHOW_SLUG, episodeDisplayLabel } from "@/lib/fnrad"
 import { mentionHref } from "@/lib/mention-links"
 import type { PublicTimelineEntities } from "@/lib/public-timeline-read"
 import type { MentionSubjectType } from "@/types"
-import { ARCHIVE_TYPES, FNRAD_ARCHIVE_TAG } from "@/lib/fnrad-archive-shared"
-import type { ArchiveEdge, ArchiveEpisode, ArchiveIndex, ArchiveNode, ArchiveType } from "@/lib/fnrad-archive-shared"
+import { ARCHIVE_TYPES, FNRAD_ARCHIVE_TAG, archiveScaleLine } from "@/lib/fnrad-archive-shared"
+import type { ArchiveCardData, ArchiveEdge, ArchiveEpisode, ArchiveIndex, ArchiveNode, ArchiveType } from "@/lib/fnrad-archive-shared"
 
 export { ARCHIVE_TYPES, FNRAD_ARCHIVE_TAG, REPORT_HREF, TYPE_LABELS, archiveScaleLine, findFocus } from "@/lib/fnrad-archive-shared"
-export type { ArchiveEdge, ArchiveEpisode, ArchiveIndex, ArchiveNode, ArchiveType } from "@/lib/fnrad-archive-shared"
+export type { ArchiveCardData, ArchiveEdge, ArchiveEpisode, ArchiveIndex, ArchiveNode, ArchiveType } from "@/lib/fnrad-archive-shared"
 
 /** A story naming more subjects than this is a roll call, not a connection. */
 const ROLL_CALL = 12
@@ -279,5 +281,120 @@ export async function readArchiveIndex(): Promise<ArchiveIndex> {
   } catch (e) {
     console.error("[fnrad-archive] index build failed", e)
     return emptyIndex()
+  }
+}
+
+// ── The archive card (briefs/fnrad-archive-front-doors-brief-v1.md, A1) ──────
+
+const SKY_NODES = 70
+const SKY_LABELS = 8
+const SKY_W = 1000
+const SKY_H = 600
+
+type SkyNode = SimulationNodeDatum & { i: number; r: number }
+type SkyLink = SimulationLinkDatum<SkyNode> & { w: number }
+
+/** Same population rule as the live sky (two or more episodes, host left out),
+ *  laid out once with d3-force. d3-force seeds its own random source and the
+ *  starting spiral is fixed, so one index always gives the same picture. */
+export function buildArchiveCardData(index: ArchiveIndex): ArchiveCardData | null {
+  if (!index.totals.episodes) return null
+
+  // index.nodes is already sorted by episodes, then stories.
+  const picks: number[] = []
+  for (let i = 0; i < index.nodes.length && picks.length < SKY_NODES; i++) {
+    const n = index.nodes[i]
+    if (!n[6] && n[4] >= 2) picks.push(i)
+  }
+  const pos = new Map(picks.map((i, k) => [i, k]))
+  // Radius is in final viewBox units; the layout is scaled, the stars are not.
+  const radiusOf = (eps: number) => 2 + Math.sqrt(eps) * 1.8
+  const nodes: SkyNode[] = picks.map((i, k) => {
+    const a = k * 2.399963 // golden angle
+    const d = 14 * Math.sqrt(k + 1)
+    return { i, r: radiusOf(index.nodes[i][4]), x: Math.cos(a) * d * 1.6, y: Math.sin(a) * d }
+  })
+  const links: SkyLink[] = []
+  for (const [a, b, w] of index.edges) {
+    const ka = pos.get(a)
+    const kb = pos.get(b)
+    if (ka != null && kb != null) links.push({ source: nodes[ka], target: nodes[kb], w })
+  }
+  const sim = forceSimulation(nodes)
+    .force("link", forceLink<SkyNode, SkyLink>(links).distance((l) => 90 - Math.min(40, l.w)).strength((l) => Math.min(0.7, 0.05 + l.w / 50)))
+    .force("charge", forceManyBody().strength(-260))
+    .force("x", forceX(0).strength(0.02))
+    .force("y", forceY(0).strength(0.07))
+    .force("collide", forceCollide<SkyNode>((d) => d.r * 1.8 + 12))
+    .force("center", forceCenter(0, 0))
+    .stop()
+  for (let t = 0; t < 300; t++) sim.tick()
+
+  // Fit into the right of the viewBox so the left stays quiet for the text.
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  for (const n of nodes) {
+    minX = Math.min(minX, n.x!); maxX = Math.max(maxX, n.x!)
+    minY = Math.min(minY, n.y!); maxY = Math.max(maxY, n.y!)
+  }
+  const box = { x0: 480, x1: SKY_W - 45, y0: 95, y1: SKY_H - 55 }
+  const kx = (box.x1 - box.x0) / (maxX - minX || 1)
+  const ky = (box.y1 - box.y0) / (maxY - minY || 1)
+  const round = (v: number) => Math.round(v * 10) / 10
+  const placed = nodes.map((n) => ({
+    x: round(box.x0 + (n.x! - minX) * kx),
+    y: round(box.y0 + (n.y! - minY) * ky),
+    r: round(n.r),
+  }))
+
+  // Labels on the largest stars whose label box clears every label already placed.
+  const labelled = new Set<number>()
+  const boxes: [number, number, number, number][] = []
+  for (let j = 0; j < placed.length && labelled.size < SKY_LABELS; j++) {
+    const { x, y, r } = placed[j]
+    const w = index.nodes[nodes[j].i][2].length * 9.5
+    const bx: [number, number, number, number] = [x - w / 2, y - r - 26, x + w / 2, y - r - 4]
+    if (bx[0] < 20 || bx[2] > SKY_W - 10 || bx[1] < 10) continue
+    if (boxes.some((o) => bx[0] < o[2] + 8 && bx[2] > o[0] - 8 && bx[1] < o[3] + 4 && bx[3] > o[1] - 4)) continue
+    boxes.push(bx)
+    labelled.add(j)
+  }
+
+  const sky: ArchiveCardData["sky"] = {
+    nodes: placed.map(({ x, y, r }, j) => [x, y, r, index.nodes[nodes[j].i][0], labelled.has(j) ? index.nodes[nodes[j].i][2] : null]),
+    edges: links.map((l) => [pos.get((l.source as SkyNode).i)!, pos.get((l.target as SkyNode).i)!]),
+  }
+
+  // D5: the top person, place and brand by story count. Never hardcoded.
+  const featured: ArchiveCardData["featured"] = []
+  for (const type of ["person", "place", "org"] as const) {
+    const t = ARCHIVE_TYPES.indexOf(type)
+    let best: ArchiveNode | null = null
+    for (const n of index.nodes) {
+      if (n[0] !== t || n[6]) continue
+      if (!best || n[5] > best[5]) best = n
+    }
+    if (best && best[5] > 0) {
+      const focus = `${type}:${best[1]}`
+      featured.push({ type: t, name: best[2], stories: best[5], focus, href: `${FNRAD_ARCHIVE_HREF}?focus=${encodeURIComponent(focus)}` })
+    }
+  }
+
+  return { totals: index.totals, scaleLine: archiveScaleLine(index.totals), sky, featured }
+}
+
+const getArchiveCardDataCached = unstable_cache(
+  async () => buildArchiveCardData(await getArchiveIndex()),
+  ["fnrad-archive-card-v4"],
+  { revalidate: 3600, tags: [FNRAD_ARCHIVE_TAG] },
+)
+
+/** The card data, or null when the archive is empty or the build failed. Every
+ *  placement renders nothing on null. */
+export async function getArchiveCardData(): Promise<ArchiveCardData | null> {
+  try {
+    return await getArchiveCardDataCached()
+  } catch (e) {
+    console.error("[fnrad-archive] card build failed", e)
+    return null
   }
 }

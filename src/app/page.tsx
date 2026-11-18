@@ -8,6 +8,7 @@ import { useLineageStore, isAuthUser } from "@/store/lineage-store"
 import { EQUITY_POOL_SHARES } from "@/lib/equity-offer"
 import { primaryPresentingPartner, partnerEyebrow } from "@/lib/partners"
 import { orgSlug } from "@/lib/mock-data"
+import { ArchiveCard } from "@/components/fnrad/archive-card"
 
 export default function Home() {
   const { activePersonId } = useLineageStore()
@@ -91,6 +92,10 @@ export default function Home() {
           </Link>
         </div>
       </div>
+
+      {/* The FNRad Archive (front-doors brief, A3/D11): under the hero, above the
+          focus card. Renders nothing, wrapper included, if the card data is null. */}
+      <ArchiveCard placement="home" className="max-w-3xl mx-auto px-6 pb-8" />
 
       {/* Snowboarding focus + primary CTAs */}
       <div className="max-w-3xl mx-auto px-6 pb-8">
