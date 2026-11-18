@@ -3233,3 +3233,16 @@ Sketches views in the public archive, phase 1. mentions.story_start_year/end_yea
 - tsc: clean
 
 Retold tab: Pass B groupings only (no model-written differences/notes). GET /api/fnrad/archive/retold (277 entries with 2+ live tellings). Searchable list, focus filter, side-by-side tellings with role and listen links. CLAUDE.md schema list updated. Merged by Claude.
+
+## 2026-11-18 - FNRad Archive reset view, panel close, click-to-deselect (bugfix)
+- type: bugfix
+- pr: #300
+- branch: fix/fnrad-archive-reset-view
+- commit: 7d84919
+- ids: none
+- scope: fnrad-archive-reset-deselect
+- migration: none
+- status: merged
+- tsc: clean
+
+Reset view now clears the selected node, pair, year, retold story and URL params and refits the zoom (it only refit before). Added an X on the node panel, second click on the selected star deselects, click on open sky clears (drags do not). Reported by Jay. Merged by Claude.
