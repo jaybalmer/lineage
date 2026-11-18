@@ -34,6 +34,8 @@ type Props = {
   neighbours: (i: number) => [number, number][]
   selected: number | null
   onSelect: (i: number) => void
+  /** Desktop: a click on open sky (not a drag) clears the selection. */
+  onBackground?: () => void
   mobile: boolean
   /** Bump to reset the desktop zoom. */
   resetKey: number
@@ -57,7 +59,7 @@ export default function ArchiveConstellation(props: Props) {
 
 // ── desktop: the wide sky ───────────────────────────────────────────────────
 
-function WideSky({ index, nodeSet, neighbours, selected, onSelect, resetKey, baseCount }: Props) {
+function WideSky({ index, nodeSet, neighbours, selected, onSelect, onBackground, resetKey, baseCount }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null)
@@ -163,7 +165,11 @@ function WideSky({ index, nodeSet, neighbours, selected, onSelect, resetKey, bas
         aria-label={CONSTELLATION_ALT}
         className="block cursor-grab active:cursor-grabbing select-none"
         onClick={(e) => {
-          if (e.target === svgRef.current) setHover(null)
+          // d3-zoom swallows the click that ends a drag, so this is a real click.
+          if (e.target === svgRef.current) {
+            setHover(null)
+            onBackground?.()
+          }
         }}
       >
         <g transform={transform.toString()}>
