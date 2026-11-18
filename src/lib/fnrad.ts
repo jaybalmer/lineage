@@ -23,6 +23,9 @@ export const FNRAD_HUB_HREF = "/fnrad"
 /** The public FNRad Archive page (briefs/fnrad-archive-surface-brief-v1.md). */
 export const FNRAD_ARCHIVE_HREF = "/fnrad/archive"
 
+/** Every FNRad episode, searchable (briefs/fnrad-archive-front-doors-brief-v1.md, B2). */
+export const FNRAD_EPISODES_HREF = "/fnrad/episodes"
+
 /** The show's host, matched case-insensitively against person names. He is in
  *  every episode, so the archive constellation and the admin Sketches tab leave
  *  him out of the drawing (he stays in lists and search). One list, two users. */

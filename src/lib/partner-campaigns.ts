@@ -11,7 +11,7 @@
 // months before the season closes is not worth a migration.
 
 import {
-  FNRAD_ARCHIVE_HREF,
+  FNRAD_ARCHIVE_HREF, FNRAD_EPISODES_HREF,
   FNRAD_HUB_HREF,
   FNRAD_LISTEN_HREF,
   FNRAD_CHALLENGE,
@@ -33,6 +33,10 @@ export interface PartnerCampaign {
   /** Optional link to the campaign's public archive (FNRad Archive brief, B6). */
   archiveHref?: string
   archiveLabel?: string
+  /** Optional searchable episode list and the short show name the brand page's
+   *  Episodes card uses (front-doors brief, B5). */
+  episodesHref?: string
+  showLabel?: string
   /** External link to the podcast itself. */
   listenHref: string
   listenLabel: string
@@ -51,6 +55,8 @@ export const PARTNER_CAMPAIGNS: Record<string, PartnerCampaign> = {
     hubLabel: "Season 12 on Linestry",
     archiveHref: FNRAD_ARCHIVE_HREF,
     archiveLabel: "Explore the archive",
+    episodesHref: FNRAD_EPISODES_HREF,
+    showLabel: "FNRad",
     listenHref: FNRAD_LISTEN_HREF,
     listenLabel: "Listen to the podcast",
     challenge: hasChallengeGuest(FNRAD_CHALLENGE.guestId)

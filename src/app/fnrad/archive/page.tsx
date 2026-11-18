@@ -16,7 +16,7 @@ import Link from "next/link"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { ArchiveExplorer, ArchiveListMore } from "@/components/fnrad/archive-explorer"
 import { TrackedLink } from "@/components/fnrad/tracked-link"
-import { FNRAD_ARCHIVE_HREF, FNRAD_BRAND_HREF, FNRAD_CHALLENGE, FNRAD_HUB_HREF, FNRAD_HUB_REF, hasChallengeGuest } from "@/lib/fnrad"
+import { FNRAD_ARCHIVE_HREF, FNRAD_BRAND_HREF, FNRAD_CHALLENGE, FNRAD_EPISODES_HREF, FNRAD_HUB_HREF, FNRAD_HUB_REF, hasChallengeGuest } from "@/lib/fnrad"
 import { ARCHIVE_TYPES, REPORT_HREF, TYPE_LABELS, archiveScaleLine, findFocus, readArchiveIndex } from "@/lib/fnrad-archive"
 import type { ArchiveIndex } from "@/lib/fnrad-archive"
 import { ENTITY_COLORS } from "@/lib/entity-colors"
@@ -90,37 +90,6 @@ function TypeList({ index, type }: { index: ArchiveIndex; type: number }) {
   )
 }
 
-function EpisodeList({ index }: { index: ArchiveIndex }) {
-  const byYear = new Map<string, ArchiveIndex["episodes"]>()
-  for (const e of index.episodes) {
-    const y = e[4].slice(0, 4) || "Undated"
-    byYear.set(y, [...(byYear.get(y) ?? []), e])
-  }
-  return (
-    <div className="space-y-6">
-      {[...byYear].map(([year, eps]) => (
-        <div key={year}>
-          <h3 className="text-xs font-semibold uppercase tracking-widest text-white/40">{year}</h3>
-          <ul className="mt-2 grid gap-x-6 sm:grid-cols-2">
-            {eps.map((e) => (
-              <li key={e[0]} className="border-b border-white/5 py-2">
-                {e[1] ? (
-                  <Link href={`/t/${e[1]}`} className="text-sm text-white/85 hover:text-white">
-                    {e[3]}
-                  </Link>
-                ) : (
-                  <span className="text-sm text-white/85">{e[3]}</span>
-                )}
-                {e[2] && <span className="ml-2 text-xs text-white/40">{e[2]}</span>}
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 export default async function FnradArchivePage({ searchParams }: { searchParams: SearchParams }) {
   const { focus } = await searchParams
   const index = await readArchiveIndex()
@@ -188,15 +157,22 @@ export default async function FnradArchivePage({ searchParams }: { searchParams:
           </section>
         )}
 
-        {/* Episodes */}
+        {/* Episodes: the full, searchable list lives at /fnrad/episodes (front-doors
+            brief B3). id="episodes" stays so old #episodes links still land here. */}
         {index.episodes.length > 0 && (
-          <section id="episodes" className="mt-14 scroll-mt-6" aria-labelledby="episodes-h">
+          <section id="episodes" className="mt-14 scroll-mt-6 rounded-2xl border border-white/10 bg-white/5 p-5 sm:p-6" aria-labelledby="episodes-h">
             <h2 id="episodes-h" className="text-xl font-extrabold text-white" style={displayFont}>
               Every episode
             </h2>
-            <div className="mt-4">
-              <EpisodeList index={index} />
-            </div>
+            <p className="mt-2 text-sm font-light leading-relaxed text-white/75">
+              All {fmt(index.episodes.length)} episodes, searchable by guest, season and year.
+            </p>
+            <Link
+              href={FNRAD_EPISODES_HREF}
+              className="mt-4 inline-flex items-center gap-2 rounded-xl border border-white/20 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+            >
+              Browse all episodes <span aria-hidden="true">&rarr;</span>
+            </Link>
           </section>
         )}
 

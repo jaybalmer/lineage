@@ -50,11 +50,13 @@ function loadCardData(): Promise<ArchiveCardData | null> {
   return pending
 }
 
-export function ArchiveCard({ data, placement, size = "feature", className }: Props) {
-  const [fetched, setFetched] = useState<ArchiveCardData | null | undefined>(data === undefined ? undefined : null)
-
+/** The card data on a client page: undefined while loading, null when there is
+ *  none. Shares the one fetch with every ArchiveCard on the page, so the FNRad
+ *  brand page reads its header stats from the same request (B6). */
+export function useArchiveCardData(enabled = true): ArchiveCardData | null | undefined {
+  const [fetched, setFetched] = useState<ArchiveCardData | null | undefined>(undefined)
   useEffect(() => {
-    if (data !== undefined) return
+    if (!enabled) return
     let live = true
     loadCardData().then((d) => {
       if (live) setFetched(d)
@@ -62,8 +64,12 @@ export function ArchiveCard({ data, placement, size = "feature", className }: Pr
     return () => {
       live = false
     }
-  }, [data])
+  }, [enabled])
+  return fetched
+}
 
+export function ArchiveCard({ data, placement, size = "feature", className }: Props) {
+  const fetched = useArchiveCardData(data === undefined)
   const card = data !== undefined ? data : fetched
   const compact = size === "compact"
   // Container queries, not viewport breakpoints: the same card sits in a 576 px

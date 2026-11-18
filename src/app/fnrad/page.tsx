@@ -14,7 +14,7 @@ import { ChallengeCard } from "@/components/fnrad/challenge-card"
 import { ArchiveCard } from "@/components/fnrad/archive-card"
 import { readShowHub, readChallengeGuest } from "@/lib/public-timeline-read"
 import type { ShowHubEpisode } from "@/lib/public-timeline-read"
-import { FNRAD_SHOW_SLUG, FNRAD_HUB_REF, FNRAD_CHALLENGE, FNRAD_ARCHIVE_HREF, FNRAD_BRAND_HREF, episodeDisplayLabel } from "@/lib/fnrad"
+import { FNRAD_SHOW_SLUG, FNRAD_HUB_REF, FNRAD_CHALLENGE, FNRAD_ARCHIVE_HREF, FNRAD_BRAND_HREF, FNRAD_EPISODES_HREF, episodeDisplayLabel } from "@/lib/fnrad"
 import { getArchiveCardData, readArchiveIndex } from "@/lib/fnrad-archive"
 import {
   EQUITY_POOL_SHARES,
@@ -205,8 +205,8 @@ export default async function FnradHubPage() {
         {/* Archive link. Rendered even with no episodes: a listener still needs a
             way into every episode. */}
         <p className="mt-4 text-sm text-white/60">
-          <Link href={`${FNRAD_ARCHIVE_HREF}#episodes`} className="text-white/85 hover:text-white transition-colors">
-            {archiveEpisodes > 0 ? `All ${archiveEpisodes.toLocaleString("en-US")} episodes in the archive` : "Browse the whole FNRad archive"}{" "}
+          <Link href={FNRAD_EPISODES_HREF} className="text-white/85 hover:text-white transition-colors">
+            {archiveEpisodes > 0 ? `All ${archiveEpisodes.toLocaleString("en-US")} episodes` : "Browse every FNRad episode"}{" "}
             <span aria-hidden="true">&rarr;</span>
           </Link>
         </p>
