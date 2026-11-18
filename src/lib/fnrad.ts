@@ -20,6 +20,14 @@ export const FNRAD_HUB_REF = "fnrad"
  *  (FNRAD_HUB_REF above is the ref-code string "fnrad"; this is the "/fnrad" path.) */
 export const FNRAD_HUB_HREF = "/fnrad"
 
+/** The public FNRad Archive page (briefs/fnrad-archive-surface-brief-v1.md). */
+export const FNRAD_ARCHIVE_HREF = "/fnrad/archive"
+
+/** The show's host, matched case-insensitively against person names. He is in
+ *  every episode, so the archive constellation and the admin Sketches tab leave
+ *  him out of the drawing (he stays in lists and search). One list, two users. */
+export const FNRAD_HOST_NAMES = ["erik traulsen"]
+
 /** Brand page of the FNRad org. The slug is name-derived (orgSlug(org) =
  *  slugify(org.name), rendering as "FNRad_Podcast"), so if the org is ever
  *  renamed this constant moves with it. The hub never holds the org object, so

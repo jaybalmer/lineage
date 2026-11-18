@@ -1728,13 +1728,16 @@ export interface PublicShowHubPayload {
  * (D3, A10). Any thrown query degrades to an episode list with no names rather
  * than 500ing a URL that gets read out on a podcast.
  */
-export async function readShowHub(slug: string): Promise<PublicShowHubPayload | null> {
+export async function readShowHub(slug: string, opts: { limit?: number } = {}): Promise<PublicShowHubPayload | null> {
   const show = await readOrgStack({ slug, requireEnabled: true })
   if (!show) return null
 
   // readOrgStack(requireEnabled) already returns live episodes only, newest
   // first; an episode with no public_slug has no page to link, so it is dropped.
-  const liveEpisodes = show.episodes.filter((e) => e.live && e.slug)
+  // limit keeps the hub to its latest episodes: with the whole archive live, an
+  // unbounded list would also push the one mentions read past the 1,000-row cap.
+  const allLive = show.episodes.filter((e) => e.live && e.slug)
+  const liveEpisodes = opts.limit ? allLive.slice(0, opts.limit) : allLive
   const nameless = (): PublicShowHubPayload => ({
     owner: show.owner,
     episodes: liveEpisodes.map((e) => ({ ...e, mentionNames: [], mentionTotal: 0 })),
@@ -1742,45 +1745,53 @@ export async function readShowHub(slug: string): Promise<PublicShowHubPayload | 
   if (liveEpisodes.length === 0) return { owner: show.owner, episodes: [] }
 
   try {
+    // Paged: a handful of episodes can still carry more than 1,000 mentions.
     const db = getServiceClient()
     const liveIds = liveEpisodes.map((e) => e.id)
-    const { data } = await db
-      .from("mentions")
-      .select("id, episode_event_id, subject_type, subject_id")
-      .in("episode_event_id", liveIds)
-      .eq("status", "published")
-      .order("timestamp_seconds", { ascending: true, nullsFirst: false })
-      .order("created_at", { ascending: true })
-
-    const rows = (data ?? []) as {
-      id: string
-      episode_event_id: string
-      subject_type: MentionSubjectType
-      subject_id: string
-    }[]
-
-    // Resolve every subject in one pass.
-    const seed = { person: [] as string[], place: [] as string[], event: [] as string[], org: [] as string[], board: [] as string[] }
-    for (const r of rows) {
-      const bucket = seed[r.subject_type as keyof typeof seed]
-      if (bucket) bucket.push(r.subject_id)
+    type HubRow = { id: string; episode_event_id: string; subject_type: MentionSubjectType; subject_id: string }
+    const rows: HubRow[] = []
+    for (let from = 0; ; from += 1000) {
+      const { data, error } = await db
+        .from("mentions")
+        .select("id, episode_event_id, subject_type, subject_id")
+        .in("episode_event_id", liveIds)
+        .eq("status", "published")
+        .order("timestamp_seconds", { ascending: true, nullsFirst: false })
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, from + 999)
+      if (error) throw new Error(error.message)
+      const page = (data ?? []) as HubRow[]
+      rows.push(...page)
+      if (page.length < 1000) break
     }
-    const entities = await resolveEntities(db, [], [], seed)
 
-    const byEpisode = new Map<string, typeof rows>()
+    // Distinct subjects per episode, in read order.
+    const byEpisode = new Map<string, HubRow[]>()
     for (const r of rows) {
       const arr = byEpisode.get(r.episode_event_id) ?? []
-      arr.push(r)
+      if (!arr.some((x) => x.subject_type === r.subject_type && x.subject_id === r.subject_id)) arr.push(r)
       byEpisode.set(r.episode_event_id, arr)
     }
 
+    // Resolve only the first few subjects of each episode: the hub shows eight
+    // names, and resolving every subject of every episode would overflow the
+    // .in() URL. A few spares cover subjects whose catalog row cannot be read.
+    const NAMES_SHOWN = 8
+    const seed = { person: [] as string[], place: [] as string[], event: [] as string[], org: [] as string[], board: [] as string[] }
+    for (const list of byEpisode.values()) {
+      for (const r of list.slice(0, NAMES_SHOWN + 8)) {
+        const bucket = seed[r.subject_type as keyof typeof seed]
+        if (bucket) bucket.push(r.subject_id)
+      }
+    }
+    const entities = await resolveEntities(db, [], [], seed)
+
     const episodes: ShowHubEpisode[] = liveEpisodes.map((ep) => {
-      const seen = new Set<string>()
+      const list = byEpisode.get(ep.id) ?? []
       const names: { id: string; name: string; href: string | null }[] = []
-      for (const r of byEpisode.get(ep.id) ?? []) {
-        const key = `${r.subject_type}:${r.subject_id}`
-        if (seen.has(key)) continue
-        seen.add(key)
+      for (const r of list) {
+        if (names.length >= NAMES_SHOWN) break
         const name = mentionSubjectName(r.subject_type, r.subject_id, entities)
         // Drop unresolved subjects: mentionSubjectName falls back to the raw id
         // (F20), and a generated id must never render as a name on a page that is
@@ -1788,7 +1799,7 @@ export async function readShowHub(slug: string): Promise<PublicShowHubPayload | 
         if (name === r.subject_id) continue
         names.push({ id: r.subject_id, name, href: mentionHref(r.subject_type, r.subject_id, entities) })
       }
-      return { ...ep, mentionNames: names.slice(0, 8), mentionTotal: names.length }
+      return { ...ep, mentionNames: names, mentionTotal: list.length }
     })
 
     return { owner: show.owner, episodes }
