@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   // the .ttf from disk because Satori cannot parse the .woff2 browsers use.
   outputFileTracingIncludes: {
     "/opengraph-image": ["./src/app/fonts/Calendula-Bold.ttf"],
+    // The FNRad Archive share card reads the same font from disk.
+    "/fnrad/archive/og": ["./src/app/fonts/Calendula-Bold.ttf"],
   },
   async redirects() {
     // The revenue-share explainer became the equity launch offer
