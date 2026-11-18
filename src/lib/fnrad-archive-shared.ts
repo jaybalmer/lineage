@@ -43,6 +43,17 @@ export type ArchiveCardData = {
   featured: { type: number; name: string; stories: number; focus: string; href: string }[]
 }
 
+/** Every story about one node (GET /api/fnrad/archive/node). Each story:
+ *  [episode event id, timestamp seconds, title, excerpt, start year, end year,
+ *   other subjects as "typeIndex:id"]. Newest episode first. */
+export type ArchiveNodeStory = [string, number, string, string, number | null, number | null, string[]]
+/** media: episode event id to its media URL, for "Listen at" links. */
+export type ArchiveNodeStories = { stories: ArchiveNodeStory[]; media: Record<string, string> }
+
+/** A story dated across more than this many years is a span: drawn as a faint
+ *  bar on the Path, never a dot per year (the Sketches rule). */
+export const SPAN_YEARS = 3
+
 /** Parse ?focus={type}:{id} against the index. Null on anything unknown. */
 export function findFocus(index: ArchiveIndex, focus: string | string[] | undefined): number | null {
   if (typeof focus !== "string") return null
@@ -53,6 +64,14 @@ export function findFocus(index: ArchiveIndex, focus: string | string[] | undefi
   if (t < 0 || !id) return null
   const i = index.nodes.findIndex((n) => n[0] === t && n[1] === id)
   return i < 0 ? null : i
+}
+
+/** The archive URL for a node, opening on its Path. Used by the browse lists
+ *  and by entity pages linking into the archive. Path-only constant so this
+ *  module stays free of app imports. */
+export function archivePathHref(type: number | ArchiveType, id: string): string {
+  const t = typeof type === "number" ? ARCHIVE_TYPES[type] : type
+  return `/fnrad/archive?focus=${t}:${encodeURIComponent(id)}&view=path`
 }
 
 /** Section and chip labels, in ARCHIVE_TYPES order (Appendix A). */

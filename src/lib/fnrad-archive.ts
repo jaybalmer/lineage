@@ -22,10 +22,10 @@ import { mentionHref } from "@/lib/mention-links"
 import type { PublicTimelineEntities } from "@/lib/public-timeline-read"
 import type { MentionSubjectType } from "@/types"
 import { ARCHIVE_TYPES, FNRAD_ARCHIVE_TAG, archiveScaleLine } from "@/lib/fnrad-archive-shared"
-import type { ArchiveCardData, ArchiveEdge, ArchiveEpisode, ArchiveIndex, ArchiveNode, ArchiveType } from "@/lib/fnrad-archive-shared"
+import type { ArchiveCardData, ArchiveEdge, ArchiveEpisode, ArchiveIndex, ArchiveNode, ArchiveNodeStories, ArchiveType } from "@/lib/fnrad-archive-shared"
 
 export { ARCHIVE_TYPES, FNRAD_ARCHIVE_TAG, REPORT_HREF, TYPE_LABELS, archiveScaleLine, findFocus } from "@/lib/fnrad-archive-shared"
-export type { ArchiveCardData, ArchiveEdge, ArchiveEpisode, ArchiveIndex, ArchiveNode, ArchiveType } from "@/lib/fnrad-archive-shared"
+export type { ArchiveCardData, ArchiveEdge, ArchiveEpisode, ArchiveIndex, ArchiveNode, ArchiveNodeStories, ArchiveType } from "@/lib/fnrad-archive-shared"
 
 /** A story naming more subjects than this is a roll call, not a connection. */
 const ROLL_CALL = 12
@@ -415,4 +415,105 @@ export async function getArchiveCardData(): Promise<ArchiveCardData | null> {
     console.error("[fnrad-archive] card build failed", e)
     return null
   }
+}
+
+// ── One node's stories (Path view, pair panel, story list) ───────────────────
+
+const nodeStoriesCached = unstable_cache(
+  async (type: ArchiveType, id: string): Promise<ArchiveNodeStories> => {
+    const index = await getArchiveIndex()
+    const live = new Set(index.episodes.map((e) => e[0]))
+    const date = new Map(index.episodes.map((e) => [e[0], e[4]]))
+    const db = getServiceClient()
+
+    type Own = { episode_event_id: string; timestamp_seconds: number | null; story_title: string | null; excerpt: string | null; story_start_year: number | null; story_end_year: number | null }
+    const own: Own[] = []
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await db
+        .from("mentions")
+        .select("episode_event_id, timestamp_seconds, story_title, excerpt, story_start_year, story_end_year")
+        .eq("subject_type", type)
+        .eq("subject_id", id)
+        .eq("status", "published")
+        .order("id")
+        .range(from, from + PAGE - 1)
+      if (error) throw new Error(`node mentions: ${error.message}`)
+      const page = (data ?? []) as Own[]
+      own.push(...page)
+      if (page.length < PAGE) break
+    }
+
+    // One row per story (episode, timestamp) on a live episode.
+    const stories = new Map<string, Own>()
+    for (const m of own) {
+      if (!live.has(m.episode_event_id) || m.timestamp_seconds == null) continue
+      const k = `${m.episode_event_id}|${m.timestamp_seconds}`
+      if (!stories.has(k)) stories.set(k, m)
+    }
+
+    // Everyone else named in those stories.
+    const withByStory = new Map<string, Set<string>>()
+    const episodes = [...new Set([...stories.values()].map((s) => s.episode_event_id))]
+    const self = `${ARCHIVE_TYPES.indexOf(type)}:${id}`
+    await Promise.all(
+      chunks(episodes, 40).map(async (ids) => {
+        for (let from = 0; ; from += PAGE) {
+          const { data, error } = await db
+            .from("mentions")
+            .select("episode_event_id, timestamp_seconds, subject_type, subject_id")
+            .in("episode_event_id", ids)
+            .eq("status", "published")
+            .order("id")
+            .range(from, from + PAGE - 1)
+          if (error) throw new Error(`co-mentions: ${error.message}`)
+          const page = (data ?? []) as MentionRow[]
+          for (const m of page) {
+            const k = `${m.episode_event_id}|${m.timestamp_seconds}`
+            if (!stories.has(k)) continue
+            const t = ARCHIVE_TYPES.indexOf(m.subject_type as ArchiveType)
+            if (t < 0) continue
+            const key = `${t}:${m.subject_id}`
+            if (key === self) continue
+            const set = withByStory.get(k) ?? new Set<string>()
+            set.add(key)
+            withByStory.set(k, set)
+          }
+          if (page.length < PAGE) break
+        }
+      }),
+    )
+
+    const out: ArchiveNodeStories["stories"] = [...stories.entries()].map(([k, s]) => {
+      const others = [...(withByStory.get(k) ?? [])]
+      return [
+        s.episode_event_id,
+        s.timestamp_seconds!,
+        s.story_title ?? "",
+        s.excerpt ?? "",
+        s.story_start_year,
+        s.story_end_year,
+        // A roll call names too many to mean anything together (same rule as the edges).
+        others.length + 1 > ROLL_CALL ? [] : others,
+      ]
+    })
+    out.sort((a, b) => (date.get(b[0]) ?? "").localeCompare(date.get(a[0]) ?? "") || a[1] - b[1])
+
+    // Media links for the "Listen at" links on each story.
+    const media: Record<string, string> = {}
+    await Promise.all(
+      chunks(episodes, ID_CHUNK).map(async (ids) => {
+        const { data, error } = await db.from("events").select("id, media_url").in("id", ids)
+        if (error) throw new Error(`episode media: ${error.message}`)
+        for (const r of (data ?? []) as { id: string; media_url: string | null }[]) if (r.media_url) media[r.id] = r.media_url
+      }),
+    )
+    return { stories: out, media }
+  },
+  ["fnrad-archive-node-v1"],
+  { revalidate: 3600, tags: [FNRAD_ARCHIVE_TAG] },
+)
+
+/** Every story about one node, with its years and the other subjects in it. */
+export async function getArchiveNodeStories(type: ArchiveType, id: string): Promise<ArchiveNodeStories> {
+  return nodeStoriesCached(type, id)
 }

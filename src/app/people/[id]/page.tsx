@@ -22,6 +22,7 @@ import { BrandMark } from "@/components/ui/brand-mark"
 import { StackTimelineToggle } from "@/components/public-timeline/stack-timeline-toggle"
 import { OwnerTimelinePanel } from "@/components/profile/owner-timeline-panel"
 import { MemberCuratedSections } from "@/components/profile/member-curated-sections"
+import { ArchivePathLink } from "@/components/fnrad/archive-path-link"
 import { InviteRiderModal } from "@/components/ui/invite-rider-modal"
 import { HelpConnectCard } from "@/components/ui/help-connect-card"
 import { isInvitableNodeStatus, isInvitablePerson, trackInviteEvent } from "@/lib/invite-tracking"
@@ -377,6 +378,10 @@ export default function RiderPage({ params }: { params: Promise<{ id: string }> 
               paid differentiator. Renders nothing for free riders and, for a
               member, only the blocks they have filled in. */}
           <MemberCuratedSections person={person} isOwner={isCurrentUser} />
+
+          {/* The FNRad Archive: this rider's path through the podcast's stories.
+              Renders nothing unless they are in the archive. */}
+          <ArchivePathLink type="person" id={person.id} name={person.display_name} className="mt-4" />
 
           {/* Action row */}
           {!isCurrentUser && (
