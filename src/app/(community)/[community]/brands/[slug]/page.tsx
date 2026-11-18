@@ -20,6 +20,7 @@ import type { EpisodeCardData } from "@/lib/episode-cards"
 import { EntityMentions } from "@/components/feed/entity-mentions"
 import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { ShowModule } from "@/components/orgs/show-module"
+import { ArchiveCard, useArchiveCardData } from "@/components/fnrad/archive-card"
 import { PartnerCampaignModule } from "@/components/orgs/partner-campaign-module"
 import { campaignForOrg } from "@/lib/partner-campaigns"
 import type { Org, ConfidenceLevel, Predicate, Event, Place, Story, Person } from "@/types"
@@ -413,11 +414,19 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
   const [tab, setTab] = useState<FeedTab>("stories")
   // Stories is the last pill in a horizontally scrollable row, so on narrow
   // viewports the default-selected tab starts scrolled off-screen (BUG-124).
-  // Nudge the active tab fully into view once on mount without moving the page
-  // vertically (block: "nearest" leaves the near-top row where it is).
+  // Nudge the active tab into view once on mount by scrolling the strip itself
+  // sideways. Never scrollIntoView: with the tabs below the fold it scrolled the
+  // whole page down to them (front-doors brief F7/B6).
   const activeTabRef = useRef<HTMLButtonElement | null>(null)
+  const tabStripRef = useRef<HTMLDivElement | null>(null)
   useEffect(() => {
-    activeTabRef.current?.scrollIntoView({ inline: "nearest", block: "nearest" })
+    const strip = tabStripRef.current
+    const el = activeTabRef.current
+    if (!strip || !el) return
+    const s = strip.getBoundingClientRect()
+    const t = el.getBoundingClientRect()
+    if (t.right > s.right) strip.scrollLeft += t.right - s.right
+    else if (t.left < s.left) strip.scrollLeft -= s.left - t.left
   }, [])
   // Curated contribute-module chips can preselect a claim mode/predicate.
   const [claimPreset, setClaimPreset] = useState<{ mode: ClaimMode; predicate: Predicate } | undefined>(undefined)
@@ -610,6 +619,7 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
   // generic contribute module for its campaign module (Season 12). Non-media
   // founding partners and curated-tier orgs keep the contribute module.
   const campaign = isFounding && org.org_type === "media" ? campaignForOrg(org) : null
+  const archiveCardData = useArchiveCardData(Boolean(campaign?.archiveHref))
   // Validate the editor-authored jsonb defensively; render in stored (editor) order.
   const milestones = Array.isArray(org.brand_milestones)
     ? org.brand_milestones.filter((m) => !!m && typeof m.label === "string" && m.label.trim().length > 0)
@@ -663,13 +673,29 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
   // counts. For standard brands featuredRiders is empty, so this equals the claim set.
   const connectedRiderCount = new Set([...uniqueRiderIds, ...featuredRiders.map((p) => p.id)]).size
 
-  const statBlocks = [
+  // FNRad (D10): the header shows the archive totals, not the claim-derived
+  // counts (which read 0 riders while the archive holds 1,136). A dash while the
+  // card data loads, never a zero. Every other brand keeps its own stats.
+  const archiveStats: { n: number | string; l: string }[] | null = campaign?.archiveHref
+    ? (() => {
+        const t = archiveCardData?.totals
+        const v = (x: number | undefined) => (t ? (x ?? 0).toLocaleString("en-US") : "–")
+        return [
+          { n: v(t?.episodes), l: "episodes" },
+          { n: v(t?.stories), l: "stories" },
+          { n: v(t?.people), l: "riders" },
+          { n: v(t?.places), l: "places" },
+          { n: v(t?.orgs), l: "brands" },
+        ]
+      })()
+    : null
+  const statBlocks = (archiveStats ?? [
     { n: connectedRiderCount, l: "riders" },
     { n: orgBoards.length, l: "boards" },
     { n: totalEvents, l: "events" },
     { n: locatedAtClaims.length, l: "places" },
     { n: orgStories.length, l: "stories" },
-  ].map(({ n, l }) => (
+  ]).map(({ n, l }) => (
     <div key={l}>
       <div className="text-foreground text-xl leading-none" style={{ fontFamily: "var(--font-wordmark)" }}>{n}</div>
       <div className="text-muted text-[11px] mt-1.5">{l}</div>
@@ -855,8 +881,10 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
           </>
         )}
 
-        {/* ── Show block (media orgs only): episodes + canon + publish, on top ── */}
-        {org.org_type === "media" && <ShowModule org={org} />}
+        {/* ── Show block (media orgs only): episodes + canon + publish, on top.
+            A media org with a campaign shows it as the Episodes card further
+            down instead (front-doors brief B4). ── */}
+        {org.org_type === "media" && !campaign && <ShowModule org={org} />}
 
         {/* ── Curated sections (partner pages, above the shared feed) ── */}
         {isCurated && (
@@ -964,8 +992,17 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
             )}
 
             {/* Contribute module, or the Season 12 campaign module on FNRad */}
+            {/* FNRad order (B4): Archive card, Season 12 card, Episodes card. */}
             {campaign ? (
-              <PartnerCampaignModule campaign={campaign} brandColor={brandColor} ctaColor={ctaColor} onContribute={handleContribute} />
+              <>
+                {campaign.archiveHref && <ArchiveCard placement="brand" data={archiveCardData} />}
+                <PartnerCampaignModule campaign={campaign} brandColor={brandColor} ctaColor={ctaColor} onContribute={handleContribute} />
+                {campaign.episodesHref ? (
+                  <ShowModule org={org} variant="card" episodesHref={campaign.episodesHref} showLabel={campaign.showLabel ?? org.name} />
+                ) : (
+                  <ShowModule org={org} />
+                )}
+              </>
             ) : (
             <section className="rounded-2xl p-5 sm:p-6 bg-surface border" style={{ borderColor: `${brandColor}40` }}>
               <h2 className="text-xl text-foreground mb-1.5" style={{ fontFamily: "var(--font-wordmark)" }}>Were you part of the {org.name} story?</h2>
@@ -1003,7 +1040,7 @@ function BrandPageInner({ params }: { params: Promise<{ community: string; slug:
 
         {/* Tabs */}
         <div className="flex items-center mb-5">
-          <div className="flex gap-1 overflow-x-auto">
+          <div ref={tabStripRef} className="flex gap-1 overflow-x-auto">
             {tabs.map(({ key, label, count }) => (
               <button
                 key={key}

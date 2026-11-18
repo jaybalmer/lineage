@@ -7,8 +7,15 @@
 // copy public link, add episode). Chrome-less by design (no Nav / header /
 // breadcrumb), since the brand page already provides those. Replaces the old
 // full-page ShowHubView, which hid all the brand content.
+//
+// variant="card" (front-doors brief, B5/D9): for a show with a campaign, the
+// episode list becomes an Episodes card that links to the searchable episodes
+// page. Editors keep every control on the card, plus a collapsed disclosure
+// holding the old rows, since those rows are the only path to the in-app
+// episode pages.
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { useParams } from "next/navigation"
 import { CommunityLink } from "@/components/ui/community-link"
 import { useLineageStore } from "@/store/lineage-store"
@@ -20,7 +27,13 @@ import type { Org } from "@/types"
 import type { PublicShowPayload } from "@/lib/public-timeline-read"
 import { episodeDisplayLabel } from "@/lib/fnrad"
 
-export function ShowModule({ org }: { org: Org }) {
+type ShowModuleProps =
+  | { org: Org; variant?: "list" }
+  | { org: Org; variant: "card"; episodesHref: string; showLabel: string }
+
+export function ShowModule(props: ShowModuleProps) {
+  const { org } = props
+  const card = props.variant === "card" ? props : null
   const params = useParams<{ community: string }>()
   const community = params?.community ?? "snowboarding"
   const { membership } = useLineageStore()
@@ -82,13 +95,55 @@ export function ShowModule({ org }: { org: Org }) {
     if (slug) window.open(`/t/${slug}`, "_blank", "noopener,noreferrer")
   }
 
+  const episodeRows = (
+    <div className="space-y-2">
+      {episodes.map((e) => (
+        <div
+          key={e.id}
+          className="flex items-center justify-between gap-3 px-4 py-3 bg-background border border-border-default rounded-xl hover:border-blue-500/40 transition-all"
+        >
+          {/* The row itself stays in-app (the in-app episode page is the
+              richer one: mentions, connections, editor controls). Name-based
+              slug so the URL-derived tab title is the episode name, not the
+              raw generated id (the detail page resolves slug OR id). */}
+          <CommunityLink href={`/events/${eventSlug({ name: e.title }) || e.id}`} className="min-w-0 flex-1">
+            <div className="text-sm font-medium text-foreground truncate">{e.title}</div>
+            <div className="text-xs text-muted">
+              {[
+                episodeDisplayLabel(e),
+                e.year ? String(e.year) : null,
+                // Session C: an episode enabled but waiting on its
+                // publish_at reads as scheduled, not public.
+                e.live ? "Public" : e.public_enabled ? "Scheduled" : null,
+              ].filter(Boolean).join(" · ")}
+            </div>
+          </CommunityLink>
+          {/* Session C (D6): the shareable public page, when it is live. */}
+          {e.live && e.slug ? (
+            <a
+              href={`/t/${e.slug}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-accent-strong hover:underline shrink-0"
+            >
+              Public page ↗
+            </a>
+          ) : (
+            <span className="text-muted text-sm shrink-0">→</span>
+          )}
+        </div>
+      ))}
+    </div>
+  )
+  const liveCount = episodes.filter((e) => e.live).length
+
   // Nothing to show and not an editor (no controls to offer): render nothing so a
   // brand-shaped media org with no episodes/canon yet stays clean for visitors.
   const isEmpty = !loading && episodes.length === 0 && (!payload || payload.entries.length === 0)
   if (isEmpty && !isEditor) return null
 
   return (
-    <section className="mb-8 rounded-2xl border border-border-default bg-surface p-5 sm:p-6">
+    <section className={`${card ? "" : "mb-8 "}rounded-2xl border border-border-default bg-surface p-5 sm:p-6`}>
       {curating && (
         <StackCurateModal
           title="Curate the canon"
@@ -111,9 +166,15 @@ export function ShowModule({ org }: { org: Org }) {
 
       {/* Show header + editor controls */}
       <div className="flex items-center justify-between gap-3 flex-wrap mb-4">
-        <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-          <span aria-hidden>🎙</span> The show
-        </h2>
+        {card ? (
+          <h2 className="text-xl text-foreground" style={{ fontFamily: "var(--font-wordmark)" }}>
+            Every episode, mapped
+          </h2>
+        ) : (
+          <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <span aria-hidden>🎙</span> The show
+          </h2>
+        )}
         {isEditor && (
           <div className="flex flex-wrap items-center gap-3">
             <button onClick={() => setAddingEpisode(true)}
@@ -142,7 +203,33 @@ export function ShowModule({ org }: { org: Org }) {
         )}
       </div>
 
+      {/* Episodes card (B5): the count, a line, and the searchable list's door. */}
+      {card && (
+        <div className="mb-6 last:mb-0">
+          <p className="text-sm text-muted font-light leading-relaxed max-w-xl">
+            We have mapped the stories told in each of the {loading ? "" : `${liveCount.toLocaleString("en-US")} `}
+            {card.showLabel} episodes. Find an episode by guest, season or year.
+          </p>
+          <Link
+            href={card.episodesHref}
+            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-accent-strong"
+          >
+            Browse all episodes <span aria-hidden="true">&rarr;</span>
+          </Link>
+          {/* Editors only: the old rows, the one path to the in-app episode pages (D9). */}
+          {isEditor && !loading && episodes.length > 0 && (
+            <details className="mt-5 group">
+              <summary className="cursor-pointer select-none text-xs font-semibold text-muted hover:text-foreground">
+                Editor: all episodes ({episodes.length.toLocaleString("en-US")})
+              </summary>
+              <div className="mt-3">{episodeRows}</div>
+            </details>
+          )}
+        </div>
+      )}
+
       {/* Episodes (the show's primary content) */}
+      {!card && (
       <div className="mb-6">
         <div className="text-[10px] font-semibold text-muted uppercase tracking-widest mb-2">Episodes</div>
         {loading ? (
@@ -153,46 +240,10 @@ export function ShowModule({ org }: { org: Org }) {
             {isEditor && <> <button onClick={() => setAddingEpisode(true)} className="text-blue-400 hover:text-blue-300">Add the first one →</button></>}
           </div>
         ) : (
-          <div className="space-y-2">
-            {episodes.map((e) => (
-              <div
-                key={e.id}
-                className="flex items-center justify-between gap-3 px-4 py-3 bg-background border border-border-default rounded-xl hover:border-blue-500/40 transition-all"
-              >
-                {/* The row itself stays in-app (the in-app episode page is the
-                    richer one: mentions, connections, editor controls). Name-based
-                    slug so the URL-derived tab title is the episode name, not the
-                    raw generated id (the detail page resolves slug OR id). */}
-                <CommunityLink href={`/events/${eventSlug({ name: e.title }) || e.id}`} className="min-w-0 flex-1">
-                  <div className="text-sm font-medium text-foreground truncate">{e.title}</div>
-                  <div className="text-xs text-muted">
-                    {[
-                      episodeDisplayLabel(e),
-                      e.year ? String(e.year) : null,
-                      // Session C: an episode enabled but waiting on its
-                      // publish_at reads as scheduled, not public.
-                      e.live ? "Public" : e.public_enabled ? "Scheduled" : null,
-                    ].filter(Boolean).join(" · ")}
-                  </div>
-                </CommunityLink>
-                {/* Session C (D6): the shareable public page, when it is live. */}
-                {e.live && e.slug ? (
-                  <a
-                    href={`/t/${e.slug}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-accent-strong hover:underline shrink-0"
-                  >
-                    Public page ↗
-                  </a>
-                ) : (
-                  <span className="text-muted text-sm shrink-0">→</span>
-                )}
-              </div>
-            ))}
-          </div>
+          episodeRows
         )}
       </div>
+      )}
 
       {/* Canon (curated highlights) — only when present or curatable */}
       {(loading || (payload && payload.entries.length > 0) || isEditor) && (

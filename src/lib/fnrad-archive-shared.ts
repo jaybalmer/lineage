@@ -16,8 +16,8 @@ export type ArchiveType = (typeof ARCHIVE_TYPES)[number]
 export type ArchiveNode = [number, string, string, string | null, number, number, boolean]
 /** [node index a, node index b, shared story count], a < b */
 export type ArchiveEdge = [number, number, number]
-/** [event id, public slug, display label, title, air date (YYYY-MM-DD or "")] */
-export type ArchiveEpisode = [string, string | null, string, string, string]
+/** [event id, public slug, display label, title, air date (YYYY-MM-DD or ""), story count] */
+export type ArchiveEpisode = [string, string | null, string, string, string, number]
 
 export type ArchiveIndex = {
   built_at: string

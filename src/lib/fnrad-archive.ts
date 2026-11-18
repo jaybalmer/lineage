@@ -246,8 +246,14 @@ export async function buildArchiveIndex(): Promise<ArchiveIndex> {
   }
   const edges = [...keep].sort((x, y) => x[0] - y[0] || x[1] - y[1])
 
+  // Stories per episode: distinct (episode, timestamp), the same definition as totals.stories.
+  const storiesByEpisode = new Map<string, number>()
+  for (const story of storySubjects.keys()) {
+    const ep = story.slice(0, story.indexOf("|"))
+    storiesByEpisode.set(ep, (storiesByEpisode.get(ep) ?? 0) + 1)
+  }
   const episodes: ArchiveEpisode[] = live
-    .map((e): ArchiveEpisode => [e.id, e.public_slug, episodeLabel(e), e.name, e.start_date ?? ""])
+    .map((e): ArchiveEpisode => [e.id, e.public_slug, episodeLabel(e), e.name, e.start_date ?? "", storiesByEpisode.get(e.id) ?? 0])
     .sort((a, b) => b[4].localeCompare(a[4]) || a[3].localeCompare(b[3]))
 
   const count = (t: ArchiveType) => drafts.filter((d) => d.type === t).length
@@ -270,7 +276,7 @@ export async function buildArchiveIndex(): Promise<ArchiveIndex> {
 
 /** The shared, cached index. One build per hour, or per invalidation. A failed
  *  build throws (and is not cached); callers fall back to emptyArchiveIndex(). */
-export const getArchiveIndex = unstable_cache(buildArchiveIndex, ["fnrad-archive-index-v2"], {
+export const getArchiveIndex = unstable_cache(buildArchiveIndex, ["fnrad-archive-index-v3"], {
   revalidate: 3600,
   tags: [FNRAD_ARCHIVE_TAG],
 })
