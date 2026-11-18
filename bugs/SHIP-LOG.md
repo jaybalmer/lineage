@@ -3194,3 +3194,16 @@ FNRad Archive logo (derivative of the FNRad masthead: FNRad over ARCHIVE, ruled,
 - tsc: clean
 
 /fnrad/archive hero now mirrors the archive card: small FNRad / ARCHIVE mark as kicker, "Twelve seasons of snowboarding stories, connected." h1 at the card's size, the card's body and scale line. Replaces the full logo heading from #295. Merged by Claude.
+
+## 2026-11-18 - FNRad Archive empty-index fix (bugfix)
+- type: bugfix
+- pr: #297
+- branch: fix/fnrad-archive-empty-index
+- commit: 3673da4
+- ids: none
+- scope: fnrad-archive-empty-index
+- migration: none
+- status: merged
+- tsc: clean
+
+/fnrad/archive showed only its hero in prod (empty index served from cache). The show lookup's error was ignored, so a failed read built an empty index that unstable_cache kept for the hour. Show lookup now throws; empty builds throw and are never cached; key bumped to fnrad-archive-index-v4. Root read failure inferred (no Vercel logs access). Reported by Jay after #296. Merged by Claude.
