@@ -48,12 +48,19 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
       } ${node[2]}. See who and what they connect to.`
     : DEFAULT_DESCRIPTION
   const url = node ? `${FNRAD_ARCHIVE_HREF}?focus=${ARCHIVE_TYPES[node[0]]}:${encodeURIComponent(node[1])}` : FNRAD_ARCHIVE_HREF
+  // Share card per node (D6): the route handler reads the same ?focus=.
+  const image = {
+    url: node ? `/fnrad/archive/og?focus=${ARCHIVE_TYPES[node[0]]}:${encodeURIComponent(node[1])}` : "/fnrad/archive/og",
+    width: 2400, // rendered at 2x, like the /t/ cards
+    height: 1260,
+    alt: title,
+  }
   return {
     title,
     description,
     alternates: { canonical: url },
-    openGraph: { type: "website", url, siteName: "Linestry", title, description },
-    twitter: { card: "summary_large_image", title, description },
+    openGraph: { type: "website", url, siteName: "Linestry", title, description, images: [image] },
+    twitter: { card: "summary_large_image", title, description, images: [image.url] },
   }
 }
 
