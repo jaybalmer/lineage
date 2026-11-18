@@ -15,6 +15,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { ArchiveExplorer, ArchiveListMore } from "@/components/fnrad/archive-explorer"
+import { archivePathHref } from "@/lib/fnrad-archive-shared"
 import { TrackedLink } from "@/components/fnrad/tracked-link"
 import { FNRAD_ARCHIVE_HREF, FNRAD_ARCHIVE_MARK, FNRAD_BRAND_HREF, FNRAD_CHALLENGE, FNRAD_EPISODES_HREF, FNRAD_HUB_HREF, FNRAD_HUB_REF, hasChallengeGuest } from "@/lib/fnrad"
 import { ARCHIVE_TYPES, REPORT_HREF, TYPE_LABELS, archiveScaleLine, findFocus, readArchiveIndex } from "@/lib/fnrad-archive"
@@ -30,7 +31,7 @@ const DEFAULT_TITLE = "The FNRad Archive on Linestry"
 const DEFAULT_DESCRIPTION =
   "Every FNRad episode mapped: the riders, places, boards and brands, and the stories that connect them."
 
-type SearchParams = Promise<{ focus?: string | string[] }>
+type SearchParams = Promise<{ focus?: string | string[]; view?: string | string[] }>
 
 function fmt(n: number) {
   return n.toLocaleString("en-US")
@@ -65,11 +66,12 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
 }
 
 function TypeList({ index, type }: { index: ArchiveIndex; type: number }) {
-  const items = index.nodes.filter((n) => n[0] === type && n[3])
+  // Every row opens that node's Path in the archive (its entity page is one click on from there).
+  const items = index.nodes.filter((n) => n[0] === type)
   if (!items.length) return null
-  const row = (n: ArchiveIndex["nodes"][number]) => (
-    <li key={n[1]}>
-      <Link href={n[3]!} className="group flex items-baseline justify-between gap-3 py-1.5 text-sm">
+  const row = (n: ArchiveIndex["nodes"][number], k: number) => (
+    <li key={`${n[1]}-${k}`}>
+      <Link href={archivePathHref(n[0], n[1])} className="group flex items-baseline justify-between gap-3 py-1.5 text-sm">
         <span className="min-w-0 truncate text-white/85 group-hover:text-white">{n[2]}</span>
         <span className="shrink-0 text-xs text-white/40">
           {fmt(n[4])} ep · {fmt(n[5])} {n[5] === 1 ? "story" : "stories"}
@@ -91,9 +93,10 @@ function TypeList({ index, type }: { index: ArchiveIndex; type: number }) {
 }
 
 export default async function FnradArchivePage({ searchParams }: { searchParams: SearchParams }) {
-  const { focus } = await searchParams
+  const { focus, view } = await searchParams
   const index = await readArchiveIndex()
   const initialFocus = findFocus(index, focus)
+  const initialView = view === "path" && initialFocus != null ? "path" : "sky"
   const t = index.totals
 
   return (
@@ -142,28 +145,32 @@ export default async function FnradArchivePage({ searchParams }: { searchParams:
           {t.episodes > 0 && <p className="mt-3 text-xs font-medium text-white/55">{archiveScaleLine(t)}</p>}
         </div>
 
-        {/* Search + constellation + panel */}
+        {/* Search, views, panel, and under them either the focused node's
+            stories or the browse lists. Keyed on the URL so a browse-list link
+            (a soft navigation to ?focus=...&view=path) starts fresh on that node. */}
         <section className="mt-8" aria-label="Explore the archive">
           <ArchiveExplorer
+            key={`${initialFocus ?? "none"}:${initialView}`}
             index={index}
             initialFocus={initialFocus}
+            initialView={initialView}
             challengeGuestId={hasChallengeGuest(FNRAD_CHALLENGE.guestId) ? FNRAD_CHALLENGE.guestId : null}
+            browse={
+              index.nodes.length > 0 ? (
+                <section className="mt-14" aria-labelledby="browse">
+                  <h2 id="browse" className="text-xl font-extrabold text-white" style={displayFont}>
+                    Browse the archive
+                  </h2>
+                  <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {ARCHIVE_TYPES.map((_, type) => (
+                      <TypeList key={type} index={index} type={type} />
+                    ))}
+                  </div>
+                </section>
+              ) : null
+            }
           />
         </section>
-
-        {/* Browse lists: the no-script, crawlable path to everything on the map */}
-        {index.nodes.length > 0 && (
-          <section className="mt-14" aria-labelledby="browse">
-            <h2 id="browse" className="text-xl font-extrabold text-white" style={displayFont}>
-              Browse the archive
-            </h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {ARCHIVE_TYPES.map((_, type) => (
-                <TypeList key={type} index={index} type={type} />
-              ))}
-            </div>
-          </section>
-        )}
 
         {/* Episodes: the full, searchable list lives at /fnrad/episodes (front-doors
             brief B3). id="episodes" stays so old #episodes links still land here. */}

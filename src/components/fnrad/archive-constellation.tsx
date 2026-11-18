@@ -37,6 +37,9 @@ type Props = {
   mobile: boolean
   /** Bump to reset the desktop zoom. */
   resetKey: number
+  /** Desktop: stars shown at the fitted zoom. nodeSet holds more, ranked; zooming
+   *  in reveals them (zoom for detail, instead of a thread-count slider). */
+  baseCount: number
 }
 
 type SimNode = SimulationNodeDatum & { i: number; r: number }
@@ -54,13 +57,14 @@ export default function ArchiveConstellation(props: Props) {
 
 // ── desktop: the wide sky ───────────────────────────────────────────────────
 
-function WideSky({ index, nodeSet, neighbours, selected, onSelect, resetKey }: Props) {
+function WideSky({ index, nodeSet, neighbours, selected, onSelect, resetKey, baseCount }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null)
   const [width, setWidth] = useState(960)
   const [transform, setTransform] = useState<ZoomTransform>(zoomIdentity)
   const [hover, setHover] = useState<number | null>(null)
+  const fitKRef = useRef(1)
 
   useEffect(() => {
     const el = wrapRef.current
@@ -113,16 +117,19 @@ function WideSky({ index, nodeSet, neighbours, selected, onSelect, resetKey }: P
     const svg = svgRef.current
     const z = zoomRef.current
     if (!svg || !z || !layout.nodes.length) return
+    // Fit the top stars only; the rest sit around them and appear as you zoom in.
     let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
-    for (const n of layout.nodes) {
+    for (const n of layout.nodes.slice(0, baseCount)) {
       minX = Math.min(minX, n.x! - n.r); maxX = Math.max(maxX, n.x! + n.r)
       minY = Math.min(minY, n.y! - n.r); maxY = Math.max(maxY, n.y! + n.r)
     }
     const pad = 40
     const k = Math.min(2, (width - pad * 2) / (maxX - minX || 1), (DESKTOP_H - pad * 2) / (maxY - minY || 1))
+    fitKRef.current = k
     const t = zoomIdentity.translate(width / 2 - ((minX + maxX) / 2) * k, DESKTOP_H / 2 - ((minY + maxY) / 2) * k).scale(k)
     select(svg).call(z.transform, t)
     // Only on a new layout, a resize or a reset; never on selection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layout, width, resetKey])
 
   const focus = hover ?? selected
@@ -131,9 +138,20 @@ function WideSky({ index, nodeSet, neighbours, selected, onSelect, resetKey }: P
     return new Set([focus, ...neighbours(focus).map(([j]) => j)])
   }, [focus, neighbours])
 
-  // Labels: the largest nodes always, plus whatever is lit.
-  const alwaysLabel = useMemo(() => new Set(nodeSet.slice(0, 18)), [nodeSet])
+  // Level of detail: how far past the fitted zoom we are decides how many stars
+  // show (baseCount at the fit, up to everything in nodeSet), and how many carry
+  // a label. The selected star and whatever is lit always show.
   const k = transform.k
+  const detail = Math.max(1, k / (fitKRef.current || 1))
+  const visibleCount = Math.min(nodeSet.length, Math.round(baseCount * Math.pow(detail, 1.6)))
+  const visible = useMemo(() => {
+    const v = new Set(nodeSet.slice(0, visibleCount))
+    if (selected != null) v.add(selected)
+    if (lit) for (const j of lit) v.add(j)
+    return v
+  }, [nodeSet, visibleCount, selected, lit])
+  const labelCount = Math.round(18 * Math.pow(detail, 1.3))
+  const alwaysLabel = useMemo(() => new Set(nodeSet.slice(0, labelCount)), [nodeSet, labelCount])
 
   return (
     <div ref={wrapRef} className="relative w-full" style={{ height: DESKTOP_H }}>
@@ -152,6 +170,7 @@ function WideSky({ index, nodeSet, neighbours, selected, onSelect, resetKey }: P
           {layout.links.map((l, n) => {
             const a = (l.source as SimNode).i
             const b = (l.target as SimNode).i
+            if (!visible.has(a) || !visible.has(b)) return null
             const on = lit ? lit.has(a) && lit.has(b) && (a === focus || b === focus) : false
             return (
               <line
@@ -167,6 +186,7 @@ function WideSky({ index, nodeSet, neighbours, selected, onSelect, resetKey }: P
             )
           })}
           {layout.nodes.map((n) => {
+            if (!visible.has(n.i)) return null
             const node = index.nodes[n.i]
             const dim = lit ? !lit.has(n.i) : false
             const isSel = n.i === selected
@@ -208,6 +228,13 @@ function WideSky({ index, nodeSet, neighbours, selected, onSelect, resetKey }: P
           })}
         </g>
       </svg>
+      {nodeSet.length > baseCount && (
+        <p className="pointer-events-none absolute right-4 top-3 text-[11px] text-white/40">
+          {visibleCount < nodeSet.length
+            ? `Showing ${visibleCount} of ${nodeSet.length}. Zoom in for more.`
+            : `Showing all ${nodeSet.length}.`}
+        </p>
+      )}
     </div>
   )
 }

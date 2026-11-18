@@ -87,6 +87,8 @@ type MentionRow = {
     title: string
     excerpt: string
     decision: StoryDecision
+    start_year: number | null
+    end_year: number | null
   } | null
 }
 
@@ -159,7 +161,7 @@ async function loadBatch(db: SupabaseClient, episodeIds: string[]) {
       .from("podcast_staging_mentions")
       .select(
         `id, decision, published_mention_id, node:podcast_staging_nodes(${NODE_COLS}), ` +
-          "story:podcast_staging_stories(id, episode_id, timestamp_seconds, title, excerpt, decision)",
+          "story:podcast_staging_stories(id, episode_id, timestamp_seconds, title, excerpt, decision, start_year, end_year)",
       )
       .in("story_id", storyIds.slice(i, i + 150))
     if (mErr) throw new Error(`mentions: ${mErr.message}`)
@@ -424,6 +426,9 @@ export async function publishEpisodes(
         timestamp_seconds: m.story!.timestamp_seconds,
         excerpt: m.story!.excerpt,
         story_title: m.story!.title,
+        // Story years for the archive's Path view (migration 20261118000002).
+        story_start_year: m.story!.start_year,
+        story_end_year: m.story!.start_year != null ? (m.story!.end_year ?? m.story!.start_year) : null,
         status: "published",
         created_by: actorId,
       })
