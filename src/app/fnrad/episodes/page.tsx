@@ -7,7 +7,7 @@ import type { Metadata } from "next"
 import Link from "next/link"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { EpisodeBrowser } from "@/components/fnrad/episode-browser"
-import { FNRAD_ARCHIVE_HREF, FNRAD_BRAND_HREF, FNRAD_HUB_HREF } from "@/lib/fnrad"
+import { FNRAD_ARCHIVE_HREF, FNRAD_ARCHIVE_MARK, FNRAD_BRAND_HREF, FNRAD_HUB_HREF } from "@/lib/fnrad"
 import { REPORT_HREF, readArchiveIndex } from "@/lib/fnrad-archive"
 
 const displayFont = { fontFamily: "var(--font-display)" }
@@ -46,6 +46,10 @@ export default async function FnradEpisodesPage() {
           </Link>
         </header>
 
+        <Link href={FNRAD_ARCHIVE_HREF} aria-label="The FNRad Archive" className="inline-block mb-5 opacity-90 hover:opacity-100 transition-opacity">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={FNRAD_ARCHIVE_MARK.src} width={FNRAD_ARCHIVE_MARK.width} height={FNRAD_ARCHIVE_MARK.height} alt="" className="h-14 w-auto" />
+        </Link>
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">FNRad Podcast · Presented by Linestry</p>
         <h1 className="mt-3 text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight" style={displayFont}>
           Every FNRad episode

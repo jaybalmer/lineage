@@ -14,7 +14,7 @@
 import Link from "next/link"
 import { useEffect, useMemo, useState } from "react"
 import { ENTITY_COLORS } from "@/lib/entity-colors"
-import { FNRAD_ARCHIVE_HREF } from "@/lib/fnrad"
+import { FNRAD_ARCHIVE_HREF, FNRAD_ARCHIVE_MARK } from "@/lib/fnrad"
 import { trackEvent } from "@/lib/analytics"
 import type { ArchiveCardData } from "@/lib/fnrad-archive-shared"
 
@@ -98,7 +98,15 @@ export function ArchiveCard({ data, placement, size = "feature", className }: Pr
         <Sky data={card} compact={compact} />
 
         <div className={`relative flex flex-1 flex-col justify-end px-5 pb-5 @[40rem]:max-w-[56%] @[40rem]:justify-center @[40rem]:px-8 @[40rem]:py-8 ${compact ? "pt-[130px] @[40rem]:pt-6" : "pt-[220px] @[40rem]:pt-8"}`}>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">The FNRad Archive</p>
+          {/* The archive's own mark as the kicker. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={FNRAD_ARCHIVE_MARK.src}
+            width={FNRAD_ARCHIVE_MARK.width}
+            height={FNRAD_ARCHIVE_MARK.height}
+            alt="The FNRad Archive"
+            className={`w-auto self-start ${compact ? "h-9" : "h-11"}`}
+          />
           <h2
             className={`mt-2 font-extrabold tracking-tight text-white leading-tight ${compact ? "text-xl @[40rem]:text-2xl" : "text-2xl @[40rem]:text-[1.7rem]"}`}
             style={displayFont}

@@ -26,6 +26,14 @@ export const FNRAD_ARCHIVE_HREF = "/fnrad/archive"
 /** Every FNRad episode, searchable (briefs/fnrad-archive-front-doors-brief-v1.md, B2). */
 export const FNRAD_EPISODES_HREF = "/fnrad/episodes"
 
+/** The FNRad Archive logo (white, for the archive's dark surfaces). Built by
+ *  scripts/build-fnrad-archive-logo.mjs into public/brand/fnrad-archive/, which
+ *  also holds the black and sticker versions and PNGs. width/height are the
+ *  SVG viewBox, so an <img> reserves the right box before it loads. */
+export const FNRAD_ARCHIVE_LOGO = { src: "/brand/fnrad-archive/fnrad-archive-logo-white.svg", width: 784, height: 485 } as const
+/** The small two-line mark (FNRad / ARCHIVE), for anything under about 120 px wide. */
+export const FNRAD_ARCHIVE_MARK = { src: "/brand/fnrad-archive/fnrad-archive-mark-white.svg", width: 784, height: 417 } as const
+
 /** The show's host, matched case-insensitively against person names. He is in
  *  every episode, so the archive constellation and the admin Sketches tab leave
  *  him out of the drawing (he stays in lists and search). One list, two users. */
