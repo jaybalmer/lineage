@@ -13,7 +13,7 @@ import { BrandMark } from "@/components/ui/brand-mark"
 import { ChallengeCard } from "@/components/fnrad/challenge-card"
 import { readShowHub, readChallengeGuest } from "@/lib/public-timeline-read"
 import type { ShowHubEpisode } from "@/lib/public-timeline-read"
-import { FNRAD_SHOW_SLUG, FNRAD_HUB_REF, FNRAD_CHALLENGE, FNRAD_ARCHIVE_HREF } from "@/lib/fnrad"
+import { FNRAD_SHOW_SLUG, FNRAD_HUB_REF, FNRAD_CHALLENGE, FNRAD_ARCHIVE_HREF, episodeDisplayLabel } from "@/lib/fnrad"
 import { archiveScaleLine, readArchiveIndex } from "@/lib/fnrad-archive"
 import {
   EQUITY_POOL_SHARES,
@@ -176,7 +176,7 @@ export default async function FnradHubPage() {
             <div className="flex flex-col gap-3">
               {episodes.map((ep) => {
                 const epLine = [
-                  ep.episode_number != null ? `Episode ${ep.episode_number}` : null,
+                  episodeDisplayLabel(ep),
                   ep.year ? String(ep.year) : null,
                 ]
                   .filter(Boolean)

@@ -18,6 +18,7 @@ import { StackCurateModal } from "@/components/ui/stack-curate-modal"
 import { EpisodeCreateModal } from "@/components/events/episode-create-modal"
 import type { Org } from "@/types"
 import type { PublicShowPayload } from "@/lib/public-timeline-read"
+import { episodeDisplayLabel } from "@/lib/fnrad"
 
 export function ShowModule({ org }: { org: Org }) {
   const params = useParams<{ community: string }>()
@@ -166,7 +167,7 @@ export function ShowModule({ org }: { org: Org }) {
                   <div className="text-sm font-medium text-foreground truncate">{e.title}</div>
                   <div className="text-xs text-muted">
                     {[
-                      e.episode_number != null ? `Episode ${e.episode_number}` : null,
+                      episodeDisplayLabel(e),
                       e.year ? String(e.year) : null,
                       // Session C: an episode enabled but waiting on its
                       // publish_at reads as scheduled, not public.

@@ -7,6 +7,7 @@ import { PublicShowView } from "@/components/public-timeline/public-show-view"
 import { readPublicTimeline, readPublicStack, readEventStack, readOrgStack } from "@/lib/public-timeline-read"
 import { isEditorSession, getServiceClient } from "@/lib/auth"
 import { resolvePublicSlugAlias } from "@/lib/public-slug"
+import { episodeDisplayLabel } from "@/lib/fnrad"
 
 // PB-010 Phase 2: the chromeless public timeline at /t/[slug].
 //
@@ -59,7 +60,7 @@ export async function generateMetadata(
     const { owner, meta } = episode
     const bits = [
       meta.show ? `${meta.show.name} on Linestry` : "An episode on Linestry",
-      meta.episode_number != null ? `episode ${meta.episode_number}` : null,
+      episodeDisplayLabel(meta),
       meta.guests.length ? `with ${meta.guests.map((g) => g.display_name).join(", ")}` : null,
     ].filter(Boolean)
     const description = bits.join(". ") + "."

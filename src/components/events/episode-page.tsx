@@ -23,6 +23,7 @@ import { MentionGroup } from "@/components/feed/mention-group"
 import { groupMentionsByMoment } from "@/lib/mentions"
 import type { Event, Mention } from "@/types"
 import type { PublicEpisodePayload } from "@/lib/public-timeline-read"
+import { episodeDisplayLabel } from "@/lib/fnrad"
 
 // ── Session C scheduled release ──────────────────────────────────────────────
 // The picker is a <input type="datetime-local">, which speaks LOCAL wall-clock
@@ -235,7 +236,7 @@ export function EpisodeView({ instance }: { instance: Event }) {
         <div className="bg-surface border border-border-default rounded-xl p-6 mb-6">
           <div className="text-xs text-muted uppercase tracking-widest mb-1 flex items-center gap-2">
             <span className="text-fuchsia-500">Episode</span>
-            {instance.episode_number != null && <span>· #{instance.episode_number}</span>}
+            {episodeDisplayLabel(instance) && <span>· {episodeDisplayLabel(instance)}</span>}
             {instance.year && <span>· {instance.year}</span>}
           </div>
           <h1 className="text-2xl font-bold text-foreground">{instance.name}</h1>

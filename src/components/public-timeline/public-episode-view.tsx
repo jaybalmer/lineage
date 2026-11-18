@@ -13,6 +13,7 @@ import { groupMentionsByMoment } from "@/lib/mentions"
 import { FNRAD_HUB_REF } from "@/lib/fnrad"
 import { parseYouTubeId } from "@/lib/utils"
 import type { PublicEpisodePayload } from "@/lib/public-timeline-read"
+import { episodeDisplayLabel } from "@/lib/fnrad"
 
 const ONBOARDING_HREF = `/onboarding?ref=${FNRAD_HUB_REF}`
 
@@ -68,7 +69,7 @@ export function PublicEpisodeView({ payload, preview = false }: {
   const moreLinked = linkedTotal - linkedStories.length
   const year = owner.era_start
   const epLine = [
-    meta.episode_number != null ? `Episode ${meta.episode_number}` : null,
+    episodeDisplayLabel(meta),
     year ? String(year) : null,
   ].filter(Boolean).join("  ·  ")
 

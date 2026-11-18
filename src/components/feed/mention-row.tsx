@@ -25,6 +25,7 @@ import { formatTimestamp } from "@/lib/mentions"
 import { parseYouTubeId, formatSmartDate } from "@/lib/utils"
 import { entityHref } from "@/lib/entity-links"
 import type { Mention } from "@/types"
+import { episodeDisplayLabel } from "@/lib/fnrad"
 
 /**
  * Link to the episode media, deep-linked to the mentioned moment when we can.
@@ -45,12 +46,13 @@ function watchLink(mention: Mention): { href: string; seeks: boolean } | null {
     : { href: `https://www.youtube.com/watch?v=${id}`, seeks: false }
 }
 
-/** "FNRad #142" when both are known, degrading to whatever we do have. */
+/** "FNRad S10 E15" when both are known, degrading to whatever we do have. The
+ *  show's own label, never the internal episode_number (FNRad Archive, Part C). */
 export function episodeLabel(mention: Mention): string {
   const ep = mention.episode
   if (!ep) return "an episode"
   const show = ep.show_name
-  const num = ep.episode_number != null ? `#${ep.episode_number}` : null
+  const num = episodeDisplayLabel(ep)
   if (show && num) return `${show} ${num}`
   if (show) return show
   return ep.name
