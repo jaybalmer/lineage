@@ -16,7 +16,7 @@ import Link from "next/link"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { ArchiveExplorer, ArchiveListMore } from "@/components/fnrad/archive-explorer"
 import { TrackedLink } from "@/components/fnrad/tracked-link"
-import { FNRAD_ARCHIVE_HREF, FNRAD_BRAND_HREF, FNRAD_CHALLENGE, FNRAD_EPISODES_HREF, FNRAD_HUB_HREF, FNRAD_HUB_REF, hasChallengeGuest } from "@/lib/fnrad"
+import { FNRAD_ARCHIVE_HREF, FNRAD_ARCHIVE_LOGO, FNRAD_BRAND_HREF, FNRAD_CHALLENGE, FNRAD_EPISODES_HREF, FNRAD_HUB_HREF, FNRAD_HUB_REF, hasChallengeGuest } from "@/lib/fnrad"
 import { ARCHIVE_TYPES, REPORT_HREF, TYPE_LABELS, archiveScaleLine, findFocus, readArchiveIndex } from "@/lib/fnrad-archive"
 import type { ArchiveIndex } from "@/lib/fnrad-archive"
 import { ENTITY_COLORS } from "@/lib/entity-colors"
@@ -121,11 +121,16 @@ export default async function FnradArchivePage({ searchParams }: { searchParams:
           <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/45">
             FNRad Podcast · Presented by Linestry
           </p>
-          <h1
-            className="mt-3 text-3xl sm:text-5xl font-extrabold tracking-tight text-white leading-tight"
-            style={displayFont}
-          >
-            The FNRad Archive
+          {/* The archive's logo is the heading; its alt text is the page title. */}
+          <h1 className="mt-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={FNRAD_ARCHIVE_LOGO.src}
+              width={FNRAD_ARCHIVE_LOGO.width}
+              height={FNRAD_ARCHIVE_LOGO.height}
+              alt="The FNRad Archive"
+              className="h-auto w-[260px] sm:w-[360px]"
+            />
           </h1>
           <p className="mt-4 text-base font-light leading-relaxed text-white/80">
             Twelve seasons of FNRad, mapped. Every rider, hill, board, brand and contest the guests talked about,
