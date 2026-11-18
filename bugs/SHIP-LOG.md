@@ -3181,3 +3181,16 @@ ArchiveCard (live constellation laid out on the server with d3-force, inline SVG
 - tsc: clean
 
 FNRad Archive logo (derivative of the FNRad masthead: FNRad over ARCHIVE, ruled, boxed, SNOWBOARD PODCAST · LINESTRY.COM/FNRAD) plus a two-line small mark. Outlined black/white/sticker SVG+PNG in public/brand/fnrad-archive/, built by scripts/build-fnrad-archive-logo.mjs from Tinos Bold (added, Apache 2.0) via opentype.js (new devDependency). Placed as the /fnrad/archive h1, above the /fnrad/episodes heading, and as the archive card kicker. FNRad sign-off on the derivative still owed. Merged by Claude.
+
+## 2026-11-18 - FNRad Archive page hero at card scale (feature)
+- type: feature
+- pr: #296
+- branch: feat/fnrad-archive-hero-scale
+- commit: 063f51f
+- ids: none
+- scope: fnrad-archive-hero-scale
+- migration: none
+- status: merged
+- tsc: clean
+
+/fnrad/archive hero now mirrors the archive card: small FNRad / ARCHIVE mark as kicker, "Twelve seasons of snowboarding stories, connected." h1 at the card's size, the card's body and scale line. Replaces the full logo heading from #295. Merged by Claude.
