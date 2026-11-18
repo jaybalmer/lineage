@@ -3207,3 +3207,29 @@ FNRad Archive logo (derivative of the FNRad masthead: FNRad over ARCHIVE, ruled,
 - tsc: clean
 
 /fnrad/archive showed only its hero in prod (empty index served from cache). The show lookup's error was ignored, so a failed read built an empty index that unstable_cache kept for the hour. Show lookup now throws; empty builds throw and are never cached; key bumped to fnrad-archive-index-v4. Root read failure inferred (no Vercel logs access). Reported by Jay after #296. Merged by Claude.
+
+## 2026-11-18 - FNRad Archive Path view, pair panel, zoom detail, rider links (feature)
+- type: feature
+- pr: #298
+- branch: feat/fnrad-archive-path
+- commit: 4d31e65
+- ids: none
+- scope: fnrad-archive-sketches-path
+- migration: 20261118000002_mentions_story_years.sql (SAFE, applied to prod before merge, verified: 7,074 of 8,386 stories dated)
+- status: merged
+- tsc: clean
+
+Sketches views in the public archive, phase 1. mentions.story_start_year/end_year (backfilled from staging, written by publish). GET /api/fnrad/archive/node and /summary. Path view (plain SVG, pinned names, phone opens on peak year), pair box with year chips, constellation up to 400 stars revealed by zoom, focused node's full story list replaces browse lists, browse rows and panel CTA open a node's Path, rider page links to its Path. Merged by Claude.
+
+## 2026-11-18 - FNRad Archive Retold view (feature)
+- type: feature
+- pr: #299
+- branch: feat/fnrad-archive-retold
+- commit: 5538791
+- ids: none
+- scope: fnrad-archive-sketches-retold
+- migration: 20261118000003_fnrad_retellings.sql (SAFE, new tables with RLS, applied, verified) + data load via scripts/import-fnrad-retellings.mjs (366 entries, 787 tellings)
+- status: merged
+- tsc: clean
+
+Retold tab: Pass B groupings only (no model-written differences/notes). GET /api/fnrad/archive/retold (277 entries with 2+ live tellings). Searchable list, focus filter, side-by-side tellings with role and listen links. CLAUDE.md schema list updated. Merged by Claude.
