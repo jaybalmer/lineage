@@ -127,7 +127,8 @@ reads or writes `profiles`.
 | `distributions`, `gift_codes` | Equity distributions and gifted-membership codes |
 | `invites`, `claim_requests`, `person_invite_notifications`, `person_slug_aliases`, `merge_log` | Invite/claim flow, slug history, and merge audit trail |
 | `public_stack_entries` | Curated Stack View entries for `/t/[slug]` (profile, event, and org owners) |
-| `mentions` | Podcast/episode mentions |
+| `mentions` | Podcast/episode mentions. `story_start_year` / `story_end_year` carry the story's years (copied from staging; feed the FNRad Archive Path view) |
+| `fnrad_retellings`, `fnrad_retelling_tellings` | FNRad Archive Retold view: Pass B groupings of stories told more than once (title, years, kind) and their tellings (episode event, timestamp, role). Groupings only, no model-written notes. Loaded by `scripts/import-fnrad-retellings.mjs`; RLS on, server reads only |
 | `board_image_votes`, `place_image_votes`, `event_image_votes` | Image voting per entity type |
 | `analytics_events` | Diagnostics Phase 1 event log, surfaced at `/admin/activity` |
 | `email_suppressions` | Unsubscribe list. Notification sends must check `isEmailSuppressed` |
@@ -136,7 +137,8 @@ reads or writes `profiles`.
 `_backfill_visibility_20260617` is a leftover backfill scratch table, not part of the model.
 
 That list is the whole `public` schema as of 2026-08-04 (59 base tables including the
-backfill leftover, plus the two `_public` views). If a table is not on it, it does not
+backfill leftover, plus the two `_public` views), plus the two `fnrad_retelling*` tables
+added 2026-11-18. The `podcast_staging_*` tables (admin podcast pipeline) are not listed. If a table is not on it, it does not
 exist.
 
 ### Adding a column

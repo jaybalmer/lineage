@@ -22,10 +22,10 @@ import { mentionHref } from "@/lib/mention-links"
 import type { PublicTimelineEntities } from "@/lib/public-timeline-read"
 import type { MentionSubjectType } from "@/types"
 import { ARCHIVE_TYPES, FNRAD_ARCHIVE_TAG, archiveScaleLine } from "@/lib/fnrad-archive-shared"
-import type { ArchiveCardData, ArchiveEdge, ArchiveEpisode, ArchiveIndex, ArchiveNode, ArchiveNodeStories, ArchiveType } from "@/lib/fnrad-archive-shared"
+import type { ArchiveCardData, ArchiveEdge, ArchiveEpisode, ArchiveIndex, ArchiveNode, ArchiveNodeStories, ArchiveRetelling, ArchiveRetold, ArchiveType } from "@/lib/fnrad-archive-shared"
 
 export { ARCHIVE_TYPES, FNRAD_ARCHIVE_TAG, REPORT_HREF, TYPE_LABELS, archiveScaleLine, findFocus } from "@/lib/fnrad-archive-shared"
-export type { ArchiveCardData, ArchiveEdge, ArchiveEpisode, ArchiveIndex, ArchiveNode, ArchiveNodeStories, ArchiveType } from "@/lib/fnrad-archive-shared"
+export type { ArchiveCardData, ArchiveEdge, ArchiveEpisode, ArchiveIndex, ArchiveNode, ArchiveNodeStories, ArchiveRetelling, ArchiveRetold, ArchiveType } from "@/lib/fnrad-archive-shared"
 
 /** A story naming more subjects than this is a roll call, not a connection. */
 const ROLL_CALL = 12
@@ -516,4 +516,100 @@ const nodeStoriesCached = unstable_cache(
 /** Every story about one node, with its years and the other subjects in it. */
 export async function getArchiveNodeStories(type: ArchiveType, id: string): Promise<ArchiveNodeStories> {
   return nodeStoriesCached(type, id)
+}
+
+// ── Retold: stories told more than once (Pass B groupings) ───────────────────
+
+type RetellingRow = { id: string; title: string; years: string | null; start_year: number | null; kind: "same_event" | "same_teller" }
+type TellingRow = { retelling_id: string; episode_event_id: string; timestamp_seconds: number; role: string | null; position: number }
+
+const retoldCached = unstable_cache(
+  async (): Promise<ArchiveRetold> => {
+    const index = await getArchiveIndex()
+    const live = new Set(index.episodes.map((e) => e[0]))
+    const db = getServiceClient()
+
+    const { data: rData, error: rErr } = await db.from("fnrad_retellings").select("id, title, years, start_year, kind")
+    if (rErr) throw new Error(`retellings: ${rErr.message}`)
+    const tRows: TellingRow[] = []
+    for (let from = 0; ; from += PAGE) {
+      const { data, error } = await db
+        .from("fnrad_retelling_tellings")
+        .select("retelling_id, episode_event_id, timestamp_seconds, role, position")
+        .order("retelling_id")
+        .order("position")
+        .range(from, from + PAGE - 1)
+      if (error) throw new Error(`tellings: ${error.message}`)
+      const page = (data ?? []) as TellingRow[]
+      tRows.push(...page)
+      if (page.length < PAGE) break
+    }
+    const tellings = tRows.filter((t) => live.has(t.episode_event_id))
+
+    // Each telling's published story: title, excerpt and who is named in it.
+    const want = new Set(tellings.map((t) => `${t.episode_event_id}|${t.timestamp_seconds}`))
+    const story = new Map<string, { title: string; excerpt: string; subjects: Set<string> }>()
+    const episodes = [...new Set(tellings.map((t) => t.episode_event_id))]
+    await Promise.all(
+      chunks(episodes, 40).map(async (ids) => {
+        for (let from = 0; ; from += PAGE) {
+          const { data, error } = await db
+            .from("mentions")
+            .select("episode_event_id, timestamp_seconds, subject_type, subject_id, story_title, excerpt")
+            .in("episode_event_id", ids)
+            .eq("status", "published")
+            .order("id")
+            .range(from, from + PAGE - 1)
+          if (error) throw new Error(`retold mentions: ${error.message}`)
+          const page = (data ?? []) as (MentionRow & { story_title: string | null; excerpt: string | null })[]
+          for (const m of page) {
+            const k = `${m.episode_event_id}|${m.timestamp_seconds}`
+            if (!want.has(k)) continue
+            const s = story.get(k) ?? { title: m.story_title ?? "", excerpt: m.excerpt ?? "", subjects: new Set<string>() }
+            const t = ARCHIVE_TYPES.indexOf(m.subject_type as ArchiveType)
+            if (t >= 0) s.subjects.add(`${t}:${m.subject_id}`)
+            story.set(k, s)
+          }
+          if (page.length < PAGE) break
+        }
+      }),
+    )
+
+    const byEntry = new Map<string, TellingRow[]>()
+    for (const t of tellings) {
+      if (!story.has(`${t.episode_event_id}|${t.timestamp_seconds}`)) continue
+      byEntry.set(t.retelling_id, [...(byEntry.get(t.retelling_id) ?? []), t])
+    }
+    const entries: ArchiveRetold["entries"] = []
+    for (const r of (rData ?? []) as RetellingRow[]) {
+      const ts = byEntry.get(r.id) ?? []
+      if (ts.length < 2) continue // a retelling needs two public tellings
+      const subjects = new Set<string>()
+      const out = ts.map((t): ArchiveRetelling[4][number] => {
+        const s = story.get(`${t.episode_event_id}|${t.timestamp_seconds}`)!
+        s.subjects.forEach((k) => subjects.add(k))
+        return [t.episode_event_id, t.timestamp_seconds, t.role, s.title, s.excerpt]
+      })
+      entries.push([r.id, r.title, r.years, r.kind, out, [...subjects]])
+    }
+    const startOf = new Map(((rData ?? []) as RetellingRow[]).map((r) => [r.id, r.start_year ?? 9999]))
+    entries.sort((a, b) => b[4].length - a[4].length || (startOf.get(a[0]) ?? 9999) - (startOf.get(b[0]) ?? 9999))
+
+    const media: Record<string, string> = {}
+    await Promise.all(
+      chunks(episodes, ID_CHUNK).map(async (ids) => {
+        const { data, error } = await db.from("events").select("id, media_url").in("id", ids)
+        if (error) throw new Error(`retold media: ${error.message}`)
+        for (const r of (data ?? []) as { id: string; media_url: string | null }[]) if (r.media_url) media[r.id] = r.media_url
+      }),
+    )
+    return { entries, media }
+  },
+  ["fnrad-archive-retold-v1"],
+  { revalidate: 3600, tags: [FNRAD_ARCHIVE_TAG] },
+)
+
+/** Every public retelling: entries with two or more tellings on live episodes. */
+export async function getArchiveRetold(): Promise<ArchiveRetold> {
+  return retoldCached()
 }
