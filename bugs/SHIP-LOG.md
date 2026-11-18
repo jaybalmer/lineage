@@ -3168,3 +3168,16 @@ ArchiveCard (live constellation laid out on the server with d3-force, inline SVG
 - tsc: clean
 
 /fnrad/episodes searchable list with per-episode story counts (index key v3). Archive and /fnrad episode links repointed. FNRad brand page order Heritage, Timeline, Archive card, Season 12, Episodes card (ShowModule variant="card", editor disclosure keeps old rows), archive-total header stats, brand pages no longer open scrolled to the tabs. Editor view (B-4) not exercised in browser; check on device. Merged by Claude.
+
+## 2026-11-18 - FNRad Archive logo (feature)
+- type: feature
+- pr: #295
+- branch: feat/fnrad-archive-logo
+- commit: 025ea81
+- ids: none
+- scope: fnrad-archive-logo
+- migration: none
+- status: merged
+- tsc: clean
+
+FNRad Archive logo (derivative of the FNRad masthead: FNRad over ARCHIVE, ruled, boxed, SNOWBOARD PODCAST · LINESTRY.COM/FNRAD) plus a two-line small mark. Outlined black/white/sticker SVG+PNG in public/brand/fnrad-archive/, built by scripts/build-fnrad-archive-logo.mjs from Tinos Bold (added, Apache 2.0) via opentype.js (new devDependency). Placed as the /fnrad/archive h1, above the /fnrad/episodes heading, and as the archive card kicker. FNRad sign-off on the derivative still owed. Merged by Claude.
