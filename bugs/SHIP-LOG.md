@@ -3271,3 +3271,15 @@ Phones opened on a default centre (Paul Fidrych) that could not be cleared, sinc
 - tsc: clean
 
 Phones keep the constellation sky when a star is selected (links lit, star centred) instead of jumping to the spoked ring; a Focus button swaps the ring in and out. Tapping the selected star closes it on phones too. Desktop unchanged. Requested by Jay. Merged by Claude.
+
+## 2026-11-19 - FNRad episode place names, hub order, challenge to Schoph (bug fix + feature)
+- type: bugfix
+- pr: #303
+- branch: claude/missing-episodes-archive-ae48bb
+- ids: none
+- scope: fnrad-episode-place-names-hub-order-challenge-schoph
+- migration: none
+- status: merged
+- tsc: clean
+
+Public /t/ episode pages showed every place mention as its raw id (loadOwnerStack selected places.image_url, which does not exist, so the places query failed); the column is dropped. The /fnrad hub episode list sorted inconsistently once bonus episodes sat among numbered ones (S12E7 above S12E8); now newest first by air date, then number. Weekly challenge moved to Schoph (S12E8) with the new line "Do you have a picture or know a story about an FNRad guest? Add your story!". Same session: Season 12 archive catch-up (batch-14-s12, 8 episodes) extracted, dated, loaded and published from staging (674 mentions, 3 new episodes public), plus Schoph's node approved and published (53 mentions); logged in linestry-ops RUN-LOG. Requested by Jay. Merged by Claude.
