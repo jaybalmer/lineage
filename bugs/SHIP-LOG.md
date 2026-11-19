@@ -3259,3 +3259,15 @@ Reset view now clears the selected node, pair, year, retold story and URL params
 - tsc: clean
 
 Phones opened on a default centre (Paul Fidrych) that could not be cleared, since the mobile constellation could only draw a centred ring. Phones now show the sky (40 stars at the fit, pinch for more) until a star is tapped; the ring closes on its centre, open space, the panel X or Reset view. Hover is mouse-only. Reported by Jay. Merged by Claude.
+
+## 2026-11-18 - FNRad Archive phone sky with Focus toggle (feature)
+- type: feature
+- pr: #302
+- branch: feat/fnrad-archive-mobile-sky-focus
+- ids: none
+- scope: fnrad-archive-mobile-sky-focus
+- migration: none
+- status: merged
+- tsc: clean
+
+Phones keep the constellation sky when a star is selected (links lit, star centred) instead of jumping to the spoked ring; a Focus button swaps the ring in and out. Tapping the selected star closes it on phones too. Desktop unchanged. Requested by Jay. Merged by Claude.
