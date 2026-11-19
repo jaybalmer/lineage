@@ -20,6 +20,7 @@ import { AddStoryModal } from "@/components/ui/add-story-modal"
 import { SignInPrompt } from "@/components/ui/sign-in-prompt"
 import { BrandMark } from "@/components/ui/brand-mark"
 import { BoardSources, BoardImageCatalogueLink, useBoardSources } from "@/components/boards/board-sources"
+import { seededCaption } from "@/lib/board-seeded-image"
 import type { Story } from "@/types"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -173,6 +174,7 @@ export default function BoardPage(props: { params: Promise<{ community: string; 
 function BoardPageInner({ params }: { params: Promise<{ community: string; id: string }> }) {
   const { community, id } = use(params)
   const { catalog, activePersonId } = useLineageStore()
+  const addToast = useLineageStore((s) => s.addToast)
   const personLink = usePersonHref()
   const isAuth = isAuthUser(activePersonId)
 
@@ -210,6 +212,10 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
   // under the image when that is what is being shown.
   const [boardImageSource, setBoardImageSource] = useState<string | null>(null)
   const [boardImageLink, setBoardImageLink] = useState<string | null>(null)
+  // Provenance when the resolved cover is a seeded placeholder (board_sources
+  // kind='image'): drives the attribution caption and the Replace / Report actions.
+  type SeededMeta = { source_tier: number | null; source_url: string; publisher: string; doc_title: string | null; page: number | null }
+  const [seededMeta, setSeededMeta] = useState<SeededMeta | null>(null)
 
   // All vote rows that carry a suggested_image_url — used to find next image after deletion
   type VoteRow = { id: string; vote: string; user_id: string; suggested_image_url?: string | null }
@@ -226,7 +232,9 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
 
   // Credit only the auto-fetched (Serper) cover, and only when it is the one on
   // screen (community uploads and the stored column are not third-party sources).
-  const showingAutoImage = !suggestedImageUrl && !board.image_url && !!boardImageUrl
+  const showingAutoImage = !suggestedImageUrl && !board.image_url && !!boardImageUrl && !seededMeta
+  // A seeded placeholder is on screen: caption it and offer Replace / Report.
+  const showingSeededImage = !suggestedImageUrl && !board.image_url && !!boardImageUrl && !!seededMeta
   const imageCreditName = (() => {
     if (boardImageLink) {
       try { return new URL(boardImageLink).hostname.replace(/^www\./, "") } catch { /* fall back */ }
@@ -283,13 +291,19 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
         setImageVoteRows(rows)
       })
 
-    fetch(`/api/board-image?brand=${encodeURIComponent(boardBrand)}&model=${encodeURIComponent(boardModel)}&year=${boardYear}`)
+    // skip_community: this page resolves the community suggestion itself (above),
+    // so the route returns the seeded placeholder or the live lookup only.
+    fetch(`/api/board-image?brand=${encodeURIComponent(boardBrand)}&model=${encodeURIComponent(boardModel)}&year=${boardYear}&board_id=${encodeURIComponent(boardId)}&skip_community=1`)
       .then((r) => r.json())
-      .then(({ url, source, link }) => {
+      .then(({ url, source, link, publisher, doc_title, page, source_tier }) => {
         if (!url) return
         setBoardImageUrl(url)
-        setBoardImageSource(source ?? null)
-        setBoardImageLink(link ?? null)
+        if (source === "seeded") {
+          setSeededMeta({ source_tier: source_tier ?? null, source_url: link, publisher: publisher ?? "", doc_title: doc_title ?? null, page: page ?? null })
+        } else {
+          setBoardImageSource(source ?? null)
+          setBoardImageLink(link ?? null)
+        }
       })
       .catch(() => {})
 
@@ -362,6 +376,21 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
       userVote: vote,
       userVoteId: (data as { id: string } | null)?.id ?? v.userVoteId,
     }))
+  }
+
+  // "Report this image" on a seeded placeholder: a flag vote on the board image
+  // (board_image_votes, surfaced at /admin/board-images). Signed out, prompt sign-in.
+  async function handleReportImage() {
+    if (!isAuth) { setSigninPromptOpen(true); return }
+    if (imageVotes.userVote !== "flag") await handleVote("flag")
+    addToast("Thanks. We will review this image.", "info")
+  }
+
+  // "Replace with your photo": open the existing upload / link form.
+  function handleReplaceImage() {
+    if (!isAuth) { setSigninPromptOpen(true); return }
+    setShowSuggestForm(true)
+    setPhotoError(null)
   }
 
   // Saves a permanent image URL to board_image_votes and updates display
@@ -554,6 +583,33 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
                     className="text-[10px] text-muted hover:text-red-400 transition-colors disabled:opacity-50"
                   >
                     {removingPhoto ? "removing…" : "remove my photo"}
+                  </button>
+                </div>
+              )}
+              {/* Seeded placeholder: attribution + Replace / Report (D5, D6) */}
+              {showingSeededImage && seededMeta && (
+                <div className="mt-1.5 w-24 text-center leading-tight space-y-1">
+                  <a
+                    href={seededMeta.source_url}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                    title="Image source. Opens the page this picture comes from."
+                    className="block text-[10px] text-muted hover:text-foreground transition-colors break-words"
+                  >
+                    {seededCaption(seededMeta)} ↗
+                  </a>
+                  <button
+                    onClick={handleReplaceImage}
+                    className="block w-full text-[10px] text-accent-strong hover:underline"
+                  >
+                    Replace with your photo
+                  </button>
+                  <button
+                    onClick={handleReportImage}
+                    disabled={imageVotes.userVote === "flag"}
+                    className="block w-full text-[10px] text-muted hover:text-red-400 transition-colors disabled:opacity-60 disabled:hover:text-muted"
+                  >
+                    {imageVotes.userVote === "flag" ? "Reported" : "Report this image"}
                   </button>
                 </div>
               )}
