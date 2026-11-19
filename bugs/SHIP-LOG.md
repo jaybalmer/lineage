@@ -3283,3 +3283,15 @@ Phones keep the constellation sky when a star is selected (links lit, star centr
 - tsc: clean
 
 Public /t/ episode pages showed every place mention as its raw id (loadOwnerStack selected places.image_url, which does not exist, so the places query failed); the column is dropped. The /fnrad hub episode list sorted inconsistently once bonus episodes sat among numbered ones (S12E7 above S12E8); now newest first by air date, then number. Weekly challenge moved to Schoph (S12E8) with the new line "Do you have a picture or know a story about an FNRad guest? Add your story!". Same session: Season 12 archive catch-up (batch-14-s12, 8 episodes) extracted, dated, loaded and published from staging (674 mentions, 3 new episodes public), plus Schoph's node approved and published (53 mentions); logged in linestry-ops RUN-LOG. Requested by Jay. Merged by Claude.
+
+## 2026-11-19 - Board image seeding: seeded tier, caption, Replace/Report, takedown (feature)
+- type: feature
+- pr: #304
+- branch: feat/board-image-seeding
+- ids: none
+- scope: board-image-seeding
+- migration: 20261119000001_board_sources_seeded_images (applied, SAFE additive)
+- status: merged
+- tsc: clean
+
+Code and schema for board-image-seeding-brief-v1 Phases 1+2: seed script (retrosnow/issuu/serper, dry-run, re-host to board-images/seeded/), seeded tier in /api/board-image + /list, board-page caption plus Replace with your photo / Report this image, /admin/board-images soft takedown, cache key v2, brand-only Serper fallback removed. No seeded rows written yet: real run waits for Jay's review of the dry-run CSVs (RetroSnow 59 boards, Issuu 176 boards; 10 of 15 Issuu docs lack page numbers). Tier 3 blocked until the Serper credit top-up (key returns "Not enough credits"). Requested by Jay. Merged by Claude.
