@@ -3246,3 +3246,16 @@ Retold tab: Pass B groupings only (no model-written differences/notes). GET /api
 - tsc: clean
 
 Reset view now clears the selected node, pair, year, retold story and URL params and refits the zoom (it only refit before). Added an X on the node panel, second click on the selected star deselects, click on open sky clears (drags do not). Reported by Jay. Merged by Claude.
+
+## 2026-11-18 - FNRad Archive opens unselected on phones (bugfix)
+- type: bugfix
+- pr: #301
+- branch: fix/fnrad-archive-mobile-default
+- commit: 8ef4332
+- ids: none
+- scope: fnrad-archive-mobile-default
+- migration: none
+- status: merged
+- tsc: clean
+
+Phones opened on a default centre (Paul Fidrych) that could not be cleared, since the mobile constellation could only draw a centred ring. Phones now show the sky (40 stars at the fit, pinch for more) until a star is tapped; the ring closes on its centre, open space, the panel X or Reset view. Hover is mouse-only. Reported by Jay. Merged by Claude.
