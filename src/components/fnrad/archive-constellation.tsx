@@ -9,7 +9,8 @@
 // Desktop draws the wide sky: the layout is computed once per node set with
 // d3-force (no animated simulation, so prefers-reduced-motion needs no special
 // case), then rendered as SVG; d3-zoom pans and zooms. Mobile draws the same
-// sky (shorter, pinch to zoom) until a star is chosen, then focused mode: one
+// sky (shorter, pinch to zoom); a chosen star lights its links in place and is
+// panned to the middle. With Focus on, mobile swaps in focused mode instead: one
 // centre node and its strongest connections on a ring. Tapping the centre or
 // open space in focused mode closes it, back to the sky.
 
@@ -40,6 +41,8 @@ type Props = {
    *  space, clears the selection. */
   onBackground?: () => void
   mobile: boolean
+  /** Mobile only: Focus is on, so a selected star draws as the ring. */
+  ring?: boolean
   /** Bump to reset the desktop zoom. */
   resetKey: number
   /** Desktop: stars shown at the fitted zoom. nodeSet holds more, ranked; zooming
@@ -57,13 +60,13 @@ const RING_MAX = 12
 const radius = (eps: number) => 3 + Math.sqrt(eps) * 1.25
 
 export default function ArchiveConstellation(props: Props) {
-  if (props.mobile && props.selected != null) return <FocusedRing {...props} />
+  if (props.mobile && props.ring && props.selected != null) return <FocusedRing {...props} />
   return <WideSky {...props} height={props.mobile ? MOBILE_H : DESKTOP_H} />
 }
 
 // ── desktop: the wide sky ───────────────────────────────────────────────────
 
-function WideSky({ index, nodeSet, neighbours, selected, onSelect, onBackground, resetKey, baseCount, height: H }: Props & { height: number }) {
+function WideSky({ index, nodeSet, neighbours, selected, onSelect, onBackground, resetKey, baseCount, mobile, height: H }: Props & { height: number }) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null)
@@ -134,11 +137,33 @@ function WideSky({ index, nodeSet, neighbours, selected, onSelect, onBackground,
     const pad = 40
     const k = Math.min(2, (width - pad * 2) / (maxX - minX || 1), (H - pad * 2) / (maxY - minY || 1))
     fitKRef.current = k
-    const t = zoomIdentity.translate(width / 2 - ((minX + maxX) / 2) * k, H / 2 - ((minY + maxY) / 2) * k).scale(k)
+    // Phones with a star chosen: centre it instead (see the effect below).
+    const sel = mobile && selected != null ? layout.byI.get(selected) : undefined
+    const t = sel
+      ? zoomIdentity.translate(width / 2 - sel.x! * k * 1.4, H / 2 - sel.y! * k * 1.4).scale(k * 1.4)
+      : zoomIdentity.translate(width / 2 - ((minX + maxX) / 2) * k, H / 2 - ((minY + maxY) / 2) * k).scale(k)
     select(svg).call(z.transform, t)
-    // Only on a new layout, a resize or a reset; never on selection.
+    // Only on a new layout, a resize or a reset; selection changes pan in the
+    // effect below (phones only).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layout, width, resetKey, H])
+
+  // Phones: pan a newly chosen star to the middle of the small box, zooming in
+  // to at least the fitted scale, so its lit links are in view. Desktop leaves
+  // the view alone on selection.
+  useEffect(() => {
+    if (!mobile || selected == null) return
+    const svg = svgRef.current
+    const z = zoomRef.current
+    const n = layout.byI.get(selected)
+    if (!svg || !z || !n) return
+    // The box's own width: on a fresh mount the width state may not have caught up.
+    const w = wrapRef.current?.clientWidth || width
+    const k = Math.max(transform.k, fitKRef.current * 1.4)
+    select(svg).call(z.transform, zoomIdentity.translate(w / 2 - n.x! * k, H / 2 - n.y! * k).scale(k))
+    // Only when the selection changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selected, mobile])
 
   const focus = hover ?? selected
   const lit = useMemo(() => {

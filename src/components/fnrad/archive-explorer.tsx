@@ -142,6 +142,9 @@ export function ArchiveExplorer({
   const [pair, setPair] = useState<number | null>(null)
   const [year, setYear] = useState<number | null>(null)
   const [mobile, setMobile] = useState<boolean | null>(null)
+  // Phones: the selected star shows in the sky (links lit, as on desktop) unless
+  // Focus is on, which swaps in the ring of its strongest connections.
+  const [ring, setRing] = useState(false)
   const [types, setTypes] = useState<boolean[]>(() => ARCHIVE_TYPES.map(() => true))
   const [query, setQuery] = useState("")
   const [resetKey, setResetKey] = useState(0)
@@ -479,18 +482,34 @@ export function ArchiveExplorer({
                   selected={selected}
                   onSelect={(i) => {
                     // A second click on the selected star closes it, as in the Sketches.
-                    if (!mobile && i === selectedRef.current) clearSelection()
+                    if (i === selectedRef.current) clearSelection()
                     else select(i, "constellation")
                   }}
                   onBackground={() => {
                     if (selectedRef.current != null) clearSelection()
                   }}
                   mobile={mobile}
+                  ring={ring}
                   resetKey={resetKey}
                   baseCount={mobile ? SKY_SIZE_MOBILE : SKY_SIZE}
                 />
               )}
               {mobile === null && <div className="h-[380px] md:h-[560px]" aria-hidden="true" />}
+              {mobile && selected != null && (
+                <button
+                  type="button"
+                  aria-pressed={ring}
+                  onClick={() => {
+                    setRing((v) => !v)
+                    trackEvent("content", "fnrad_archive_focus_toggled", { on: !ring })
+                  }}
+                  className={`absolute bottom-3 right-3 min-h-11 rounded-full border px-4 text-sm font-medium ${
+                    ring ? "border-white bg-white text-[#1C1917]" : "border-white/20 bg-black/40 text-white/80"
+                  }`}
+                >
+                  Focus
+                </button>
+              )}
               {selected == null && mobile !== null && (
                 <p className="pointer-events-none absolute bottom-3 left-4 right-4 text-xs text-white/40">
                   {mobile
