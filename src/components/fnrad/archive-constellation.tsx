@@ -8,8 +8,10 @@
 //
 // Desktop draws the wide sky: the layout is computed once per node set with
 // d3-force (no animated simulation, so prefers-reduced-motion needs no special
-// case), then rendered as SVG; d3-zoom pans and zooms. Mobile draws focused
-// mode: one centre node and its strongest connections on a ring.
+// case), then rendered as SVG; d3-zoom pans and zooms. Mobile draws the same
+// sky (shorter, pinch to zoom) until a star is chosen, then focused mode: one
+// centre node and its strongest connections on a ring. Tapping the centre or
+// open space in focused mode closes it, back to the sky.
 
 import { useEffect, useMemo, useRef, useState } from "react"
 import { forceCenter, forceCollide, forceLink, forceManyBody, forceSimulation, forceX, forceY } from "d3-force"
@@ -34,7 +36,8 @@ type Props = {
   neighbours: (i: number) => [number, number][]
   selected: number | null
   onSelect: (i: number) => void
-  /** Desktop: a click on open sky (not a drag) clears the selection. */
+  /** A click on open sky (not a drag), or on the mobile ring's centre or open
+   *  space, clears the selection. */
   onBackground?: () => void
   mobile: boolean
   /** Bump to reset the desktop zoom. */
@@ -54,12 +57,13 @@ const RING_MAX = 12
 const radius = (eps: number) => 3 + Math.sqrt(eps) * 1.25
 
 export default function ArchiveConstellation(props: Props) {
-  return props.mobile ? <FocusedRing {...props} /> : <WideSky {...props} />
+  if (props.mobile && props.selected != null) return <FocusedRing {...props} />
+  return <WideSky {...props} height={props.mobile ? MOBILE_H : DESKTOP_H} />
 }
 
 // ── desktop: the wide sky ───────────────────────────────────────────────────
 
-function WideSky({ index, nodeSet, neighbours, selected, onSelect, onBackground, resetKey, baseCount }: Props) {
+function WideSky({ index, nodeSet, neighbours, selected, onSelect, onBackground, resetKey, baseCount, height: H }: Props & { height: number }) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const svgRef = useRef<SVGSVGElement>(null)
   const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null)
@@ -71,6 +75,8 @@ function WideSky({ index, nodeSet, neighbours, selected, onSelect, onBackground,
   useEffect(() => {
     const el = wrapRef.current
     if (!el) return
+    // Read the box once now, so a phone never draws a frame at the desktop width.
+    if (el.clientWidth) setWidth(Math.max(320, Math.round(el.clientWidth)))
     const ro = new ResizeObserver(([e]) => setWidth(Math.max(320, Math.round(e.contentRect.width))))
     ro.observe(el)
     return () => ro.disconnect()
@@ -126,13 +132,13 @@ function WideSky({ index, nodeSet, neighbours, selected, onSelect, onBackground,
       minY = Math.min(minY, n.y! - n.r); maxY = Math.max(maxY, n.y! + n.r)
     }
     const pad = 40
-    const k = Math.min(2, (width - pad * 2) / (maxX - minX || 1), (DESKTOP_H - pad * 2) / (maxY - minY || 1))
+    const k = Math.min(2, (width - pad * 2) / (maxX - minX || 1), (H - pad * 2) / (maxY - minY || 1))
     fitKRef.current = k
-    const t = zoomIdentity.translate(width / 2 - ((minX + maxX) / 2) * k, DESKTOP_H / 2 - ((minY + maxY) / 2) * k).scale(k)
+    const t = zoomIdentity.translate(width / 2 - ((minX + maxX) / 2) * k, H / 2 - ((minY + maxY) / 2) * k).scale(k)
     select(svg).call(z.transform, t)
     // Only on a new layout, a resize or a reset; never on selection.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [layout, width, resetKey])
+  }, [layout, width, resetKey, H])
 
   const focus = hover ?? selected
   const lit = useMemo(() => {
@@ -152,15 +158,16 @@ function WideSky({ index, nodeSet, neighbours, selected, onSelect, onBackground,
     if (lit) for (const j of lit) v.add(j)
     return v
   }, [nodeSet, visibleCount, selected, lit])
-  const labelCount = Math.round(18 * Math.pow(detail, 1.3))
+  // Fewer labels at the fit when fewer stars show (phones), so they do not pile up.
+  const labelCount = Math.round(Math.min(18, baseCount / 4) * Math.pow(detail, 1.3))
   const alwaysLabel = useMemo(() => new Set(nodeSet.slice(0, labelCount)), [nodeSet, labelCount])
 
   return (
-    <div ref={wrapRef} className="relative w-full" style={{ height: DESKTOP_H }}>
+    <div ref={wrapRef} className="relative w-full" style={{ height: H }}>
       <svg
         ref={svgRef}
         width={width}
-        height={DESKTOP_H}
+        height={H}
         role="img"
         aria-label={CONSTELLATION_ALT}
         className="block cursor-grab active:cursor-grabbing select-none"
@@ -203,8 +210,12 @@ function WideSky({ index, nodeSet, neighbours, selected, onSelect, onBackground,
                 transform={`translate(${n.x},${n.y})`}
                 className="cursor-pointer"
                 opacity={dim ? 0.15 : 1}
-                onMouseEnter={() => setHover(n.i)}
-                onMouseLeave={() => setHover(null)}
+                // Hover lights a star's links for a mouse only: a tap fires a
+                // mouseenter too, and would leave the star lit after it closes.
+                onPointerEnter={(e) => {
+                  if (e.pointerType === "mouse") setHover(n.i)
+                }}
+                onPointerLeave={() => setHover(null)}
                 onClick={(e) => {
                   e.stopPropagation()
                   onSelect(n.i)
@@ -247,12 +258,13 @@ function WideSky({ index, nodeSet, neighbours, selected, onSelect, onBackground,
 
 // ── mobile: focused mode ────────────────────────────────────────────────────
 
-function FocusedRing({ index, neighbours, selected, onSelect }: Props) {
+function FocusedRing({ index, neighbours, selected, onSelect, onBackground }: Props) {
   const wrapRef = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(360)
   useEffect(() => {
     const el = wrapRef.current
     if (!el) return
+    if (el.clientWidth) setWidth(Math.max(280, Math.round(el.clientWidth)))
     const ro = new ResizeObserver(([e]) => setWidth(Math.max(280, Math.round(e.contentRect.width))))
     ro.observe(el)
     return () => ro.disconnect()
@@ -268,7 +280,16 @@ function FocusedRing({ index, neighbours, selected, onSelect }: Props) {
 
   return (
     <div ref={wrapRef} className="relative w-full" style={{ height: MOBILE_H }}>
-      <svg width={width} height={MOBILE_H} role="img" aria-label={CONSTELLATION_ALT} className="block select-none">
+      <svg
+        width={width}
+        height={MOBILE_H}
+        role="img"
+        aria-label={CONSTELLATION_ALT}
+        className="block select-none"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) onBackground?.()
+        }}
+      >
         {ring.map(([j, w], k) => {
           const a = -Math.PI / 2 + (k / ring.length) * Math.PI * 2
           return (
@@ -284,7 +305,21 @@ function FocusedRing({ index, neighbours, selected, onSelect }: Props) {
             />
           )
         })}
-        <circle cx={cx} cy={cy} r={22} fill={typeColor(centre[0])} stroke="#ffffff" strokeWidth={2} />
+        <g
+          role="button"
+          tabIndex={0}
+          aria-label={`Close ${centre[2]}`}
+          className="cursor-pointer outline-none"
+          onClick={() => onBackground?.()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault()
+              onBackground?.()
+            }
+          }}
+        >
+          <circle cx={cx} cy={cy} r={22} fill={typeColor(centre[0])} stroke="#ffffff" strokeWidth={2} />
+        </g>
         <text
           x={cx}
           y={cy + 40}

@@ -33,6 +33,8 @@ const color = (t: number) => ENTITY_COLORS[KIND[t]].glow
 const TYPE_SINGULAR = ["Rider", "Place", "Brand or shop", "Event", "Board"]
 /** Stars at the fitted zoom; zooming in reveals up to SKY_MAX. */
 const SKY_SIZE = 140
+// Phones fit fewer stars in the shorter box; pinch reveals the rest.
+const SKY_SIZE_MOBILE = 40
 const SKY_MAX = 400
 const SKY_MIN_EPISODES = 2
 const LIST_PAGE = 25
@@ -125,7 +127,6 @@ export function ArchiveExplorer({
   index,
   initialFocus,
   initialView = "sky",
-  challengeGuestId,
   browse,
 }: {
   index: ArchiveIndex
@@ -175,17 +176,8 @@ export function ArchiveExplorer({
     trackEvent("content", "fnrad_archive_viewed", { focus: initialFocus != null, view: initialView })
   }, [initialFocus, initialView])
 
-  // Mobile opens on a centre even with no ?focus=: the challenge guest when he is
-  // in the index, otherwise the highest-ranked non-host person.
-  const defaultCentre = useMemo(() => {
-    if (challengeGuestId) {
-      const g = index.nodes.findIndex((n) => n[0] === 0 && n[1] === challengeGuestId)
-      if (g >= 0) return g
-    }
-    const p = index.nodes.findIndex((n) => n[0] === 0 && !n[6])
-    return p >= 0 ? p : null
-  }, [index, challengeGuestId])
-  const centre = selected ?? (mobile ? defaultCentre : null)
+  // Nothing is selected until someone picks a star, on phones too.
+  const centre = selected
   const centreRef = useRef<number | null>(centre)
   useEffect(() => {
     centreRef.current = centre
@@ -484,7 +476,7 @@ export function ArchiveExplorer({
                   index={index}
                   nodeSet={nodeSet}
                   neighbours={neighbours}
-                  selected={mobile ? centre : selected}
+                  selected={selected}
                   onSelect={(i) => {
                     // A second click on the selected star closes it, as in the Sketches.
                     if (!mobile && i === selectedRef.current) clearSelection()
@@ -495,13 +487,15 @@ export function ArchiveExplorer({
                   }}
                   mobile={mobile}
                   resetKey={resetKey}
-                  baseCount={SKY_SIZE}
+                  baseCount={mobile ? SKY_SIZE_MOBILE : SKY_SIZE}
                 />
               )}
               {mobile === null && <div className="h-[380px] md:h-[560px]" aria-hidden="true" />}
-              {!mobile && selected == null && (
-                <p className="pointer-events-none absolute bottom-3 left-4 text-xs text-white/40">
-                  Hover to see connections. Click a star to open it. Drag to move, scroll to zoom in for more.
+              {selected == null && mobile !== null && (
+                <p className="pointer-events-none absolute bottom-3 left-4 right-4 text-xs text-white/40">
+                  {mobile
+                    ? "Tap a star to open it. Pinch to zoom in for more."
+                    : "Hover to see connections. Click a star to open it. Drag to move, scroll to zoom in for more."}
                 </p>
               )}
             </>
