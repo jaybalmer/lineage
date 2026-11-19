@@ -91,7 +91,7 @@ export function hasChallengeGuest(guestId: string): boolean {
  *  page. A null / placeholder guestId means no challenge card anywhere, with no
  *  empty state (D5 render state 3).
  *
- *  Set 2026-11-04 to Paul Fidrych's people.id for S12E6; uuid-shaped, no profiles row, both F18 pre-flights pass.
+ *  Set 2026-11-19 to Schoph's people.id for S12E8; uuid-shaped, no profiles row, one Schoph in the catalog, both F18 pre-flights pass.
  *
  *  episodeSlug and episodeLabel are OPTIONAL and arrive later, when the S12 E01
  *  page exists. episodeSlug is the episode's `public_slug`, NOT its id, because
@@ -101,10 +101,10 @@ export function hasChallengeGuest(guestId: string): boolean {
  *  are hidden when episodeSlug is null; turning them on later is an edit to
  *  these two lines and a deploy (D5 state 2, A8b). */
 export const FNRAD_CHALLENGE = {
-  guestId: "af3ece43-cead-4fac-b160-8670cb44311a", // Paul Fidrych (people.id), set 2026-11-04
-  guestName: "Paul Fidrych", // display fallback if the node is unreadable
-  episodeSlug: "paul_fidrych__fnrad_s12e6" as string | null, // OPTIONAL. The episode's public_slug.
-  episodeLabel: "FNRad S12E6" as string | null, // OPTIONAL. What the hub kicker prints.
+  guestId: "96da7062-0528-4c0b-8df9-4d624c9969b1", // Schoph (people.id), set 2026-11-19
+  guestName: "Schoph", // display fallback if the node is unreadable
+  episodeSlug: "schoph__fnrad_s12e8" as string | null, // OPTIONAL. The episode's public_slug.
+  episodeLabel: "FNRad S12E8" as string | null, // OPTIONAL. What the hub kicker prints.
 } as const
 
 // Ingemar Backman fbf34ae7-f056-4457-ad90-3be67adac0f1 stays pre-flighted (PR #235) and is available for a catch-up week.
