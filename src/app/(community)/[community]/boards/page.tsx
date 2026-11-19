@@ -100,6 +100,8 @@ function BoardsPageInner() {
   // here on the next load and is never masked by a stale "no image" probe cache.
   const [communityBoardImages, setCommunityBoardImages] = useState<Map<string, string>>(new Map())
   const [communityImagesLoaded, setCommunityImagesLoaded] = useState(false)
+  // board_id -> seeded placeholder (board_sources kind='image'), same load.
+  const [seededBoardImages, setSeededBoardImages] = useState<Map<string, string>>(new Map())
   useEffect(() => {
     let cancelled = false
     fetch("/api/board-image/list")
@@ -109,6 +111,9 @@ function BoardsPageInner() {
         const m = new Map<string, string>()
         for (const [id, url] of Object.entries((d?.images ?? {}) as Record<string, string>)) m.set(id, url)
         setCommunityBoardImages(m)
+        const s = new Map<string, string>()
+        for (const [id, url] of Object.entries((d?.seeded ?? {}) as Record<string, string>)) s.set(id, url)
+        setSeededBoardImages(s)
       })
       .catch(() => {})
       .finally(() => { if (!cancelled) setCommunityImagesLoaded(true) })
@@ -116,6 +121,18 @@ function BoardsPageInner() {
       cancelled = true
     }
   }, [])
+
+  // The image a board shows without a live lookup, in chain order: community
+  // suggestion > boards.image_url (BoardCover reads it) > seeded placeholder. A
+  // seeded image is only an override when the board has no stored cover.
+  const knownBoardImages = useMemo(() => {
+    const m = new Map(communityBoardImages)
+    if (seededBoardImages.size) {
+      const stored = new Set(catalog.boards.filter((b) => b.image_url).map((b) => b.id))
+      for (const [id, url] of seededBoardImages) if (!m.has(id) && !stored.has(id)) m.set(id, url)
+    }
+    return m
+  }, [communityBoardImages, seededBoardImages, catalog.boards])
 
   // Display totals for the intro card — always the full catalog, never filtered.
   const totalBoards = catalog.boards.length
@@ -267,7 +284,7 @@ function BoardsPageInner() {
   const boardProps = (board: Board) => ({
     board,
     orgLogoUrl: orgByBrand.get(board.brand)?.logo_url,
-    imageOverride: communityBoardImages.get(board.id),
+    imageOverride: knownBoardImages.get(board.id),
     rodeCount: counts.rode.get(board.id) ?? 0,
     ownCount: counts.own.get(board.id) ?? 0,
     addedByName: board.added_by ? nameById.get(board.added_by) : undefined,
@@ -545,7 +562,7 @@ function BoardsPageInner() {
                     brand={brand}
                     boards={boards}
                     orgLogoUrl={orgByBrand.get(brand)?.logo_url}
-                    communityImages={communityBoardImages}
+                    communityImages={knownBoardImages}
                     riderCounts={counts.any}
                     onOpen={() => openBrand(brand)}
                   />

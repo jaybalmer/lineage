@@ -10,7 +10,9 @@ import { supabase } from "@/lib/supabase"
 //
 // Citations are DISCRETE years, never a continuous range: our sightings are sparse,
 // so a gap is a year we have not sourced, not a year the board was absent. No
-// third-party image is re-hosted; this layer only cites and links.
+// third-party image is re-hosted by this layer; it only cites and links. Seeded
+// placeholder images (kind='image', re-hosted with attribution) are a separate
+// layer: src/lib/board-seeded-image.ts.
 // See data/catalog/review/provenance-layer-spec.md.
 
 export interface BoardSource {

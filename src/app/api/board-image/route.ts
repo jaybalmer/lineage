@@ -1,15 +1,21 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createServerSupabaseClient } from "@/lib/supabase-server"
+import { SEEDED_IMAGE_COLUMNS, pickSeeded, seededUrl, type SeededImageRow } from "@/lib/board-seeded-image"
 
 /**
- * Auto-fetch a board thumbnail via Serper.dev Google Image Search API.
+ * Resolve a board thumbnail.
  *
- * Required env vars (add to .env.local):
- *   SERPER_API_KEY — API key from serper.dev (2,500 free credits)
+ * Priority (boards.image_url is applied by the callers, which already hold it):
+ *   1. community-suggested image (board_image_votes), skipped with skip_community=1
+ *   2. seeded image (board_sources kind='image', status='active'), re-hosted copy
+ *      with provenance; returns source='seeded' plus caption fields
+ *   3. live Serper (Google Images) lookup, hotlinked with attribution
  *
- * Priority: community-suggested image (board_image_votes) > Serper search
- * Free tier: 2,500 queries. Results are cached client-side (7 days) to stay well within limits.
- * Falls back through: brand+model+year → brand+model → brand only
+ * Required env var for tier 3: SERPER_API_KEY (serper.dev). Results are cached
+ * client-side (7 days) and 24h on the server.
+ *
+ * Serper queries are brand+model+year, then brand+model. There is deliberately no
+ * brand-only fallback: a wrong board on a page is worse than the brand logo.
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -17,25 +23,51 @@ export async function GET(req: NextRequest) {
   const model   = searchParams.get("model")    ?? ""
   const year    = searchParams.get("year")     ?? ""
   const boardId = searchParams.get("board_id") ?? ""
+  const skipCommunity = searchParams.get("skip_community") === "1"
 
   if (!brand || !model) {
     return NextResponse.json({ url: null })
   }
 
-  // ── Priority 1: community-suggested image ──────────────────────────────────
   if (boardId) {
+    const supabase = await createServerSupabaseClient()
+
+    // ── Priority 1: community-suggested image ────────────────────────────────
+    if (!skipCommunity) {
+      try {
+        const { data } = await supabase
+          .from("board_image_votes")
+          .select("suggested_image_url")
+          .eq("board_id", boardId)
+          .not("suggested_image_url", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single()
+        if (data?.suggested_image_url) {
+          return NextResponse.json({ url: data.suggested_image_url, source: "community" })
+        }
+      } catch { /* fall through */ }
+    }
+
+    // ── Priority 2: seeded image with provenance ─────────────────────────────
     try {
-      const supabase = await createServerSupabaseClient()
       const { data } = await supabase
-        .from("board_image_votes")
-        .select("suggested_image_url")
+        .from("board_sources")
+        .select(SEEDED_IMAGE_COLUMNS)
         .eq("board_id", boardId)
-        .not("suggested_image_url", "is", null)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .single()
-      if (data?.suggested_image_url) {
-        return NextResponse.json({ url: data.suggested_image_url, source: "community" })
+        .eq("kind", "image")
+        .eq("status", "active")
+      const best = pickSeeded((data ?? []) as SeededImageRow[], year ? parseInt(year, 10) : null)
+      if (best) {
+        return NextResponse.json({
+          url: seededUrl(best),
+          source: "seeded",
+          link: best.source_url,
+          publisher: best.publisher,
+          doc_title: best.doc_title,
+          page: best.page,
+          source_tier: best.source_tier,
+        })
       }
     } catch { /* fall through to Serper */ }
   }
@@ -46,11 +78,9 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ url: null, unconfigured: true })
   }
 
-  // Fallback queries: most specific → least specific
   const queries = [
     year ? `${brand} ${model} ${year} snowboard` : null,
     `${brand} ${model} snowboard`,
-    `${brand} snowboard`,
   ].filter(Boolean) as string[]
 
   try {
@@ -65,10 +95,14 @@ export async function GET(req: NextRequest) {
         next: { revalidate: 86400 }, // cache 24h on server
       })
       const data = await res.json()
+      if (!res.ok) {
+        // e.g. 400 "Not enough credits". Log loudly so a dead key is visible.
+        console.error(`[board-image] serper ${res.status}: ${data?.message ?? "error"}`)
+        return NextResponse.json({ url: null })
+      }
       const img = data.images?.[0]
       const url = (img?.imageUrl as string) ?? null
       if (url) {
-        console.log(`[board-image] found via "${query}"`)
         // Pass through Serper's attribution so the board page can credit the
         // source (these are Google Image Search results, not owned assets).
         return NextResponse.json({

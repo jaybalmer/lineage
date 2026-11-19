@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react"
 
-const CACHE_KEY = "lineage_board_images_v1"
+// v2: seeded images (board_sources kind='image') joined the chain; bumping the
+// key makes every browser re-fetch once instead of serving a 7-day-cached null.
+const CACHE_KEY = "lineage_board_images_v2"
 const CACHE_TTL = 7 * 24 * 60 * 60 * 1000 // 7 days in ms
 
 // ─── localStorage helpers ──────────────────────────────────────────────────────
@@ -58,7 +60,8 @@ export function clearBoardImageCache(boardId: string) {
 /**
  * Fetches an auto-searched thumbnail for a snowboard.
  *
- * Priority: community-suggested image (board_image_votes) > Serper search
+ * Priority: community-suggested image (board_image_votes) > seeded image
+ * (board_sources) > Serper search
  *
  * Returns:
  *   undefined  — still loading / not a board
