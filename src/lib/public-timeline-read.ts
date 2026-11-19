@@ -335,7 +335,9 @@ async function resolveEntities(
     : Promise.resolve([{ data: [] }, { data: [] }] as const)
 
   const placesP = ids.place.length
-    ? db.from("places").select("id, name, region, country, place_type, image_url").in("id", ids.place)
+    // places has no image_url column either (photos live in place_image_votes);
+    // selecting it failed this query, so every place rendered as its raw id.
+    ? db.from("places").select("id, name, region, country, place_type").in("id", ids.place)
     : Promise.resolve({ data: [] })
   const eventsP = ids.event.length
     // events has no image_url column (photos live in event_image_votes); selecting
@@ -1668,6 +1670,16 @@ export async function readOrgStack(
     year: number | null; start_date: string | null; public_slug: string | null
     public_enabled: boolean | null; publish_at: string | null
   }[])
+    // Newest first by air date, then episode_number, then year. Comparing by
+    // episode_number only when both rows have one was not a consistent order:
+    // bonus episodes carry no number, so a bonus between two numbered episodes
+    // scrambled the list (S12E7 above S12E8).
+    .sort((a, b) => {
+      const da = a.start_date ?? (a.year != null ? String(a.year) : "")
+      const db_ = b.start_date ?? (b.year != null ? String(b.year) : "")
+      if (da !== db_) return db_ < da ? -1 : 1
+      return (b.episode_number ?? -1) - (a.episode_number ?? -1)
+    })
     .map((e) => ({
       id: e.id,
       title: e.name ?? "Episode",
@@ -1678,11 +1690,6 @@ export async function readOrgStack(
       public_enabled: e.public_enabled === true,
       live: isEpisodeLive(e),
     }))
-    .sort((a, b) => {
-      // Newest first: episode_number desc when both present, else year desc.
-      if (a.episode_number != null && b.episode_number != null) return b.episode_number - a.episode_number
-      return (b.year ?? 0) - (a.year ?? 0)
-    })
 
   // Session C: on the PUBLIC read, drop everything that is not live. The view
   // already filters what it renders, but the payload is serialized into the

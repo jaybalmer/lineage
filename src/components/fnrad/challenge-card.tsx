@@ -73,8 +73,7 @@ export function ChallengeCard(props: {
         {guest.display_name} was on this week&apos;s episode. Add your stories connected to {first}.
       </p>
       <p className="mt-2 text-sm font-light leading-relaxed text-white/75">
-        Your stories and photos of their boards, the events, the videos. If you were there, or you
-        watched it happen, write it down. {first} would love to see them.
+        Do you have a picture or know a story about an FNRad guest? Add your story!
       </p>
 
       <div className="mt-5">
