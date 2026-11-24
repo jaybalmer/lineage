@@ -3295,3 +3295,15 @@ Public /t/ episode pages showed every place mention as its raw id (loadOwnerStac
 - tsc: clean
 
 Code and schema for board-image-seeding-brief-v1 Phases 1+2: seed script (retrosnow/issuu/serper, dry-run, re-host to board-images/seeded/), seeded tier in /api/board-image + /list, board-page caption plus Replace with your photo / Report this image, /admin/board-images soft takedown, cache key v2, brand-only Serper fallback removed. No seeded rows written yet: real run waits for Jay's review of the dry-run CSVs (RetroSnow 59 boards, Issuu 176 boards; 10 of 15 Issuu docs lack page numbers). Tier 3 blocked until the Serper credit top-up (key returns "Not enough credits"). Requested by Jay. Merged by Claude.
+
+## 2026-11-24 - Board images: live Google lookup turned off (feature)
+- type: feature
+- pr: #305
+- branch: feat/board-image-live-lookup-off
+- ids: none
+- scope: board-image-live-lookup-off
+- migration: none
+- status: merged
+- tsc: clean
+
+Removed the per-visitor Serper lookup from /api/board-image so board image sourcing is a one-time seeding cost. Chain is now community > stored > seeded > brand logo; seed script still uses Serper offline for Tier 3. Cache key v3, misses cached 1 day. Requested by Jay. Merged by Claude.
