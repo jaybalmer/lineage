@@ -9,13 +9,10 @@ import { SEEDED_IMAGE_COLUMNS, pickSeeded, seededUrl, type SeededImageRow } from
  *   1. community-suggested image (board_image_votes), skipped with skip_community=1
  *   2. seeded image (board_sources kind='image', status='active'), re-hosted copy
  *      with provenance; returns source='seeded' plus caption fields
- *   3. live Serper (Google Images) lookup, hotlinked with attribution
+ *   otherwise { url: null } and the caller shows the brand logo.
  *
- * Required env var for tier 3: SERPER_API_KEY (serper.dev). Results are cached
- * client-side (7 days) and 24h on the server.
- *
- * Serper queries are brand+model+year, then brand+model. There is deliberately no
- * brand-only fallback: a wrong board on a page is worse than the brand logo.
+ * There is no live search tier: the paid Google Images lookup was turned off so
+ * image sourcing is a one-time seeding cost, not a per-visitor one.
  */
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -69,52 +66,12 @@ export async function GET(req: NextRequest) {
           source_tier: best.source_tier,
         })
       }
-    } catch { /* fall through to Serper */ }
+    } catch { /* fall through */ }
   }
 
-  const apiKey = process.env.SERPER_API_KEY
-
-  if (!apiKey) {
-    return NextResponse.json({ url: null, unconfigured: true })
-  }
-
-  const queries = [
-    year ? `${brand} ${model} ${year} snowboard` : null,
-    `${brand} ${model} snowboard`,
-  ].filter(Boolean) as string[]
-
-  try {
-    for (const query of queries) {
-      const res = await fetch("https://google.serper.dev/images", {
-        method: "POST",
-        headers: {
-          "X-API-KEY": apiKey,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ q: query, num: 1 }),
-        next: { revalidate: 86400 }, // cache 24h on server
-      })
-      const data = await res.json()
-      if (!res.ok) {
-        // e.g. 400 "Not enough credits". Log loudly so a dead key is visible.
-        console.error(`[board-image] serper ${res.status}: ${data?.message ?? "error"}`)
-        return NextResponse.json({ url: null })
-      }
-      const img = data.images?.[0]
-      const url = (img?.imageUrl as string) ?? null
-      if (url) {
-        // Pass through Serper's attribution so the board page can credit the
-        // source (these are Google Image Search results, not owned assets).
-        return NextResponse.json({
-          url,
-          source: (img?.source as string) ?? (img?.domain as string) ?? null,
-          link: (img?.link as string) ?? null,
-        })
-      }
-    }
-    return NextResponse.json({ url: null })
-  } catch (err) {
-    console.error("[board-image] fetch failed", err)
-    return NextResponse.json({ url: null })
-  }
+  // No live Google Images (Serper) lookup any more (Jay, 2026-11-24): it ran per
+  // visitor per board and drained the credits. Boards without a community, stored
+  // or seeded image show the brand logo plus "Replace with your photo". Serper is
+  // still used once, offline, by scripts/seed-board-images.mjs --tier serper.
+  return NextResponse.json({ url: null })
 }
