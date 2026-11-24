@@ -208,10 +208,6 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
   const [links, setLinks] = useState<BoardLink[]>([])
   const [imageVotes, setImageVotes] = useState<ImageVoteState>({ up: 0, flag: 0, userVote: null, userVoteId: null })
   const [boardImageUrl, setBoardImageUrl] = useState<string | null>(null)
-  // Attribution for the auto-fetched (Serper / Google Images) cover, credited
-  // under the image when that is what is being shown.
-  const [boardImageSource, setBoardImageSource] = useState<string | null>(null)
-  const [boardImageLink, setBoardImageLink] = useState<string | null>(null)
   // Provenance when the resolved cover is a seeded placeholder (board_sources
   // kind='image'): drives the attribution caption and the Replace / Report actions.
   type SeededMeta = { source_tier: number | null; source_url: string; publisher: string; doc_title: string | null; page: number | null }
@@ -227,20 +223,11 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
   const myImageVoteRow = imageVoteRows.find((r) => r.user_id === activePersonId && r.suggested_image_url)
 
   // Priority: an explicit community suggestion, then the board's stored cover
-  // (set when the board was added to the catalog), then the auto-fetched guess.
+  // (set when the board was added to the catalog), then the seeded placeholder.
   const displayImageUrl = suggestedImageUrl ?? board.image_url ?? boardImageUrl
 
-  // Credit only the auto-fetched (Serper) cover, and only when it is the one on
-  // screen (community uploads and the stored column are not third-party sources).
-  const showingAutoImage = !suggestedImageUrl && !board.image_url && !!boardImageUrl && !seededMeta
   // A seeded placeholder is on screen: caption it and offer Replace / Report.
   const showingSeededImage = !suggestedImageUrl && !board.image_url && !!boardImageUrl && !!seededMeta
-  const imageCreditName = (() => {
-    if (boardImageLink) {
-      try { return new URL(boardImageLink).hostname.replace(/^www\./, "") } catch { /* fall back */ }
-    }
-    return boardImageSource
-  })()
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [removingPhoto, setRemovingPhoto] = useState(false)
 
@@ -292,18 +279,13 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
       })
 
     // skip_community: this page resolves the community suggestion itself (above),
-    // so the route returns the seeded placeholder or the live lookup only.
+    // so the route returns the seeded placeholder only (there is no live lookup).
     fetch(`/api/board-image?brand=${encodeURIComponent(boardBrand)}&model=${encodeURIComponent(boardModel)}&year=${boardYear}&board_id=${encodeURIComponent(boardId)}&skip_community=1`)
       .then((r) => r.json())
       .then(({ url, source, link, publisher, doc_title, page, source_tier }) => {
-        if (!url) return
+        if (!url || source !== "seeded") return
         setBoardImageUrl(url)
-        if (source === "seeded") {
-          setSeededMeta({ source_tier: source_tier ?? null, source_url: link, publisher: publisher ?? "", doc_title: doc_title ?? null, page: page ?? null })
-        } else {
-          setBoardImageSource(source ?? null)
-          setBoardImageLink(link ?? null)
-        }
+        setSeededMeta({ source_tier: source_tier ?? null, source_url: link, publisher: publisher ?? "", doc_title: doc_title ?? null, page: page ?? null })
       })
       .catch(() => {})
 
@@ -611,24 +593,6 @@ function BoardPageInner({ params }: { params: Promise<{ community: string; id: s
                   >
                     {imageVotes.userVote === "flag" ? "Reported" : "Report this image"}
                   </button>
-                </div>
-              )}
-              {/* Source credit for the auto-fetched cover (Google Images result) */}
-              {showingAutoImage && imageCreditName && (
-                <div className="mt-1.5 w-24 text-center leading-tight">
-                  {boardImageLink ? (
-                    <a
-                      href={boardImageLink}
-                      target="_blank"
-                      rel="noopener noreferrer nofollow"
-                      title="Image source — opens the page this cover was found on"
-                      className="text-[10px] text-muted hover:text-foreground transition-colors break-words"
-                    >
-                      Image via {imageCreditName}
-                    </a>
-                  ) : (
-                    <span className="text-[10px] text-muted break-words">Image via {imageCreditName}</span>
-                  )}
                 </div>
               )}
             </div>

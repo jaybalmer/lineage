@@ -2,10 +2,13 @@
 
 import { useState, useEffect } from "react"
 
-// v2: seeded images (board_sources kind='image') joined the chain; bumping the
-// key makes every browser re-fetch once instead of serving a 7-day-cached null.
-const CACHE_KEY = "lineage_board_images_v2"
-const CACHE_TTL = 7 * 24 * 60 * 60 * 1000 // 7 days in ms
+// v3: the live Google lookup is gone (2026-11-24), so every miss is a plain
+// "no community or seeded image yet". Bumping the key drops v2's cached nulls so
+// seeded images show as soon as the seeding run lands.
+const CACHE_KEY = "lineage_board_images_v3"
+const CACHE_TTL = 7 * 24 * 60 * 60 * 1000 // 7 days in ms, for a found image
+// A miss is cached for a day only, so a newly seeded image is not masked for a week.
+const MISS_TTL = 24 * 60 * 60 * 1000
 
 // ─── localStorage helpers ──────────────────────────────────────────────────────
 
@@ -22,7 +25,7 @@ function readCache(): CacheMap {
 function getCached(key: string): string | null | undefined {
   const entry = readCache()[key]
   if (!entry) return undefined // not in cache
-  if (Date.now() - entry.ts > CACHE_TTL) return undefined // expired
+  if (Date.now() - entry.ts > (entry.url === null ? MISS_TTL : CACHE_TTL)) return undefined // expired
   return entry.url // may be null (confirmed "no image found")
 }
 
@@ -58,10 +61,10 @@ export function clearBoardImageCache(boardId: string) {
 // ─── Hook ──────────────────────────────────────────────────────────────────────
 
 /**
- * Fetches an auto-searched thumbnail for a snowboard.
+ * Fetches a board's community or seeded thumbnail.
  *
  * Priority: community-suggested image (board_image_votes) > seeded image
- * (board_sources) > Serper search
+ * (board_sources). No live search: a miss returns null (brand logo).
  *
  * Returns:
  *   undefined  — still loading / not a board
@@ -101,10 +104,9 @@ export function useBoardImage(
       const params = new URLSearchParams({ brand, model, year: String(year ?? "") })
       if (boardId) params.set("board_id", boardId)
       const res = await fetch(`/api/board-image?${params}`)
-      const { url, unconfigured } = await res.json()
+      const { url } = await res.json()
       const result = (url as string | null) ?? null
-      // Don't cache when API isn't configured — retry on next load once keys are set
-      if (!unconfigured) setCached(cacheKey, result)
+      setCached(cacheKey, result)
       return result
     }
 
