@@ -3307,3 +3307,15 @@ Code and schema for board-image-seeding-brief-v1 Phases 1+2: seed script (retros
 - tsc: clean
 
 Removed the per-visitor Serper lookup from /api/board-image so board image sourcing is a one-time seeding cost. Chain is now community > stored > seeded > brand logo; seed script still uses Serper offline for Tier 3. Cache key v3, misses cached 1 day. Requested by Jay. Merged by Claude.
+
+## 2026-11-27 - Board images: full seeding run + seeder filters (feature)
+- type: feature
+- pr: #306
+- branch: chore/seed-images-filters
+- ids: none
+- scope: board-image-seeding-run
+- migration: none (data only: board_sources image rows seeded; 17 wrong-product tier 3 rows soft-removed with reason)
+- status: merged
+- tsc: clean
+
+Ran all three seeding tiers in prod: RetroSnow 69 rows, Issuu 367, Serper 2,537 active. 2,769 of 3,675 boards now have a seeded image. Spot check found same-named bindings/boots matched to boards; those rows were soft-removed and the seeder now skips them, plus Facebook/Instagram crawler URLs. Merged by Claude.
