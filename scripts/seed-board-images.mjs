@@ -275,11 +275,18 @@ async function serperCandidates(boards, boardsWithImage) {
       if (!res.ok) { console.log(`serper ${res.status} on "${q}" (out of credits?) - stopping`); return out }
       const img = (await res.json()).images?.[0]
       if (!img?.imageUrl) continue
+      // Facebook / Instagram "lookaside" crawler URLs return HTML, not an image.
+      if (/(^|\.)(fbsbx|facebook|instagram|fbcdn)\.(com|net)$/i.test((() => { try { return new URL(img.imageUrl).hostname } catch { return "" } })())) continue
       // D3: the result must name the model (title or link slug) and the brand.
       const hay = norm(`${img.title ?? ""} ${img.link ?? ""}`)
       const brandHit = brandKeys(b.brand).some((k) => hay.includes(k.split(" ")[0]))
       const modelHit = norm(b.model).length >= 2 && ` ${hay} `.includes(` ${norm(b.model)} `)
       if (!brandHit || !modelHit) continue
+      // A binding or boot that shares the board's model name (Morrow Axiom bindings,
+      // Elan Helium binding). "Board with bindings" listings still show the board.
+      const title = img.title ?? ""
+      if (/snowboard (binding|bindings|boot|boots)\b|\b(binding|boots),? (19|20)\d\d\b|bindings? review|\bboa boots?\b/i.test(title)
+          && !/\b(with|w\/|\+)\s/i.test(title)) continue
       let domain = img.domain || img.source || ""
       try { domain = new URL(img.link).hostname.replace(/^www\./, "") } catch { /* keep */ }
       out.push({
